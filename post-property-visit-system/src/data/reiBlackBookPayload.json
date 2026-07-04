@@ -3,6 +3,8 @@
     "first_name": "Maria",
     "last_name": "Santos",
     "full_name": "Maria Santos",
+    "email": "",
+    "phone": "",
     "property_address": "4710 Blum Rd"
   },
   "pipeline_stage": "Follow-Up",
@@ -46,6 +48,8 @@
     "contact_first_name": "Maria",
     "contact_last_name": "Santos",
     "contact_full_name": "Maria Santos",
+    "contact_email": "",
+    "contact_phone": "",
     "property_address": "4710 Blum Rd",
     "pipeline_stage": "Follow-Up",
     "tags": "seller,source:post-visit-system,classification:Family Decision,status:Pursuing,motivation:warm",

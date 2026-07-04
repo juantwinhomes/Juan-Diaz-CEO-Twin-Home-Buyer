@@ -53,11 +53,16 @@ function splitName(fullName) {
  * @param {object} d - a completed debrief (createPostVisitDebrief output)
  * @param {object} [opts]
  * @param {string} [opts.driveFolderUrl] - link to the property's Drive folder
+ * @param {string} [opts.sellerPhone] - seller phone; REI BlackBook matches the
+ *   existing contact by phone or email, so include one to UPDATE (not duplicate).
+ * @param {string} [opts.sellerEmail] - seller email (same matching purpose)
  * @returns {object} REI BlackBook-ready structures (see module header)
  */
 export function toReiBlackBookPayload(d, opts = {}) {
   const { first, last } = splitName(d.seller_name);
   const stage = STAGE_BY_CLASSIFICATION[d.seller_classification] || 'Needs Review';
+  const sellerPhone = opts.sellerPhone || d.seller_phone || '';
+  const sellerEmail = opts.sellerEmail || d.seller_email || '';
 
   // --- tags ------------------------------------------------------------------
   const tags = ['seller', 'source:post-visit-system'];
@@ -101,12 +106,16 @@ export function toReiBlackBookPayload(d, opts = {}) {
     action: d.next_best_action,
   };
 
-  // --- flat, all-string webhook payload (Zapier / webhook ready) -------------
+  // --- flat, all-string webhook payload (direct REI BlackBook / Zapier) ------
+  // contact_email / contact_phone are the MATCH KEYS REI BlackBook uses to
+  // create-or-update the right contact. Include at least one to avoid duplicates.
   const webhook_payload = {
     source: 'Post-Visit Conversion System',
     contact_first_name: first,
     contact_last_name: last,
     contact_full_name: d.seller_name || 'Unknown',
+    contact_email: sellerEmail,
+    contact_phone: sellerPhone,
     property_address: d.property_address || '',
     pipeline_stage: stage,
     tags: tags.join(','),
@@ -124,6 +133,8 @@ export function toReiBlackBookPayload(d, opts = {}) {
       first_name: first,
       last_name: last,
       full_name: d.seller_name || 'Unknown',
+      email: sellerEmail,
+      phone: sellerPhone,
       property_address: d.property_address || '',
     },
     pipeline_stage: stage,

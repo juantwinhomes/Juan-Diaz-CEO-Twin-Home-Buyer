@@ -307,6 +307,18 @@ test('toReiBlackBookPayload maps a full deal to contact, tags, stage, task', () 
   assert.equal(crm.follow_up_task.due_date, '2026-07-18');
 });
 
+test('webhook_payload carries contact email/phone as REI BlackBook match keys', () => {
+  const scan = processVisitFolder(SAMPLE_FOLDER);
+  const d = createPostVisitDebrief(scan);
+  const { webhook_payload, contact } = toReiBlackBookPayload(d, {
+    sellerPhone: '510-555-0142',
+    sellerEmail: 'maria@example.com',
+  });
+  assert.equal(webhook_payload.contact_phone, '510-555-0142');
+  assert.equal(webhook_payload.contact_email, 'maria@example.com');
+  assert.equal(contact.phone, '510-555-0142');
+});
+
 test('webhook_payload is flat and all-string (Zapier/webhook ready)', () => {
   const scan = processVisitFolder(SAMPLE_FOLDER);
   const d = createPostVisitDebrief(scan);

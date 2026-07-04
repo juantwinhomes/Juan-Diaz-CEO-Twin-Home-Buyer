@@ -46,6 +46,8 @@ function getScanAndOptions() {
         transcriptOverride: input.transcriptText || null,
         classificationOverride: input.classification_override || null,
         visitTrigger: input.visit_trigger || 'Property Visit Completed',
+        sellerPhone: input.seller_phone || '',
+        sellerEmail: input.seller_email || '',
       },
       label: `Phase 2 (Google Drive) — ${scan.view_url || scan.folder_id}`,
     };
@@ -62,6 +64,8 @@ function getScanAndOptions() {
       options: {
         classificationOverride: input.classification_override || null,
         visitTrigger: input.visit_trigger || 'Voice Memo Received',
+        sellerPhone: input.seller_phone || '',
+        sellerEmail: input.seller_email || '',
       },
       label: `Phase 3 (Voicenotes) — ${scan.folder_name || scan.folder_path}`,
     };
@@ -168,7 +172,11 @@ async function main() {
   console.log(`\n✅ Full debrief JSON written to: ${path.relative(__dirname, outPath)}`);
 
   // --- Phase 4: REI BlackBook-ready output -----------------------------------
-  const crm = toReiBlackBookPayload(debrief, { driveFolderUrl: scan.view_url || '' });
+  const crm = toReiBlackBookPayload(debrief, {
+    driveFolderUrl: scan.view_url || '',
+    sellerPhone: options.sellerPhone || '',
+    sellerEmail: options.sellerEmail || '',
+  });
   console.log('\nREI BLACKBOOK PREVIEW');
   console.log(`  Contact:  ${crm.contact.full_name} — ${crm.contact.property_address || '(no address)'}`);
   console.log(`  Stage:    ${crm.pipeline_stage}`);

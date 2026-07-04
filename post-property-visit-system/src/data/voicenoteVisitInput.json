@@ -2,6 +2,8 @@
   "_comment": "A REAL Voicenotes note fetched by this Claude session on 2026-07-04. In Phase 7 a scheduled job pulls new notes automatically. Optionally add a 'drive' block (same shape as driveVisitInput.json) to merge the memo with photos/video from the property's Drive folder.",
   "visit_trigger": "Voice Memo Received",
   "classification_override": null,
+  "seller_phone": "",
+  "seller_email": "",
   "note": {
     "uuid": "NLEjAE7B",
     "title": "1940 41st Avenue Oakland property visit: good condition, plan to buy",

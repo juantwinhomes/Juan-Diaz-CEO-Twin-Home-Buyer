@@ -32,10 +32,17 @@ export async function sendToReiBlackBook(webhookPayload, opts = {}) {
     return { sent: false, dryRun: true, reason: 'dry-run (SEND_LIVE not true)', url, wouldSend: webhookPayload };
   }
 
+  // REI BlackBook's native incoming webhook keeps its secret in the unique URL,
+  // so no auth header is normally required. If your endpoint DOES need one, set
+  // REI_BLACKBOOK_API_KEY and it is sent as a Bearer token.
+  const headers = { 'Content-Type': 'application/json' };
+  const apiKey = opts.apiKey || process.env.REI_BLACKBOOK_API_KEY;
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(webhookPayload),
     });
     return { sent: true, dryRun: false, url, status: res.status, ok: res.ok };

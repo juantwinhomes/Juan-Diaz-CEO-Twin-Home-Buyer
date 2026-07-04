@@ -8,6 +8,8 @@
   "transcriptText": "",
   "transcriptFileName": null,
   "classification_override": null,
+  "seller_phone": "",
+  "seller_email": "",
   "files": [
     {
       "title": "IMG_0167.HEIC",

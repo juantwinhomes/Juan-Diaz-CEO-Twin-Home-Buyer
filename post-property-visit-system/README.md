@@ -308,13 +308,23 @@ node index.js --send                                   # dry run (safe)
 node index.js --drive src/data/driveVisitInput.json --send   # dry run for a Drive visit
 ```
 
-### Go live (when you're ready)
+### Go live — DIRECT to REI BlackBook, no Zapier
 
-1. In Zapier, create a **Catch Hook** trigger and copy its URL.
+REI BlackBook has a **native incoming webhook** in its Workflow Builder that
+accepts direct POSTs to create/update a contact. No Zapier, no UI-login
+automation.
+
+1. In REI BlackBook, create a Workflow with a **Webhook** trigger; copy its URL.
 2. Add `REI_BLACKBOOK_WEBHOOK_URL=<that url>` and `SEND_LIVE=true` to `.env`.
-3. Add a Zapier action **REI BlackBook → Create/Update Contact** mapping the
-   `webhook_payload` fields.
+   (Set `REI_BLACKBOOK_API_KEY` only if your endpoint requires auth — native
+   webhooks usually don't; the secret is in the unique URL.)
+3. In that workflow, map the incoming fields and set the "create/update contact
+   by **Email or Phone**" option — so include `seller_phone` or `seller_email`
+   in the visit input to update the RIGHT contact instead of duplicating it.
 4. Run with `--send`. Confirm the first few records in REI BlackBook look right.
+
+> Zapier still works if you ever want it (just paste a Catch Hook URL instead) —
+> but it is not required.
 
 ### Still to wire (optional)
 
