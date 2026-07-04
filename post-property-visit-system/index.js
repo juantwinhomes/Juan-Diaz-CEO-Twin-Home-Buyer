@@ -19,6 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { processVisitFolder } from './src/workflows/processVisitFolder.js';
 import { buildScanFromDrive } from './src/services/googleDriveService.js';
+import { buildScanFromVoicenote } from './src/services/voicenotesService.js';
 import { createPostVisitDebrief } from './src/workflows/createPostVisitDebrief.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -41,6 +42,22 @@ function getScanAndOptions() {
         visitTrigger: input.visit_trigger || 'Property Visit Completed',
       },
       label: `Phase 2 (Google Drive) — ${scan.view_url || scan.folder_id}`,
+    };
+  }
+
+  // --- Voicenotes mode -------------------------------------------------------
+  if (args[0] === '--voicenote') {
+    const jsonPath = args[1] || path.join(__dirname, 'src', 'data', 'voicenoteVisitInput.json');
+    const abs = path.isAbsolute(jsonPath) ? jsonPath : path.join(__dirname, jsonPath);
+    const input = JSON.parse(fs.readFileSync(abs, 'utf8'));
+    const scan = buildScanFromVoicenote(input);
+    return {
+      scan,
+      options: {
+        classificationOverride: input.classification_override || null,
+        visitTrigger: input.visit_trigger || 'Voice Memo Received',
+      },
+      label: `Phase 3 (Voicenotes) — ${scan.folder_name || scan.folder_path}`,
     };
   }
 

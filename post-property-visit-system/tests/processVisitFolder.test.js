@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 import { processVisitFolder, parseFolderName } from '../src/workflows/processVisitFolder.js';
 import { buildScanFromDrive, classifyDriveFile } from '../src/services/googleDriveService.js';
+import { buildScanFromVoicenote, cleanVoicenoteTranscript } from '../src/services/voicenotesService.js';
 import { createPostVisitDebrief } from '../src/workflows/createPostVisitDebrief.js';
 import { extractFromTranscript } from '../src/services/voiceNoteService.js';
 import { assignFollowUpPath, computeFollowUpDate } from '../src/workflows/assignFollowUpPath.js';
@@ -199,6 +200,90 @@ test('end-to-end debrief on a Drive folder with missing memo flags the gaps', ()
   // Default follow-up path prevents the lead from dying in CRM.
   assert.equal(d.recommended_owner, 'Acquisition Ops Coordinator');
   assert.equal(d.follow_up_date, '2026-07-05'); // createdTime + 1 default day
+});
+
+// -------------------- Phase 3: Voicenotes --------------------
+
+test('cleanVoicenoteTranscript strips <br/> and collapses whitespace', () => {
+  const cleaned = cleanVoicenoteTranscript('Line one. <br/>Line two.  <br />  Three.');
+  assert.equal(cleaned, 'Line one. Line two. Three.');
+});
+
+test('extractor pulls the street address from the memo itself', () => {
+  const e = extractFromTranscript('All right, 1940 41st Avenue, Oakland, California. Going to buy this.');
+  assert.equal(e.property_address, '1940 41st Avenue, Oakland');
+  assert.equal(e.deal_status, 'Pursuing');
+});
+
+test('buildScanFromVoicenote makes a scan from a note (memo counts as audio)', () => {
+  const scan = buildScanFromVoicenote({
+    note: {
+      uuid: 'NLEjAE7B',
+      title: '1940 41st Ave visit',
+      date: '2026-07-04T21:59:00Z',
+      transcript: 'All right, 1940 41st Avenue, Oakland. <br/>Going to buy this property.',
+    },
+  });
+  assert.equal(scan.source, 'voicenotes');
+  assert.equal(scan.has_audio, true);
+  assert.equal(scan.counts.audio, 1);
+  assert.equal(scan.visit_date, '2026-07-04');
+  assert.match(scan.transcript_text, /Going to buy/);
+});
+
+test('end-to-end Voicenote debrief: real thin memo extracts address + pursuing', () => {
+  const scan = buildScanFromVoicenote({
+    note: {
+      uuid: 'NLEjAE7B',
+      title: '1940 41st Avenue Oakland property visit',
+      date: '2026-07-04T21:59:00Z',
+      transcript:
+        "All right, 1940 41st Avenue, Oakland, California. <br/>I am here. The property appears to be in good condition. <br/>I think we're going to move forward with this. I think we are going to buy this property.",
+    },
+  });
+  const d = createPostVisitDebrief(scan, { visitTrigger: 'Voice Memo Received' });
+  assert.equal(d.property_address, '1940 41st Avenue, Oakland');
+  assert.equal(d.voice_memo_received, 'Yes');
+  assert.equal(d.deal_status, 'Pursuing');
+  // Seller stance was NOT stated, so classification is honestly left for a human.
+  assert.equal(d.seller_classification, '');
+  assert.ok(d.missing_items.some((m) => /classification/i.test(m)));
+  assert.equal(d.follow_up_date, '2026-07-05');
+});
+
+test('Voicenote can merge with a Drive folder for combined media + memo', () => {
+  const scan = buildScanFromVoicenote({
+    note: {
+      uuid: 'x1',
+      title: 'memo',
+      date: '2026-07-04T10:00:00Z',
+      transcript: 'Went inside 4710 Blum. Seller wants 550k, we are at 450k. Pursue, follow up in 2 weeks.',
+    },
+    drive: {
+      folderTitle: '2026-07-04 - 4710 Blum Rd - Maria Santos',
+      files: [
+        { title: 'front.jpg', mimeType: 'image/jpeg' },
+        { title: 'walkthrough.mp4', mimeType: 'video/mp4' },
+      ],
+    },
+  });
+  assert.equal(scan.source, 'voicenotes+drive');
+  assert.equal(scan.has_photos, true);
+  assert.equal(scan.has_video, true);
+  assert.equal(scan.has_audio, true);
+  const d = createPostVisitDebrief(scan, { visitTrigger: 'Property Visit Completed' });
+  assert.equal(d.property_address, '4710 Blum Rd');
+  assert.equal(d.seller_name, 'Maria Santos');
+  assert.equal(d.deal_status, 'Pursuing');
+});
+
+test('aiDebriefService defaults to the local engine (no key required)', () => {
+  const scan = buildScanFromVoicenote({
+    note: { uuid: 'y1', title: 't', date: '2026-07-04T10:00:00Z', transcript: 'Going to buy 10 Oak St.' },
+  });
+  // options.engine omitted -> local parser -> synchronous plain object, no throw.
+  const d = createPostVisitDebrief(scan, {});
+  assert.equal(d.deal_status, 'Pursuing');
 });
 
 test('a no-entry visit produces a valid debrief with photos not required', () => {

@@ -13,7 +13,7 @@
 // ============================================================================
 
 import { blankDebrief } from '../config/fields.js';
-import { extractFromTranscript } from '../services/voiceNoteService.js';
+import { extractDebriefFacts } from '../services/aiDebriefService.js';
 import { generateDocumentationScore } from './generateDocumentationScore.js';
 import { assignFollowUpPath } from './assignFollowUpPath.js';
 import { findClassification } from '../config/classifications.js';
@@ -80,7 +80,9 @@ function buildCrmSummary(d) {
  */
 export function createPostVisitDebrief(scan, options = {}) {
   const transcript = options.transcriptOverride ?? scan.transcript_text ?? '';
-  const extraction = extractFromTranscript(transcript);
+  // extractDebriefFacts routes to the local parser (default) or Claude (Phase 3b).
+  // The local engine is synchronous, so its result is a plain object here.
+  const extraction = extractDebriefFacts(transcript, { engine: options.engine });
 
   const d = blankDebrief();
 

@@ -107,6 +107,15 @@ export function extractFromTranscript(transcript) {
   const text = transcript.trim();
   const lower = text.toLowerCase();
 
+  // --- property address (memo often opens with it) ---------------------------
+  // Matches "1940 41st Avenue", "4710 Blum Rd", optionally ", City".
+  const addrMatch = text.match(
+    /\b(\d{1,6}\s+[\w.'-]+(?:\s+[\w.'-]+){0,3}?\s*(?:Avenue|Ave|Street|St|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Court|Ct|Way|Place|Pl|Circle|Cir|Terrace|Ter|Highway|Hwy)\b(?:,\s*[A-Z][a-zA-Z]+)?)/,
+  );
+  if (addrMatch) {
+    out.property_address = addrMatch[1].replace(/\s+/g, ' ').replace(/[.,]$/, '').trim();
+  }
+
   // --- entered the property? -------------------------------------------------
   if (/(no entry|no-show|no show|couldn'?t get in|could not get in|didn'?t (?:go|get) (?:in|inside)|door was locked|no access|nobody (?:home|answered))/.test(lower)) {
     out.entered_property = 'No';
@@ -121,7 +130,7 @@ export function extractFromTranscript(transcript) {
     out.deal_status = 'Passing';
   } else if (/(nurture|follow up later|not ready|check back|down the road)/.test(lower)) {
     out.deal_status = 'Nurturing';
-  } else if (/(pursu|chase|push the offer|let'?s get|going after|make an offer|write it up)/.test(lower)) {
+  } else if (/(pursu|chase|push the offer|let'?s get|going after|make an offer|write it up|move forward|moving forward|going to buy|gonna buy|buy this|go(?:ing)? ahead)/.test(lower)) {
     out.deal_status = 'Pursuing';
   }
 

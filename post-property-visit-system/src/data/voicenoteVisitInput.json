@@ -1,0 +1,12 @@
+{
+  "_comment": "A REAL Voicenotes note fetched by this Claude session on 2026-07-04. In Phase 7 a scheduled job pulls new notes automatically. Optionally add a 'drive' block (same shape as driveVisitInput.json) to merge the memo with photos/video from the property's Drive folder.",
+  "visit_trigger": "Voice Memo Received",
+  "classification_override": null,
+  "note": {
+    "uuid": "NLEjAE7B",
+    "title": "1940 41st Avenue Oakland property visit: good condition, plan to buy",
+    "date": "2026-07-04T21:59:00Z",
+    "transcript": "All right, 1940 41st Avenue, Oakland, California. <br/>I am here. The property appears to be in good condition. <br/>I think we're going to move forward with this. I think we are going to buy this property."
+  },
+  "drive": null
+}

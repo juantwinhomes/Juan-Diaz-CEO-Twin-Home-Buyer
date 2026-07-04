@@ -17,7 +17,8 @@ documentation scoring, CRM-ready output, and KPI reporting.
 |-------|------|-------------|
 | **1 (done)** | Local MVP — process a sample folder + transcript into a full debrief | None |
 | **2 (done)** | Google Drive folder scanning (via this session's Drive connection) | None yet |
-| 3 | Voice memo transcription / AI extraction | AI API key |
+| **3 (done)** | Voicenotes transcript intake + pluggable extraction engine | None yet |
+| 3b | Upgrade extraction to Claude API for messy speech | AI API key |
 | 4 | CRM / Monday.com-ready output | Monday API key |
 | 5 | Notifications for missing docs | Slack / email |
 | 6 | KPI logging + weekly review | None |
@@ -135,6 +136,58 @@ To make this fully automatic (no session in the loop), add a
 Drive API with a service-account key (see `.env.example`) and returns the same
 `{ folderTitle, files, transcriptText, createdTime }` shape. Everything
 downstream is unchanged.
+
+---
+
+## Phase 3 — Voicenotes intake + pluggable extraction
+
+Juan records a memo in the **Voicenotes** app after each visit. Voicenotes
+already transcribes it. This Claude session pulls the note (title, transcript,
+date) and saves it to `src/data/voicenoteVisitInput.json`;
+`voicenotesService.js` cleans the transcript (strips `<br/>`/HTML) and turns it
+into the standard scan object. The memo itself supplies the property address
+when Juan says it.
+
+### Run it
+
+```bash
+node index.js --voicenote src/data/voicenoteVisitInput.json
+```
+
+### Combine the memo with Drive media
+
+Add a `"drive"` block (same shape as `driveVisitInput.json`) inside the
+voicenote input to merge the memo with the property's photos/video:
+
+```jsonc
+{
+  "note": { "uuid": "…", "title": "…", "date": "…", "transcript": "…" },
+  "drive": {
+    "folderTitle": "2026-07-04 - 4710 Blum Rd - Maria Santos",
+    "files": [ { "title": "front.jpg", "mimeType": "image/jpeg" } ]
+  }
+}
+```
+
+### The extraction engine is pluggable (`aiDebriefService.js`)
+
+`createPostVisitDebrief` calls `extractDebriefFacts(transcript, { engine })`:
+
+- **`local`** (default, no key): the rule-based parser in `voiceNoteService.js`.
+- **`claude`** (Phase 3b): a Claude API call using
+  `prompts/juanVoiceMemoExtractionPrompt.md`. Enable by installing
+  `@anthropic-ai/sdk`, setting `ANTHROPIC_API_KEY` + `EXTRACTION_ENGINE=claude`
+  in `.env`, and uncommenting `extractWithClaude()`.
+
+Both engines return the identical fact object, so nothing downstream changes.
+
+### What Juan should say for full auto-classification
+
+The local parser reads a memo well when it includes: address, **did I go
+inside (yes/no)**, are we **pursuing / nurturing / passing**, asking price and
+our number, biggest repair, motivation (x/10), decision maker, and follow-up
+timing. A thin memo still works — it just leaves fields `Unknown` and flags
+them for the coordinator instead of guessing.
 
 ---
 
