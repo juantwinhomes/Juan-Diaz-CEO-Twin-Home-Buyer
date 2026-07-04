@@ -23,6 +23,9 @@ import { buildScanFromVoicenote } from './src/services/voicenotesService.js';
 import { createPostVisitDebrief } from './src/workflows/createPostVisitDebrief.js';
 import { toReiBlackBookPayload } from './src/services/crmService.js';
 import { buildNotifications, toEmail, topSeverity } from './src/services/notificationService.js';
+import { buildKpiRecord, generateWeeklyReport, renderWeeklyReport } from './src/services/kpiService.js';
+
+const KPI_LOG = 'src/data/kpiVisitsLog.jsonl';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -85,7 +88,45 @@ function getScanAndOptions() {
   };
 }
 
+// Read a JSONL log file into an array of records (ignoring blank lines).
+function readJsonl(absPath) {
+  if (!fs.existsSync(absPath)) return [];
+  return fs
+    .readFileSync(absPath, 'utf8')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => JSON.parse(l));
+}
+
+// `node index.js --report [logPath] [start] [end]`
+function runReport(args) {
+  const logPath = args[1] && !/^\d{4}-\d{2}-\d{2}$/.test(args[1]) ? args[1] : KPI_LOG;
+  const dates = args.filter((a) => /^\d{4}-\d{2}-\d{2}$/.test(a));
+  const abs = path.isAbsolute(logPath) ? logPath : path.join(__dirname, logPath);
+  const records = readJsonl(abs);
+
+  console.log('='.repeat(70));
+  console.log('POST-PROPERTY VISIT CONVERSION SYSTEM — Weekly KPI Review');
+  console.log('='.repeat(70));
+  console.log(`Source log: ${path.relative(__dirname, abs)} (${records.length} records)\n`);
+
+  const report = generateWeeklyReport(records, { start: dates[0], end: dates[1] });
+  console.log(renderWeeklyReport(report));
+
+  const outPath = path.join(__dirname, 'src', 'data', 'weeklyReview.json');
+  fs.writeFileSync(outPath, `${JSON.stringify(report, null, 2)}\n`);
+  console.log(`\n✅ Weekly review written to: ${path.relative(__dirname, outPath)}`);
+  console.log('='.repeat(70));
+}
+
 function main() {
+  const argv = process.argv.slice(2);
+  if (argv[0] === '--report') {
+    runReport(argv);
+    return;
+  }
+
   const { scan, options, label } = getScanAndOptions();
 
   console.log('='.repeat(70));
@@ -135,8 +176,14 @@ function main() {
   fs.writeFileSync(crmPath, `${JSON.stringify(crm, null, 2)}\n`);
   console.log(`✅ REI BlackBook payload written to: ${path.relative(__dirname, crmPath)}`);
 
-  // --- Phase 5: missing-documentation notifications --------------------------
+  // --- Phase 6: log this visit for weekly KPI review -------------------------
   const alerts = buildNotifications(debrief);
+  fs.appendFileSync(
+    path.join(__dirname, KPI_LOG),
+    `${JSON.stringify(buildKpiRecord(debrief, alerts))}\n`,
+  );
+
+  // --- Phase 5: missing-documentation notifications --------------------------
   console.log('\nNOTIFICATIONS');
   if (!alerts.length) {
     console.log('  ✓ No documentation gaps — nothing to alert.');

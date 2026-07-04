@@ -18,6 +18,7 @@ import { buildScanFromDrive, classifyDriveFile } from '../src/services/googleDri
 import { buildScanFromVoicenote, cleanVoicenoteTranscript } from '../src/services/voicenotesService.js';
 import { toReiBlackBookPayload } from '../src/services/crmService.js';
 import { buildNotifications, toEmail, topSeverity } from '../src/services/notificationService.js';
+import { buildKpiRecord, generateWeeklyReport } from '../src/services/kpiService.js';
 import { createPostVisitDebrief } from '../src/workflows/createPostVisitDebrief.js';
 import { extractFromTranscript } from '../src/services/voiceNoteService.js';
 import { assignFollowUpPath, computeFollowUpDate } from '../src/workflows/assignFollowUpPath.js';
@@ -376,6 +377,39 @@ test('missing photos on a viable deal escalates to Juan', () => {
   assert.equal(photo.role, 'juan');
   const email = toEmail(d, alerts);
   assert.match(email.subject, /ACTION NEEDED/);
+});
+
+// -------------------- Phase 6: KPI weekly review --------------------
+
+const KPI_SAMPLE = [
+  { visit_id: 'a', visit_date: '2026-07-01', deal_status: 'Pursuing', seller_classification: 'Family Decision', voice_memo_received: 'Yes', photos_required: 'Yes', photos_uploaded: 'Yes', video_required: 'Yes', video_uploaded: 'Yes', recommended_follow_up_sequence: 'Family-Decision Follow-Up', pass_reason: '', main_objection: 'talk to son', alert_codes: [] },
+  { visit_id: 'b', visit_date: '2026-07-02', deal_status: 'Pursuing', seller_classification: 'Wants More Money', voice_memo_received: 'Yes', photos_required: 'Yes', photos_uploaded: 'No', video_required: 'Yes', video_uploaded: 'No', recommended_follow_up_sequence: 'Price Objection Sequence', pass_reason: '', main_objection: 'price gap', alert_codes: ['NO_PHOTOS_VIABLE', 'NO_VIDEO_VIABLE'] },
+  { visit_id: 'c', visit_date: '2026-07-02', deal_status: 'Under Contract', seller_classification: 'Ready Now', voice_memo_received: 'No', photos_required: 'Yes', photos_uploaded: 'Yes', video_required: 'Yes', video_uploaded: 'No', recommended_follow_up_sequence: 'Same-Day Offer Push', pass_reason: '', main_objection: '', alert_codes: ['NO_VOICE_MEMO', 'NO_VIDEO_VIABLE'] },
+];
+
+test('buildKpiRecord captures the report-relevant fields', () => {
+  const scan = processVisitFolder(SAMPLE_FOLDER);
+  const d = createPostVisitDebrief(scan);
+  const rec = buildKpiRecord(d, buildNotifications(d));
+  assert.equal(rec.property_address, '4710 Blum Rd');
+  assert.equal(rec.deal_status, 'Pursuing');
+  assert.ok(Array.isArray(rec.alert_codes));
+});
+
+test('generateWeeklyReport computes the spec KPI fields', () => {
+  const r = generateWeeklyReport(KPI_SAMPLE);
+  assert.equal(r.visits_completed, 3);
+  assert.equal(r.pct_with_voice_memo, 67); // 2 of 3
+  assert.equal(r.full_package_denominator, 3); // all required visuals
+  assert.equal(r.pct_with_full_package_when_required, 33); // only 'a' is complete
+  assert.equal(r.under_contract_missing_visual, 1); // 'c' missing video
+  assert.equal(r.top_process_failures[0].value, 'NO_VIDEO_VIABLE'); // appears twice
+});
+
+test('generateWeeklyReport dedupes by visit_id and filters by date range', () => {
+  const withDup = [...KPI_SAMPLE, { ...KPI_SAMPLE[0], deal_status: 'Passing' }];
+  const r = generateWeeklyReport(withDup, { start: '2026-07-02', end: '2026-07-02' });
+  assert.equal(r.visits_completed, 2); // only 'b' and 'c' fall in range
 });
 
 test('a no-entry visit produces a valid debrief with photos not required', () => {

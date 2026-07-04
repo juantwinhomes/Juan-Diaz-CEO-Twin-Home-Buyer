@@ -1,0 +1,41 @@
+{
+  "range": {
+    "start": "(all)",
+    "end": "(all)"
+  },
+  "visits_completed": 7,
+  "pct_with_voice_memo": 86,
+  "pct_with_full_package_when_required": 50,
+  "full_package_denominator": 4,
+  "under_contract_missing_visual": 1,
+  "no_contract_moved_to_nurture": 6,
+  "leads_revived_from_followup": "manual — track when a nurtured lead re-engages",
+  "top_reasons_sellers_did_not_sign": [
+    {
+      "value": "condition too rough for our numbers",
+      "count": 2
+    },
+    {
+      "value": "Needs to talk to their son",
+      "count": 1
+    },
+    {
+      "value": "not ready to sell yet",
+      "count": 1
+    }
+  ],
+  "top_process_failures": [
+    {
+      "value": "NO_VIDEO_VIABLE",
+      "count": 2
+    },
+    {
+      "value": "NO_PHOTOS_VIABLE",
+      "count": 1
+    },
+    {
+      "value": "NO_VOICE_MEMO",
+      "count": 1
+    }
+  ]
+}

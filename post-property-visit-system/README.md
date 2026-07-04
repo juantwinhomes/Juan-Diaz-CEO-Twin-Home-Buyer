@@ -21,7 +21,7 @@ documentation scoring, CRM-ready output, and KPI reporting.
 | 3b | Upgrade extraction to Claude API for messy speech | AI API key |
 | **4 (done)** | REI BlackBook-ready output (contact, tags, stage, task, webhook payload) | None yet |
 | **5 (done)** | Missing-documentation notifications (severity + escalation + log + draft email) | None yet |
-| 6 | KPI logging + weekly review | None |
+| **6 (done)** | KPI logging + weekly review report | None |
 | 7 | Live CRM / Monday / API wiring | All above |
 
 We build the **logic first with sample data**, prove it's correct, then connect
@@ -252,6 +252,39 @@ Recipient addresses come from `.env` (`OPS_ALERT_EMAIL`, `JUAN_ALERT_EMAIL`,
 `toEmail(debrief, alerts)` returns `{ to, subject, body }`. Hand that to a
 Gmail send/draft step or a Slack webhook when you're ready. Nothing is sent
 automatically — a human confirms first.
+
+---
+
+## Phase 6 — KPI logging + weekly review
+
+Every processed visit appends a compact record to `src/data/kpiVisitsLog.jsonl`.
+`kpiService.js` turns those records into the weekly review numbers.
+
+### Run the weekly review
+
+```bash
+# Against the committed sample log (7 visits):
+node index.js --report src/data/sampleKpiLog.jsonl
+
+# Against your real running log, optionally for a date range:
+node index.js --report                         # all of src/data/kpiVisitsLog.jsonl
+node index.js --report src/data/kpiVisitsLog.jsonl 2026-06-29 2026-07-05
+```
+
+It prints and writes `src/data/weeklyReview.json` with:
+
+- Visits completed
+- % with voice memo/update
+- % with full photo/video package (when required) — your disposition health
+- Under-contract properties missing a visual package
+- No-contract visits routed to a nurture sequence
+- Top 3 reasons sellers did not sign (from pass reasons + objections)
+- Top 3 process failures to fix (from the alert codes)
+- Leads revived from follow-up (marked manual — track when a nurtured lead
+  re-engages)
+
+Records dedupe by `visit_id` (latest wins), so re-processing a visit doesn't
+double-count.
 
 ---
 
