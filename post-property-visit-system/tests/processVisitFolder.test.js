@@ -17,6 +17,7 @@ import { processVisitFolder, parseFolderName } from '../src/workflows/processVis
 import { buildScanFromDrive, classifyDriveFile } from '../src/services/googleDriveService.js';
 import { buildScanFromVoicenote, cleanVoicenoteTranscript } from '../src/services/voicenotesService.js';
 import { toReiBlackBookPayload } from '../src/services/crmService.js';
+import { buildNotifications, toEmail, topSeverity } from '../src/services/notificationService.js';
 import { createPostVisitDebrief } from '../src/workflows/createPostVisitDebrief.js';
 import { extractFromTranscript } from '../src/services/voiceNoteService.js';
 import { assignFollowUpPath, computeFollowUpDate } from '../src/workflows/assignFollowUpPath.js';
@@ -325,6 +326,56 @@ test('a pass gets a pass tag and Dead/Archive stage', () => {
   assert.equal(crm.pipeline_stage, 'Dead / Archive');
   assert.ok(crm.tags.includes('pass'));
   assert.ok(crm.tags.includes('motivation:cold'));
+});
+
+// -------------------- Phase 5: notifications --------------------
+
+test('a complete visit produces zero notifications', () => {
+  const scan = processVisitFolder(SAMPLE_FOLDER);
+  const d = createPostVisitDebrief(scan, { visitTrigger: 'Property Visit Completed' });
+  const alerts = buildNotifications(d);
+  assert.equal(alerts.length, 0);
+  assert.equal(topSeverity(alerts), 'none');
+  assert.equal(toEmail(d, alerts), null);
+});
+
+test('a missing voice memo raises a HIGH alert routed to the coordinator', () => {
+  const d = createPostVisitDebrief(
+    buildScanFromDrive({
+      folderTitle: '123 main st ',
+      createdTime: '2026-07-04T22:10:09.822Z',
+      files: [{ title: 'IMG_0167.HEIC', mimeType: 'image/heif' }],
+    }),
+    { visitTrigger: 'Property Visit Completed' },
+  );
+  const alerts = buildNotifications(d);
+  const memo = alerts.find((a) => a.code === 'NO_VOICE_MEMO');
+  assert.ok(memo);
+  assert.equal(memo.severity, 'high');
+  assert.equal(memo.role, 'coordinator');
+});
+
+test('missing photos on a viable deal escalates to Juan', () => {
+  // Viable, entered, but no photos uploaded -> photos_required Yes, uploaded No.
+  const d = createPostVisitDebrief(
+    {
+      source: 'test', folder_name: 't', property_address: '5 Test Rd', seller_name: 'X',
+      visit_date: '2026-07-04', counts: { photo: 0, video: 0, audio: 0, document: 0, other: 0 },
+      files: { photo: [], video: [], audio: [], document: [], other: [] },
+      has_photos: false, has_video: false, has_audio: false, has_documents: false,
+      transcript_file: null, transcript_text: null,
+    },
+    {
+      transcriptOverride: 'Went inside 5 Test Rd. Wife decides. Seller wants 400k, we are at 350k. Motivation 7 out of 10. Pursue, follow up in 3 days.',
+    },
+  );
+  const alerts = buildNotifications(d);
+  const photo = alerts.find((a) => a.code === 'NO_PHOTOS_VIABLE');
+  assert.ok(photo, 'should flag missing photos on a viable deal');
+  assert.equal(photo.severity, 'high');
+  assert.equal(photo.role, 'juan');
+  const email = toEmail(d, alerts);
+  assert.match(email.subject, /ACTION NEEDED/);
 });
 
 test('a no-entry visit produces a valid debrief with photos not required', () => {

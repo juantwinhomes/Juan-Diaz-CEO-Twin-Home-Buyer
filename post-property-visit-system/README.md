@@ -20,7 +20,7 @@ documentation scoring, CRM-ready output, and KPI reporting.
 | **3 (done)** | Voicenotes transcript intake + pluggable extraction engine | None yet |
 | 3b | Upgrade extraction to Claude API for messy speech | AI API key |
 | **4 (done)** | REI BlackBook-ready output (contact, tags, stage, task, webhook payload) | None yet |
-| 5 | Notifications for missing docs | Slack / email |
+| **5 (done)** | Missing-documentation notifications (severity + escalation + log + draft email) | None yet |
 | 6 | KPI logging + weekly review | None |
 | 7 | Live CRM / Monday / API wiring | All above |
 
@@ -222,6 +222,36 @@ Running any mode also writes `src/data/reiBlackBookPayload.json`:
 
 > We build the payload with sample data first. Do **not** POST to a live hook
 > until you've confirmed the output looks right for several real visits.
+
+---
+
+## Phase 5 — Missing-documentation notifications
+
+`notificationService.js` reads a debrief and raises alerts for the named
+failure modes, then routes them by severity:
+
+| Gap | Severity | Goes to |
+|-----|----------|---------|
+| No voice memo | HIGH | Coordinator (chases Juan for a 60s update) |
+| No photos on a viable deal | HIGH | **Juan** (may still be near the property) |
+| No walkthrough video on a viable deal | HIGH | **Juan** |
+| Seller not classified | MEDIUM | Coordinator |
+| No next action | MEDIUM | Coordinator |
+| Pass with no reason | MEDIUM | Coordinator |
+| No follow-up date | MEDIUM | Coordinator |
+
+On each run, gaps are printed, appended to `src/data/alerts.log`, and turned
+into a **draft email** (`toEmail()`) — which is **not sent**. A complete visit
+raises zero alerts.
+
+Recipient addresses come from `.env` (`OPS_ALERT_EMAIL`, `JUAN_ALERT_EMAIL`,
+`CHERRY_ALERT_EMAIL`); until set, clearly-marked placeholders are used.
+
+### Delivering alerts for real (later)
+
+`toEmail(debrief, alerts)` returns `{ to, subject, body }`. Hand that to a
+Gmail send/draft step or a Slack webhook when you're ready. Nothing is sent
+automatically — a human confirms first.
 
 ---
 

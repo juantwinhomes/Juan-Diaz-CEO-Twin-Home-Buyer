@@ -22,6 +22,7 @@ import { buildScanFromDrive } from './src/services/googleDriveService.js';
 import { buildScanFromVoicenote } from './src/services/voicenotesService.js';
 import { createPostVisitDebrief } from './src/workflows/createPostVisitDebrief.js';
 import { toReiBlackBookPayload } from './src/services/crmService.js';
+import { buildNotifications, toEmail, topSeverity } from './src/services/notificationService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -133,6 +134,28 @@ function main() {
   const crmPath = path.join(__dirname, 'src', 'data', 'reiBlackBookPayload.json');
   fs.writeFileSync(crmPath, `${JSON.stringify(crm, null, 2)}\n`);
   console.log(`✅ REI BlackBook payload written to: ${path.relative(__dirname, crmPath)}`);
+
+  // --- Phase 5: missing-documentation notifications --------------------------
+  const alerts = buildNotifications(debrief);
+  console.log('\nNOTIFICATIONS');
+  if (!alerts.length) {
+    console.log('  ✓ No documentation gaps — nothing to alert.');
+  } else {
+    console.log(`  Severity: ${topSeverity(alerts).toUpperCase()}  (${alerts.length} alert(s))`);
+    for (const a of alerts) {
+      console.log(`  [${a.severity.toUpperCase()}] ${a.message}`);
+      console.log(`         → ${a.role} (${a.to}); fix: ${a.fix}`);
+    }
+    const email = toEmail(debrief, alerts);
+    console.log(`\n  ✉️  Draft email ready (NOT sent): "${email.subject}"`);
+    console.log(`      To: ${email.to.join(', ')}`);
+
+    // Append to a local alert log so ops always has a record (no keys needed).
+    const stamp = new Date().toISOString();
+    const logLine = `${stamp} [${topSeverity(alerts).toUpperCase()}] ${debrief.property_address || 'property'} — ${alerts.map((a) => a.code).join(', ')}\n`;
+    fs.appendFileSync(path.join(__dirname, 'src', 'data', 'alerts.log'), logLine);
+    console.log('  📝 Appended to src/data/alerts.log');
+  }
   console.log('='.repeat(70));
 }
 

@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit real credentials
+.env
+google-service-account.json
+
+# Generated running log (regenerated on each run)
+src/data/alerts.log
