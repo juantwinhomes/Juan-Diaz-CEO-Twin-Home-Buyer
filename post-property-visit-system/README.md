@@ -19,7 +19,7 @@ documentation scoring, CRM-ready output, and KPI reporting.
 | **2 (done)** | Google Drive folder scanning (via this session's Drive connection) | None yet |
 | **3 (done)** | Voicenotes transcript intake + pluggable extraction engine | None yet |
 | 3b | Upgrade extraction to Claude API for messy speech | AI API key |
-| 4 | CRM / Monday.com-ready output | Monday API key |
+| **4 (done)** | REI BlackBook-ready output (contact, tags, stage, task, webhook payload) | None yet |
 | 5 | Notifications for missing docs | Slack / email |
 | 6 | KPI logging + weekly review | None |
 | 7 | Live CRM / Monday / API wiring | All above |
@@ -188,6 +188,40 @@ inside (yes/no)**, are we **pursuing / nurturing / passing**, asking price and
 our number, biggest repair, motivation (x/10), decision maker, and follow-up
 timing. A thin memo still works — it just leaves fields `Unknown` and flags
 them for the coordinator instead of guessing.
+
+---
+
+## Phase 4 — REI BlackBook-ready output
+
+`crmService.js` (`toReiBlackBookPayload`) turns a debrief into everything REI
+BlackBook needs. REI BlackBook is tag-driven and ingests external data via
+**Zapier / incoming webhooks**, so the output includes a flat, all-string
+`webhook_payload` you can map field-for-field in a Zapier "Catch Hook."
+
+Running any mode also writes `src/data/reiBlackBookPayload.json`:
+
+- **contact** — first/last/full name + property address
+- **pipeline_stage** — mapped from classification (e.g. Family Decision →
+  Follow-Up, Pass → Dead / Archive)
+- **tags** — `seller`, `source:post-visit-system`,
+  `classification:…`, `status:…`, `motivation:hot|warm|cold`, `pass`,
+  `docs:incomplete`
+- **custom_fields** — all the structured deal facts
+- **note** — the human-readable CRM summary
+- **follow_up_task** — title, owner, due date, action
+- **webhook_payload** — flat `{ key: "string" }` ready to POST to Zapier
+
+### Live wiring (Phase 7)
+
+1. In Zapier, create a **Catch Hook** trigger; copy its URL into
+   `REI_BLACKBOOK_WEBHOOK_URL` in `.env`.
+2. Add a Zapier action: **REI BlackBook → Create/Update Contact**, mapping the
+   `webhook_payload` fields (and creating the follow-up task).
+3. Phase 7 code will `POST` `webhook_payload` to that URL. Nothing about the
+   debrief logic changes.
+
+> We build the payload with sample data first. Do **not** POST to a live hook
+> until you've confirmed the output looks right for several real visits.
 
 ---
 

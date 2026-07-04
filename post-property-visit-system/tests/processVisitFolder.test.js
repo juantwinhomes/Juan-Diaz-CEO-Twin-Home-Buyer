@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { processVisitFolder, parseFolderName } from '../src/workflows/processVisitFolder.js';
 import { buildScanFromDrive, classifyDriveFile } from '../src/services/googleDriveService.js';
 import { buildScanFromVoicenote, cleanVoicenoteTranscript } from '../src/services/voicenotesService.js';
+import { toReiBlackBookPayload } from '../src/services/crmService.js';
 import { createPostVisitDebrief } from '../src/workflows/createPostVisitDebrief.js';
 import { extractFromTranscript } from '../src/services/voiceNoteService.js';
 import { assignFollowUpPath, computeFollowUpDate } from '../src/workflows/assignFollowUpPath.js';
@@ -284,6 +285,46 @@ test('aiDebriefService defaults to the local engine (no key required)', () => {
   // options.engine omitted -> local parser -> synchronous plain object, no throw.
   const d = createPostVisitDebrief(scan, {});
   assert.equal(d.deal_status, 'Pursuing');
+});
+
+// -------------------- Phase 4: REI BlackBook output --------------------
+
+test('toReiBlackBookPayload maps a full deal to contact, tags, stage, task', () => {
+  const scan = processVisitFolder(SAMPLE_FOLDER);
+  const d = createPostVisitDebrief(scan, { visitTrigger: 'Property Visit Completed' });
+  const crm = toReiBlackBookPayload(d, { driveFolderUrl: 'https://drive.google.com/x' });
+
+  assert.equal(crm.contact.first_name, 'Maria');
+  assert.equal(crm.contact.last_name, 'Santos');
+  assert.equal(crm.pipeline_stage, 'Follow-Up'); // Family Decision -> Follow-Up
+  assert.ok(crm.tags.includes('seller'));
+  assert.ok(crm.tags.includes('classification:Family Decision'));
+  assert.ok(crm.tags.includes('motivation:warm')); // 6/10 -> warm
+  assert.equal(crm.follow_up_task.owner, 'Acquisition Ops Coordinator');
+  assert.equal(crm.follow_up_task.due_date, '2026-07-18');
+});
+
+test('webhook_payload is flat and all-string (Zapier/webhook ready)', () => {
+  const scan = processVisitFolder(SAMPLE_FOLDER);
+  const d = createPostVisitDebrief(scan);
+  const { webhook_payload } = toReiBlackBookPayload(d);
+  for (const [k, v] of Object.entries(webhook_payload)) {
+    assert.equal(typeof v, 'string', `field ${k} must be a string for the webhook`);
+  }
+  assert.equal(webhook_payload.property_address, '4710 Blum Rd');
+  assert.equal(webhook_payload.pipeline_stage, 'Follow-Up');
+});
+
+test('a pass gets a pass tag and Dead/Archive stage', () => {
+  const scan = processVisitFolder(SAMPLE_FOLDER);
+  const d = createPostVisitDebrief(scan, {
+    transcriptOverride: 'Went inside 9 Pine St. Hard pass, condition is too rough and motivation is 1 out of 10.',
+    classificationOverride: 'Pass',
+  });
+  const crm = toReiBlackBookPayload(d);
+  assert.equal(crm.pipeline_stage, 'Dead / Archive');
+  assert.ok(crm.tags.includes('pass'));
+  assert.ok(crm.tags.includes('motivation:cold'));
 });
 
 test('a no-entry visit produces a valid debrief with photos not required', () => {

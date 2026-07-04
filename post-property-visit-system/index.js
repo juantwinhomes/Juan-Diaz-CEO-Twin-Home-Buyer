@@ -21,6 +21,7 @@ import { processVisitFolder } from './src/workflows/processVisitFolder.js';
 import { buildScanFromDrive } from './src/services/googleDriveService.js';
 import { buildScanFromVoicenote } from './src/services/voicenotesService.js';
 import { createPostVisitDebrief } from './src/workflows/createPostVisitDebrief.js';
+import { toReiBlackBookPayload } from './src/services/crmService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -121,6 +122,17 @@ function main() {
   const outPath = path.join(__dirname, 'src', 'data', 'sampleDebriefOutput.json');
   fs.writeFileSync(outPath, `${JSON.stringify(debrief, null, 2)}\n`);
   console.log(`\n✅ Full debrief JSON written to: ${path.relative(__dirname, outPath)}`);
+
+  // --- Phase 4: REI BlackBook-ready output -----------------------------------
+  const crm = toReiBlackBookPayload(debrief, { driveFolderUrl: scan.view_url || '' });
+  console.log('\nREI BLACKBOOK PREVIEW');
+  console.log(`  Contact:  ${crm.contact.full_name} — ${crm.contact.property_address || '(no address)'}`);
+  console.log(`  Stage:    ${crm.pipeline_stage}`);
+  console.log(`  Tags:     ${crm.tags.join(', ')}`);
+  console.log(`  Task:     ${crm.follow_up_task.title} (due ${crm.follow_up_task.due_date || 'n/a'}, owner ${crm.follow_up_task.owner})`);
+  const crmPath = path.join(__dirname, 'src', 'data', 'reiBlackBookPayload.json');
+  fs.writeFileSync(crmPath, `${JSON.stringify(crm, null, 2)}\n`);
+  console.log(`✅ REI BlackBook payload written to: ${path.relative(__dirname, crmPath)}`);
   console.log('='.repeat(70));
 }
 
