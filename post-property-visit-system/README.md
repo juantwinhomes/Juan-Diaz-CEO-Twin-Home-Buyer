@@ -1,0 +1,146 @@
+# Post-Property Visit Conversion System
+
+**Equity Track Inc.** — captures Juan Diaz's field judgment after every property
+visit and converts it into structured follow-up actions, seller classification,
+documentation scoring, CRM-ready output, and KPI reporting.
+
+> **Core principle: Juan is the driver. Operations is the pit crew.**
+> Juan's only required output is (1) a short voice note after every visit and
+> (2) photos/videos only when a property is viable, under contract, or needs
+> team review. The system does the admin.
+
+---
+
+## Build phases
+
+| Phase | Goal | Keys needed |
+|-------|------|-------------|
+| **1 (done)** | Local MVP — process a sample folder + transcript into a full debrief | None |
+| 2 | Google Drive folder scanning | Google service account |
+| 3 | Voice memo transcription / AI extraction | AI API key |
+| 4 | CRM / Monday.com-ready output | Monday API key |
+| 5 | Notifications for missing docs | Slack / email |
+| 6 | KPI logging + weekly review | None |
+| 7 | Live CRM / Monday / API wiring | All above |
+
+We build the **logic first with sample data**, prove it's correct, then connect
+live systems.
+
+---
+
+## Phase 1 — Local MVP (what runs today)
+
+Given a property-visit folder on disk, the system:
+
+1. Scans the folder and counts photos / videos / audio / documents.
+2. Reads Juan's voice-memo **transcript**.
+3. Extracts the deal facts (price, offer, repairs, motivation, decision maker…).
+4. Classifies the seller (one of 8 classifications).
+5. Assigns the follow-up owner, sequence, and date.
+6. Scores documentation across 7 fields and lists what's missing.
+7. Produces the full debrief JSON + a clean CRM-ready summary.
+
+**No internet, no API keys, no risk.**
+
+### Requirements
+
+- Node.js 18+ (tested on Node 22). Check with `node --version`.
+- No `npm install` needed — Phase 1 uses only Node's built-in modules.
+
+### Run it
+
+```bash
+cd post-property-visit-system
+
+# Process the built-in sample visit (reads src/data/sampleVisitInput.json):
+node index.js
+
+# Or process any folder directly:
+node index.js "sample-visits/2026-07-04 - 4710 Blum Rd - Maria Santos"
+```
+
+The full debrief JSON is written to `src/data/sampleDebriefOutput.json`.
+
+### Test it
+
+```bash
+npm test        # runs node --test — should show "# pass 10  # fail 0"
+```
+
+### Confirm it works ✅
+
+You should see:
+- Folder scan reporting **Photos: 6 | Video: 1 | Audio: 1 | Docs: 1**.
+- Seller Classification: **Family Decision**.
+- Asking **$550,000**, Likely Offer **$450,000**, Motivation **6/10**.
+- Follow-Up Date **2026-07-18** (two weeks after the 2026-07-04 visit).
+- Documentation Status: **Complete**, Missing Items: **None**.
+- All **10 tests pass**.
+
+### Try the failure modes yourself
+
+Edit `sample-visits/.../voice-note-transcript.txt` and re-run to see the system
+adapt:
+
+- Remove the transcript text → `voice_memo_received: No` and a coordinator note.
+- Change "went inside" to "no entry" → photos become **Not Required**.
+- Change "pursue" to "hard pass" → classification **Pass**, pass reason captured.
+
+---
+
+## Folder & file map
+
+```
+post-property-visit-system/
+  index.js                     # Phase 1 entry point (run this)
+  package.json                 # scripts: start / demo / test
+  .env.example                 # placeholder keys for later phases
+  README.md
+  src/
+    config/
+      fields.js                # file-type rules, doc-score fields, JSON schema
+      classifications.js       # the 8 seller classifications + keyword hints
+      followupRules.js         # follow-up owner / timing / action per class
+    services/
+      voiceNoteService.js      # LOCAL transcript parser (AI swaps in at Phase 3)
+    workflows/
+      processVisitFolder.js    # scan a folder, count media, find transcript
+      generateDocumentationScore.js  # 7-field score + missing items
+      assignFollowUpPath.js    # classification -> owner, sequence, date
+      createPostVisitDebrief.js# THE BRAIN — builds the full debrief JSON
+    data/
+      sampleVisitInput.json    # what an operator hands the system
+      sampleDebriefOutput.json # generated on each run
+  prompts/
+    juanVoiceMemoExtractionPrompt.md  # Phase 3 AI extraction prompt
+    operationsDebriefPrompt.md        # CRM-summary format for coordinators
+  tests/
+    processVisitFolder.test.js # 10 Phase 1 tests
+  sample-visits/
+    2026-07-04 - 4710 Blum Rd - Maria Santos/   # fake "Google Drive" folder
+```
+
+## Property folder naming rule
+
+```
+YYYY-MM-DD - PROPERTY ADDRESS - SELLER NAME
+2026-07-04 - 4710 Blum Rd - Maria Santos
+```
+
+Perfect file names are **not** required — the scanner counts by file extension.
+
+## Seller classifications
+
+Ready Now · Wants More Money · Family Decision · Shopping Offers ·
+Title / Legal Issue · Tenant / Access Issue · Long-Term Nurture · Pass
+
+## Documentation score (7 fields, each Yes / No / Not Required)
+
+`voice_memo_received` · `visit_outcome_recorded` · `seller_classified` ·
+`photos_uploaded_if_required` · `video_uploaded_if_required` ·
+`next_action_assigned` · `follow_up_date_set`
+
+---
+
+*Phase 1 is complete and tested. Do not wire live CRM/Drive until the logic
+output is confirmed correct on your own sample data.*

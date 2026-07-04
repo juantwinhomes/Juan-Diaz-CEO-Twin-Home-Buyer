@@ -1,0 +1,43 @@
+{
+  "visit_id": "2026-07-04_4710-blum-rd",
+  "property_address": "4710 Blum Rd",
+  "seller_name": "Maria Santos",
+  "visit_date": "2026-07-04",
+  "visit_result": "Visit completed — possible deal",
+  "entered_property": "Yes",
+  "deal_status": "Pursuing",
+  "seller_classification": "Family Decision",
+  "seller_asking_price": "$550,000",
+  "likely_offer_range": "$450,000",
+  "repair_concerns": [
+    "Roof is rough",
+    "Foundation looks okay",
+    "And the water heater is old"
+  ],
+  "motivation_score": "6/10",
+  "urgency": "Unknown",
+  "decision_maker": "wife",
+  "main_objection": "Unknown",
+  "next_best_action": "Prepare and present offer",
+  "follow_up_date": "2026-07-18",
+  "photos_required": "Yes",
+  "photos_uploaded": "Yes",
+  "video_required": "Yes",
+  "video_uploaded": "Yes",
+  "voice_memo_received": "Yes",
+  "pass_reason": "",
+  "documentation_score": {
+    "voice_memo_received": "Yes",
+    "visit_outcome_recorded": "Yes",
+    "seller_classified": "Yes",
+    "photos_uploaded_if_required": "Yes",
+    "video_uploaded_if_required": "Yes",
+    "next_action_assigned": "Yes",
+    "follow_up_date_set": "Yes"
+  },
+  "operations_notes": "Trigger: Property Visit Completed. Juan requested follow-up in 2 weeks.",
+  "crm_ready_summary": "POST-VISIT DEBRIEF\nProperty: 4710 Blum Rd\nSeller: Maria Santos\nVisit Outcome: Visit completed — possible deal\nEntered Property: Yes\nDeal Status: Pursuing\nSeller Classification: Family Decision\nSeller Asking Price: $550,000\nLikely Offer Range: $450,000\nRepair Concerns: Roof is rough; Foundation looks okay; And the water heater is old\nMotivation / Urgency: 6/10\nDecision Maker: wife\nMain Objection: Unknown\nNext Action: Prepare and present offer\nFollow-Up Date: 2026-07-18\nDocumentation Status: Complete\nMissing Items: None\nOperations Notes: Trigger: Property Visit Completed. Juan requested follow-up in 2 weeks.",
+  "missing_items": [],
+  "recommended_owner": "Acquisition Ops Coordinator",
+  "recommended_follow_up_sequence": "Family-Decision Follow-Up"
+}

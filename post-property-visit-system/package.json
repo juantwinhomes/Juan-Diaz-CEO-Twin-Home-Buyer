@@ -1,0 +1,22 @@
+{
+  "name": "post-property-visit-system",
+  "version": "0.1.0",
+  "description": "Post-Property Visit Conversion System for Equity Track Inc. Captures Juan Diaz's field judgment after every property visit and converts it into structured follow-up actions, seller classification, documentation scoring, CRM-ready output, and KPI reporting.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "demo": "node index.js \"sample-visits/2026-07-04 - 4710 Blum Rd - Maria Santos\"",
+    "test": "node --test"
+  },
+  "keywords": [
+    "real-estate",
+    "acquisitions",
+    "crm",
+    "post-visit",
+    "equity-track"
+  ],
+  "author": "Equity Track Inc.",
+  "license": "UNLICENSED",
+  "private": true
+}

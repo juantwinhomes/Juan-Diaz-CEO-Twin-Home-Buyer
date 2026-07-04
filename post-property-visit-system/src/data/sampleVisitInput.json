@@ -1,0 +1,7 @@
+{
+  "_comment": "This represents what an operator hands the system: which visit folder to process, which trigger started it, and (optionally) a transcript override. In Phase 1 the transcript actually lives inside the folder as voice-note-transcript.txt; the override here is left null so the system reads it from the folder.",
+  "visit_folder": "sample-visits/2026-07-04 - 4710 Blum Rd - Maria Santos",
+  "visit_trigger": "Property Visit Completed",
+  "transcript_override": null,
+  "classification_override": null
+}
