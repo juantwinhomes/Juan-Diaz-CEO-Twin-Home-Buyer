@@ -22,7 +22,9 @@ documentation scoring, CRM-ready output, and KPI reporting.
 | **4 (done)** | REI BlackBook-ready output (contact, tags, stage, task, webhook payload) | None yet |
 | **5 (done)** | Missing-documentation notifications (severity + escalation + log + draft email) | None yet |
 | **6 (done)** | KPI logging + weekly review report | None |
-| 7 | Live CRM / Monday / API wiring | All above |
+| **7a (done)** | Live REI BlackBook push — dry-run first, safe by default | Zapier hook URL to go live |
+| 7b | Live Google Drive fetch (service account) | Google service account |
+| 7c | Live alert delivery (Gmail / Slack) | Gmail or Slack |
 
 We build the **logic first with sample data**, prove it's correct, then connect
 live systems.
@@ -285,6 +287,42 @@ It prints and writes `src/data/weeklyReview.json` with:
 
 Records dedupe by `visit_id` (latest wins), so re-processing a visit doesn't
 double-count.
+
+---
+
+## Phase 7a — Live REI BlackBook push (safe by default)
+
+`webhookSender.js` POSTs the `webhook_payload` to your REI BlackBook / Zapier
+incoming webhook. It is **dry-run first** — it cannot hit your live CRM by
+accident:
+
+| Config | Behavior |
+|--------|----------|
+| No `--send` flag | Never attempts to send |
+| `--send`, no webhook URL | Dry run — prints what it *would* send |
+| `--send`, URL set, `SEND_LIVE` ≠ `true` | Dry run |
+| `--send`, URL set, `SEND_LIVE=true` | **Real POST** |
+
+```bash
+node index.js --send                                   # dry run (safe)
+node index.js --drive src/data/driveVisitInput.json --send   # dry run for a Drive visit
+```
+
+### Go live (when you're ready)
+
+1. In Zapier, create a **Catch Hook** trigger and copy its URL.
+2. Add `REI_BLACKBOOK_WEBHOOK_URL=<that url>` and `SEND_LIVE=true` to `.env`.
+3. Add a Zapier action **REI BlackBook → Create/Update Contact** mapping the
+   `webhook_payload` fields.
+4. Run with `--send`. Confirm the first few records in REI BlackBook look right.
+
+### Still to wire (optional)
+
+- **7b — Live Drive fetch:** add `fetchDriveFolder()` to `googleDriveService.js`
+  using a service-account key so the script scans Drive with no session in the
+  loop.
+- **7c — Live alerts:** hand `toEmail()` output to a Gmail send/draft step or a
+  Slack webhook.
 
 ---
 

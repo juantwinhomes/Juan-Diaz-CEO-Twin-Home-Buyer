@@ -19,6 +19,7 @@ import { buildScanFromVoicenote, cleanVoicenoteTranscript } from '../src/service
 import { toReiBlackBookPayload } from '../src/services/crmService.js';
 import { buildNotifications, toEmail, topSeverity } from '../src/services/notificationService.js';
 import { buildKpiRecord, generateWeeklyReport } from '../src/services/kpiService.js';
+import { sendToReiBlackBook } from '../src/services/webhookSender.js';
 import { createPostVisitDebrief } from '../src/workflows/createPostVisitDebrief.js';
 import { extractFromTranscript } from '../src/services/voiceNoteService.js';
 import { assignFollowUpPath, computeFollowUpDate } from '../src/workflows/assignFollowUpPath.js';
@@ -410,6 +411,24 @@ test('generateWeeklyReport dedupes by visit_id and filters by date range', () =>
   const withDup = [...KPI_SAMPLE, { ...KPI_SAMPLE[0], deal_status: 'Passing' }];
   const r = generateWeeklyReport(withDup, { start: '2026-07-02', end: '2026-07-02' });
   assert.equal(r.visits_completed, 2); // only 'b' and 'c' fall in range
+});
+
+// -------------------- Phase 7: live send (safety) --------------------
+
+test('sendToReiBlackBook dry-runs when no webhook URL is configured', async () => {
+  const res = await sendToReiBlackBook({ a: 'b' }, { url: '', live: false });
+  assert.equal(res.sent, false);
+  assert.equal(res.dryRun, true);
+  assert.equal(res.reason, 'no-webhook-url');
+});
+
+test('sendToReiBlackBook dry-runs when URL is set but not live', async () => {
+  const res = await sendToReiBlackBook({ a: 'b' }, { url: 'https://example.com/hook', live: false });
+  assert.equal(res.sent, false);
+  assert.equal(res.dryRun, true);
+  assert.match(res.reason, /dry-run/);
+  // The payload it WOULD send is returned for inspection — still nothing sent.
+  assert.deepEqual(res.wouldSend, { a: 'b' });
 });
 
 test('a no-entry visit produces a valid debrief with photos not required', () => {

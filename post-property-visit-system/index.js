@@ -24,6 +24,7 @@ import { createPostVisitDebrief } from './src/workflows/createPostVisitDebrief.j
 import { toReiBlackBookPayload } from './src/services/crmService.js';
 import { buildNotifications, toEmail, topSeverity } from './src/services/notificationService.js';
 import { buildKpiRecord, generateWeeklyReport, renderWeeklyReport } from './src/services/kpiService.js';
+import { sendToReiBlackBook } from './src/services/webhookSender.js';
 
 const KPI_LOG = 'src/data/kpiVisitsLog.jsonl';
 
@@ -67,9 +68,10 @@ function getScanAndOptions() {
   }
 
   // --- Local folder mode -----------------------------------------------------
+  const positional = args.filter((a) => a !== '--send');
   let input;
-  if (args[0]) {
-    input = { visit_folder: args[0], visit_trigger: 'Property Visit Completed', transcript_override: null, classification_override: null };
+  if (positional[0]) {
+    input = { visit_folder: positional[0], visit_trigger: 'Property Visit Completed', transcript_override: null, classification_override: null };
   } else {
     input = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'sampleVisitInput.json'), 'utf8'));
   }
@@ -120,7 +122,7 @@ function runReport(args) {
   console.log('='.repeat(70));
 }
 
-function main() {
+async function main() {
   const argv = process.argv.slice(2);
   if (argv[0] === '--report') {
     runReport(argv);
@@ -203,7 +205,25 @@ function main() {
     fs.appendFileSync(path.join(__dirname, 'src', 'data', 'alerts.log'), logLine);
     console.log('  📝 Appended to src/data/alerts.log');
   }
+
+  // --- Phase 7: push to REI BlackBook (dry-run unless --send + live) ----------
+  if (process.argv.includes('--send')) {
+    console.log('\nREI BLACKBOOK SEND');
+    const result = await sendToReiBlackBook(crm.webhook_payload);
+    if (result.sent) {
+      console.log(`  ✅ POSTed to webhook — HTTP ${result.status} (${result.ok ? 'ok' : 'error'})`);
+    } else if (result.dryRun) {
+      console.log(`  🧪 DRY RUN (${result.reason}) — nothing sent.`);
+      console.log('     To go live: set REI_BLACKBOOK_WEBHOOK_URL and SEND_LIVE=true in .env');
+    } else {
+      console.log(`  ❌ Send failed: ${result.error}`);
+    }
+  }
+
   console.log('='.repeat(70));
 }
 
-main();
+main().catch((err) => {
+  console.error('Error:', err.message);
+  process.exit(1);
+});
