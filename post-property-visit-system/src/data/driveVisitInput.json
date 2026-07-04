@@ -1,0 +1,18 @@
+{
+  "_comment": "A snapshot of a REAL Google Drive property-visit folder, fetched by this Claude session's Drive connection on 2026-07-04. In Phase 7 a service account will fetch this same shape automatically. 'files' is the folder listing; 'transcriptText' is the voice-note transcript text (empty here because this folder has no transcript yet).",
+  "folderId": "1u_tykRb-mM3hzRaF5-aF8zmf2Jw7W6PT",
+  "folderTitle": "123 main st ",
+  "viewUrl": "https://drive.google.com/drive/folders/1u_tykRb-mM3hzRaF5-aF8zmf2Jw7W6PT",
+  "createdTime": "2026-07-04T22:10:09.822Z",
+  "visit_trigger": "Property Visit Completed",
+  "transcriptText": "",
+  "transcriptFileName": null,
+  "classification_override": null,
+  "files": [
+    {
+      "title": "IMG_0167.HEIC",
+      "mimeType": "image/heif",
+      "fileExtension": "HEIC"
+    }
+  ]
+}

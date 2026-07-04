@@ -16,7 +16,7 @@ documentation scoring, CRM-ready output, and KPI reporting.
 | Phase | Goal | Keys needed |
 |-------|------|-------------|
 | **1 (done)** | Local MVP — process a sample folder + transcript into a full debrief | None |
-| 2 | Google Drive folder scanning | Google service account |
+| **2 (done)** | Google Drive folder scanning (via this session's Drive connection) | None yet |
 | 3 | Voice memo transcription / AI extraction | AI API key |
 | 4 | CRM / Monday.com-ready output | Monday API key |
 | 5 | Notifications for missing docs | Slack / email |
@@ -85,6 +85,56 @@ adapt:
 - Remove the transcript text → `voice_memo_received: No` and a coordinator note.
 - Change "went inside" to "no entry" → photos become **Not Required**.
 - Change "pursue" to "hard pass" → classification **Pass**, pass reason captured.
+
+---
+
+## Phase 2 — Google Drive folder scanning
+
+Phase 2 reads a **real Google Drive property-visit folder** and runs it through
+the same Phase 1 brain. The Node script can't log in to Drive by itself, so the
+folder listing + transcript are fetched by the connected Drive session and
+saved as a snapshot in `src/data/driveVisitInput.json`. `googleDriveService.js`
+normalizes that snapshot into the standard scan object.
+
+### Run it
+
+```bash
+node index.js --drive src/data/driveVisitInput.json
+```
+
+### What the snapshot contains
+
+```jsonc
+{
+  "folderId":   "…",          // Drive folder id
+  "folderTitle":"123 main st ",// used to parse date/address/seller
+  "viewUrl":    "https://…",   // human link
+  "createdTime":"2026-07-04T…",// visit_date fallback when name has no date
+  "transcriptText": "",        // voice-note transcript text (empty if none)
+  "files": [                   // the folder listing
+    { "title": "IMG_0167.HEIC", "mimeType": "image/heif" }
+  ]
+}
+```
+
+Files are classified by **MIME type** first (so `image/heif` HEIC photos count),
+then by extension. If the folder name has no date, the Drive `createdTime` is
+used so a follow-up date can still be computed.
+
+### Naming tip for Juan/Ops
+
+Name each Drive folder `YYYY-MM-DD - Address - Seller` (e.g.
+`2026-07-04 - 4710 Blum Rd - Maria Santos`) so the system auto-fills the date,
+address, and seller. It still works without this — it just can't auto-fill
+those fields.
+
+### Phase 7 upgrade path
+
+To make this fully automatic (no session in the loop), add a
+`fetchDriveFolder(folderId)` to `googleDriveService.js` that calls the Google
+Drive API with a service-account key (see `.env.example`) and returns the same
+`{ folderTitle, files, transcriptText, createdTime }` shape. Everything
+downstream is unchanged.
 
 ---
 

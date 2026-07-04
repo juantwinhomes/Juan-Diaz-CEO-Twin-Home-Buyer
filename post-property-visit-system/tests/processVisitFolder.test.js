@@ -14,6 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { processVisitFolder, parseFolderName } from '../src/workflows/processVisitFolder.js';
+import { buildScanFromDrive, classifyDriveFile } from '../src/services/googleDriveService.js';
 import { createPostVisitDebrief } from '../src/workflows/createPostVisitDebrief.js';
 import { extractFromTranscript } from '../src/services/voiceNoteService.js';
 import { assignFollowUpPath, computeFollowUpDate } from '../src/workflows/assignFollowUpPath.js';
@@ -139,6 +140,65 @@ test('end-to-end debrief on the sample folder is complete and correct', () => {
   assert.equal(d.documentation_score.photos_uploaded_if_required, 'Yes');
   assert.equal(d.documentation_score.video_uploaded_if_required, 'Yes');
   assert.ok(d.crm_ready_summary.includes('POST-VISIT DEBRIEF'));
+});
+
+// -------------------- Phase 2: Google Drive --------------------
+
+test('classifyDriveFile uses MIME type (HEIC photo, mp4 video, m4a audio)', () => {
+  assert.equal(classifyDriveFile({ title: 'IMG_0167.HEIC', mimeType: 'image/heif' }), 'photo');
+  assert.equal(classifyDriveFile({ title: 'clip.mp4', mimeType: 'video/mp4' }), 'video');
+  assert.equal(classifyDriveFile({ title: 'memo.m4a', mimeType: 'audio/mp4' }), 'audio');
+  assert.equal(classifyDriveFile({ title: 'deal.pdf', mimeType: 'application/pdf' }), 'document');
+  assert.equal(classifyDriveFile({ title: 'notes', mimeType: 'application/vnd.google-apps.document' }), 'document');
+  // Falls back to extension when MIME is unhelpful.
+  assert.equal(classifyDriveFile({ title: 'photo.jpg', mimeType: '' }), 'photo');
+});
+
+test('buildScanFromDrive normalizes a Drive listing to the scan shape', () => {
+  const scan = buildScanFromDrive({
+    folderId: 'abc123',
+    folderTitle: '2026-07-04 - 55 Elm St - John Roe',
+    viewUrl: 'https://drive.google.com/drive/folders/abc123',
+    files: [
+      { title: 'front.HEIC', mimeType: 'image/heif' },
+      { title: 'kitchen.jpg', mimeType: 'image/jpeg' },
+      { title: 'walkthrough.mp4', mimeType: 'video/mp4' },
+      { title: 'voice-note-transcript.txt', mimeType: 'text/plain' },
+    ],
+    transcriptText: 'Went inside 55 Elm. Seller wants 300k, we are at 250k. Pursue, follow up in 3 days.',
+  });
+  assert.equal(scan.source, 'google_drive');
+  assert.equal(scan.property_address, '55 Elm St');
+  assert.equal(scan.seller_name, 'John Roe');
+  assert.equal(scan.counts.photo, 2);
+  assert.equal(scan.counts.video, 1);
+  assert.equal(scan.transcript_file, 'voice-note-transcript.txt');
+});
+
+test('buildScanFromDrive falls back to createdTime when folder name has no date', () => {
+  const scan = buildScanFromDrive({
+    folderTitle: '123 main st ',
+    createdTime: '2026-07-04T22:10:09.822Z',
+    files: [{ title: 'IMG_0167.HEIC', mimeType: 'image/heif' }],
+  });
+  assert.equal(scan.visit_date, '2026-07-04');
+  assert.equal(scan.property_address, '123 main st');
+  assert.equal(scan.counts.photo, 1);
+});
+
+test('end-to-end debrief on a Drive folder with missing memo flags the gaps', () => {
+  const scan = buildScanFromDrive({
+    folderTitle: '123 main st ',
+    createdTime: '2026-07-04T22:10:09.822Z',
+    files: [{ title: 'IMG_0167.HEIC', mimeType: 'image/heif' }],
+  });
+  const d = createPostVisitDebrief(scan, { visitTrigger: 'Property Visit Completed' });
+  assert.equal(d.voice_memo_received, 'No');
+  assert.equal(d.documentation_score.voice_memo_received, 'No');
+  assert.ok(d.missing_items.some((m) => /Voice memo/.test(m)));
+  // Default follow-up path prevents the lead from dying in CRM.
+  assert.equal(d.recommended_owner, 'Acquisition Ops Coordinator');
+  assert.equal(d.follow_up_date, '2026-07-05'); // createdTime + 1 default day
 });
 
 test('a no-entry visit produces a valid debrief with photos not required', () => {
