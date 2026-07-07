@@ -30,6 +30,14 @@
 _Open question: is there a COO/Integrator yet? That's the #1 structural
 recommendation from the PI assessment._
 
+## Marketing / Acquisition Channels
+
+- **Redstone direct-mail postcards** — active channel. As of "all time"
+  snapshot: 77,763 mailed, ~$50.5K spent over 216 days, 92 leads, **0 acquired
+  deals**. Full breakdown and analysis in `marketing-postcard-kpis.md`.
+  Related entity: **Equity Track Inc.**
+- Open question: which channel produced the 56 historical flips? (Not yet known.)
+
 ## Gaps To Fill _(TBD)_
 
 - **Team & org chart:** who's on the team, roles, and — critically — is there a
