@@ -24,8 +24,9 @@
 |---|---|---|
 | Juan Diaz | CEO / Visionary | CEO |
 | Kristine | Owns true-net numbers (financing, holding, commissions, staging) | Finance / bookkeeping |
-| Cherry / Seth | Verify buy/sell vs. closing statements | Transaction / closing |
+| Cherry / Seth | Verify buy/sell vs. closing statements; Cherry also fields inbound calls & works interested leads | Transaction / closing / acquisitions |
 | Roiz | Owns lead source per deal | Acquisitions / marketing / lead gen |
+| Jose | Making offers to sellers | Acquisitions |
 
 _Open question: is there a COO/Integrator yet? That's the #1 structural
 recommendation from the PI assessment._
@@ -34,8 +35,14 @@ recommendation from the PI assessment._
 
 - **Redstone direct-mail postcards** — active channel. As of "all time"
   snapshot: 77,763 mailed, ~$50.5K spent over 216 days, 92 leads, **0 acquired
-  deals**. Full breakdown and analysis in `marketing-postcard-kpis.md`.
-  Related entity: **Equity Track Inc.**
+  deals** (1 contract, in Lake Elsinore — canceled). Full breakdown and analysis
+  in `marketing-postcard-kpis.md`. Related entity: **Equity Track Inc.**
+  - **Vendors:** Profit Dial (ReiBlackbook) + DealMachine (list/skip trace);
+    Redstone (print & mail).
+  - **List types:** Liens, Tax Delinquent, NOD/NTS, Absentee, Ugly Houses, Code
+    Violations, Stack, Out-of-State. Filters: owned >7–19 yrs, equity >35–40%.
+  - **Key issue:** only ~15% of mail targets the proven East Bay sub-$1M buy-box;
+    ~45% is off-box (SF, Peninsula, South Bay, Central Valley, North Bay, even LA).
 - Open question: which channel produced the 56 historical flips? (Not yet known.)
 
 ## Gaps To Fill _(TBD)_

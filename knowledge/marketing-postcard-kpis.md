@@ -96,11 +96,65 @@ cost with no return. The break isn't lead quality — it's converting interested
 sellers into signed contracts, plus a possibly mistargeted list. Both are fixable
 and both are acquisition-execution issues (Roiz + whoever runs offers).
 
+## DEEPER DIVE — Full Workbook (24 tabs), added after reading beyond the dashboard
+
+The workbook ("KPI Postcard") has 24 tabs, not just the dashboard. Key finds:
+
+### Targeting is diluted across the whole state — only ~15% hits the buy-box
+"Addresses Uploaded by Area Group" — 74,770 addresses across 13 area groups:
+
+| Bucket | Addresses | % | Verdict |
+|---|---|---|---|
+| **ON buy-box** (Oakland/Emeryville, Alameda Co., Hayward, West Contra Costa) | 10,994 | **15%** | ✅ the proven engine |
+| **OFF buy-box** (SF, Peninsula/S. Peninsula, South Bay, Central Valley, Sonoma, Solano, Marin) | 33,877 | **45%** | ❌ wrong geography |
+| Mixed / "Bay Area (broad)" + Tri-Valley/East CC | 29,899 | 40% | ⚠️ partly East Bay, partly spray |
+
+- **Only ~15% of the mail is aimed squarely at the East Bay sub-$1M engine.**
+- **45% is off-box** — and it includes the **Peninsula / SF** (Menlo Park, Los
+  Altos, Los Gatos, Saratoga, Alamo named in the "Ugly" campaign) — i.e. the exact
+  premium markets where **every historical LOSS came from** (`deal-pattern-buybox.md`).
+- Mail even went to **Los Angeles (~2,764 pieces)** and **Lake Elsinore (SoCal)** —
+  entirely outside the Bay Area operation.
+
+### List strategy (from Expenses Overview + campaign names)
+- **Data vendors:** Profit Dial (ReiBlackbook) and DealMachine (skip trace / list pull).
+  **Mail house:** Redstone Print & Mail.
+- **List types (distress):** Liens, Tax Delinquent, NOD (Notice of Default), NTS,
+  Absentee Owner, "Ugly Houses," Code Violations, "Stack" (multiple distress signals
+  stacked), Out-of-State owners, Return Mail. Filters: Owned >7–19 yrs, Equity >35–40%.
+- The single best-targeted drop = **"Stack — Oakland/Emeryville 7 core zips"**
+  (94608/07/12/06/01/21/03), 2,786 pieces → most interested callers (5). This is
+  the play to scale.
+
+### The one contract this campaign produced — off-box, and it CANCELED
+"In Contract" tab has exactly one record: **33025 Wildomar Rd, Lake Elsinore, CA
+(Riverside County), Liens/Postcard — "Canceled Contract."** The only deal that
+advanced came from outside the core geography, and it died.
+
+### The conversion problem is now visible in the seller notes ("Interested leads")
+Interest is real and in the sweet spot — Oakland sellers at $400–550K — but we
+lose them after the call. Recurring reasons in the notes:
+- **Offers land low / insult the seller:** "our offer was too low," "reaction is
+  sarcastic. Ended call abruptly," lost to an investor "at 350k."
+- **Follow-up leaks:** repeated "Callback made. No answer," "await callback."
+- **They list with an agent instead** (several).
+Named people working leads: **Cherry** and **Jose** (making offers).
+
+### Reframed bottom line
+This is not a lead-quality problem and not purely a "no deals yet" problem. It's
+**two fixable execution problems:** (1) the spend is scattered statewide instead of
+concentrated on the ~15% that is the proven East Bay engine — with 45% aimed at
+off-box / loss-zone markets; and (2) interested East-Bay sellers aren't being
+converted because offers come in low and follow-up leaks. Fixing targeting is a
+Roiz/list decision; fixing conversion is an offer-strategy + follow-up-cadence
+decision (Cherry/Jose).
+
 ## Open Questions To Close
 
-1. Is Redstone mailing into the East Bay sub-$1M buy-box zips, or broadly?
-2. What happens to the 30 interested leads after the call — who makes the offer,
-   and why did the 3 offers get declined (price? terms? speed)?
-3. Reconcile the date ranges and the "34 days mail→contract / 0 contracts" conflict.
-4. Which channel *did* produce the 56 historical deals, and how does its cost/deal
-   compare to this one?
+1. ~~Is Redstone mailing into the buy-box?~~ **Answered: only ~15% is; 45% is off-box.**
+2. Why are offers landing low — pricing model, or authority to go higher? Who owns
+   the offer number, and what's the max-offer rule?
+3. What's the follow-up cadence/SLA on an "interested" lead? Right now leads slip to
+   "no answer."
+4. Reconcile date ranges and the "34 days mail→contract / 0 contracts" conflict.
+5. Which channel produced the 56 historical deals, and its cost/deal vs. this one?
