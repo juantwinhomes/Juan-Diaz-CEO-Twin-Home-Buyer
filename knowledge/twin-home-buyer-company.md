@@ -26,10 +26,24 @@
 | Kristine | Owns true-net numbers (financing, holding, commissions, staging) | Finance / bookkeeping |
 | Cherry / Seth | Verify buy/sell vs. closing statements; Cherry also fields inbound calls & works interested leads | Transaction / closing / acquisitions |
 | Roiz | Owns lead source per deal | Acquisitions / marketing / lead gen |
-| Jose | Making offers to sellers | Acquisitions |
+| Jose | Primary caller (142 calls) + making offers | Acquisitions rep |
+| Thea | Caller (28 calls) | Acquisitions / VA |
+| Karen | Caller (12 calls) | Acquisitions / VA |
+| Arly | Caller (1 call) | Acquisitions / VA |
+
+_Note: In the postcard call log, **Juan personally took 33 calls** ("Juan (Live)")
+— CEO doing rep work, contrary to the PI role design._
 
 _Open question: is there a COO/Integrator yet? That's the #1 structural
 recommendation from the PI assessment._
+
+## Tech / Data Stack (from postcard workbook)
+
+- **Lists / skip trace:** DealMachine, Property Radar, Profit Dial (ReiBlackbook).
+- **Automation:** Make.com. **Warehouse:** Google Cloud BigQuery (pipeline partly built).
+- **Mail house:** Redstone Print & Mail.
+- **AI:** "John AI" (voice/calling agent), Xai/Grok, Auto Genius.
+- **Cards used:** AMEX, Discover, Capital One, BOA.
 
 ## Marketing / Acquisition Channels
 

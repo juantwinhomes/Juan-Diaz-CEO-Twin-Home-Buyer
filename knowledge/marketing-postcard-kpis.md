@@ -149,6 +149,67 @@ converted because offers come in low and follow-up leaks. Fixing targeting is a
 Roiz/list decision; fixing conversion is an offer-strategy + follow-up-cadence
 decision (Cherry/Jose).
 
+## FULL WORKBOOK STUDY — all 24 tabs
+
+### Where the ~$50.5K actually went (Spend + 4 card tabs)
+It's **not all postcards.** Real breakdown:
+
+| Bucket | Amount | Notes |
+|---|---|---|
+| **Redstone (mail house)** | **~$37,675 (75%)** | the actual postcards |
+| Google Cloud (BigQuery) | ~$3,001 | data warehouse |
+| DealMachine | ~$2,796 | list pull / skip trace |
+| Make.com | ~$2,325 | workflow automation |
+| Auto Genius | ~$1,653 | automation / dialer |
+| Property Radar | ~$759 | property data / lists |
+| Profit Dial (ReiBlackbook) | ~$54 | phone-append for lists |
+| Xai (Grok) | $30 | AI |
+
+- By card: **AMEX $29,331** (Redstone + Google + DealMachine), **Discover $12,805**
+  (= the dashboard's "Tracked Spend"; Redstone + DealMachine + Make), **Capital One
+  $8,383** (Redstone + Auto Genius + Property Radar), **BOA $30** (Xai).
+- Takeaway: ~$12.9K (25%) is **tooling/data infrastructure**, not mail. They've
+  built a real pipeline — the money isn't being wasted on nothing, but the mail
+  spend it drives is mostly pointed off-box (see targeting above).
+
+### Tech stack (Sheet30 + spend + Calls Data)
+**Lists/data:** DealMachine, Property Radar, Profit Dial (ReiBlackbook).
+**Automation:** Make.com. **Warehouse:** Google Cloud BigQuery. **Mail:** Redstone.
+**AI:** "John AI" (AI voice/calling agent — 8 calls logged), Xai/Grok, Auto Genius.
+There's a BigQuery transfer pipeline ("Mailed leads check database" — rows 1–3
+transferred, 4–14 still False → pipeline is only partly built).
+
+### Calls Data (354 call records) — the team, and a red flag
+- **Split: 177 inbound / 177 outbound** — good, there IS proactive follow-up effort.
+- **By caller: Jose 142, Cherry 76, Juan (Live) 33, Thea 28, Karen 12, John AI 8,
+  Arly 1** (54 blank).
+- 🚩 **Juan personally took 33 calls.** That's the CEO doing operator/acquisition-rep
+  work — exactly what the PI profile says to keep OFF his plate. Flag.
+- New team names surfaced: **Thea, Karen, Arly** (callers/VAs) alongside Jose & Cherry.
+
+### Postcards Sent (batch log)
+39 batches. **80,517 addresses uploaded → 77,763 actually mailed** (~2,754 / 3.4%
+dropped as bad/duplicate). Redstone cost in this log ~$46,181 (wider window than the
+dashboard's $42,275 — date-window differences again).
+
+### Cancelled-contract signal (Calc1)
+**"Cancelled Contract Rate = 50%."** Combined with the "In Contract" tab (1 record,
+Lake Elsinore, canceled) and the "Recent calls sample" (Jose Espinoza, Lake Elsinore,
+"Interested – Under contract"), this implies **~2 contracts ever, ~1 canceled.** Either
+way: of the tiny number that reached contract, half fell apart. Reinforces the
+conversion/execution problem.
+
+### List types (fuller catalog)
+Liens, Tax Delinquent, NOD, NTS, Absentee Owner, Ugly Houses, Code Violations, Stack,
+Out-of-State, Return Mail, and **Death of Joint (Tenant)** — a probate/inherited angle
+seen in the recent-calls sample. Recent-calls sample also confirms heavy **SoCal +
+Central Valley spray** (Cerritos, Long Beach, Bakersfield, Stockton, Selma, Sacramento).
+
+### Data-hygiene reality
+Numbers shift across tabs by date window (Calc: 69,441 mailed / $49,728 / 77 leads for
+12/1–3/31; Calc1: 77,763 / $42,275 / 92 leads for 12/3–6/1). Not contradictory — just
+different windows. Use Calc1 / "Dashboard Updated" as the current source.
+
 ## Open Questions To Close
 
 1. ~~Is Redstone mailing into the buy-box?~~ **Answered: only ~15% is; 45% is off-box.**
