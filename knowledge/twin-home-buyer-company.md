@@ -8,12 +8,27 @@
 
 ## What We Know
 
-- **Company:** Twin Home Buyer — real estate investment / acquisitions company
-  (distressed seller strategy, creative finance, private-money capital).
+- **Company:** Twin Home Buyer — real estate investment / acquisitions company.
+  Core model is **fix-and-flip** (buy → rehab → resell), primarily in the
+  California **East Bay** with high-variance plays on the **Peninsula**.
 - **CEO:** Juan Diaz (juan@twinhomebuyer.com). See `juan-diaz-pi-profile.md`.
-- **Model signals from the assessment:** the business runs on acquisitions,
-  seller conversations, offers/contracts, transaction coordination, CRM-driven
-  follow-up, and private-money/investor capital.
+- **Proven engine:** the **sub-$1M East Bay flip** (Oakland-centric), ~4.3-month
+  turns, ~86% gross win rate. Full deal history and the screening gate live in
+  `deal-pattern-buybox.md`.
+- **Track record (gross):** ~56 completed buy+sell deals, ~$12.8M gross profit,
+  ~$228K avg/deal. NOTE: gross ≠ net — true net per deal is not yet verified.
+
+## Team (names surfaced so far — roles need confirming)
+
+| Name | Signal from documents | Likely role _(confirm)_ |
+|---|---|---|
+| Juan Diaz | CEO / Visionary | CEO |
+| Kristine | Owns true-net numbers (financing, holding, commissions, staging) | Finance / bookkeeping |
+| Cherry / Seth | Verify buy/sell vs. closing statements | Transaction / closing |
+| Roiz | Owns lead source per deal | Acquisitions / marketing / lead gen |
+
+_Open question: is there a COO/Integrator yet? That's the #1 structural
+recommendation from the PI assessment._
 
 ## Gaps To Fill _(TBD)_
 
