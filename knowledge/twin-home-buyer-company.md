@@ -8,6 +8,13 @@
 
 ## What We Know
 
+- **Juan runs TWO businesses** (confirmed via his Grok history, Jan–Jun 2026):
+  1. **Twin Home Buyer** — the REI/flip company (below).
+  2. **Peninsula Plumbing Solutions** — a plumbing company (C-36 CA contractor
+     license; Juan: "I'm a full-blown plumber"). Marketing pain: Yelp Ads fake
+     leads, Google PPC fraud (CallRail), Angi/Thumbtack, website he's unhappy
+     with, hiring a plumbing ops manager. 23% of his AI conversations are
+     about this business — it competes for his attention and budget.
 - **Company:** Twin Home Buyer — real estate investment / acquisitions company.
   Core model is **fix-and-flip** (buy → rehab → resell), primarily in the
   California **East Bay** with high-variance plays on the **Peninsula**.
@@ -30,6 +37,7 @@
 | Thea | Caller (28 calls) | Acquisitions / VA |
 | Karen | Caller (12 calls) | Acquisitions / VA |
 | Arly | Caller (1 call) | Acquisitions / VA |
+| Brian Anthony | Has a team; Juan considered pulling him in beyond postcards (from Grok history) | TBD — partner/vendor? |
 
 _Note: In the postcard call log, **Juan personally took 33 calls** ("Juan (Live)")
 — CEO doing rep work, contrary to the PI role design._
