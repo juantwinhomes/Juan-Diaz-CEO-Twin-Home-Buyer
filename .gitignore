@@ -220,3 +220,5 @@ __marimo__/
 # generated video intermediates (rebuild with video/build.sh)
 video/frames/
 video/assets/music.wav
+video/assets/voices/
+video/assets/voiceover/
