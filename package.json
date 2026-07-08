@@ -1,0 +1,18 @@
+{
+  "name": "thb-integration-bridge",
+  "version": "1.0.0",
+  "description": "Twin Home Buyer integration bridge: REI Blackbook -> Monday.com -> QuickBooks Online",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
