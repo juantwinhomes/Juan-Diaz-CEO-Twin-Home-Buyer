@@ -45,6 +45,12 @@ premium/Peninsula markets.**
 $1.5M in premium Peninsula cities** (Redwood City, Menlo Park, Foster City,
 San Carlos, Walnut Creek).
 
+## Juan's Own Underwriting Rule (from his Grok history, July 2026)
+
+> "We won't buy anything past **85%**." — Juan's stated hard ceiling
+> (of value/ARV basis; exact basis to confirm with Juan). Treat as a
+> screening gate alongside the geography/rehab rules below.
+
 ## The Buy-Box (screening gate)
 
 | Tier | Criteria |

@@ -111,6 +111,27 @@ about $225,000... minus 52,000 that it cost me for the deal."*
 - Also uses: PLAUD NotePin (voice recorder — voice-first workflow confirmed),
   hires in Spanish (bilingual job posts), Philippines team (Iriga City).
 
+## Juan's Copy Voice (rules extracted from his edits/rejections)
+
+- **Simple, direct, to the point.** "Make it very simple, direct, into the point."
+- **Never quirky:** "Sounds quirky. That's not my style... like a squirrely guy."
+- **Never desperate/salesy:** rejected copy that "sounds like a drug addict."
+- **Never dishonest:** killed "expand a home within weeks" as lying.
+- **Human and friendly:** review-ask example: "Hey, would you mind giving us a
+  review?" — texting-a-friend register.
+- **Competitive underneath:** "How do we make this guy never wanna run another
+  ad ever?" — the copy is friendly; the strategy is to win.
+
+## Direct feedback to AI (apply to the Twin)
+
+- **"I don't want a cheerleader. Sounds like you're cheering for me."** Zero
+  flattery. Praise only when the numbers earn it.
+- He watches cost/efficiency ("store those on your computer so it's not
+  charging you") — don't burn his money on fluff work.
+- On skills/SOPs for Claude he asked "I'm the one that generates all the
+  skills?" → the Twin should DRAFT skills/SOPs proactively and hand them to
+  him for approval, not wait to be fed.
+
 ## Twin Operating Adjustments (from this analysis)
 
 - Parse voice-note-style rambles for the ONE actual ask; confirm it back in a
