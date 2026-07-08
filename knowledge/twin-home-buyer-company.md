@@ -33,6 +33,30 @@
   infrastructure: "Five AI CEO Employees" concept, Claude Code automations,
   WhatsApp/Google Chat integrations, MCP servers, lead-automation pipelines,
   automated realtor email outreach. This Twin is that project.
+
+## Business Timeline (reconstructed from 14 months of Grok history)
+
+- **Mid-2025:** Active acquisition machine. Callers **Hannah** and **Arly**
+  working leads from PPC, cold calling, and direct mail; Cherry making phone
+  offers; Juan driving properties and making offers personally.
+- **Aug 2025 (peak AI usage, 401 convos):** Big build-out month — REI BlackBook
+  CRM implementation, heavy hiring (rate calcs, applicant screening), lead
+  auditing/automation, foreclosure outreach. "Brian Understanding Confirmed" —
+  Juan trains Brian via AI.
+- **Dec 2025:** Postcard campaign launches (first Redstone drop Dec 3) —
+  matches the KPI dashboard start date. Contractor NDA drafted. Equity Track
+  holds a Christmas party (real team, real company). Plumbing marketing still
+  active ($49.95 sewer-offer video).
+- **Q1 2026:** Heavy marketing-analysis phase (PPC binge threads, TV ad ROI,
+  direct-mail effectiveness) — burning cash across many channels.
+- **~Apr–Jun 2026:** The turn: Juan **sells off major inventory**, puts
+  plumbing on hold, hits a cash crunch → attorney meeting → **90-day reset**
+  born (June 2026 thread: "how do I stop making scattered decisions, protect
+  cash, and rebuild around fewer, better moves?").
+- **Jul 2026:** Builds the AI org on Claude. Execution chain from his own
+  words: **Kristine packages the attorney notes → sends to Brian → Brian +
+  Juan integrate it into the calendar via Claude Code.** "If it's not on your
+  calendar, it will never get done."
 - **Company:** Twin Home Buyer — real estate investment / acquisitions company.
   Core model is **fix-and-flip** (buy → rehab → resell), primarily in the
   California **East Bay** with high-variance plays on the **Peninsula**.
@@ -55,7 +79,8 @@
 | Thea | Caller (28 calls) | Acquisitions / VA |
 | Karen | Caller (12 calls) | Acquisitions / VA |
 | Arly | Caller (1 call) | Acquisitions / VA |
-| Brian Anthony | Has a team; Juan considered pulling him in beyond postcards (from Grok history) | TBD — partner/vendor? |
+| Brian (Anthony) | Juan's tech/AI integration partner — receives packaged plans from Kristine, integrates into calendar/systems via Claude Code; has a team; AI-trained by Juan (Aug 2025) | Tech / automation partner |
+| Hannah | Caller/lead manager in 2025 pipeline (appointments, follow-ups) | Acquisitions / VA |
 
 _Note: In the postcard call log, **Juan personally took 33 calls** ("Juan (Live)")
 — CEO doing rep work, contrary to the PI role design._
