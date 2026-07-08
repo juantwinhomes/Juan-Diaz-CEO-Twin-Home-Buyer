@@ -1,0 +1,347 @@
+<title>Twin Home Buyer — Combined KPI Dashboard</title>
+<style>
+  :root{
+    --bg:#f4f5f3; --surface:#ffffff; --surface-2:#fbfbfa; --border:#e4e5e1;
+    --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#87857e;
+    --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100; --s4:#008300; --s5:#4a3aa7; --s6:#e34948; --s7:#e87ba4; --s8:#eb6834;
+    --good:#037f4c; --warn:#eda100; --bad:#df2f4a;
+    --qb:#2a78d6; --mon:#eb6834; --rei:#1baf7a;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+    --radius:14px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#141413; --surface:#1f1f1e; --surface-2:#242423; --border:#33332f;
+      --ink:#f4f4f0; --ink-2:#c3c2b7; --ink-3:#8f8e84;
+      --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#2a9d2a; --s5:#9085e9; --s6:#e66767; --s7:#d55181; --s8:#d95926;
+      --good:#00c875; --warn:#c98500; --bad:#ff6d6d;
+      --qb:#3987e5; --mon:#d95926; --rei:#199e70;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141413; --surface:#1f1f1e; --surface-2:#242423; --border:#33332f;
+    --ink:#f4f4f0; --ink-2:#c3c2b7; --ink-3:#8f8e84;
+    --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#2a9d2a; --s5:#9085e9; --s6:#e66767; --s7:#d55181; --s8:#d95926;
+    --good:#00c875; --warn:#c98500; --bad:#ff6d6d;
+    --qb:#3987e5; --mon:#d95926; --rei:#199e70;
+  }
+  :root[data-theme="light"]{
+    --bg:#f4f5f3; --surface:#ffffff; --surface-2:#fbfbfa; --border:#e4e5e1;
+    --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#87857e;
+    --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100; --s4:#008300; --s5:#4a3aa7; --s6:#e34948; --s7:#e87ba4; --s8:#eb6834;
+    --qb:#2a78d6; --mon:#eb6834; --rei:#1baf7a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 64px;}
+  header.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:8px;}
+  h1{font-size:26px;font-weight:700;margin:0;letter-spacing:-.02em;}
+  .sub{color:var(--ink-2);font-size:14px;margin-top:4px;}
+  .theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);
+    border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;font-weight:500;}
+  .sources{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 24px;}
+  .src{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;
+    padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);}
+  .dot{width:9px;height:9px;border-radius:50%;}
+  .grid{display:grid;gap:16px;}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(175px,1fr));margin-bottom:8px;}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+  .tile .cap{font-size:12px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+  .tile .val{font-size:28px;font-weight:750;letter-spacing:-.02em;margin-top:6px;line-height:1.1;}
+  .tile .note{font-size:12.5px;color:var(--ink-2);margin-top:5px;}
+  .tile .bar{position:absolute;left:0;top:0;bottom:0;width:4px;}
+  .section{margin-top:30px;}
+  .section h2{font-size:15px;font-weight:700;letter-spacing:-.01em;margin:0 0 2px;}
+  .section .desc{color:var(--ink-2);font-size:13px;margin:0 0 14px;}
+  .cards{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px 18px 14px;box-shadow:var(--shadow);}
+  .card h3{font-size:13.5px;font-weight:700;margin:0 0 2px;}
+  .card .sc{font-size:12px;color:var(--ink-3);margin:0 0 14px;font-weight:500;}
+  .row{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px;}
+  .row .lab{width:150px;flex-shrink:0;color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row .track{flex:1;height:22px;background:var(--surface-2);border-radius:5px;position:relative;overflow:hidden;}
+  .row .fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px;min-width:2px;}
+  .row .num{width:96px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:650;}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:12px;color:var(--ink-2);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .funnel-stage{display:flex;align-items:center;gap:12px;margin:8px 0;}
+  .funnel-stage .fb{height:38px;border-radius:7px;display:flex;align-items:center;padding:0 12px;color:#fff;font-weight:700;font-size:14px;min-width:60px;transition:width .3s;}
+  .funnel-stage .fl{font-size:13px;color:var(--ink-2);}
+  .funnel-stage .fl b{color:var(--ink);}
+  table.mini{width:100%;border-collapse:collapse;font-size:13px;}
+  table.mini th{text-align:left;color:var(--ink-3);font-weight:600;font-size:11.5px;text-transform:uppercase;
+    letter-spacing:.03em;padding:6px 8px;border-bottom:1px solid var(--border);}
+  table.mini td{padding:7px 8px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums;}
+  table.mini tr:last-child td{border-bottom:none;}
+  table.mini td.r,table.mini th.r{text-align:right;}
+  .cols{display:grid;grid-template-columns:1fr;gap:8px;}
+  .colchart{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:20px;}
+  .colwrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;}
+  .colwrap .cbar{width:100%;max-width:34px;border-radius:5px 5px 0 0;position:relative;transition:height .3s;}
+  .colwrap .cval{font-size:10.5px;font-weight:650;color:var(--ink-2);font-variant-numeric:tabular-nums;}
+  .colwrap .clab{font-size:11px;color:var(--ink-3);}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:650;}
+  .pill.good{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good);}
+  .pill.warn{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn);}
+  .pill.bad{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad);}
+  .foot{margin-top:34px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--ink-3);}
+  .foot b{color:var(--ink-2);}
+  .callout{background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--warn);
+    border-radius:8px;padding:12px 15px;font-size:13px;color:var(--ink-2);margin-top:14px;}
+  .callout b{color:var(--ink);}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:680px){.two{grid-template-columns:1fr;}.row .lab{width:110px;}.row .num{width:78px;}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Twin Home Buyer — Combined KPI Dashboard</h1>
+      <div class="sub">Equity Track Inc · Jan 1 – Jul 8, 2026 (YTD) · one live view across your three systems</div>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">◐ Theme</button>
+  </header>
+
+  <div class="sources">
+    <span class="src"><span class="dot" style="background:var(--qb)"></span>QuickBooks — financials</span>
+    <span class="src"><span class="dot" style="background:var(--rei)"></span>REI Blackbook — leads</span>
+    <span class="src"><span class="dot" style="background:var(--mon)"></span>Monday.com — pipeline &amp; mail ops</span>
+  </div>
+
+  <!-- HERO KPIS -->
+  <div class="grid kpis">
+    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Total Income</div><div class="val">$10.98M</div><div class="note">Property $10.76M · Wholesale $213K</div></div>
+    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Net Operating Income</div><div class="val">$5.01M</div><div class="note">45.6% net margin</div></div>
+    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Gross Margin</div><div class="val">51.8%</div><div class="note">GP $5.69M · COGS $5.29M</div></div>
+    <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Leads (2026 YTD)</div><div class="val">1,190</div><div class="note">377 from direct mail</div></div>
+    <div class="tile"><div class="bar" style="background:var(--mon)"></div><div class="cap">Acq. Marketing Spend</div><div class="val">$316.8K</div><div class="note">Direct mail = 39% of it</div></div>
+    <div class="tile"><div class="bar" style="background:var(--mon)"></div><div class="cap">Blended Cost / Lead</div><div class="val">$266</div><div class="note">Direct mail: $330/lead</div></div>
+  </div>
+
+  <!-- FINANCIALS -->
+  <div class="section">
+    <h2>1 · Financial performance <span style="color:var(--qb);font-size:12px">● QuickBooks</span></h2>
+    <p class="desc">Where revenue comes from and what it costs to produce.</p>
+    <div class="grid cards">
+      <div class="card">
+        <h3>Income composition</h3><div class="sc">YTD, by revenue account</div>
+        <div id="income"></div>
+      </div>
+      <div class="card">
+        <h3>Income → Net, the waterfall</h3><div class="sc">How $10.98M income becomes $5.01M operating income</div>
+        <div id="waterfall"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MARKETING SPEND -->
+  <div class="section">
+    <h2>2 · Acquisition marketing spend <span style="color:var(--qb);font-size:12px">● QuickBooks</span></h2>
+    <p class="desc">$316.8K spent YTD to generate leads. Direct mail is the single biggest channel.</p>
+    <div class="card">
+      <div id="spend"></div>
+    </div>
+  </div>
+
+  <!-- LEADS -->
+  <div class="section">
+    <h2>3 · Lead generation <span style="color:var(--rei);font-size:12px">● REI Blackbook</span></h2>
+    <p class="desc">1,190 new leads in 2026. Direct mail (Checks + Postcard) is 377 of them.</p>
+    <div class="grid cards">
+      <div class="card">
+        <h3>Leads by source</h3><div class="sc">2026 YTD · n = 1,190</div>
+        <div id="source"></div>
+      </div>
+      <div class="card">
+        <h3>Leads by month</h3><div class="sc">All sources · monthly count</div>
+        <div id="leadmonth"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECT MAIL DEEP DIVE -->
+  <div class="section">
+    <h2>4 · Direct-mail engine <span style="color:var(--qb);font-size:12px">● QB</span> <span style="color:var(--rei);font-size:12px">● REI</span> <span style="color:var(--mon);font-size:12px">● Monday</span></h2>
+    <p class="desc">The one place all three systems meet: money spent, mail sent, leads back, deals closed.</p>
+    <div class="two">
+      <div class="card">
+        <h3>Direct-mail spend by month</h3><div class="sc">QuickBooks · AM- Direct Mail account</div>
+        <div id="dmspend"></div>
+      </div>
+      <div class="card">
+        <h3>Direct-mail leads by month</h3><div class="sc">REI Blackbook · ~1 month lag behind spend</div>
+        <div id="dmleads"></div>
+      </div>
+    </div>
+    <div class="grid cards" style="margin-top:16px;">
+      <div class="card">
+        <h3>Conversion funnel — direct mail</h3><div class="sc">REI Blackbook tags · 2026 YTD</div>
+        <div id="funnel"></div>
+        <div class="callout" style="border-left-color:var(--bad)">Only <b>1 clean acquisition</b> (Denise Marks) is confirmed by tags so far this year from direct mail, plus 2 under contract. At $124K spent, that is the number to pressure-test against QuickBooks closings.</div>
+      </div>
+      <div class="card">
+        <h3>Campaigns on direct-mail leads</h3><div class="sc">54 of 377 leads carry a campaign name (14%)</div>
+        <div id="camp"></div>
+        <div class="callout">86% of direct-mail leads have <b>no campaign tag</b> — the attribution gap the integration is meant to close.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPS -->
+  <div class="section">
+    <h2>5 · Pipeline &amp; mail operations <span style="color:var(--mon);font-size:12px">● Monday.com</span></h2>
+    <p class="desc">Live property pipeline and the Redstone mail production tracked on the Iriga Operating System.</p>
+    <div class="grid cards">
+      <div class="card">
+        <h3>Property pipeline stages</h3><div class="sc">Monday.com / REI property inbox</div>
+        <table class="mini">
+          <tr><th>Stage</th><th class="r">Properties</th></tr>
+          <tr><td>New (to work)</td><td class="r">2,427</td></tr>
+          <tr><td>Evaluating</td><td class="r">42</td></tr>
+          <tr><td>Under Contract</td><td class="r">3</td></tr>
+          <tr><td>Closed (all-time)</td><td class="r">1,444</td></tr>
+          <tr><td>Property Leads board</td><td class="r">292</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Redstone mail production</h3><div class="sc">Monday.com · Red Stone Upload · May–Jul (relaunch era)</div>
+        <table class="mini">
+          <tr><th>Metric</th><th class="r">Value</th></tr>
+          <tr><td>Mail batches</td><td class="r">12</td></tr>
+          <tr><td>Pieces mailed</td><td class="r">47,803</td></tr>
+          <tr><td>Tracked cost</td><td class="r">$23,278</td></tr>
+          <tr><td>Avg cost / piece</td><td class="r">$0.49</td></tr>
+          <tr><td>Cost / direct-mail lead</td><td class="r">$330</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>Data sources &amp; method.</b> Financials pulled live from the QuickBooks Online API (Equity Track Inc, accrual, Jan 1–Jul 8 2026).
+    Leads pulled from REI Blackbook (1,190 contacts created in 2026; source and campaign read per-contact). Pipeline &amp; mail-cost data from the
+    Monday.com "Equity Track Iriga – Operating System" workspace. Acquisition counts are read from REI Blackbook tags, which are hand-applied and
+    occasionally contradictory — treat the funnel as indicative until reconciled against QuickBooks closings. Generated 2026-07-08.
+  </div>
+</div>
+
+<script>
+const P=['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8'].map(v=>`var(${v})`);
+const fmtUSD=n=> n>=1e6?`$${(n/1e6).toFixed(2)}M`: n>=1e3?`$${(n/1e3).toFixed(1)}K`:`$${n.toLocaleString()}`;
+const fmtUSDfull=n=>`$${Math.round(n).toLocaleString()}`;
+
+function hbars(el, data, {color,fmt=fmtUSDfull}={}){
+  const max=Math.max(...data.map(d=>d.v));
+  el.innerHTML=data.map((d,i)=>{
+    const c=color||d.color||P[i%8];
+    const w=Math.max(2,(d.v/max)*100);
+    return `<div class="row"><div class="lab" title="${d.k}">${d.k}</div>
+      <div class="track"><div class="fill" style="width:${w}%;background:${c}"></div></div>
+      <div class="num">${fmt(d.v)}</div></div>`;
+  }).join('');
+}
+function columns(el, data, {color,fmt=(v=>v.toLocaleString())}={}){
+  const max=Math.max(...data.map(d=>d.v));
+  el.innerHTML=`<div class="colchart">`+data.map(d=>{
+    const h=Math.max(3,(d.v/max)*100);
+    return `<div class="colwrap"><div class="cval">${fmt(d.v)}</div>
+      <div class="cbar" style="height:${h}%;background:${color}" title="${d.k}: ${fmt(d.v)}"></div>
+      <div class="clab">${d.k}</div></div>`;
+  }).join('')+`</div>`;
+}
+
+// 1. Income composition
+hbars(document.getElementById('income'),[
+  {k:'Property Sales',v:10763000},{k:'Wholesale Fees',v:213000},{k:'Rental Income',v:8180}
+],{color:'var(--qb)'});
+
+// Waterfall (as labeled rows)
+(function(){
+  const steps=[
+    {k:'Income',v:10984180,c:'var(--s1)'},
+    {k:'– COGS',v:5293280,c:'var(--s6)'},
+    {k:'= Gross Profit',v:5690900,c:'var(--s2)'},
+    {k:'– Operating Exp.',v:682874,c:'var(--s3)'},
+    {k:'= Net Operating Inc.',v:5008026,c:'var(--s4)'}
+  ];
+  const max=10984180;
+  document.getElementById('waterfall').innerHTML=steps.map(s=>{
+    const w=Math.max(2,(s.v/max)*100);
+    return `<div class="row"><div class="lab">${s.k}</div>
+      <div class="track"><div class="fill" style="width:${w}%;background:${s.c}"></div></div>
+      <div class="num">${fmtUSDfull(s.v)}</div></div>`;
+  }).join('');
+})();
+
+// 2. Marketing spend
+hbars(document.getElementById('spend'),[
+  {k:'Direct Mail',v:124330,color:'var(--mon)'},
+  {k:'PPC (Bing/Google)',v:72435,color:'var(--s1)'},
+  {k:'Property Leads',v:57325,color:'var(--s5)'},
+  {k:'Bullseye',v:41440,color:'var(--s7)'},
+  {k:'Other / Tech',v:15313,color:'var(--s3)'},
+  {k:'Motivated Leads',v:6000,color:'var(--s2)'}
+]);
+
+// 3. Leads by source
+hbars(document.getElementById('source'),[
+  {k:'(no source set)',v:294,color:'var(--ink-3)'},
+  {k:'PropertyLeads (PPL)',v:276,color:'var(--s5)'},
+  {k:'Direct Mail — Checks',v:260,color:'var(--mon)'},
+  {k:'Bing Ads (PPC)',v:170,color:'var(--s1)'},
+  {k:'Direct Mail — Postcard',v:117,color:'var(--s8)'},
+  {k:'TV Commercial',v:42,color:'var(--s3)'},
+  {k:'Motivated Leads',v:19,color:'var(--s2)'},
+  {k:'Other',v:12,color:'var(--s4)'}
+],{fmt:v=>v.toLocaleString()});
+
+// 3b leads by month
+columns(document.getElementById('leadmonth'),[
+  {k:'Jan',v:175},{k:'Feb',v:172},{k:'Mar',v:150},{k:'Apr',v:75},{k:'May',v:122},{k:'Jun',v:402},{k:'Jul',v:94}
+],{color:'var(--rei)'});
+
+// 4. DM spend by month
+columns(document.getElementById('dmspend'),[
+  {k:'Jan',v:41711},{k:'Feb',v:30860},{k:'Mar',v:27469},{k:'Apr',v:759},{k:'May',v:6254},{k:'Jun',v:17268},{k:'Jul',v:10}
+],{color:'var(--qb)',fmt:v=> v>=1000?`$${Math.round(v/1000)}K`:`$${v}`});
+
+// 4b DM leads by month
+columns(document.getElementById('dmleads'),[
+  {k:'Jan',v:112},{k:'Feb',v:70},{k:'Mar',v:56},{k:'Apr',v:27},{k:'May',v:19},{k:'Jun',v:67},{k:'Jul',v:26}
+],{color:'var(--mon)'});
+
+// 4c funnel
+(function(){
+  const stages=[
+    {k:'Direct-mail leads',v:377,c:'var(--s1)'},
+    {k:'Interested / appt booked',v:30,c:'var(--s2)'},
+    {k:'Under contract',v:3,c:'var(--s3)'},
+    {k:'Acquired / closed',v:1,c:'var(--good)'}
+  ];
+  const max=377;
+  document.getElementById('funnel').innerHTML=stages.map(s=>{
+    const w=Math.max(6,(s.v/max)*100);
+    return `<div class="funnel-stage">
+      <div class="fb" style="width:${w}%;background:${s.c}">${s.v}</div>
+      <div class="fl"><b>${s.k}</b></div></div>`;
+  }).join('');
+})();
+
+// 4d campaigns
+hbars(document.getElementById('camp'),[
+  {k:'Postcard Liens',v:20},{k:'EQT Liens – Check',v:6},{k:'Postcard',v:6},
+  {k:'70% Distress',v:4},{k:'Tax Delinquent EQT',v:4},{k:'Ugly Houses',v:3},
+  {k:'Other campaigns',v:11}
+],{color:'var(--rei)',fmt:v=>v});
+
+function toggleTheme(){
+  const r=document.documentElement;
+  const cur=r.getAttribute('data-theme')|| (matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+  r.setAttribute('data-theme',cur==='dark'?'light':'dark');
+}
+</script>
