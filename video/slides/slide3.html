@@ -1,0 +1,124 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+@font-face { font-family: 'Poppins'; font-weight: 400; src: url('../assets/fonts/Poppins-400.woff2') format('woff2'); }
+@font-face { font-family: 'Poppins'; font-weight: 500; src: url('../assets/fonts/Poppins-500.woff2') format('woff2'); }
+@font-face { font-family: 'Poppins'; font-weight: 600; src: url('../assets/fonts/Poppins-600.woff2') format('woff2'); }
+@font-face { font-family: 'Poppins'; font-weight: 700; src: url('../assets/fonts/Poppins-700.woff2') format('woff2'); }
+@font-face { font-family: 'Poppins'; font-weight: 800; src: url('../assets/fonts/Poppins-800.woff2') format('woff2'); }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --navy: #0b1d33;
+  --navy-2: #14304f;
+  --gold: #e3b04b;
+  --gold-soft: #f0c96c;
+  --cream: #f7f4ec;
+  --muted: #a8b8cc;
+}
+
+html, body { width: 1080px; height: 1920px; overflow: hidden; }
+
+body {
+  font-family: 'Poppins', sans-serif;
+  color: var(--cream);
+  background:
+    radial-gradient(1200px 900px at 85% -5%, rgba(227, 176, 75, 0.16), transparent 60%),
+    radial-gradient(1400px 1100px at 10% 105%, rgba(56, 108, 176, 0.22), transparent 60%),
+    linear-gradient(160deg, #102a47 0%, var(--navy) 55%, #081527 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 90px;
+  position: relative;
+}
+
+/* subtle grid texture */
+body::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 120px 120px;
+  pointer-events: none;
+}
+
+.badge {
+  display: inline-flex; align-items: center; gap: 18px;
+  border: 2px solid rgba(227, 176, 75, 0.55);
+  color: var(--gold-soft);
+  border-radius: 999px;
+  padding: 18px 44px;
+  font-size: 34px; font-weight: 600;
+  letter-spacing: 6px; text-transform: uppercase;
+  background: rgba(227, 176, 75, 0.08);
+}
+
+.kicker {
+  color: var(--gold);
+  font-size: 40px; font-weight: 600;
+  letter-spacing: 10px; text-transform: uppercase;
+  margin-bottom: 36px;
+}
+
+h1 { font-size: 118px; font-weight: 800; line-height: 1.08; letter-spacing: -1px; }
+h1 .accent { color: var(--gold); }
+
+.sub {
+  font-size: 44px; font-weight: 500; color: var(--muted);
+  line-height: 1.5; margin-top: 44px;
+}
+
+.rule {
+  width: 180px; height: 6px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-soft));
+  margin: 52px auto 0;
+}
+
+.list { margin-top: 70px; display: flex; flex-direction: column; gap: 36px; width: 100%; }
+.item {
+  display: flex; align-items: center; gap: 34px; text-align: left;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 28px; padding: 38px 44px;
+  font-size: 44px; font-weight: 600;
+}
+.item svg { flex: 0 0 auto; }
+
+.steps { margin-top: 80px; display: flex; flex-direction: column; gap: 44px; width: 100%; }
+.step {
+  display: flex; align-items: center; gap: 40px; text-align: left;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 30px; padding: 44px 48px;
+}
+.step .num {
+  flex: 0 0 auto; width: 104px; height: 104px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--gold), #c8952f);
+  color: var(--navy); font-size: 54px; font-weight: 800;
+}
+.step .txt strong { display: block; font-size: 46px; font-weight: 700; }
+.step .txt span { display: block; font-size: 34px; color: var(--muted); margin-top: 8px; }
+
+.footer-brand {
+  position: absolute; bottom: 84px; left: 0; right: 0;
+  font-size: 30px; font-weight: 600; letter-spacing: 8px;
+  text-transform: uppercase; color: rgba(247, 244, 236, 0.5);
+}
+</style></head>
+<body>
+<svg width="170" height="170" viewBox="0 0 24 24" fill="none">
+<rect x="2.5" y="6.5" width="19" height="11" rx="2" stroke="#f7f4ec" stroke-width="1.6"/>
+<circle cx="12" cy="12" r="3.1" stroke="#e3b04b" stroke-width="1.6"/>
+<path d="M5.8 9.7h.01M18.2 14.3h.01" stroke="#e3b04b" stroke-width="2.4" stroke-linecap="round"/>
+</svg>
+<p class="kicker" style="margin-top: 90px;">Fast. Fair. Guaranteed.</p>
+<h1>CASH OFFER<br>IN <span class="accent">24 HOURS</span></h1>
+<div class="rule"></div>
+<p class="sub">No commissions &bull; No closing costs<br>No obligation to accept</p>
+<div class="footer-brand">Twin Home Buyer</div>
+</body></html>
