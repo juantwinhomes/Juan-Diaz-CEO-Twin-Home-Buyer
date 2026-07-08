@@ -8,13 +8,31 @@
 
 ## What We Know
 
-- **Juan runs TWO businesses** (confirmed via his Grok history, Jan–Jun 2026):
-  1. **Twin Home Buyer** — the REI/flip company (below).
-  2. **Peninsula Plumbing Solutions** — a plumbing company (C-36 CA contractor
-     license; Juan: "I'm a full-blown plumber"). Marketing pain: Yelp Ads fake
-     leads, Google PPC fraud (CallRail), Angi/Thumbtack, website he's unhappy
-     with, hiring a plumbing ops manager. 23% of his AI conversations are
-     about this business — it competes for his attention and budget.
+- **Juan runs THREE entities** (confirmed via his Grok history, May 2025–Jul 2026):
+  1. **Twin Home Buyer** — the REI company: cash offers, wholesaling, investor
+     networks, lead gen (below).
+  2. **Equity Track Inc** — operations/outreach company with a **~26-person
+     Philippines team**: realtor/property-manager outreach, automations,
+     SEO/GEO. (Appears on the KPI dashboard footer; Iriga City connection in
+     early chats.)
+  3. **Peninsula Plumbing Solutions** — plumbing company (C-36 CA license;
+     "I'm a full-blown plumber"). Historically 23% of his AI usage (Yelp fake
+     leads, PPC fraud/CallRail, Angi/Thumbtack). **Status July 2026: ON HOLD**
+     per Juan's 90-day reset.
+
+## CURRENT STATE (July 2026 — from Juan's 90-day reset docs)
+
+- **Phase: cash stabilization / 90-day strategic reset.**
+- **Focus deal: 820 28th St, Oakland** — the deal being resolved/stabilized;
+  all major effort routes through it.
+- Non-negotiables: protect cash, no new ventures, >$1–2K decisions get
+  attorney/CPA review, **Kristine Monday dashboard + Juan Sunday review**.
+- Missing reference doc: "Attorney Meeting Notes + 90-Day Strategic Reset"
+  packet (9 pages) — request from Juan.
+- Juan is actively **migrating from Grok to Claude** and building AI
+  infrastructure: "Five AI CEO Employees" concept, Claude Code automations,
+  WhatsApp/Google Chat integrations, MCP servers, lead-automation pipelines,
+  automated realtor email outreach. This Twin is that project.
 - **Company:** Twin Home Buyer — real estate investment / acquisitions company.
   Core model is **fix-and-flip** (buy → rehab → resell), primarily in the
   California **East Bay** with high-variance plays on the **Peninsula**.

@@ -7,9 +7,13 @@
 
 ## Headline Numbers
 
-- **830 conversations, 5,669 prompts** over ~6 months.
-- Usage by month: Jan 344 → Feb 269 → Mar 173 → Apr 21 → Jun 23
-  (heavy daily use through Q1, then a sharp drop — likely shifted platforms).
+- **Full span: 1,632 conversations, May 2025 → July 2026** (per export index).
+  Deep-analyzed: ~1,500 conversations across 9 monthly files.
+- Usage arc: ramps through 2025 (peak Aug 2025), explodes Jan 2026 (319),
+  then falls off a cliff Apr 2026 (21) — **because Juan migrated to Claude.**
+  July 2026 Grok chats are largely *about* setting up Claude: "Five AI CEO
+  Employees," Claude Code automations, MCP servers, WhatsApp/Google Chat
+  integrations, a 147-turn thread wrestling with Claude setup.
 - Median prompt: **15 words.** 40% are ≤10 words. But max is 26,783 words —
   he also dumps huge pasted content when needed.
 - Median conversation: 3 of his turns; average 7. Longest: **282 turns.**
@@ -87,6 +91,25 @@ about $225,000... minus 52,000 that it cost me for the deal."*
 4. Training material for his VA/overseas team (Philippines — pay cadence Qs).
 5. Step-by-step "give me instructions" operational playbooks.
 6. Straight answers on vendor disputes (Yelp refunds, ad fraud).
+
+## July 2026 Additions (current-month chats + Juan's own operating docs)
+
+- **Juan drafted the Twin's job himself** — docs in his Grok project: "Core
+  Identity & Phase," "Non-Negotiable Rules (from 90-day reset)," "My Working
+  Style," "Always Do." Now encoded in `CLAUDE.md`. Key line: *"Think like me:
+  practical, aggressive execution, data-backed suggestions."*
+- **"Calendar is sacred: if it's not blocked, it doesn't get done."**
+- Current active work seen in July chats: 820 28th St Oakland (focus deal),
+  automated realtor email outreach (50-turn build), San Mateo quick-flip
+  budget, REI BlackBook SOPs for property-visit debriefs (voice memo + photos
+  + video required before CRM update), "Who Not How" delegation thinking.
+- **Personal context (handle with discretion):** marriage struggles thread;
+  parenting a teenage son; 90-day personal reset alongside the business one;
+  Tony Robbins-style resilience content; World Cup fan (Mexico). The
+  earlier-noted "birthdate 2000" from account metadata is clearly a
+  placeholder — he has a teenage son.
+- Also uses: PLAUD NotePin (voice recorder — voice-first workflow confirmed),
+  hires in Spanish (bilingual job posts), Philippines team (Iriga City).
 
 ## Twin Operating Adjustments (from this analysis)
 
