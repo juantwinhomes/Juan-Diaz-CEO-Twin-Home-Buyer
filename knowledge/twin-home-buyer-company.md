@@ -81,6 +81,15 @@
 | Arly | Caller (1 call) | Acquisitions / VA |
 | Brian (Anthony) | Juan's tech/AI integration partner — receives packaged plans from Kristine, integrates into calendar/systems via Claude Code; has a team; AI-trained by Juan (Aug 2025) | Tech / automation partner |
 | Hannah | Caller/lead manager in 2025 pipeline (appointments, follow-ups) | Acquisitions / VA |
+| Caesar | Demo/construction — started demo at 2204 166th Ave & 820 28th St (Aug 2025) | Construction |
+| Eliseo Sánchez | Field/trucks/site video | Field ops |
+| Mary Grace Pardines | PH team coordination (chats with Juan) | Equity Track / PH |
+| "BEC" | Accounting firm coordination ("BEC CFO") | External accounting |
+
+**Open seat (Juan's own diagnosis, Nov 2025):** "boots on the ground in San
+Carlos" — local oversight of bills/filing/admin over the PH team. He wants
+street-smart + AI-fluent, not credentials. Two failure modes he named: role
+overload at hiring, and pay gap vs. market ask.
 
 _Note: In the postcard call log, **Juan personally took 33 calls** ("Juan (Live)")
 — CEO doing rep work, contrary to the PI role design._
