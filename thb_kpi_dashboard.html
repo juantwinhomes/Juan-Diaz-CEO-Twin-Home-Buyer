@@ -101,80 +101,33 @@
 <div class="wrap">
   <header class="top">
     <div>
-      <h1>Twin Home Buyer — Combined KPI Dashboard</h1>
-      <div class="sub">Equity Track Inc · Jan 1 – Jul 8, 2026 (YTD) · one live view across your three systems</div>
+      <h1>Twin Home Buyer — Direct Mail KPI Dashboard</h1>
+      <div class="sub">Equity Track Inc · direct mail only (checks · letters · postcards) · 2026</div>
     </div>
     <button class="theme-btn" onclick="toggleTheme()">◐ Theme</button>
   </header>
 
   <div class="sources">
-    <span class="src"><span class="dot" style="background:var(--qb)"></span>QuickBooks — financials</span>
-    <span class="src"><span class="dot" style="background:var(--rei)"></span>REI Blackbook — leads</span>
-    <span class="src"><span class="dot" style="background:var(--mon)"></span>Monday.com — pipeline &amp; mail ops</span>
+    <span class="src"><span class="dot" style="background:var(--qb)"></span>QuickBooks — direct-mail spend</span>
+    <span class="src"><span class="dot" style="background:var(--rei)"></span>REI Blackbook — direct-mail leads</span>
+    <span class="src"><span class="dot" style="background:var(--mon)"></span>Monday.com — mail production</span>
     <span class="src"><span class="dot" style="background:var(--s5)"></span>Google Sheet — Postcard KPI tracker</span>
   </div>
 
   <!-- HERO KPIS -->
   <div class="grid kpis">
-    <div class="tile"><div class="bar" style="background:var(--mon)"></div><div class="cap">Under Contract</div><div class="val">3</div><div class="note">+1,444 closed all-time</div></div>
-    <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Direct-Mail Leads</div><div class="val">377</div><div class="note">of 1,190 total</div></div>
-    <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Leads (2026 YTD)</div><div class="val">1,190</div><div class="note">377 from direct mail</div></div>
-    <div class="tile"><div class="bar" style="background:var(--mon)"></div><div class="cap">Acq. Marketing Spend</div><div class="val">$316.8K</div><div class="note">Direct mail = 39% of it</div></div>
-    <div class="tile"><div class="bar" style="background:var(--mon)"></div><div class="cap">Blended Cost / Lead</div><div class="val">$266</div><div class="note">Direct mail: $330/lead</div></div>
+    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Direct-Mail Spend</div><div class="val">$124.3K</div><div class="note">QuickBooks · YTD 2026</div></div>
+    <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Direct-Mail Leads</div><div class="val">377</div><div class="note">260 checks · 117 postcard</div></div>
+    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Cost / Lead</div><div class="val">$330</div><div class="note">direct mail</div></div>
+    <div class="tile"><div class="bar" style="background:var(--s5)"></div><div class="cap">Postcards Mailed</div><div class="val">77,763</div><div class="note">39 batches (tracker)</div></div>
+    <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Postcard Interest Rate</div><div class="val">32.6%</div><div class="note">30 of 92 leads</div></div>
+    <div class="tile"><div class="bar" style="background:var(--bad)"></div><div class="cap">Deals Closed</div><div class="val">0</div><div class="note">booked in QuickBooks</div></div>
   </div>
 
-  <!-- FINANCIALS -->
+  <!-- DIRECT MAIL ENGINE -->
   <div class="section">
-    <h2>1 · Revenue <span style="color:var(--qb);font-size:12px">● QuickBooks</span></h2>
-    <p class="desc">Where the money comes in. Cost &amp; expense detail omitted by request.</p>
-    <div class="grid cards">
-      <div class="card">
-        <h3>Income composition</h3><div class="sc">YTD, by revenue account</div>
-        <div id="income"></div>
-      </div>
-      <div class="card">
-        <h3>Marketing efficiency</h3><div class="sc">Spend turned into leads</div>
-        <table class="mini">
-          <tr><th>Metric</th><th class="r">Value</th></tr>
-          <tr><td>Acquisition marketing spend</td><td class="r">$316,844</td></tr>
-          <tr><td>Leads generated (2026)</td><td class="r">1,190</td></tr>
-          <tr><td>Blended cost per lead</td><td class="r">$266</td></tr>
-          <tr><td>Direct-mail cost per lead</td><td class="r">$330</td></tr>
-          <tr><td>Direct-mail cost per piece</td><td class="r">$0.48</td></tr>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- MARKETING SPEND -->
-  <div class="section">
-    <h2>2 · Acquisition marketing spend <span style="color:var(--qb);font-size:12px">● QuickBooks</span></h2>
-    <p class="desc">$316.8K spent YTD to generate leads. Direct mail is the single biggest channel.</p>
-    <div class="card">
-      <div id="spend"></div>
-    </div>
-  </div>
-
-  <!-- LEADS -->
-  <div class="section">
-    <h2>3 · Lead generation <span style="color:var(--rei);font-size:12px">● REI Blackbook</span></h2>
-    <p class="desc">1,190 new leads in 2026. Direct mail (Checks + Postcard) is 377 of them.</p>
-    <div class="grid cards">
-      <div class="card">
-        <h3>Leads by source</h3><div class="sc">2026 YTD · n = 1,190</div>
-        <div id="source"></div>
-      </div>
-      <div class="card">
-        <h3>Leads by month</h3><div class="sc">All sources · monthly count</div>
-        <div id="leadmonth"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DIRECT MAIL DEEP DIVE -->
-  <div class="section">
-    <h2>4 · Direct-mail engine <span style="color:var(--qb);font-size:12px">● QB</span> <span style="color:var(--rei);font-size:12px">● REI</span> <span style="color:var(--mon);font-size:12px">● Monday</span></h2>
-    <p class="desc">The one place all three systems meet: money spent, mail sent, leads back, deals closed.</p>
+    <h2>1 · Direct-mail engine <span style="color:var(--qb);font-size:12px">● QB</span> <span style="color:var(--rei);font-size:12px">● REI</span> <span style="color:var(--mon);font-size:12px">● Monday</span></h2>
+    <p class="desc">Money spent, mail sent, and leads back — the direct-mail channel only.</p>
     <div class="two">
       <div class="card">
         <h3>Direct-mail spend by month</h3><div class="sc">QuickBooks · AM- Direct Mail account</div>
@@ -189,7 +142,7 @@
       <div class="card">
         <h3>Conversion funnel — direct mail</h3><div class="sc">REI Blackbook tags · 2026 YTD</div>
         <div id="funnel"></div>
-        <div class="callout" style="border-left-color:var(--bad)">Only <b>1 clean acquisition</b> (Denise Marks) is confirmed by tags so far this year from direct mail, plus 2 under contract. At $124K spent, that is the number to pressure-test against QuickBooks closings.</div>
+        <div class="callout" style="border-left-color:var(--bad)">REI tags show ~1 acquired + 1 under contract from direct mail — but <b>QuickBooks confirms $0 booked</b> and neither name is a customer. Treat these tag counts as unverified until reconciled against closings.</div>
       </div>
       <div class="card">
         <h3>Campaigns on direct-mail leads</h3><div class="sc">54 of 377 leads carry a campaign name (14%)</div>
@@ -201,7 +154,7 @@
 
   <!-- OPS -->
   <div class="section">
-    <h2>5 · Pipeline &amp; mail operations <span style="color:var(--mon);font-size:12px">● Monday.com</span></h2>
+    <h2>2 · Pipeline &amp; mail operations <span style="color:var(--mon);font-size:12px">● Monday.com</span></h2>
     <p class="desc">Live property pipeline and the Redstone mail production tracked on the Iriga Operating System.</p>
     <div class="grid cards">
       <div class="card">
@@ -231,7 +184,7 @@
 
   <!-- 6 POSTCARD OFFICIAL TRACKER -->
   <div class="section">
-    <h2>6 · Postcard campaign — official tracker <span style="color:var(--s5);font-size:12px">● Google Sheet</span></h2>
+    <h2>3 · Postcard campaign — official tracker <span style="color:var(--s5);font-size:12px">● Google Sheet</span></h2>
     <p class="desc">Twin Home Buyer's own "KPI Postcard" sheet — the source of truth for postcards. Full campaign: <b>Dec 3, 2025 – May 29, 2026</b> (218 days).</p>
 
     <div class="grid kpis" style="margin-bottom:16px;">
@@ -270,7 +223,7 @@
 
   <!-- 7 POSTCARD ROI -->
   <div class="section">
-    <h2>7 · Postcard ROI — the money view <span style="color:var(--s5);font-size:12px">● Sheet</span> <span style="color:var(--qb);font-size:12px">● QuickBooks</span></h2>
+    <h2>4 · Postcard ROI — the money view <span style="color:var(--s5);font-size:12px">● Sheet</span> <span style="color:var(--qb);font-size:12px">● QuickBooks</span></h2>
     <p class="desc">The KPIs above count activity. This is the one that counts money — and it exposes where the campaign is actually leaking.</p>
 
     <div class="grid kpis" style="margin-bottom:16px;">
@@ -320,13 +273,12 @@
   </div>
 
   <div class="foot">
-    <b>Data sources &amp; method.</b> Revenue &amp; marketing spend pulled live from the QuickBooks Online API (Equity Track Inc, accrual, Jan 1–Jul 8 2026);
-    general cost/expense detail (COGS, operating expenses, net income) is intentionally omitted from this view.
-    Leads pulled from REI Blackbook (1,190 contacts created in 2026; source and campaign read per-contact). Pipeline &amp; mail-cost data from the
-    Monday.com "Equity Track Iriga – Operating System" workspace. Section 6 is Twin Home Buyer's own "KPI Postcard" Google Sheet
-    (Dec 3 2025 – May 29 2026) — the authoritative postcard tracker; its figures (77,763 mailed, 92 leads, 0 deals) supersede the REI-derived
-    postcard estimates in earlier sections where they differ. Acquisition counts elsewhere are read from REI Blackbook tags, which are hand-applied
-    and occasionally contradictory — treat as indicative until reconciled against QuickBooks closings. Generated 2026-07-09.
+    <b>Scope.</b> Direct mail only — other channels (PPC, Property Leads, TV, etc.) and general revenue are excluded from this view.
+    <b>Sources.</b> Direct-mail spend from the QuickBooks Online API (AM- Direct Mail, $124,330 YTD 2026). Direct-mail leads from REI Blackbook
+    (377 with a direct-mail source; campaigns/tags read per contact). Mail production from Monday.com "Equity Track Iriga – Operating System."
+    Sections 3–4 use Twin Home Buyer's own "KPI Postcard" Google Sheet (Dec 3 2025 – May 29 2026) — the authoritative postcard tracker
+    (77,763 mailed, 92 leads, 0 deals); QuickBooks confirms $0 booked direct-mail revenue. REI Blackbook deal tags are hand-applied — treat as
+    indicative until reconciled against QuickBooks closings. Generated 2026-07-09.
   </div>
 </div>
 
@@ -355,39 +307,7 @@ function columns(el, data, {color,fmt=(v=>v.toLocaleString())}={}){
   }).join('')+`</div>`;
 }
 
-// 1. Income composition
-hbars(document.getElementById('income'),[
-  {k:'Property Sales',v:10763000},{k:'Wholesale Fees',v:213000},{k:'Rental Income',v:8180}
-],{color:'var(--qb)'});
-
-// 2. Marketing spend
-hbars(document.getElementById('spend'),[
-  {k:'Direct Mail',v:124330,color:'var(--mon)'},
-  {k:'PPC (Bing/Google)',v:72435,color:'var(--s1)'},
-  {k:'Property Leads',v:57325,color:'var(--s5)'},
-  {k:'Bullseye',v:41440,color:'var(--s7)'},
-  {k:'Other / Tech',v:15313,color:'var(--s3)'},
-  {k:'Motivated Leads',v:6000,color:'var(--s2)'}
-]);
-
-// 3. Leads by source
-hbars(document.getElementById('source'),[
-  {k:'(no source set)',v:294,color:'var(--ink-3)'},
-  {k:'PropertyLeads (PPL)',v:276,color:'var(--s5)'},
-  {k:'Direct Mail — Checks',v:260,color:'var(--mon)'},
-  {k:'Bing Ads (PPC)',v:170,color:'var(--s1)'},
-  {k:'Direct Mail — Postcard',v:117,color:'var(--s8)'},
-  {k:'TV Commercial',v:42,color:'var(--s3)'},
-  {k:'Motivated Leads',v:19,color:'var(--s2)'},
-  {k:'Other',v:12,color:'var(--s4)'}
-],{fmt:v=>v.toLocaleString()});
-
-// 3b leads by month
-columns(document.getElementById('leadmonth'),[
-  {k:'Jan',v:175},{k:'Feb',v:172},{k:'Mar',v:150},{k:'Apr',v:75},{k:'May',v:122},{k:'Jun',v:402},{k:'Jul',v:94}
-],{color:'var(--rei)'});
-
-// 4. DM spend by month
+// 1. DM spend by month
 columns(document.getElementById('dmspend'),[
   {k:'Jan',v:41711},{k:'Feb',v:30860},{k:'Mar',v:27469},{k:'Apr',v:759},{k:'May',v:6254},{k:'Jun',v:17268},{k:'Jul',v:10}
 ],{color:'var(--qb)',fmt:v=> v>=1000?`$${Math.round(v/1000)}K`:`$${v}`});
