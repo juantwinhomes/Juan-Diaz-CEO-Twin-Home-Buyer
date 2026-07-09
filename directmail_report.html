@@ -1,4 +1,4 @@
-<title>Direct Mail Performance Report — Twin Home Buyer</title>
+<title>Direct Mail — Postcard Performance Report — Twin Home Buyer</title>
 <style>
   :root{
     --paper:#f3f4f1; --card:#fbfcf9; --sunk:#eceee9;
@@ -40,12 +40,9 @@
   body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6;
     -webkit-font-smoothing:antialiased;font-size:16px;}
   .sheet{max-width:880px;margin:0 auto;padding:0 22px 80px;}
-  .mono{font-family:var(--mono);}
   .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);}
   h1,h2,h3{font-family:var(--serif);font-weight:600;text-wrap:balance;letter-spacing:-.01em;}
-  a.themebtn{cursor:pointer}
 
-  /* Indicia header */
   header.indicia{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;
     padding:30px 0 20px;border-bottom:3px double var(--rule-strong);margin-bottom:34px;}
   .indicia .permit{border:1.5px solid var(--ink-2);padding:10px 14px;font-family:var(--mono);font-size:10.5px;
@@ -63,7 +60,6 @@
   .cover .lede{font-size:19px;color:var(--ink-2);max-width:60ch;margin:0;}
   .cover .lede b{color:var(--ink);font-weight:600;}
 
-  /* thesis strip */
   .thesis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--rule-strong);
     border-radius:2px;overflow:hidden;margin:34px 0 8px;background:var(--card);}
   .thesis .cell{padding:18px 16px;border-right:1px solid var(--rule);position:relative;}
@@ -85,25 +81,23 @@
   p.body{color:var(--ink-2);font-size:15.5px;max-width:66ch;margin:0 0 20px;}
   p.body b{color:var(--ink);font-weight:600;}
 
-  /* chart primitives */
   .chart{background:var(--card);border:1px solid var(--rule);border-radius:2px;padding:20px 20px 16px;}
   .chart .ct{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:18px;}
   .cols{display:flex;align-items:flex-end;gap:8px;height:170px;}
   .cw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:7px;height:100%;}
-  .cw .cbar{width:100%;max-width:40px;border-radius:2px 2px 0 0;position:relative;min-height:3px;}
+  .cw .cbar{width:100%;max-width:46px;border-radius:2px 2px 0 0;position:relative;min-height:3px;}
   .cw .cv{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums;}
   .cw .cl{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--ink-3);text-transform:uppercase;}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
   @media(max-width:640px){.two{grid-template-columns:1fr}}
 
   .hrow{display:flex;align-items:center;gap:12px;margin:9px 0;font-size:13.5px;}
-  .hrow .hl{width:172px;flex-shrink:0;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hrow .hl{width:184px;flex-shrink:0;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .hrow .ht{flex:1;height:20px;background:var(--sunk);border-radius:2px;overflow:hidden;position:relative;}
   .hrow .hf{position:absolute;left:0;top:0;bottom:0;border-radius:2px;min-width:2px;}
-  .hrow .hn{width:52px;text-align:right;flex-shrink:0;font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums;}
-  @media(max-width:640px){.hrow .hl{width:120px}}
+  .hrow .hn{width:40px;text-align:right;flex-shrink:0;font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums;}
+  @media(max-width:640px){.hrow .hl{width:130px}}
 
-  /* funnel */
   .fn{display:flex;flex-direction:column;gap:9px;}
   .fn .st{display:flex;align-items:center;gap:14px;}
   .fn .bar{height:42px;border-radius:2px;display:flex;align-items:center;padding:0 14px;color:#fff;
@@ -112,18 +106,12 @@
   .fn .lab b{color:var(--ink);font-weight:600;}
   .fn .drop{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-left:6px;}
 
-  /* label list (mailing label motif) */
   .ml{background:var(--card);border:1px solid var(--rule);border-radius:2px;overflow:hidden;}
   .ml .lr{display:flex;justify-content:space-between;gap:16px;padding:12px 16px;border-bottom:1px solid var(--rule);font-size:14px;}
   .ml .lr:last-child{border-bottom:none;}
   .ml .lr .lk{color:var(--ink-2);}
   .ml .lr .lk small{display:block;color:var(--ink-3);font-size:12px;margin-top:2px;}
   .ml .lr .lv{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;}
-  .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
-    padding:2px 8px;border-radius:2px;font-weight:600;}
-  .pill.good{background:var(--mark-wash);color:var(--good);background:color-mix(in srgb,var(--good) 15%,transparent);}
-  .pill.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent);}
-  .pill.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent);}
 
   .note{border-left:3px solid var(--kraft);background:var(--card);padding:14px 18px;border-radius:0 2px 2px 0;
     font-size:14px;color:var(--ink-2);margin-top:20px;}
@@ -131,8 +119,7 @@
   .note b{color:var(--ink);font-weight:600;}
   .note .eyebrow{margin-bottom:6px;}
 
-  .verdict{background:var(--ink);color:var(--paper);border-radius:3px;padding:30px 28px;margin-top:16px;}
-  :root[data-theme="dark"] .verdict, .verdict{--vink:var(--paper);}
+  .verdict{background:var(--ink);border-radius:3px;padding:30px 28px;margin-top:16px;}
   .verdict .eyebrow{color:var(--mark);}
   .verdict h2{color:#f6f7f4;font-size:24px;margin:12px 0 14px;}
   .verdict p{color:#c9ccc7;font-size:15.5px;max-width:64ch;margin:0 0 14px;}
@@ -140,6 +127,7 @@
   .verdict b{color:#fff;}
   @media (prefers-color-scheme:dark){.verdict{background:#05070a;} .verdict p{color:#aeb4b9}}
   :root[data-theme="dark"] .verdict{background:#05070a;}
+  :root[data-theme="dark"] .verdict p{color:#aeb4b9;}
   :root[data-theme="light"] .verdict{background:var(--ink);}
   :root[data-theme="light"] .verdict p{color:#c9ccc7;}
 
@@ -156,16 +144,16 @@
   <header class="indicia">
     <div class="permit">
       <b>Presorted</b>
-      First-Class Mail<br>Postage &amp; Fees Paid<br>Twin Home Buyer<br>Permit — EQT
+      First-Class Mail<br>Postage &amp; Fees Paid<br>Twin Home Buyer<br>Postcard — EQT
     </div>
     <svg class="postmark" width="150" height="112" viewBox="0 0 150 112" aria-hidden="true">
       <circle cx="56" cy="56" r="46" stroke-width="1.5"/>
       <circle cx="56" cy="56" r="38" stroke-width="1"/>
       <path id="pmtop" d="M22,56 a34,34 0 0,1 68,0" />
       <path id="pmbot" d="M24,56 a32,32 0 0,0 64,0" />
-      <text font-size="8.5" letter-spacing="1.5"><textPath href="#pmtop" startOffset="8%">TWIN HOME BUYER</textPath></text>
-      <text font-size="8.5" letter-spacing="1.5"><textPath href="#pmbot" startOffset="14%">EQUITY TRACK INC</textPath></text>
-      <text x="56" y="52" text-anchor="middle" font-size="13" letter-spacing="1">JUL 8</text>
+      <text font-size="8.5" letter-spacing="1.5"><textPath href="#pmtop" startOffset="10%">POSTCARD CAMPAIGN</textPath></text>
+      <text font-size="8.5" letter-spacing="1.5"><textPath href="#pmbot" startOffset="16%">EQUITY TRACK INC</textPath></text>
+      <text x="56" y="52" text-anchor="middle" font-size="13" letter-spacing="1">JUL 9</text>
       <text x="56" y="66" text-anchor="middle" font-size="11" letter-spacing="1">2026</text>
       <line x1="98" y1="30" x2="150" y2="30" stroke-width="2.5"/>
       <line x1="98" y1="41" x2="150" y2="41" stroke-width="2.5"/>
@@ -177,116 +165,94 @@
   </header>
 
   <div class="cover">
-    <div class="eyebrow">Channel Performance Report · Equity Track Inc · YTD 2026</div>
-    <h1>The Direct Mail Program, Read End to End</h1>
-    <p class="lede">Six months, three lists' worth of postcards and mailed checks, and one question that ties QuickBooks, REI Blackbook, and Monday.com together: <b>what did $124,330 of mail actually buy?</b></p>
+    <div class="eyebrow">Channel Performance Report · Postcard only · Equity Track Inc · 2026</div>
+    <h1>The Postcard Campaign, Measured on Its Own</h1>
+    <p class="lede">Just the postcards — checks and letters set aside. <b>47,510 postcards mailed in the relaunch, 117 leads back, one confirmed acquisition.</b> Here is how the postcard channel is actually performing.</p>
   </div>
 
-  <div class="thesis" role="list" aria-label="Direct mail at a glance">
-    <div class="cell" role="listitem"><div class="k">Spent (QuickBooks)</div><div class="v" style="color:var(--kraft)">$124.3K</div><div class="s">AM- Direct Mail, YTD</div><span class="arrow">→</span></div>
-    <div class="cell" role="listitem"><div class="k">Pieces mailed*</div><div class="v" style="color:var(--ink)">47,803</div><div class="s">tracked, May–Jul</div><span class="arrow">→</span></div>
-    <div class="cell" role="listitem"><div class="k">Leads returned</div><div class="v" style="color:var(--blue)">377</div><div class="s">REI Blackbook</div><span class="arrow">→</span></div>
-    <div class="cell" role="listitem"><div class="k">Confirmed close</div><div class="v" style="color:var(--mark)">1</div><div class="s">+2 under contract</div></div>
+  <div class="thesis" role="list" aria-label="Postcard campaign at a glance">
+    <div class="cell" role="listitem"><div class="k">Postcards mailed</div><div class="v" style="color:var(--ink)">47,510</div><div class="s">relaunch, May–Jul</div><span class="arrow">→</span></div>
+    <div class="cell" role="listitem"><div class="k">Production cost</div><div class="v" style="color:var(--kraft)">$22.9K</div><div class="s">$0.48 / piece</div><span class="arrow">→</span></div>
+    <div class="cell" role="listitem"><div class="k">Leads returned</div><div class="v" style="color:var(--blue)">117</div><div class="s">Feb–Jul, YTD</div><span class="arrow">→</span></div>
+    <div class="cell" role="listitem"><div class="k">Confirmed close</div><div class="v" style="color:var(--mark)">1</div><div class="s">Denise Marks</div></div>
   </div>
-  <div class="eyebrow" style="margin-top:10px;color:var(--ink-3)">* piece-level tracking begins with the May relaunch; Q1 spend predates it.</div>
+  <div class="eyebrow" style="margin-top:10px;color:var(--ink-3)">Postcards only — "Direct Mail (Postcard)" source. Checks and letters are excluded from every figure below.</div>
 
-  <!-- 1 SPEND -->
+  <!-- 1 PRODUCTION -->
   <section>
-    <div class="sechead"><span class="no">01</span><h2>The spend</h2><span class="tag">QuickBooks</span></div>
-    <p class="body">Direct mail is the largest acquisition channel in the books — <b>$124,330 year to date</b>, 39% of all acquisition marketing spend. It front-loaded hard in Q1, went nearly dark in April, and rebuilt through June under the Redstone relaunch.</p>
-    <div class="chart">
-      <div class="ct">AM- Direct Mail spend, by month — $124,330 total</div>
-      <div id="spend" class="cols"></div>
-    </div>
-    <div class="note"><div class="eyebrow">Reading it</div>The April cliff ($759) is the program pause. Everything from May on is the new Redstone-tracked era, which is why piece counts only exist from then forward.</div>
-  </section>
-
-  <!-- 2 VOLUME -->
-  <section>
-    <div class="sechead"><span class="no">02</span><h2>The mail itself</h2><span class="tag">Monday.com · Redstone</span></div>
-    <p class="body">On the Iriga Operating System, every relaunch batch is logged with quantity and cost. Twelve batches since May put <b>47,803 pieces</b> in the mail at <b>$0.49 apiece</b> — cost per piece falling from $0.61 to $0.40 as batches scaled.</p>
-    <div class="ml">
-      <div class="lr"><span class="lk">Mail batches logged</span><span class="lv">12</span></div>
-      <div class="lr"><span class="lk">Pieces mailed<small>postcards + letters</small></span><span class="lv">47,803</span></div>
-      <div class="lr"><span class="lk">Tracked production cost</span><span class="lv">$23,278</span></div>
-      <div class="lr"><span class="lk">Average cost per piece</span><span class="lv">$0.49</span></div>
-      <div class="lr"><span class="lk">Response rate<small>112 leads on 47,803 tracked pieces</small></span><span class="lv">0.23%</span></div>
-    </div>
-    <div class="note"><div class="eyebrow">List DNA</div>Nearly every batch is built from lien data pulled in PropertyRadar — utility, HOA, and county/city liens, filtered to 45–50%+ equity, non-corporate owners, pre-2017 transfers. This is, functionally, a liens program.</div>
-  </section>
-
-  <!-- 3 RETURN -->
-  <section>
-    <div class="sechead"><span class="no">03</span><h2>What came back</h2><span class="tag">REI Blackbook</span></div>
-    <p class="body">377 leads carry a direct-mail source this year — <b>260 from mailed checks, 117 from postcards</b>. Lead volume tracks the spend with roughly a one-month lag: the Q1 spend surge shows up as the Jan–Feb lead peak; the April pause drains May.</p>
+    <div class="sechead"><span class="no">01</span><h2>The postcards mailed</h2><span class="tag">Monday.com · Redstone</span></div>
+    <p class="body">Eleven postcard batches went out in the relaunch — <b>47,510 pieces for $22,950</b>, at <b>$0.48 each</b>. June was the heavy month; volume more than tripled from May as batch sizes grew and cost per piece fell toward $0.40.</p>
     <div class="two">
-      <div class="chart"><div class="ct">Direct-mail leads, by month — 377 total</div><div id="leads" class="cols"></div></div>
-      <div class="chart"><div class="ct">By mail type</div>
-        <div style="display:flex;flex-direction:column;gap:14px;padding-top:8px">
-          <div>
-            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;margin-bottom:6px"><span>Direct Mail — Checks</span><span style="font-weight:600">260</span></div>
-            <div class="hrow" style="margin:0"><div class="ht"><div class="hf" style="width:100%;background:var(--kraft)"></div></div></div>
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;margin-bottom:6px"><span>Direct Mail — Postcard</span><span style="font-weight:600">117</span></div>
-            <div class="hrow" style="margin:0"><div class="ht"><div class="hf" style="width:45%;background:var(--blue)"></div></div></div>
-          </div>
-          <div style="font-size:13px;color:var(--ink-2);margin-top:4px;line-height:1.5">Checks outpull postcards <b>2.2 : 1</b> — the mailed-check format is doing the heavy lifting on response.</div>
-        </div>
-      </div>
+      <div class="chart"><div class="ct">Postcards mailed, by month — 47,510 pieces</div><div id="pieces" class="cols"></div></div>
+      <div class="chart"><div class="ct">Postcard cost, by month — $22,950</div><div id="pspend" class="cols"></div></div>
     </div>
-    <div class="chart" style="margin-top:16px">
-      <div class="ct">Motivation behind the leads — list types (tag counts)</div>
-      <div id="motive"></div>
+    <div class="ml" style="margin-top:16px">
+      <div class="lr"><span class="lk">Postcard batches</span><span class="lv">11</span></div>
+      <div class="lr"><span class="lk">Pieces mailed</span><span class="lv">47,510</span></div>
+      <div class="lr"><span class="lk">Production cost</span><span class="lv">$22,950</span></div>
+      <div class="lr"><span class="lk">Average cost per postcard</span><span class="lv">$0.48</span></div>
+      <div class="lr"><span class="lk">Response rate<small>64 leads on 47,510 tracked postcards</small></span><span class="lv">0.13%</span></div>
+      <div class="lr"><span class="lk">Cost per postcard lead<small>tracked relaunch window</small></span><span class="lv">~$359</span></div>
     </div>
   </section>
 
-  <!-- 4 CONVERSION -->
+  <!-- 2 RETURN -->
   <section>
-    <div class="sechead"><span class="no">04</span><h2>From mailbox to closing</h2><span class="tag">REI Blackbook tags</span></div>
-    <p class="body">This is where the honesty check lives. Of 377 direct-mail leads, the tags trace a steep funnel down to <b>one confirmed acquisition</b> (Denise Marks, a postcard lead) plus two under contract. At $124K spent, that is the number to pressure-test — not celebrate.</p>
+    <div class="sechead"><span class="no">02</span><h2>What the postcards brought back</h2><span class="tag">REI Blackbook</span></div>
+    <p class="body">117 leads carry a postcard source this year. Volume climbs with mail volume — the <b>June spike (43 leads)</b> follows June's heavy mailing. The lists behind the mail are overwhelmingly liens and visibly distressed ("ugly") houses.</p>
+    <div class="two">
+      <div class="chart"><div class="ct">Postcard leads, by month — 117 total</div><div id="pleads" class="cols"></div></div>
+      <div class="chart"><div class="ct">Why they responded — list type / motivation</div><div id="motive"></div></div>
+    </div>
+  </section>
+
+  <!-- 3 CONVERSION -->
+  <section>
+    <div class="sechead"><span class="no">03</span><h2>From postcard to closing</h2><span class="tag">REI Blackbook tags</span></div>
+    <p class="body">The postcard funnel is steep but real: 117 leads, <b>9 reached an appointment or evaluation</b>, and <b>1 closed</b> — Denise Marks, a March "Postcard" lead tagged Acquired &amp; Deal Closed. None of the current relaunch batches has produced a confirmed close yet — those leads are still young.</p>
     <div class="chart">
-      <div class="ct">Direct-mail conversion funnel</div>
+      <div class="ct">Postcard conversion funnel — 2026 YTD</div>
       <div id="funnel" class="fn"></div>
     </div>
-    <div class="note flag"><div class="eyebrow">Caveat that matters</div>These stages are read from <b>hand-applied tags</b>, which are inconsistent — some leads carry "Sold" next to "Declined Offer." Cost per confirmed acquisition <em>looks</em> like $124K, but with attribution this incomplete, treat it as a ceiling to disprove, not a verdict.</div>
+    <div class="note flag"><div class="eyebrow">Honest read</div>One close on 117 leads is a <b>0.9% lead→acquisition rate</b> on tags alone. A single postcard deal can clear the whole $22.9K mail cost, so the channel can pay — but the relaunch batches need another 30–60 days to show their closings before judging ROI.</div>
   </section>
 
-  <!-- 5 CAMPAIGNS -->
+  <!-- 4 CAMPAIGNS -->
   <section>
-    <div class="sechead"><span class="no">05</span><h2>Campaign attribution</h2><span class="tag">REI Blackbook</span></div>
-    <p class="body">Only <b>54 of 377 leads (14%)</b> carry a campaign name at all. Where it exists, liens dominate — "Postcard Liens" and "EQT Liens – Check" alone are nearly half. The other 86% arrive untagged, which is the single biggest gap in measuring this channel.</p>
+    <div class="sechead"><span class="no">04</span><h2>Which postcard worked</h2><span class="tag">REI Blackbook</span></div>
+    <p class="body">Postcards attribute better than the rest of direct mail — <b>39 of 117 leads (33%)</b> carry a campaign name, versus 14% across all direct mail. Where it's tagged, <b>"Postcard Liens" dominates with 20 of 39</b>, confirming liens as the workhorse list.</p>
     <div class="chart">
-      <div class="ct">Campaign names on direct-mail leads — 54 tagged</div>
+      <div class="ct">Campaign on postcard leads — 39 of 117 tagged</div>
       <div id="camp"></div>
     </div>
-    <div class="note flag"><div class="eyebrow">The gap</div><b>323 of 377 direct-mail leads have no campaign tag.</b> Until each lead is stamped with the batch it answered, true cost-per-deal by list type can't be computed — it has to be reconstructed by hand, as this report did.</div>
+    <div class="note"><div class="eyebrow">Still the gap</div><b>78 of 117 postcard leads (67%) have no campaign tag.</b> Better than the channel average, but until every postcard lead is auto-stamped with its batch, "Postcard Liens vs Ugly Houses vs Tax Delinquent" can't be ranked by close rate.</div>
   </section>
 
   <!-- VERDICT -->
   <section>
     <div class="verdict">
-      <div class="eyebrow">The bottom line</div>
-      <h2>A liens machine that mails well and measures poorly.</h2>
-      <p>The production side is healthy: <b>47,803 pieces at $0.49 each</b>, cost per piece falling as volume scales, built on disciplined lien lists. The channel returns leads on schedule — <b>377 this year, ~$330 each</b>.</p>
-      <p>The measurement side is where the money leaks. <b>Only 1 acquisition is provable from tags</b>, and <b>86% of leads have no campaign attached</b>. The channel may well be profitable — a single wholesale or flip clears the $124K — but right now nobody can prove which list or batch earned it.</p>
-      <p><b>The fix is one wire:</b> stamp every direct-mail lead with its Redstone batch as it lands, and reconcile closings against QuickBooks. Do that, and this becomes a channel you can optimize by list type instead of one you audit by hand.</p>
+      <div class="eyebrow">The bottom line — postcards</div>
+      <h2>Efficient to mail, liens-led, too young to judge on ROI.</h2>
+      <p>Postcards mail cheaply and consistently: <b>47,510 pieces at $0.48</b>, scaling hard in June. They return leads at roughly <b>$359 each</b> and attribute better than any other mail format — <b>a third carry a campaign</b>, and liens drive the response.</p>
+      <p>But conversion is where patience is required: <b>1 confirmed close on 117 leads</b>, and that close predates the current relaunch. The May–Jul batches have produced 64 leads and no confirmed deal <em>yet</em> — normal for a channel with a 30–90 day close cycle.</p>
+      <p><b>Watch, don't cut.</b> Keep mailing the liens postcard lists, stamp each lead with its batch, and re-pull closings in 60 days. That turns "one close so far" into a real per-list ROI you can scale on.</p>
     </div>
   </section>
 
   <footer>
-    <b>SOURCES.</b> QuickBooks Online API — Equity Track Inc, accrual, 01 JAN–08 JUL 2026 (AM- Direct Mail $124,330.13).
-    REI Blackbook — 377 contacts with a direct-mail source; campaigns &amp; tags read per contact.
-    Monday.com — "Equity Track Iriga – Operating System," Red Stone Upload board (12 batches).<br>
-    <b>METHOD.</b> Acquisition &amp; funnel counts derived from hand-applied REI Blackbook tags; treat as indicative pending QuickBooks reconciliation.
-    Piece-level metrics cover the May–Jul relaunch only. Prepared 08 JUL 2026.
+    <b>SCOPE.</b> Direct Mail (Postcard) source only — checks and letters excluded.
+    <b>SOURCES.</b> Monday.com "Equity Track Iriga – Operating System," Red Stone Upload board — 11 postcard batches (47,510 pieces, $22,950).
+    REI Blackbook — 117 contacts with a postcard source; campaigns &amp; tags read per contact.<br>
+    <b>METHOD.</b> Funnel &amp; acquisition counts derived from hand-applied REI Blackbook tags; treat as indicative pending QuickBooks reconciliation.
+    Piece &amp; cost figures cover the May–Jul relaunch; leads span Feb–Jul. Prepared 09 JUL 2026.
     <div class="barcode" id="bc" aria-hidden="true"></div>
   </footer>
 </div>
 
 <script>
   const $=id=>document.getElementById(id);
-  const money=v=> v>=1000?`$${Math.round(v/1000)}K`:`$${v}`;
+  const money=v=> v>=1000?`$${(v/1000).toFixed(1)}K`:`$${Math.round(v)}`;
+  const kpc=v=> v>=1000?`${(v/1000).toFixed(1)}K`:`${v}`;
   function cols(el,data,color,fmt){
     const max=Math.max(...data.map(d=>d.v));
     el.innerHTML=data.map(d=>{
@@ -308,37 +274,36 @@
   const C=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
   function draw(){
-    cols($('spend'),[
-      {k:'Jan',v:41711},{k:'Feb',v:30860},{k:'Mar',v:27469},{k:'Apr',v:759},{k:'May',v:6254},{k:'Jun',v:17268},{k:'Jul',v:10}
+    cols($('pieces'),[
+      {k:'May',v:3752},{k:'Jun',v:30976},{k:'Jul',v:12782}
+    ],C('--blue'),kpc);
+    cols($('pspend'),[
+      {k:'May',v:2131},{k:'Jun',v:14946},{k:'Jul',v:5874}
     ],C('--kraft'),money);
-    cols($('leads'),[
-      {k:'Jan',v:112},{k:'Feb',v:70},{k:'Mar',v:56},{k:'Apr',v:27},{k:'May',v:19},{k:'Jun',v:67},{k:'Jul',v:26}
+    cols($('pleads'),[
+      {k:'Feb',v:16},{k:'Mar',v:31},{k:'Apr',v:6},{k:'May',v:7},{k:'Jun',v:43},{k:'Jul',v:14}
     ],C('--blue'),v=>v);
     hbars($('motive'),[
-      {k:'Liens',v:171},{k:'Tax Delinquent',v:45},{k:'Notice of Default (NOD)',v:37},
-      {k:'Death of Joint Tenant',v:17},{k:'Foreclosures',v:17},{k:'Notice of Trustee Sale',v:9},
-      {k:'70% Distress Score',v:5},{k:'Bankruptcy',v:4}
+      {k:'Liens',v:42},{k:'Verified ugly house',v:29},{k:'Tax Delinquent',v:13},
+      {k:'High Equity',v:7},{k:'70% Distress Score',v:5}
     ],C('--blue'));
     hbars($('camp'),[
-      {k:'Postcard Liens',v:20},{k:'EQT Liens – Check',v:6},{k:'Postcard',v:6},
-      {k:'70% Distress',v:4},{k:'Tax Delinquent EQT',v:4},{k:'Ugly Houses',v:3},
-      {k:'Postcard Tax Delinquent',v:3},{k:'Postcard High Equity',v:3},{k:'Other (5 campaigns)',v:5}
+      {k:'Postcard Liens',v:20},{k:'Postcard 70% Distress',v:4},{k:'Postcard (general)',v:4},
+      {k:'Postcard Ugly Houses',v:3},{k:'Postcard Tax Delinquent',v:3},{k:'Postcard High Equity',v:3},
+      {k:'Postcard NTS / Follow-up',v:2}
     ],C('--kraft'));
-    // funnel
     const F=[
-      {k:'Direct-mail leads',v:377,c:C('--blue')},
-      {k:'Interested / appointment',v:30,c:C('--blue-soft')},
-      {k:'Under contract',v:3,c:C('--kraft')},
+      {k:'Postcard leads',v:117,c:C('--blue')},
+      {k:'Appointment / evaluated',v:9,c:C('--blue-soft')},
       {k:'Acquired / closed',v:1,c:C('--mark')}
     ];
-    const fmax=377;
+    const fmax=117;
     $('funnel').innerHTML=F.map((s,i)=>{
       const w=Math.max(6,(s.v/fmax)*100);
       const drop=i>0?`↓ ${(100-Math.round(s.v/F[i-1].v*100))}% drop`:'';
       return `<div class="st"><div class="bar" style="width:${w}%;background:${s.c}">${s.v}</div>
         <div class="lab"><b>${s.k}</b><span class="drop">${drop}</span></div></div>`;
     }).join('');
-    // barcode
     let bc='';for(let i=0;i<52;i++){bc+=`<i style="height:${60+Math.round(((i*37)%13)/12*40)}%"></i>`;}
     $('bc').innerHTML=bc;
   }
