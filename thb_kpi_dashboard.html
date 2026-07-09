@@ -111,6 +111,7 @@
     <span class="src"><span class="dot" style="background:var(--qb)"></span>QuickBooks — financials</span>
     <span class="src"><span class="dot" style="background:var(--rei)"></span>REI Blackbook — leads</span>
     <span class="src"><span class="dot" style="background:var(--mon)"></span>Monday.com — pipeline &amp; mail ops</span>
+    <span class="src"><span class="dot" style="background:var(--s5)"></span>Google Sheet — Postcard KPI tracker</span>
   </div>
 
   <!-- HERO KPIS -->
@@ -228,12 +229,53 @@
     </div>
   </div>
 
+  <!-- 6 POSTCARD OFFICIAL TRACKER -->
+  <div class="section">
+    <h2>6 · Postcard campaign — official tracker <span style="color:var(--s5);font-size:12px">● Google Sheet</span></h2>
+    <p class="desc">Twin Home Buyer's own "KPI Postcard" sheet — the source of truth for postcards. Full campaign: <b>Dec 3, 2025 – May 29, 2026</b> (218 days).</p>
+
+    <div class="grid kpis" style="margin-bottom:16px;">
+      <div class="tile"><div class="bar" style="background:var(--s5)"></div><div class="cap">Postcards Mailed</div><div class="val">77,763</div><div class="note">39 batches</div></div>
+      <div class="tile"><div class="bar" style="background:var(--mon)"></div><div class="cap">Redstone Cost</div><div class="val">$42.3K</div><div class="note">$0.544 / postcard</div></div>
+      <div class="tile"><div class="bar" style="background:var(--mon)"></div><div class="cap">All-in Spend</div><div class="val">$50.5K</div><div class="note">$0.65 / postcard</div></div>
+      <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Leads</div><div class="val">92</div><div class="note">125 inbound calls</div></div>
+      <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Interest Rate</div><div class="val">32.6%</div><div class="note">30 interested</div></div>
+      <div class="tile"><div class="bar" style="background:var(--bad)"></div><div class="cap">Deals Closed</div><div class="val">0</div><div class="note">$459.51 / lead</div></div>
+    </div>
+
+    <div class="grid cards">
+      <div class="card">
+        <h3>Lead response breakdown</h3><div class="sc">Inbound call dispositions</div>
+        <div id="sheetresp"></div>
+      </div>
+      <div class="card">
+        <h3>Deal outcomes &amp; economics</h3><div class="sc">What the 92 leads became</div>
+        <table class="mini">
+          <tr><th>Metric</th><th class="r">Value</th></tr>
+          <tr><td>Acquired deals</td><td class="r">0</td></tr>
+          <tr><td>Sold deals</td><td class="r">0</td></tr>
+          <tr><td>Under contract</td><td class="r">0</td></tr>
+          <tr><td>Offers declined</td><td class="r">3</td></tr>
+          <tr><td>Canceled</td><td class="r">1</td></tr>
+          <tr><td>Lead → deal rate</td><td class="r">0.0%</td></tr>
+          <tr><td>Avg days: mail → contract</td><td class="r">34</td></tr>
+          <tr><td>Do Not Mail / Do Not Call</td><td class="r">19 / 19</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="callout" style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--bad);border-radius:8px;padding:12px 15px;font-size:13px;color:var(--ink-2);margin-top:14px;">
+      <b>ROI flag:</b> $50.5K spent, 92 leads, healthy 32.6% interest — but <b>0 deals closed</b> so far and $459.51 cost per lead. Either offers are landing low (3 declined) or deals are still maturing (34-day mail→contract lag). This is the number to turn around, not the spend.
+    </div>
+  </div>
+
   <div class="foot">
     <b>Data sources &amp; method.</b> Revenue &amp; marketing spend pulled live from the QuickBooks Online API (Equity Track Inc, accrual, Jan 1–Jul 8 2026);
     general cost/expense detail (COGS, operating expenses, net income) is intentionally omitted from this view.
     Leads pulled from REI Blackbook (1,190 contacts created in 2026; source and campaign read per-contact). Pipeline &amp; mail-cost data from the
-    Monday.com "Equity Track Iriga – Operating System" workspace. Acquisition counts are read from REI Blackbook tags, which are hand-applied and
-    occasionally contradictory — treat the funnel as indicative until reconciled against QuickBooks closings. Generated 2026-07-09.
+    Monday.com "Equity Track Iriga – Operating System" workspace. Section 6 is Twin Home Buyer's own "KPI Postcard" Google Sheet
+    (Dec 3 2025 – May 29 2026) — the authoritative postcard tracker; its figures (77,763 mailed, 92 leads, 0 deals) supersede the REI-derived
+    postcard estimates in earlier sections where they differ. Acquisition counts elsewhere are read from REI Blackbook tags, which are hand-applied
+    and occasionally contradictory — treat as indicative until reconciled against QuickBooks closings. Generated 2026-07-09.
   </div>
 </div>
 
@@ -303,6 +345,19 @@ columns(document.getElementById('dmspend'),[
 columns(document.getElementById('dmleads'),[
   {k:'Jan',v:112},{k:'Feb',v:70},{k:'Mar',v:56},{k:'Apr',v:27},{k:'May',v:19},{k:'Jun',v:67},{k:'Jul',v:26}
 ],{color:'var(--mon)'});
+
+// 6. Postcard tracker — lead response breakdown (from Google Sheet)
+hbars(document.getElementById('sheetresp'),[
+  {k:'Not Interested',v:53,color:'var(--s6)'},
+  {k:'Interested',v:22,color:'var(--s2)'},
+  {k:'Do Not Mail',v:19,color:'var(--s8)'},
+  {k:'Do Not Call',v:19,color:'var(--s8)'},
+  {k:'Ghost Calls',v:9,color:'var(--ink-3)'},
+  {k:'No Plans to Sell',v:8,color:'var(--ink-3)'},
+  {k:'No Answer',v:5,color:'var(--ink-3)'},
+  {k:'Follow-Up Needed',v:4,color:'var(--s3)'},
+  {k:'Nurture Pipeline',v:2,color:'var(--s3)'}
+],{fmt:v=>v});
 
 // 4c funnel
 (function(){
