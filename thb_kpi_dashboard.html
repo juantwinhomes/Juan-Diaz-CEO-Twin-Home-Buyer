@@ -268,6 +268,57 @@
     </div>
   </div>
 
+  <!-- 7 POSTCARD ROI -->
+  <div class="section">
+    <h2>7 · Postcard ROI — the money view <span style="color:var(--s5);font-size:12px">● Sheet</span> <span style="color:var(--qb);font-size:12px">● QuickBooks</span></h2>
+    <p class="desc">The KPIs above count activity. This is the one that counts money — and it exposes where the campaign is actually leaking.</p>
+
+    <div class="grid kpis" style="margin-bottom:16px;">
+      <div class="tile"><div class="bar" style="background:var(--mon)"></div><div class="cap">Postcard Spend</div><div class="val">$50.5K</div><div class="note">all-in, Dec–May</div></div>
+      <div class="tile"><div class="bar" style="background:var(--bad)"></div><div class="cap">Booked Revenue</div><div class="val">$0</div><div class="note">confirmed in QuickBooks</div></div>
+      <div class="tile"><div class="bar" style="background:var(--bad)"></div><div class="cap">ROI to Date</div><div class="val">−100%</div><div class="note">nothing booked yet</div></div>
+      <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Cost / Lead</div><div class="val">$549</div><div class="note">$459 Redstone-only</div></div>
+      <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Cost / Interested</div><div class="val">$1,685</div><div class="note">30 interested sellers</div></div>
+      <div class="tile"><div class="bar" style="background:var(--s3)"></div><div class="cap">Breakeven</div><div class="val">~2</div><div class="note">deals @ $25K profit</div></div>
+    </div>
+
+    <div class="grid cards">
+      <div class="card">
+        <h3>The real funnel — where it leaks</h3><div class="sc">77,763 postcards → 92 leads (0.12%), then:</div>
+        <div id="roifunnel"></div>
+        <div class="callout" style="background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--bad);border-radius:8px;padding:12px 15px;font-size:13px;color:var(--ink-2);margin-top:14px;">
+          <b>The leak is mid-funnel, not the mail.</b> 30 sellers said they're interested, but only <b>3 got an offer</b> (10%) and <b>0 accepted</b>. The money isn't lost on postage — it's lost between "interested" and "offer made / accepted."
+        </div>
+      </div>
+      <div class="card">
+        <h3>Breakeven — it only takes one deal</h3><div class="sc">Deals needed to cover $50,549</div>
+        <table class="mini">
+          <tr><th>Avg profit / deal</th><th class="r">Deals to break even</th></tr>
+          <tr><td>$15,000</td><td class="r">3.4</td></tr>
+          <tr><td>$25,000</td><td class="r">2.0</td></tr>
+          <tr><td>$40,000</td><td class="r">1.3</td></tr>
+          <tr><td>$60,000</td><td class="r">0.8</td></tr>
+        </table>
+        <div class="callout" style="background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--good);border-radius:8px;padding:12px 15px;font-size:13px;color:var(--ink-2);margin-top:14px;">
+          One typical wholesale or flip covers most-to-all of the spend. <b>Cost isn't the problem — conversion is.</b> The channel becomes profitable the moment interested sellers start getting (and accepting) offers.
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h3>What you're missing — the KPIs that would make ROI real</h3>
+      <div class="sc">You measure spend and leads well. These five gaps are why ROI can't be computed today.</div>
+      <table class="mini">
+        <tr><th>Gap</th><th>Why it matters</th></tr>
+        <tr><td><b>1. Closed-revenue attribution</b></td><td>No closing is tied back to a postcard — so the ROI numerator is unknown/$0. This is the #1 fix.</td></tr>
+        <tr><td><b>2. Offer-stage tracking</b></td><td>You track leads and "interested," then jump to deals. The leak (30 → 3 offers → 0 accepted) is invisible in the current KPIs.</td></tr>
+        <tr><td><b>3. Avg deal profit / breakeven</b></td><td>Without an average spread per deal you can't say if the channel is worth it. Set a target (e.g. break even at 2 deals).</td></tr>
+        <tr><td><b>4. Deal-by-list ROI</b></td><td>You track leads by list (liens, tax delinquent, ugly houses) but not which lists produce <em>offers and deals</em>.</td></tr>
+        <tr><td><b>5. Contract → close time</b></td><td>Mail→contract is 34 days, but no close-cycle metric — so you can't tell if "0 deals" means failing or just too early.</td></tr>
+      </table>
+    </div>
+  </div>
+
   <div class="foot">
     <b>Data sources &amp; method.</b> Revenue &amp; marketing spend pulled live from the QuickBooks Online API (Equity Track Inc, accrual, Jan 1–Jul 8 2026);
     general cost/expense detail (COGS, operating expenses, net income) is intentionally omitted from this view.
@@ -345,6 +396,24 @@ columns(document.getElementById('dmspend'),[
 columns(document.getElementById('dmleads'),[
   {k:'Jan',v:112},{k:'Feb',v:70},{k:'Mar',v:56},{k:'Apr',v:27},{k:'May',v:19},{k:'Jun',v:67},{k:'Jul',v:26}
 ],{color:'var(--mon)'});
+
+// 7. Postcard ROI funnel
+(function(){
+  const base=92;
+  const F=[
+    {k:'Leads',v:92,c:'var(--s1)',note:''},
+    {k:'Interested',v:30,c:'var(--s2)',note:'32.6% of leads'},
+    {k:'Offers made',v:3,c:'var(--s3)',note:'10% of interested'},
+    {k:'Offers accepted',v:0,c:'var(--bad)',note:'0% — all 3 declined'},
+    {k:'Closed / booked',v:0,c:'var(--bad)',note:'$0 revenue'}
+  ];
+  const el=document.getElementById('roifunnel');
+  if(el) el.innerHTML=F.map(s=>{
+    const w=Math.max(7,(s.v/base)*100);
+    return `<div class="funnel-stage"><div class="fb" style="width:${w}%;background:${s.c}">${s.v}</div>`+
+      `<div class="fl"><b>${s.k}</b>${s.note?' · <span style="color:var(--ink-3)">'+s.note+'</span>':''}</div></div>`;
+  }).join('');
+})();
 
 // 6. Postcard tracker — lead response breakdown (from Google Sheet)
 hbars(document.getElementById('sheetresp'),[
