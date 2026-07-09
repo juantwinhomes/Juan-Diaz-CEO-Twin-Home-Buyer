@@ -116,8 +116,8 @@
   <!-- HERO KPIS -->
   <div class="grid kpis">
     <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Total Income</div><div class="val">$10.98M</div><div class="note">Property $10.76M · Wholesale $213K</div></div>
-    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Net Operating Income</div><div class="val">$5.01M</div><div class="note">45.6% net margin</div></div>
-    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Gross Margin</div><div class="val">51.8%</div><div class="note">GP $5.69M · COGS $5.29M</div></div>
+    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Property Sales</div><div class="val">$10.76M</div><div class="note">98% of income</div></div>
+    <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Direct-Mail Leads</div><div class="val">377</div><div class="note">of 1,190 total</div></div>
     <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Leads (2026 YTD)</div><div class="val">1,190</div><div class="note">377 from direct mail</div></div>
     <div class="tile"><div class="bar" style="background:var(--mon)"></div><div class="cap">Acq. Marketing Spend</div><div class="val">$316.8K</div><div class="note">Direct mail = 39% of it</div></div>
     <div class="tile"><div class="bar" style="background:var(--mon)"></div><div class="cap">Blended Cost / Lead</div><div class="val">$266</div><div class="note">Direct mail: $330/lead</div></div>
@@ -125,16 +125,23 @@
 
   <!-- FINANCIALS -->
   <div class="section">
-    <h2>1 · Financial performance <span style="color:var(--qb);font-size:12px">● QuickBooks</span></h2>
-    <p class="desc">Where revenue comes from and what it costs to produce.</p>
+    <h2>1 · Revenue <span style="color:var(--qb);font-size:12px">● QuickBooks</span></h2>
+    <p class="desc">Where the money comes in. Cost &amp; expense detail omitted by request.</p>
     <div class="grid cards">
       <div class="card">
         <h3>Income composition</h3><div class="sc">YTD, by revenue account</div>
         <div id="income"></div>
       </div>
       <div class="card">
-        <h3>Income → Net, the waterfall</h3><div class="sc">How $10.98M income becomes $5.01M operating income</div>
-        <div id="waterfall"></div>
+        <h3>Marketing efficiency</h3><div class="sc">Acquisition spend measured against revenue</div>
+        <table class="mini">
+          <tr><th>Metric</th><th class="r">Value</th></tr>
+          <tr><td>Total income</td><td class="r">$10,984,180</td></tr>
+          <tr><td>Acquisition marketing spend</td><td class="r">$316,844</td></tr>
+          <tr><td>Marketing as % of income</td><td class="r">2.9%</td></tr>
+          <tr><td>Blended cost per lead</td><td class="r">$266</td></tr>
+          <tr><td>Direct-mail cost per lead</td><td class="r">$330</td></tr>
+        </table>
       </div>
     </div>
   </div>
@@ -223,10 +230,11 @@
   </div>
 
   <div class="foot">
-    <b>Data sources &amp; method.</b> Financials pulled live from the QuickBooks Online API (Equity Track Inc, accrual, Jan 1–Jul 8 2026).
+    <b>Data sources &amp; method.</b> Revenue &amp; marketing spend pulled live from the QuickBooks Online API (Equity Track Inc, accrual, Jan 1–Jul 8 2026);
+    general cost/expense detail (COGS, operating expenses, net income) is intentionally omitted from this view.
     Leads pulled from REI Blackbook (1,190 contacts created in 2026; source and campaign read per-contact). Pipeline &amp; mail-cost data from the
     Monday.com "Equity Track Iriga – Operating System" workspace. Acquisition counts are read from REI Blackbook tags, which are hand-applied and
-    occasionally contradictory — treat the funnel as indicative until reconciled against QuickBooks closings. Generated 2026-07-08.
+    occasionally contradictory — treat the funnel as indicative until reconciled against QuickBooks closings. Generated 2026-07-09.
   </div>
 </div>
 
@@ -259,24 +267,6 @@ function columns(el, data, {color,fmt=(v=>v.toLocaleString())}={}){
 hbars(document.getElementById('income'),[
   {k:'Property Sales',v:10763000},{k:'Wholesale Fees',v:213000},{k:'Rental Income',v:8180}
 ],{color:'var(--qb)'});
-
-// Waterfall (as labeled rows)
-(function(){
-  const steps=[
-    {k:'Income',v:10984180,c:'var(--s1)'},
-    {k:'– COGS',v:5293280,c:'var(--s6)'},
-    {k:'= Gross Profit',v:5690900,c:'var(--s2)'},
-    {k:'– Operating Exp.',v:682874,c:'var(--s3)'},
-    {k:'= Net Operating Inc.',v:5008026,c:'var(--s4)'}
-  ];
-  const max=10984180;
-  document.getElementById('waterfall').innerHTML=steps.map(s=>{
-    const w=Math.max(2,(s.v/max)*100);
-    return `<div class="row"><div class="lab">${s.k}</div>
-      <div class="track"><div class="fill" style="width:${w}%;background:${s.c}"></div></div>
-      <div class="num">${fmtUSDfull(s.v)}</div></div>`;
-  }).join('');
-})();
 
 // 2. Marketing spend
 hbars(document.getElementById('spend'),[
