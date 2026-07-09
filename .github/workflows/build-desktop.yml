@@ -1,0 +1,53 @@
+name: Build Desktop App (.exe)
+
+# Builds the Windows desktop app on GitHub's Windows runners (which can download
+# the Electron binary) and publishes the .exe as a downloadable artifact and,
+# on manual runs, as a GitHub Release.
+
+on:
+  push:
+    paths:
+      - 'desktop/**'
+      - 'thb_kpi_dashboard.html'
+      - '.github/workflows/build-desktop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+
+      - name: Build Windows .exe
+        working-directory: desktop
+        run: npm run dist
+
+      - name: Upload .exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: THB-DirectMail-Windows
+          path: |
+            desktop/dist/*.exe
+          if-no-files-found: error
+
+      - name: Publish to a Release (manual runs only)
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-v${{ github.run_number }}
+          name: THB Direct Mail Desktop v${{ github.run_number }}
+          files: desktop/dist/*.exe
+          generate_release_notes: false
