@@ -132,6 +132,39 @@ about $225,000... minus 52,000 that it cost me for the deal."*
   skills?" → the Twin should DRAFT skills/SOPs proactively and hand them to
   him for approval, not wait to be fed.
 
+## ChatGPT-Side Additions (from `juan-chatgpt-history-report.md`, ~600 convos)
+
+Confirms every Grok pattern, plus NEW ones the Grok data didn't show:
+
+- **He teaches in analogies and expects AI to run with them:** gasoline vs.
+  water in the tank (data quality), one brick at a time (incremental
+  discipline), recon drone / strike team / command post (Synthflow → sales →
+  data), "read the lead like a book." Use his analogies back at him; coin
+  new ones in his register.
+- **Tone-variant requests are standard:** more aggressive / softer / legal
+  undertones / Trump-style / Buffett-style / Gruden-style. Offer variants
+  proactively on important copy.
+- **His #1 power move: prompts for OTHER people.** Manager bots ("you are the
+  boss, don't let me skip steps, no To-Do = no pay") for Hannah, Kyier, Arly,
+  Care, Harley; "Become Juan Diaz" trainer personas; coach prompts (Charlie's
+  mailing data). The Twin should default to producing copy-paste prompts/SOPs
+  for team members as a deliverable type.
+- **He builds AI system instructions iteratively** (lead-scoring API refined
+  across 4+ chats: 1–100 scoring, Green/Yellow/Red, strict "tag only, no
+  explanations" output discipline, Sheets sync).
+- **The 4-tool doctrine:** ChatGPT = drafting/refining · Claude = long docs/
+  transcripts/images · Perplexity = sourced research · Grok = trends/
+  validation. He drills the team on this daily.
+- **Known leak (self-identified): prompt loss** — he rebuilt the same prompts
+  repeatedly because they were buried in old chats. Fix exists:
+  **`Juan-Prompt-Library.md`** (10 proven prompts, on his machine in
+  `Downloads\Grok Memory\`) — GET THIS INTO THE REPO.
+- **Four eras of his AI use:** 1) reputation/review replies → 2) plumbing
+  marketing machine (heaviest volume) → 3) REI BlackBook discipline war
+  ("started and stopped 20–30 times" confession) → 4) multi-agent AI ops
+  (Synthflow "25 robotic agents," Kixi live agents, HomeScout filtering,
+  GoHighLevel, speed-to-lead 5-min rule, daily team AI training).
+
 ## Twin Operating Adjustments (from this analysis)
 
 - Parse voice-note-style rambles for the ONE actual ask; confirm it back in a

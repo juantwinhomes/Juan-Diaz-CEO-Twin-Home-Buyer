@@ -91,19 +91,47 @@ Carlos" — local oversight of bills/filing/admin over the PH team. He wants
 street-smart + AI-fluent, not credentials. Two failure modes he named: role
 overload at hiring, and pay gap vs. market ask.
 
+**Extended roster (from ChatGPT history report):** Kyier (coached via manager
+bot), Care, Harley, Charlie (mailing data), Zeus (Manila — night-shift phone
+screening), Joel (weekly accountability plan), Grace / Angelene / Diana
+(expense logging 4–5 PM), Danica (verification), Adrian (trained by Arly on
+REI BlackBook + PropertyRadar), Hector (Spanish-speaking field), Cesar (EPA
+lead-safe cert lapsed → re-course), Rudy (fake-review dispute), Neil (Lawyers
+Title contact). Gavin — Juan's son (basketball; DIII recruiting).
+
+**Deal pipeline names seen in ChatGPT era (status TBD):** Tracy $1.2M all-cash
+offer ($50K non-refundable EMD, Neil/Lawyers Title); 72 Lance Way Hayward
+($834K offer); 446 Ashbury SF; 3275 Dakota St Oakland (multifamily); 2108
+Isabelle Ave San Mateo (13bd/13ba, SB9 angle); 490 South Ct Dixon; 1603
+Oregon Berkeley (Tsering); 533 W Howard Visalia (fire damage); 1637 Orleans;
+Orleans/Amber/Orizaba (Joel's plan); 1795 Canyon ($38.5K SOW); Millbrae
+($35K appliance fiasco); Redding (structure lifting).
+
 _Note: In the postcard call log, **Juan personally took 33 calls** ("Juan (Live)")
 — CEO doing rep work, contrary to the PI role design._
 
 _Open question: is there a COO/Integrator yet? That's the #1 structural
 recommendation from the PI assessment._
 
-## Tech / Data Stack (from postcard workbook)
+## Tech / Data Stack (postcard workbook + ChatGPT history report)
 
-- **Lists / skip trace:** DealMachine, Property Radar, Profit Dial (ReiBlackbook).
-- **Automation:** Make.com. **Warehouse:** Google Cloud BigQuery (pipeline partly built).
-- **Mail house:** Redstone Print & Mail.
-- **AI:** "John AI" (voice/calling agent), Xai/Grok, Auto Genius.
-- **Cards used:** AMEX, Discover, Capital One, BOA.
+- **Lists / skip trace:** DealMachine, Property Radar, Profit Dial
+  (ReiBlackbook), Smarty/NCOA (return-mail pipeline), HomeScout (AI filtering).
+- **CRM:** REI BlackBook (auto-tagging, lead scoring 1–100 Green/Yellow/Red,
+  workflows, merge fields). Evaluated switching ("REI BlackBook vs Simply") — stayed.
+- **Dialers / AI agents:** Synthflow ("25 robotic agents"), Kixi live agents,
+  ZenFlow, "John AI." Speed-to-lead rule: 5 minutes.
+- **Automation:** Make.com, Zapier (+GPT auto-reply hiring funnel), GoHighLevel.
+- **Ops/PM:** monday.com (connector now live in Twin), Hubstaff (time/To-Do
+  enforcement — "No To-Do = No Pay"), CompanyCam/GoCanvas, WhatsApp field flows.
+- **Warehouse:** Google Cloud BigQuery. **Mail:** Redstone; Valpak tested.
+- **AI toolset doctrine:** ChatGPT (draft) · Claude (long docs) · Perplexity
+  (research) · Grok (trends) · NotebookLM · Suno (team anthems).
+- **Payroll:** Gusto CANCELED (~$600/wk saved) — payroll now via Prescott
+  Relay + Wells Fargo (per 7/6 payroll approval email).
+- **Cards:** AMEX, Discover, Capital One, BOA. Banks seen: Wells Fargo
+  (820 28th account ...0002, payroll 8251), Umpqua (balance $11,836.33 in a
+  ChatGPT-era P&L chat — dated, verify in QBO).
 
 ## Marketing / Acquisition Channels
 
