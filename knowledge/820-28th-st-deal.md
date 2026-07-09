@@ -39,6 +39,45 @@ Every week not closed = another week of extension interest on matured
 hard money + carrying costs. The reset's success metric is this deal
 advancing — the signing date slipping twice in 3 days is drift.
 
+## Deal Economics (from QuickBooks, pulled 2026-07-09)
+
+| Item | Amount |
+|---|---|
+| Purchase basis | $1,646,742.38 |
+| Construction team wages to date | $11,845.51 |
+| Rehab & holding costs to date | $78,877.06 |
+| **Total basis in property** | **$1,737,464.95** |
+| First Bridge loan balance (820 28th) | $429,393.75 |
+| Property bank account (WF ...0002) | $54.43 |
+
+→ ~$1.31M of equity locked in the property; construction is barely started
+(<$91K in). The Kiavi close is what funds the build.
+
+## Company Financial Baseline (QuickBooks, 2026-07-09)
+
+- **Cash: $1,093,822** — but **97% sits in one account** (WF 8251:
+  $1,064,814; Relay accounts ~$8K; property accounts near zero).
+- **Inventory (active projects): $8.54M** — 820 28th ($1.74M), 164 Springdale
+  ($2.67M — *verify: likely the June sale, basis not yet relieved*),
+  1782 Woodhaven ($1.51M; ARC loan $1.155M), 519 Orizaba ($1.42M),
+  1574 Jerrold ($749K), 1932 Chestnut ($355K; Kiavi $377K).
+- **Total liabilities: $4.08M** — mortgages $1.89M; **private money $1.73M**
+  (FJM $500K, Manuel Morfin $500K, NewRez $528.75K, Manuel Martin $200K);
+  credit cards **$143.8K** (Home Depot cards ~$103K combined); vehicle/equip loans.
+- **YTD P&L (Jan–Jul 8):** income $10.98M, COGS $5.51M, opex $683K,
+  **net $5.01M on paper.** ⚠️ CAVEAT: June shows $4.44M sales revenue against
+  only $272K COGS — cost basis likely not yet relieved from inventory
+  (Springdale). True YTD net is materially lower until Kristine books COGS.
+  This is the same gross-vs-net gap flagged in `deal-pattern-buybox.md`.
+- **June marketing spend: $84,349** (Property Leads $51.8K, direct mail
+  $17.3K, PPC $14.2K) — during cash-stabilization. Flagged.
+- **EMDs out on 7 properties under contract** ($500 each): 8227 Ney Oakland,
+  967 62nd Oakland, 2920 Judah, 1829 Ohio Richmond, 860 Russell, 33025
+  Wildomar, 2813 Marigold — pipeline status TBD vs. reset's stay-in-lane rule.
+- Bookkeeping anomalies for Kristine: Amex card shows **−$114.8K** (credit
+  balance); personal residences mixed into the equity section; monthly
+  shareholder-loan interest $5,833.
+
 ## Cash-Burn Flags (from live email)
 
 - **Local team payroll: $20,740.52 for ONE week** (June 22–28): Prescott
