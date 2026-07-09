@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>THB Direct Mail</title>
+<style>
+  :root{--bg:#141413;--panel:#1c1f22;--panel2:#242a2f;--border:#2c3237;--ink:#eef0ee;--ink2:#aab0b6;--ink3:#7d858c;
+    --blue:#5f97d8;--green:#54b57e;--orange:#e07a4a;--red:#e07567;--radius:10px;
+    --mono:ui-monospace,Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  header{display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--border)}
+  header .logo{font-weight:700;letter-spacing:-.01em}
+  header .logo span{color:var(--orange)}
+  .tabs{display:flex;gap:4px;margin-left:12px}
+  .tab{padding:7px 14px;border-radius:8px;font-size:13px;color:var(--ink2);cursor:pointer;border:1px solid transparent;user-select:none}
+  .tab.active{background:var(--panel2);color:var(--ink);border-color:var(--border)}
+  header .spacer{flex:1}
+  .pill{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);color:var(--ink2)}
+  .pill.on{color:var(--green);border-color:var(--green)}
+  .pill.off{color:var(--red);border-color:var(--red)}
+  button{font-family:var(--sans);font-size:13px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);
+    padding:7px 14px;border-radius:8px;cursor:pointer}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#08131f;font-weight:600}
+  button:disabled{opacity:.5;cursor:default}
+  main{flex:1;overflow:auto;position:relative}
+  .view{display:none;height:100%}
+  .view.active{display:block}
+  #dashFrame{width:100%;height:100%;border:0;background:#fff}
+  .pad{padding:22px;max-width:820px}
+  h2{font-size:17px;margin:0 0 4px}
+  .muted{color:var(--ink3);font-size:13px;margin:0 0 18px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
+  label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink2)}
+  input,select{background:var(--panel);border:1px solid var(--border);border-radius:7px;color:var(--ink);padding:8px 10px;font-size:13px;font-family:var(--mono)}
+  .full{grid-column:1/3}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .log{font-family:var(--mono);font-size:12px;background:#0c0e10;border:1px solid var(--border);border-radius:8px;
+    padding:12px;height:340px;overflow:auto;white-space:pre-wrap;color:var(--ink2)}
+  .kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+  .kv:last-child{border:0}
+  .kv b{font-family:var(--mono)}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--border);
+    padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none}
+  .toast.show{opacity:1}
+  .sectlabel{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin:18px 0 8px}
+  code{font-family:var(--mono);background:var(--panel2);padding:2px 6px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">THB <span>Direct Mail</span></div>
+    <div class="tabs">
+      <div class="tab active" data-view="dash">Dashboard</div>
+      <div class="tab" data-view="bridge">Integration Bridge</div>
+      <div class="tab" data-view="settings">Settings</div>
+    </div>
+    <div class="spacer"></div>
+    <span class="pill off" id="bridgePill">bridge: …</span>
+    <button id="refreshBtn">↻ Refresh data</button>
+  </header>
+
+  <main>
+    <div class="view active" id="view-dash"><iframe id="dashFrame"></iframe></div>
+
+    <div class="view" id="view-bridge">
+      <div class="pad">
+        <h2>Integration bridge</h2>
+        <p class="muted">Receives REI Blackbook lead webhooks → creates Monday items; on a closed-stage change → books to QuickBooks. Runs locally; point your webhooks at the URLs below (use a tunnel like ngrok/Cloudflare to expose them publicly).</p>
+        <div class="card">
+          <div class="row">
+            <button class="primary" id="startBtn">Start</button>
+            <button id="stopBtn">Stop</button>
+            <span class="pill off" id="bridgePill2">stopped</span>
+          </div>
+          <div class="sectlabel">Webhook URLs</div>
+          <div class="kv"><span>REI Blackbook → Monday</span><b id="url1">—</b></div>
+          <div class="kv"><span>Monday → QuickBooks</span><b id="url2">—</b></div>
+        </div>
+        <div class="sectlabel">Live log</div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+
+    <div class="view" id="view-settings">
+      <div class="pad">
+        <h2>Settings</h2>
+        <p class="muted">Stored locally on this machine only (<code id="cfgpath">userData/config.json</code>). Never uploaded.</p>
+
+        <div class="sectlabel">Bridge</div>
+        <div class="grid">
+          <label>Bridge port<input id="bridgePort" /></label>
+          <label>Webhook secret<input id="webhookSecret" placeholder="long random string" /></label>
+        </div>
+
+        <div class="sectlabel">QuickBooks Online (developer app)</div>
+        <div class="grid">
+          <label>Client ID<input id="qboClientId" /></label>
+          <label>Client secret<input id="qboClientSecret" type="password" /></label>
+          <label>Refresh token<input id="qboRefreshToken" type="password" /></label>
+          <label>Realm (company) ID<input id="qboRealmId" /></label>
+          <label>Environment
+            <select id="qboEnvironment"><option value="production">production</option><option value="sandbox">sandbox</option></select>
+          </label>
+          <label>P&amp;L start<input id="periodStart" placeholder="2026-01-01" /></label>
+          <label>P&amp;L end<input id="periodEnd" placeholder="2026-12-31" /></label>
+        </div>
+
+        <div class="sectlabel">Monday.com</div>
+        <div class="grid">
+          <label>API token<input id="mondayToken" type="password" /></label>
+          <label>Property Leads board ID<input id="mondayBoardId" /></label>
+          <label>Redstone board ID<input id="redstoneBoardId" /></label>
+          <label>Closed stages (comma-sep)<input id="closedStages" /></label>
+        </div>
+
+        <div class="row" style="margin-top:18px">
+          <button class="primary" id="saveBtn">Save settings</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const toast = (m) => { const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); };
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  $('view-'+t.dataset.view).classList.add('active');
+}));
+
+async function loadDashboard(){
+  const p = await window.thb.dashboardPath();
+  $('dashFrame').src = 'file://' + p.replace(/\\/g,'/');
+}
+async function refreshStatus(){
+  const s = await window.thb.bridgeStatus();
+  const on = s.running;
+  for (const id of ['bridgePill','bridgePill2']){ const el=$(id); if(!el) continue;
+    el.textContent = on ? ('bridge: on :'+s.port) : 'bridge: off';
+    el.className = 'pill ' + (on?'on':'off'); }
+  const base = 'http://localhost:'+s.port;
+  $('url1').textContent = base + '/webhooks/reiblackbook?secret=…';
+  $('url2').textContent = base + '/webhooks/monday?secret=…';
+  $('log').textContent = (s.logs||[]).join('\n');
+  $('log').scrollTop = $('log').scrollHeight;
+}
+window.thb.onBridgeLog(() => refreshStatus());
+
+$('startBtn').onclick = async ()=>{ await window.thb.startBridge(); refreshStatus(); toast('Bridge started'); };
+$('stopBtn').onclick = async ()=>{ await window.thb.stopBridge(); refreshStatus(); toast('Bridge stopped'); };
+$('refreshBtn').onclick = async ()=>{
+  $('refreshBtn').disabled=true; $('refreshBtn').textContent='↻ Refreshing…';
+  const r = await window.thb.refresh();
+  $('refreshBtn').disabled=false; $('refreshBtn').textContent='↻ Refresh data';
+  if(!r.ok){ toast('Refresh error: '+r.error); return; }
+  const d=r.data; const errs=Object.keys(d.errors||{});
+  toast(errs.length ? ('Refreshed with issues: '+errs.join(', ')) : ('Refreshed · DM spend $'+(d.directMailSpend||0).toLocaleString()));
+};
+
+const FIELDS=['bridgePort','webhookSecret','qboClientId','qboClientSecret','qboRefreshToken','qboRealmId','qboEnvironment','periodStart','periodEnd','mondayToken','mondayBoardId','redstoneBoardId'];
+async function loadSettings(){
+  const c = await window.thb.getConfig();
+  for (const f of FIELDS) if ($(f) && c[f]!=null) $(f).value = c[f];
+  $('closedStages').value = (c.closedStages||[]).join(', ');
+}
+$('saveBtn').onclick = async ()=>{
+  const patch={}; for (const f of FIELDS) if ($(f)) patch[f]=$(f).value;
+  patch.bridgePort = parseInt(patch.bridgePort,10)||3777;
+  patch.closedStages = $('closedStages').value.split(',').map(s=>s.trim()).filter(Boolean);
+  await window.thb.saveConfig(patch); toast('Settings saved'); refreshStatus();
+};
+
+loadDashboard(); loadSettings(); refreshStatus();
+setInterval(refreshStatus, 4000);
+</script>
+</body>
+</html>
