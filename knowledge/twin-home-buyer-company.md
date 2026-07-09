@@ -8,17 +8,15 @@
 
 ## What We Know
 
-- **Juan runs THREE entities** (confirmed via his Grok history, May 2025–Jul 2026):
-  1. **Twin Home Buyer** — the REI company: cash offers, wholesaling, investor
-     networks, lead gen (below).
-  2. **Equity Track Inc** — operations/outreach company with a **~26-person
-     Philippines team**: realtor/property-manager outreach, automations,
-     SEO/GEO. (Appears on the KPI dashboard footer; Iriga City connection in
-     early chats.)
-  3. **Peninsula Plumbing Solutions** — plumbing company (C-36 CA license;
-     "I'm a full-blown plumber"). Historically 23% of his AI usage (Yelp fake
-     leads, PPC fraud/CallRail, Angi/Thumbtack). **Status July 2026: ON HOLD**
-     per Juan's 90-day reset.
+> **SCOPE (per Juan, 2026-07-08): the Twin tracks Twin Home Buyer ONLY.**
+> Other ventures were removed from active memory at Juan's direction (git
+> history retains the record if ever needed). Two residual facts kept because
+> they're load-bearing for THB: (1) the 820 28th St loans are papered under
+> the Equity Track entity — see `820-28th-st-deal.md`; (2) THB is supported
+> by a ~26-person Philippines team.
+
+- **Company: Twin Home Buyer** — the REI company: cash offers, wholesaling,
+  investor networks, lead gen.
 
 ## CURRENT STATE (July 2026 — from Juan's 90-day reset docs)
 
@@ -44,13 +42,12 @@
   auditing/automation, foreclosure outreach. "Brian Understanding Confirmed" —
   Juan trains Brian via AI.
 - **Dec 2025:** Postcard campaign launches (first Redstone drop Dec 3) —
-  matches the KPI dashboard start date. Contractor NDA drafted. Equity Track
-  holds a Christmas party (real team, real company). Plumbing marketing still
-  active ($49.95 sewer-offer video).
+  matches the KPI dashboard start date. Contractor NDA drafted. PH team
+  Christmas party.
 - **Q1 2026:** Heavy marketing-analysis phase (PPC binge threads, TV ad ROI,
   direct-mail effectiveness) — burning cash across many channels.
-- **~Apr–Jun 2026:** The turn: Juan **sells off major inventory**, puts
-  plumbing on hold, hits a cash crunch → attorney meeting → **90-day reset**
+- **~Apr–Jun 2026:** The turn: Juan **sells off major inventory**, pauses
+  other ventures, hits a cash crunch → attorney meeting → **90-day reset**
   born (June 2026 thread: "how do I stop making scattered decisions, protect
   cash, and rebuild around fewer, better moves?").
 - **Jul 2026:** Builds the AI org on Claude. Execution chain from his own
@@ -83,7 +80,7 @@
 | Hannah | Caller/lead manager in 2025 pipeline (appointments, follow-ups) | Acquisitions / VA |
 | Caesar | Demo/construction — started demo at 2204 166th Ave & 820 28th St (Aug 2025) | Construction |
 | Eliseo Sánchez | Field/trucks/site video | Field ops |
-| Mary Grace Pardines | PH team coordination (chats with Juan) | Equity Track / PH |
+| Mary Grace Pardines | PH team coordination (chats with Juan) | PH team |
 | "BEC" | Accounting firm coordination ("BEC CFO") | External accounting |
 
 **Open seat (Juan's own diagnosis, Nov 2025):** "boots on the ground in San
@@ -138,7 +135,7 @@ recommendation from the PI assessment._
 - **Redstone direct-mail postcards** — active channel. As of "all time"
   snapshot: 77,763 mailed, ~$50.5K spent over 216 days, 92 leads, **0 acquired
   deals** (1 contract, in Lake Elsinore — canceled). Full breakdown and analysis
-  in `marketing-postcard-kpis.md`. Related entity: **Equity Track Inc.**
+  in `marketing-postcard-kpis.md`.
   - **Vendors:** Profit Dial (ReiBlackbook) + DealMachine (list/skip trace);
     Redstone (print & mail).
   - **List types:** Liens, Tax Delinquent, NOD/NTS, Absentee, Ugly Houses, Code

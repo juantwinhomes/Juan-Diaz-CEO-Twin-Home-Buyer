@@ -22,17 +22,10 @@
 - Profanity in 2.4% of prompts (he vents when frustrated); please/thanks only 3%
   — zero ceremony.
 
-## THE BIG DISCOVERY: Juan runs TWO businesses
+## Business Focus in the Corpus
 
-**Peninsula Plumbing Solutions** — 195 conversations (23% of everything).
-- Juan is (or holds) a **C-36 California plumbing contractor license** — he says
-  "I'm a full-blown plumber."
-- Heavy topics: Yelp Ads (600 mentions — major pain point: fake leads, refunds
-  denied), Google PPC (CallRail tracking, disconnected-call fraud), Angi,
-  Thumbtack, van wraps, website rebuild frustration, hiring a plumbing ops
-  manager, homeowner financing for plumbing jobs.
-- Marketing for the plumbing company is a CONSTANT struggle in his chats:
-  "I'm figuring out marketing for a plumbing company. It's been challenging."
+_(A second venture historically dominated ~23% of his AI usage; removed from
+active memory per Juan's scope direction 2026-07-08 — Twin Home Buyer only.)_
 
 **Twin Home Buyer** (REI) — 393 conversations. Oakland strategy (690 Oakland
 mentions), postcards, distressed sellers, deal underwriting, REI BlackBook,
@@ -159,7 +152,7 @@ Confirms every Grok pattern, plus NEW ones the Grok data didn't show:
   repeatedly because they were buried in old chats. Fix exists:
   **`Juan-Prompt-Library.md`** (10 proven prompts, on his machine in
   `Downloads\Grok Memory\`) — GET THIS INTO THE REPO.
-- **Four eras of his AI use:** 1) reputation/review replies → 2) plumbing
+- **Four eras of his AI use:** 1) reputation/review replies → 2) local-services
   marketing machine (heaviest volume) → 3) REI BlackBook discipline war
   ("started and stopped 20–30 times" confession) → 4) multi-agent AI ops
   (Synthflow "25 robotic agents," Kixi live agents, HomeScout filtering,
@@ -172,5 +165,4 @@ Confirms every Grok pattern, plus NEW ones the Grok data didn't show:
 - Keep answers tight; he re-prompts fast rather than reading long essays.
 - When he says "Go" — continue executing the obvious next step, no questions.
 - When he opens with "No..." — he's steering; adjust immediately, don't defend.
-- Peninsula Plumbing Solutions is IN SCOPE for the Twin: it shares his
-  attention, budget, and team with Twin Home Buyer.
+- Scope: Twin Home Buyer ONLY (per Juan, 2026-07-08).
