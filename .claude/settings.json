@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/user/Juan-Diaz-CEO-Twin-Home-Buyer/.claude/kpi-update-reminder.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
