@@ -8,6 +8,7 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win --x64",
+    "release": "electron-builder --win --x64 --publish always",
     "dist:portable": "electron-builder --win portable --x64"
   },
   "build": {
@@ -16,8 +17,8 @@
     "asar": true,
     "files": ["main.cjs", "preload.cjs", "bridge.cjs", "refresh.cjs", "renderer/**/*", "assets/**/*"],
     "extraResources": [{ "from": "../thb_kpi_dashboard.html", "to": "thb_kpi_dashboard.html" }],
-    "win": { "target": ["portable", "nsis"], "artifactName": "THB-DirectMail-${version}.${ext}" },
-    "portable": { "artifactName": "THB-DirectMail-portable.exe" },
+    "publish": [{ "provider": "github", "owner": "juantwinhomes", "repo": "Juan-Diaz-CEO-Twin-Home-Buyer", "releaseType": "release" }],
+    "win": { "target": ["nsis"], "artifactName": "THB-DirectMail-Setup-${version}.${ext}" },
     "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "artifactName": "THB-DirectMail-Setup.exe" },
     "directories": { "output": "dist" }
   },
@@ -26,6 +27,7 @@
     "electron-builder": "^25.1.8"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "electron-updater": "^6.3.9"
   }
 }

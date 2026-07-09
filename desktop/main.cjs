@@ -4,6 +4,8 @@ const fs = require('fs');
 const http = require('http');
 const { createBridge } = require('./bridge.cjs');
 const { refreshAll } = require('./refresh.cjs');
+let autoUpdater = null;
+try { autoUpdater = require('electron-updater').autoUpdater; } catch { /* dev mode without dep */ }
 
 const CONFIG_PATH = () => path.join(app.getPath('userData'), 'config.json');
 const DEFAULTS = {
@@ -86,9 +88,27 @@ ipcMain.handle('dashboard:path', () => dashboardPath());
 ipcMain.handle('data:refresh', async () => { try { return { ok: true, data: await refreshAll(loadConfig()) }; } catch (e) { return { ok: false, error: e.message }; } });
 ipcMain.handle('open:external', (_e, url) => shell.openExternal(url));
 
+// --- Auto-update: check on launch and once a day, download + install on quit ---
+function setupAutoUpdate() {
+  if (!autoUpdater || !app.isPackaged) { pushLog('[update] auto-update inactive (dev mode)'); return; }
+  autoUpdater.autoDownload = true;
+  autoUpdater.on('checking-for-update', () => pushLog('[update] checking for updates…'));
+  autoUpdater.on('update-available', (i) => pushLog(`[update] new version ${i?.version} available — downloading`));
+  autoUpdater.on('update-not-available', () => pushLog('[update] up to date'));
+  autoUpdater.on('download-progress', (p) => pushLog(`[update] downloading ${Math.round(p.percent)}%`));
+  autoUpdater.on('update-downloaded', (i) => pushLog(`[update] version ${i?.version} downloaded — installs on next quit`));
+  autoUpdater.on('error', (e) => pushLog('[update] error: ' + (e?.message || e)));
+  const check = () => { autoUpdater.checkForUpdatesAndNotify().catch((e) => pushLog('[update] check failed: ' + e.message)); };
+  check();
+  setInterval(check, 24 * 60 * 60 * 1000); // daily
+}
+
+ipcMain.handle('update:check', () => { if (autoUpdater && app.isPackaged) autoUpdater.checkForUpdatesAndNotify(); return { ok: true }; });
+
 app.whenReady().then(() => {
   createWindow();
   startBridge();
+  setupAutoUpdate();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
