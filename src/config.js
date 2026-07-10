@@ -8,21 +8,21 @@ export const config = {
   monday: {
     apiToken: process.env.MONDAY_API_TOKEN || '',
     apiUrl: 'https://api.monday.com/v2',
-    // "📬 Direct Mail & Postcard Leads" board (Twin Home Buyer workspace).
-    boardId: process.env.MONDAY_BOARD_ID || '18421418228',
-    newLeadGroupId: process.env.MONDAY_NEW_LEAD_GROUP_ID || 'group_mm54scqh', // 🚨 New Leads
+    // "📬 Direct Mail & Postcard Leads" board (Equity Track Iriga workspace).
+    boardId: process.env.MONDAY_BOARD_ID || '18421423765',
+    newLeadGroupId: process.env.MONDAY_NEW_LEAD_GROUP_ID || 'group_mm54rmka', // 🚨 New Leads
     // Column ids on the Direct Mail & Postcard Leads board
     columns: {
-      source: 'color_mm54emr0',       // status: Direct Mail (Postcard) / (Checks) / (Letters)
-      leadStage: 'color_mm548bx',     // status: New / Contacted / Interested / ...
-      campaign: 'text_mm54s1vj',      // Campaign / List
-      mailBatch: 'text_mm54ertw',     // Mail Batch (Redstone Job ID)
-      leadId: 'text_mm54em6',         // REI Lead ID
-      phone: 'phone_mm54d58j',
-      location: 'location_mm5432yk',  // Property Address
-      dateReceived: 'date_mm542afm',
-      offerAmount: 'numeric_mm54f98z',
-      notes: 'long_text_mm54j54x',
+      source: 'color_mm54evkh',       // status: Direct Mail (Postcard) / (Checks) / (Letters)
+      leadStage: 'color_mm54gqvn',    // status: New / Contacted / Interested / ...
+      campaign: 'text_mm54je9m',      // Campaign / List
+      mailBatch: 'text_mm54rfs6',     // Mail Batch (Redstone Job ID)
+      leadId: 'text_mm54mgfm',        // REI Lead ID
+      phone: 'phone_mm546j95',
+      location: 'location_mm54drkb',  // Property Address
+      dateReceived: 'date_mm54mtk1',
+      offerAmount: 'numeric_mm5414m3',
+      notes: 'long_text_mm54f1ys',
     },
     // Lead Stage labels that mean "deal closed" and should sync to QuickBooks
     closedStageLabels: (process.env.MONDAY_CLOSED_STAGES || 'Acquired,Closed / Won')

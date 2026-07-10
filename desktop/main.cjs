@@ -14,15 +14,15 @@ const DEFAULTS = {
   qboClientId: '', qboClientSecret: '', qboRefreshToken: '', qboRealmId: '', qboEnvironment: 'production',
   periodStart: '2026-01-01', periodEnd: '2026-12-31',
   mondayToken: '',
-  mondayBoardId: '18421418228',            // 📬 Direct Mail & Postcard Leads
-  mondayNewLeadGroupId: 'group_mm54scqh',  // 🚨 New Leads
+  mondayBoardId: '18421423765',            // 📬 Direct Mail & Postcard Leads (Iriga workspace)
+  mondayNewLeadGroupId: 'group_mm54rmka',  // 🚨 New Leads
   redstoneBoardId: '18392647066',
   redstoneQtyCol: 'numeric_mm3k840b',
   redstoneCostCol: 'numeric_mm3kd2w',
   mondayColumns: {
-    source: 'color_mm54emr0', leadStage: 'color_mm548bx', campaign: 'text_mm54s1vj',
-    mailBatch: 'text_mm54ertw', leadId: 'text_mm54em6', phone: 'phone_mm54d58j',
-    location: 'location_mm5432yk', dateReceived: 'date_mm542afm', notes: 'long_text_mm54j54x',
+    source: 'color_mm54evkh', leadStage: 'color_mm54gqvn', campaign: 'text_mm54je9m',
+    mailBatch: 'text_mm54rfs6', leadId: 'text_mm54mgfm', phone: 'phone_mm546j95',
+    location: 'location_mm54drkb', dateReceived: 'date_mm54mtk1', notes: 'long_text_mm54f1ys',
   },
   closedStages: ['Acquired', 'Closed / Won'],
 };
