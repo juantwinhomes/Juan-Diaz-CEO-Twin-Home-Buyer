@@ -143,8 +143,8 @@
     <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Direct-Mail Leads</div><div class="val">373</div><div class="note">live on Monday board · by stage below</div></div>
     <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Cost / Lead</div><div class="val">$333</div><div class="note">$124,330 ÷ 373 leads</div></div>
     <div class="tile"><div class="bar" style="background:var(--s5)"></div><div class="cap">Postcards Mailed</div><div class="val">77,763</div><div class="note">39 batches (tracker)</div></div>
-    <div class="tile"><div class="bar" style="background:var(--s1)"></div><div class="cap">Active Pipeline</div><div class="val">85</div><div class="note">working+appt+UC+won (of 373)</div></div>
-    <div class="tile"><div class="bar" style="background:var(--good)"></div><div class="cap">Won / Acquired</div><div class="val">3</div><div class="note">on board · $0 booked in QB yet</div></div>
+    <div class="tile"><div class="bar" style="background:var(--s1)"></div><div class="cap">Active Pipeline</div><div class="val">84</div><div class="note">working+appt+UC+won (of 373)</div></div>
+    <div class="tile"><div class="bar" style="background:var(--good)"></div><div class="cap">Won / Acquired</div><div class="val">2</div><div class="note">on board · $0 booked in QB yet</div></div>
   </div>
 
   <!-- DIRECT MAIL ENGINE -->
@@ -165,7 +165,7 @@
       <div class="card">
         <h3>Conversion funnel — direct mail</h3><div class="sc">Monday board groups · live · 2026 YTD</div>
         <div id="funnel"></div>
-        <div class="callout" style="border-left-color:var(--bad)">The board now shows <b>3 Won + 2 Under Contract</b> from direct mail — but <b>QuickBooks confirms $0 booked</b> revenue against these names yet. Treat these as pipeline until reconciled against closings.</div>
+        <div class="callout" style="border-left-color:var(--bad)">The board now shows <b>2 Won + 2 Under Contract</b> from direct mail — but <b>QuickBooks confirms $0 booked</b> revenue against these names yet. Treat these as pipeline until reconciled against closings.</div>
       </div>
       <div class="card">
         <h3>Campaigns on direct-mail leads</h3><div class="sc">~54 of 374 leads carry a campaign name (14%)</div>
@@ -311,7 +311,7 @@
   <div class="foot">
     <b>Scope.</b> Direct mail only — other channels (PPC, Property Leads, TV, etc.) and general revenue are excluded from this view.
     <b>Sources.</b> Direct-mail spend from the QuickBooks Online API (AM- Direct Mail, $124,330 YTD 2026; company-wide 2026 income $10.98M / net $5.01M, all channels). Direct-mail leads from the Monday board
-    (373 live, by stage: 122 new · 68 working · 12 appointment · 2 under contract · 3 won · 166 dead). Mail production from Monday.com "Equity Track Iriga – Operating System."
+    (373 live, by stage: 122 new · 68 working · 12 appointment · 2 under contract · 2 won · 167 dead). Mail production from Monday.com "Equity Track Iriga – Operating System."
     Sections 4–5 use Twin Home Buyer's own "KPI Postcard" Google Sheet (Dec 3 2025 – May 29 2026) — the authoritative postcard tracker
     (77,763 mailed, 92 leads, 0 deals); QuickBooks confirms $0 booked direct-mail revenue. Board deal stages are hand-applied — treat as
     pipeline until reconciled against QuickBooks closings. Generated 2026-07-10.
@@ -403,7 +403,7 @@ hbars(document.getElementById('sheetresp'),[
     {k:'Working / contacted',v:68,c:'var(--s2)'},
     {k:'Appointment & offer',v:12,c:'var(--s1)'},
     {k:'Under contract',v:2,c:'var(--s3)'},
-    {k:'Won / acquired',v:3,c:'var(--good)'}
+    {k:'Won / acquired',v:2,c:'var(--good)'}
   ];
   const max=373;
   document.getElementById('funnel').innerHTML=stages.map(s=>{
@@ -462,6 +462,7 @@ function showTab(which){
 // --- Activity & data log (newest first) ---
 const SRC = { qb:['QuickBooks','var(--qb)'], rei:['REI Blackbook','var(--rei)'], mon:['Monday.com','var(--mon)'], sheet:['Google Sheet','var(--s5)'], recon:['Reconcile','var(--s3)'], sys:['System','var(--ink-3)'] };
 const LOG = [
+  ['Jul 10','recon','<b>Won corrected</b> — "Dan Seth Firepine" moved Won→Dead (offer declined, not acquired; tags had "DECLINED OFFER" + "Sold"). Won now 2 (Denise Marks confirmed; Dianne Andrews flagged — "Sold" but no "Acquired/Deal Closed" tag).'],
   ['Jul 10','mon','<b>Duplicate removed</b> — "Jose Espinoza(2)" (REI-tagged "Duplicate lead", same Lake Elsinore property) deleted; board now 373. Under Contract → 2. Flagged 2 near-name pairs (Aminullah/AMINULLAH Mahmood, Marisol/Marizol Hudson) for review.'],
   ['Jul 10','recon','<b>Refresh:</b> board re-counted (374 leads — 122 new, 68 working, 12 appointment, 3 under contract, 3 won, 166 dead). QuickBooks re-pulled: direct-mail spend $124,330; company income $10.98M / net $5.01M YTD.'],
   ['Jul 10','mon','Leads cleaned up — added a clickable <b>"Open in REI Blackbook"</b> link on all 374 leads, removed the raw REI Lead ID column and two blank columns (Mail Batch, Offer Amount).'],
