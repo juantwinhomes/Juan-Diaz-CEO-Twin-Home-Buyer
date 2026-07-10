@@ -62,7 +62,8 @@ function normalizeReiLead(p = {}) {
   let campaign = pick(['campaign', 'Campaign', 'utm_campaign', 'list', 'list_name']);
   if (!campaign) {
     const tagsRaw = pick(['tags', 'Tags', 'flags']);
-    const map = [[/death of joint tenant/i,'Death of Joint Tenant'],[/trustee sale|(^|\W)nts(\W|$)/i,'NTS'],[/notice of default|(^|\W)nod(\W|$)/i,'NOD / Foreclosure'],[/foreclosure/i,'Foreclosure'],[/tax delinquent/i,'Tax Delinquent'],[/lien/i,'Liens'],[/70%? distress|distress score/i,'70% Distress'],[/ugly house/i,'Ugly House'],[/high equity/i,'High Equity'],[/probate/i,'Probate'],[/bankruptcy/i,'Bankruptcy'],[/motivated lead/i,'Motivated Leads']];
+    // "Motivated Leads" / "Property Leads" are separate PPL sources, not DM campaigns — excluded.
+    const map = [[/death of joint tenant/i,'Death of Joint Tenant'],[/trustee sale|(^|\W)nts(\W|$)/i,'NTS'],[/notice of default|(^|\W)nod(\W|$)/i,'NOD / Foreclosure'],[/foreclosure/i,'Foreclosure'],[/tax delinquent/i,'Tax Delinquent'],[/lien/i,'Liens'],[/70%? distress|distress score/i,'70% Distress'],[/ugly house/i,'Ugly House'],[/high equity/i,'High Equity'],[/probate/i,'Probate'],[/bankruptcy/i,'Bankruptcy']];
     for (const [re,l] of map) if (re.test(tagsRaw)) { campaign = l; break; }
   }
   const mailBatch = pick(['mail_batch', 'batch', 'redstone_job_id', 'job_id']);

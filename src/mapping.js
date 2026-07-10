@@ -90,7 +90,8 @@ const CAMPAIGN_TAG_MAP = [
   [/high equity/i, 'High Equity'],
   [/probate/i, 'Probate'],
   [/bankruptcy/i, 'Bankruptcy'],
-  [/motivated lead/i, 'Motivated Leads'],
+  // NOTE: "Motivated Leads" and "Property Leads" are separate PPL lead sources,
+  // not direct-mail campaigns — intentionally excluded from this map.
 ];
 export function deriveCampaignFromTags(tags) {
   const list = Array.isArray(tags) ? tags.join(';') : String(tags || '');
