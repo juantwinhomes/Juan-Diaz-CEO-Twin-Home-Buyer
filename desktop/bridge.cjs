@@ -32,9 +32,9 @@ function makeMonday(cfg) {
       if (lead.mailBatch && C.mailBatch) cv[C.mailBatch] = lead.mailBatch;
       if (lead.phone && C.phone) cv[C.phone] = { phone: lead.phone, countryShortName: 'US' };
       cv[C.dateReceived] = { date: lead.receivedDate || new Date().toISOString().slice(0, 10) };
-      const noteBody = [lead.leadName ? `Lead: ${lead.leadName}` : '', lead.notes].filter(Boolean).join('\n');
+      // Item name carries the address; Monday location needs lat/lng, so fold address into notes.
+      const noteBody = [lead.leadName ? `Lead: ${lead.leadName}` : '', lead.address ? `Property: ${lead.address}` : '', lead.notes].filter(Boolean).join('\n');
       if (noteBody) cv[C.notes] = { text: noteBody };
-      if (lead.address) cv[C.location] = { address: lead.address };
       const d = await gql(
         `mutation ($b: ID!, $g: String!, $n: String!, $cv: JSON!){ create_item(board_id:$b, group_id:$g, item_name:$n, column_values:$cv, create_labels_if_missing:true){ id name } }`,
         { b: cfg.mondayBoardId, g: cfg.mondayNewLeadGroupId, n: lead.itemName, cv: JSON.stringify(cv) }

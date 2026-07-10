@@ -46,10 +46,14 @@ export async function createLeadItem(lead) {
   if (lead.mailBatch && c.mailBatch) columnValues[c.mailBatch] = lead.mailBatch;
   if (lead.phone && c.phone) columnValues[c.phone] = { phone: lead.phone, countryShortName: 'US' };
   columnValues[c.dateReceived] = { date: lead.receivedDate || new Date().toISOString().slice(0, 10) };
-  // Prefix the lead's name into notes since the board keys items by property address.
-  const noteBody = [lead.leadName ? `Lead: ${lead.leadName}` : '', lead.notes].filter(Boolean).join('\n');
+  // The item name carries the property address. The Monday location column needs
+  // lat/lng (a bare address string is rejected), so we fold the address into notes.
+  const noteBody = [
+    lead.leadName ? `Lead: ${lead.leadName}` : '',
+    lead.address ? `Property: ${lead.address}` : '',
+    lead.notes,
+  ].filter(Boolean).join('\n');
   if (noteBody) columnValues[c.notes] = { text: noteBody };
-  if (lead.address) columnValues[c.location] = { address: lead.address };
 
   const data = await gql(
     `mutation ($boardId: ID!, $groupId: String!, $itemName: String!, $columnValues: JSON!) {
