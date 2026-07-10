@@ -1,4 +1,21 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__monday_com__all_api_write",
+      "mcp__monday_com__all_api_read",
+      "mcp__monday_com__all_monday_api",
+      "mcp__monday_com__change_item_column_values",
+      "mcp__monday_com__create_items",
+      "mcp__monday_com__create_item",
+      "mcp__monday_com__create_column",
+      "mcp__monday_com__create_view",
+      "mcp__monday_com__create_widget",
+      "mcp__monday_com__create_dashboard",
+      "mcp__monday_com__get_board_info",
+      "mcp__monday_com__get_board_items_page",
+      "mcp__monday_com__get_column_type_info"
+    ]
+  },
   "hooks": {
     "UserPromptSubmit": [
       {
