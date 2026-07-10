@@ -14,16 +14,17 @@ const DEFAULTS = {
   qboClientId: '', qboClientSecret: '', qboRefreshToken: '', qboRealmId: '', qboEnvironment: 'production',
   periodStart: '2026-01-01', periodEnd: '2026-12-31',
   mondayToken: '',
-  mondayBoardId: '18392647845',
-  mondayNewLeadGroupId: 'topics',
+  mondayBoardId: '18421418228',            // 📬 Direct Mail & Postcard Leads
+  mondayNewLeadGroupId: 'group_mm54scqh',  // 🚨 New Leads
   redstoneBoardId: '18392647066',
   redstoneQtyCol: 'numeric_mm3k840b',
   redstoneCostCol: 'numeric_mm3kd2w',
   mondayColumns: {
-    leadName: 'text_mm3vahm9', leadId: 'text_mm3swbma', contactStatus: 'status',
-    county: 'dropdown_mkyr1cc6', dateReceived: 'date_mm3sgnvn', notes: 'long_text_mkyrkwjz', location: 'location_mm4kxecc',
+    source: 'color_mm54emr0', leadStage: 'color_mm548bx', campaign: 'text_mm54s1vj',
+    mailBatch: 'text_mm54ertw', leadId: 'text_mm54em6', phone: 'phone_mm54d58j',
+    location: 'location_mm5432yk', dateReceived: 'date_mm542afm', notes: 'long_text_mm54j54x',
   },
-  closedStages: ['Acquired', 'Wholesale Closed'],
+  closedStages: ['Acquired', 'Closed / Won'],
 };
 
 function loadConfig() {

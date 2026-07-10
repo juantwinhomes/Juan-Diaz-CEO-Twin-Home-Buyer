@@ -25,12 +25,15 @@ function makeMonday(cfg) {
     },
     async createLeadItem(lead) {
       const cv = {};
-      if (lead.leadName) cv[C.leadName] = lead.leadName;
       if (lead.leadId) cv[C.leadId] = String(lead.leadId);
-      cv[C.contactStatus] = { label: 'New' };
-      if (lead.county) cv[C.county] = { labels: [lead.county] };
+      if (lead.source && C.source) cv[C.source] = { label: lead.source };
+      if (C.leadStage) cv[C.leadStage] = { label: 'New' };
+      if (lead.campaign && C.campaign) cv[C.campaign] = lead.campaign;
+      if (lead.mailBatch && C.mailBatch) cv[C.mailBatch] = lead.mailBatch;
+      if (lead.phone && C.phone) cv[C.phone] = { phone: lead.phone, countryShortName: 'US' };
       cv[C.dateReceived] = { date: lead.receivedDate || new Date().toISOString().slice(0, 10) };
-      if (lead.notes) cv[C.notes] = { text: lead.notes };
+      const noteBody = [lead.leadName ? `Lead: ${lead.leadName}` : '', lead.notes].filter(Boolean).join('\n');
+      if (noteBody) cv[C.notes] = { text: noteBody };
       if (lead.address) cv[C.location] = { address: lead.address };
       const d = await gql(
         `mutation ($b: ID!, $g: String!, $n: String!, $cv: JSON!){ create_item(board_id:$b, group_id:$g, item_name:$n, column_values:$cv, create_labels_if_missing:true){ id name } }`,
@@ -53,11 +56,20 @@ function normalizeReiLead(p = {}) {
   const city = pick(['property_city', 'city']); const state = pick(['property_state', 'state']); const zip = pick(['property_zip', 'zip']);
   const county = pick(['property_county', 'county']);
   const address = [street, city, state, zip].filter(Boolean).join(', ');
+  const phone = pick(['phone', 'phone_number', 'mobile']);
+  const email = pick(['email', 'Email']);
+  const rawSource = pick(['source', 'lead_source', 'Source', 'utm_source']);
+  const campaign = pick(['campaign', 'Campaign', 'utm_campaign', 'list', 'list_name']);
+  const mailBatch = pick(['mail_batch', 'batch', 'redstone_job_id', 'job_id']);
+  const s = rawSource.toLowerCase();
+  let source = rawSource;
+  if (/postcard/.test(s)) source = 'Direct Mail (Postcard)';
+  else if (/check/.test(s)) source = 'Direct Mail (Checks)';
+  else if (/letter/.test(s)) source = 'Direct Mail (Letters)';
   const notes = [];
-  const phone = pick(['phone', 'phone_number', 'mobile']); if (phone) notes.push('Phone: ' + phone);
-  const email = pick(['email', 'Email']); if (email) notes.push('Email: ' + email);
-  const source = pick(['source', 'lead_source', 'campaign']); if (source) notes.push('Source: ' + source);
-  return { itemName: street || address || full || 'New REI Blackbook lead', leadName: full, leadId: pick(['contact_id', 'lead_id', 'id']), county, address, notes: notes.join('\n') };
+  if (email) notes.push('Email: ' + email);
+  if (rawSource && source !== rawSource) notes.push('Raw source: ' + rawSource);
+  return { itemName: street || address || full || 'New REI Blackbook lead', leadName: full, leadId: pick(['contact_id', 'lead_id', 'id']), source, campaign, mailBatch, phone, county, address, notes: notes.join('\n') };
 }
 
 function parseMondayEvent(body = {}) {

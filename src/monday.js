@@ -39,12 +39,16 @@ export async function createLeadItem(lead) {
   const c = config.monday.columns;
   const columnValues = {};
 
-  if (lead.leadName) columnValues[c.leadName] = lead.leadName;
   if (lead.leadId) columnValues[c.leadId] = String(lead.leadId);
-  columnValues[c.contactStatus] = { label: 'New' };
-  if (lead.county) columnValues[c.county] = { labels: [lead.county] };
+  if (lead.source && c.source) columnValues[c.source] = { label: lead.source };
+  if (c.leadStage) columnValues[c.leadStage] = { label: 'New' };
+  if (lead.campaign && c.campaign) columnValues[c.campaign] = lead.campaign;
+  if (lead.mailBatch && c.mailBatch) columnValues[c.mailBatch] = lead.mailBatch;
+  if (lead.phone && c.phone) columnValues[c.phone] = { phone: lead.phone, countryShortName: 'US' };
   columnValues[c.dateReceived] = { date: lead.receivedDate || new Date().toISOString().slice(0, 10) };
-  if (lead.notes) columnValues[c.notes] = { text: lead.notes };
+  // Prefix the lead's name into notes since the board keys items by property address.
+  const noteBody = [lead.leadName ? `Lead: ${lead.leadName}` : '', lead.notes].filter(Boolean).join('\n');
+  if (noteBody) columnValues[c.notes] = { text: noteBody };
   if (lead.address) columnValues[c.location] = { address: lead.address };
 
   const data = await gql(

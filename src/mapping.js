@@ -32,13 +32,21 @@ export function normalizeReiLead(payload = {}) {
   const address = [street, city, state, zip].filter(Boolean).join(', ');
   const phone = pick(payload, ['phone', 'phone_number', 'mobile', 'Phone', 'contact_phone']);
   const email = pick(payload, ['email', 'Email', 'contact_email']);
-  const source = pick(payload, ['source', 'lead_source', 'Source', 'campaign', 'utm_source']);
+  const rawSource = pick(payload, ['source', 'lead_source', 'Source', 'utm_source']);
+  const campaign = pick(payload, ['campaign', 'Campaign', 'utm_campaign', 'list', 'list_name']);
+  const mailBatch = pick(payload, ['mail_batch', 'batch', 'redstone_job_id', 'job_id']);
   const leadId = pick(payload, ['contact_id', 'lead_id', 'id', 'ContactId', 'contactId']);
 
+  // Normalize source to the board's Source labels.
+  const s = rawSource.toLowerCase();
+  let source = rawSource;
+  if (/postcard/.test(s)) source = 'Direct Mail (Postcard)';
+  else if (/check/.test(s)) source = 'Direct Mail (Checks)';
+  else if (/letter/.test(s)) source = 'Direct Mail (Letters)';
+
   const notesParts = [];
-  if (phone) notesParts.push(`Phone: ${phone}`);
   if (email) notesParts.push(`Email: ${email}`);
-  if (source) notesParts.push(`Source: ${source}`);
+  if (rawSource && source !== rawSource) notesParts.push(`Raw source: ${rawSource}`);
   const extraNotes = pick(payload, ['notes', 'message', 'comments']);
   if (extraNotes) notesParts.push(extraNotes);
 
@@ -47,11 +55,20 @@ export function normalizeReiLead(payload = {}) {
     itemName: street || address || fullName || 'New REI Blackbook lead',
     leadName: fullName,
     leadId,
+    source,       // mapped to a board Source label
+    campaign,
+    mailBatch,
+    phone,
     county,
     address,
     receivedDate: pick(payload, ['created_at', 'date', 'received_date']).slice(0, 10) || undefined,
     notes: notesParts.join('\n'),
   };
+}
+
+/** True when a normalized lead is a direct-mail / postcard lead. */
+export function isDirectMailLead(lead) {
+  return /Direct Mail/i.test(lead.source || '');
 }
 
 /**
