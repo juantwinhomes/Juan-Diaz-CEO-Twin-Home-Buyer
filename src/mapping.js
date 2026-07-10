@@ -33,7 +33,9 @@ export function normalizeReiLead(payload = {}) {
   const phone = pick(payload, ['phone', 'phone_number', 'mobile', 'Phone', 'contact_phone']);
   const email = pick(payload, ['email', 'Email', 'contact_email']);
   const rawSource = pick(payload, ['source', 'lead_source', 'Source', 'utm_source']);
-  const campaign = pick(payload, ['campaign', 'Campaign', 'utm_campaign', 'list', 'list_name']);
+  const tagsRaw = pick(payload, ['tags', 'Tags', 'flags']);
+  let campaign = pick(payload, ['campaign', 'Campaign', 'utm_campaign', 'list', 'list_name']);
+  if (!campaign) campaign = deriveCampaignFromTags(tagsRaw); // infer list from motivation tags
   const mailBatch = pick(payload, ['mail_batch', 'batch', 'redstone_job_id', 'job_id']);
   const leadId = pick(payload, ['contact_id', 'lead_id', 'id', 'ContactId', 'contactId']);
 
@@ -69,6 +71,31 @@ export function normalizeReiLead(payload = {}) {
 /** True when a normalized lead is a direct-mail / postcard lead. */
 export function isDirectMailLead(lead) {
   return /Direct Mail/i.test(lead.source || '');
+}
+
+/**
+ * Infer the mail list / campaign from REI Blackbook motivation tags when the
+ * Campaign field is blank. tags may be a comma/semicolon string or array.
+ * Ordered most-specific first.
+ */
+const CAMPAIGN_TAG_MAP = [
+  [/death of joint tenant/i, 'Death of Joint Tenant'],
+  [/notice of trustee sale|(^|\W)nts(\W|$)/i, 'NTS'],
+  [/notice of default|(^|\W)nod(\W|$)/i, 'NOD / Foreclosure'],
+  [/foreclosure/i, 'Foreclosure'],
+  [/tax delinquent/i, 'Tax Delinquent'],
+  [/lien/i, 'Liens'],
+  [/70%? distress|distress score/i, '70% Distress'],
+  [/ugly house/i, 'Ugly House'],
+  [/high equity/i, 'High Equity'],
+  [/probate/i, 'Probate'],
+  [/bankruptcy/i, 'Bankruptcy'],
+  [/motivated lead/i, 'Motivated Leads'],
+];
+export function deriveCampaignFromTags(tags) {
+  const list = Array.isArray(tags) ? tags.join(';') : String(tags || '');
+  for (const [re, label] of CAMPAIGN_TAG_MAP) if (re.test(list)) return label;
+  return '';
 }
 
 /**
