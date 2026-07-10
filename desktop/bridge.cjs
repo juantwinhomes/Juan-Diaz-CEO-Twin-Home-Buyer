@@ -75,7 +75,16 @@ function normalizeReiLead(p = {}) {
   const notes = [];
   if (email) notes.push('Email: ' + email);
   if (rawSource && source !== rawSource) notes.push('Raw source: ' + rawSource);
-  return { itemName: street || address || full || 'New REI Blackbook lead', leadName: full, leadId: pick(['contact_id', 'lead_id', 'id']), source, campaign, mailBatch, phone, county, address, notes: notes.join('\n') };
+  const tags = pick(['tags', 'Tags', 'flags']);
+  return { itemName: street || address || full || 'New REI Blackbook lead', leadName: full, leadId: pick(['contact_id', 'lead_id', 'id']), source, campaign, mailBatch, phone, county, address, tags, notes: notes.join('\n') };
+}
+
+// Exclude PPL/PPC/TV/web leads from the direct-mail board.
+const NON_DIRECT_MAIL = /motivated lead|property leads|(^|\W)ppl(\W|$)|leadgeeks|bing ads|google ads|(^|\W)ppc(\W|$)|facebook|instagram|tv commercial|web inquir|seo/i;
+function isDirectMailLead(lead) {
+  if (!/Direct Mail/i.test(lead.source || '')) return false;
+  if (NON_DIRECT_MAIL.test(lead.tags || '') || NON_DIRECT_MAIL.test(lead.source || '')) return false;
+  return true;
 }
 
 function parseMondayEvent(body = {}) {
@@ -105,6 +114,10 @@ function createBridge(getCfg, log = () => {}) {
     try {
       const cfg = getCfg(); const monday = makeMonday(cfg);
       const lead = normalizeReiLead(req.body);
+      if (!isDirectMailLead(lead)) {
+        log(`[rei→monday] skipped non-direct-mail lead (${lead.source || 'no source'})`);
+        return res.json({ ok: true, skipped: true, reason: 'not a direct-mail/postcard lead' });
+      }
       if (lead.leadId) {
         const existing = await monday.findItemByLeadId(lead.leadId);
         if (existing) { await monday.addItemUpdate(existing.id, `Duplicate REI Blackbook webhook ignored (lead ${lead.leadId}).`); return res.json({ ok: true, deduped: true, itemId: existing.id }); }

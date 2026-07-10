@@ -1,6 +1,6 @@
 import express from 'express';
 import { config } from './config.js';
-import { normalizeReiLead, parseMondayEvent } from './mapping.js';
+import { normalizeReiLead, parseMondayEvent, isDirectMailLead } from './mapping.js';
 import { findItemByLeadId, createLeadItem, addItemUpdate, getItemForClosedDeal } from './monday.js';
 import { recordClosedDeal } from './quickbooks.js';
 
@@ -36,6 +36,11 @@ export function createApp({ onLog = () => {} } = {}) {
     if (!checkSecret(req, res)) return;
     try {
       const lead = normalizeReiLead(req.body);
+      // Only direct-mail / postcard leads belong on this board. Skip PPL/PPC/TV/web.
+      if (!isDirectMailLead(lead)) {
+        log(`[rei→monday] skipped non-direct-mail lead (${lead.source || 'no source'})`);
+        return res.json({ ok: true, skipped: true, reason: 'not a direct-mail/postcard lead' });
+      }
       if (lead.leadId) {
         const existing = await findItemByLeadId(lead.leadId);
         if (existing) {

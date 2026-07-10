@@ -63,14 +63,21 @@ export function normalizeReiLead(payload = {}) {
     phone,
     county,
     address,
+    tags: tagsRaw,
     receivedDate: pick(payload, ['created_at', 'date', 'received_date']).slice(0, 10) || undefined,
     notes: notesParts.join('\n'),
   };
 }
 
-/** True when a normalized lead is a direct-mail / postcard lead. */
+// Tags/sources that mean the lead belongs to a different channel (PPL / PPC / TV /
+// web), so it must NOT be routed to the direct-mail & postcard board.
+const NON_DIRECT_MAIL = /motivated lead|property leads|(^|\W)ppl(\W|$)|leadgeeks|bing ads|google ads|(^|\W)ppc(\W|$)|facebook|instagram|tv commercial|web inquir|seo/i;
+
+/** True only for genuine direct-mail / postcard leads (excludes PPL/PPC/TV/web). */
 export function isDirectMailLead(lead) {
-  return /Direct Mail/i.test(lead.source || '');
+  if (!/Direct Mail/i.test(lead.source || '')) return false;
+  if (NON_DIRECT_MAIL.test(lead.tags || '') || NON_DIRECT_MAIL.test(lead.source || '')) return false;
+  return true;
 }
 
 /**
