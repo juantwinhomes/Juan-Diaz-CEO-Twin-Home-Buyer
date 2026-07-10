@@ -205,9 +205,22 @@
     </div>
   </div>
 
+  <!-- LEAD MAP -->
+  <div class="section">
+    <h2>3 · Lead map — valid, appointment &amp; acquired leads <span style="color:var(--mon);font-size:12px">● Monday.com</span></h2>
+    <p class="desc">Every active direct-mail lead geocoded from its property address on the Monday board. Bigger, brighter pins are further down the funnel. Showing <b>82 of 88</b> active leads (6 fall outside the Bay Area / Central Valley frame). Hover any pin for lead, stage, channel &amp; campaign.</p>
+    <div class="card">
+      <div id="leadmap" style="width:100%;overflow:hidden;border-radius:10px;"></div>
+      <div id="leadmaplegend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12.5px;color:var(--ink-2);"></div>
+      <div class="callout" style="background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--good);border-radius:8px;padding:12px 15px;font-size:13px;color:var(--ink-2);margin-top:14px;">
+        <b>The pipeline is an East Bay / Central Valley story.</b> Appointments and all 3 acquisitions cluster around Oakland, the I-80 corridor and the 205/99 Central Valley — the same areas the postcards concentrate. That geographic overlap is where the follow-up muscle should go.
+      </div>
+    </div>
+  </div>
+
   <!-- 6 POSTCARD OFFICIAL TRACKER -->
   <div class="section">
-    <h2>3 · Postcard campaign — official tracker <span style="color:var(--s5);font-size:12px">● Google Sheet</span></h2>
+    <h2>4 · Postcard campaign — official tracker <span style="color:var(--s5);font-size:12px">● Google Sheet</span></h2>
     <p class="desc">Twin Home Buyer's own "KPI Postcard" sheet — the source of truth for postcards. Full campaign: <b>Dec 3, 2025 – May 29, 2026</b> (218 days).</p>
 
     <div class="grid kpis" style="margin-bottom:16px;">
@@ -246,7 +259,7 @@
 
   <!-- 7 POSTCARD ROI -->
   <div class="section">
-    <h2>4 · Postcard ROI — the money view <span style="color:var(--s5);font-size:12px">● Sheet</span> <span style="color:var(--qb);font-size:12px">● QuickBooks</span></h2>
+    <h2>5 · Postcard ROI — the money view <span style="color:var(--s5);font-size:12px">● Sheet</span> <span style="color:var(--qb);font-size:12px">● QuickBooks</span></h2>
     <p class="desc">The KPIs above count activity. This is the one that counts money — and it exposes where the campaign is actually leaking.</p>
 
     <div class="grid kpis" style="margin-bottom:16px;">
@@ -301,7 +314,7 @@
     (377 with a direct-mail source; campaigns/tags read per contact). Mail production from Monday.com "Equity Track Iriga – Operating System."
     Sections 3–4 use Twin Home Buyer's own "KPI Postcard" Google Sheet (Dec 3 2025 – May 29 2026) — the authoritative postcard tracker
     (77,763 mailed, 92 leads, 0 deals); QuickBooks confirms $0 booked direct-mail revenue. REI Blackbook deal tags are hand-applied — treat as
-    indicative until reconciled against QuickBooks closings. Generated 2026-07-09.
+    indicative until reconciled against QuickBooks closings. Generated 2026-07-10.
   </div>
   </div><!-- /tab-dash -->
 
@@ -407,6 +420,37 @@ hbars(document.getElementById('camp'),[
   {k:'Other campaigns',v:11}
 ],{color:'var(--rei)',fmt:v=>v});
 
+// 3. LEAD MAP (self-contained SVG — geocoded from Monday board Property Address)
+(function(){
+  const el=document.getElementById('leadmap'); if(!el) return;
+  const W={latmin:36.3,latmax:39.95,lngmin:-123.3,lngmax:-120.15};
+  const CAT={
+    'New':{c:'#9aa0a6',r:4}, 'Contacted':{c:'var(--s3)',r:4}, 'Interested':{c:'var(--s2)',r:5},
+    'Under Contract':{c:'var(--s5)',r:6}, 'Appointment':{c:'var(--s1)',r:6}, 'Acquired':{c:'var(--good)',r:7.5}
+  };
+  const ORDER=['New','Contacted','Interested','Under Contract','Appointment','Acquired'];
+  const PTS=[{"n":"Gaye Oram","s":"New","src":"Postcard","c":"Liens","lat":38.2786,"lng":-122.0212},{"n":"Harry McGowan","s":"New","src":"Checks","c":"Liens","lat":39.7625,"lng":-121.8773},{"n":"Richard Newton","s":"New","src":"Checks","c":"NOD / Foreclosure","lat":38.4632,"lng":-122.6566},{"n":"Mary Simonton","s":"New","src":"Postcard","c":"","lat":37.8045,"lng":-122.2714},{"n":"R Sekhon","s":"New","src":"Postcard","c":"","lat":37.8045,"lng":-122.2714},{"n":"Oliver James Liggin","s":"New","src":"Postcard","c":"Ugly House","lat":37.3443,"lng":-121.8008},{"n":"No Caller Name","s":"New","src":"Postcard","c":"Ugly House","lat":37.7372,"lng":-122.2549},{"n":"Alonso Mora","s":"New","src":"Postcard","c":"Ugly House","lat":37.7879,"lng":-122.4075},{"n":"Mark","s":"New","src":"Postcard","c":"Ugly House","lat":38.0001,"lng":-121.8017},{"n":"Diane Ma","s":"New","src":"Postcard","c":"High Equity","lat":38.3593,"lng":-121.9578},{"n":"Barbara  Bray","s":"New","src":"Postcard","c":"","lat":38.4347,"lng":-122.7038},{"n":"Beulah Brown","s":"New","src":"Postcard","c":"","lat":37.8045,"lng":-122.2714},{"n":"ALINE  ALFRED","s":"New","src":"Postcard","c":"Tax Delinquent","lat":37.8357,"lng":-122.2798},{"n":"No Name Caller","s":"New","src":"Checks","c":"Liens","lat":37.1056,"lng":-121.5937},{"n":"No Name Caller","s":"New","src":"Checks","c":"Death of Joint Tenant","lat":37.4883,"lng":-122.2479},{"n":"No Caller Name","s":"New","src":"Checks","c":"NOD / Foreclosure","lat":37.7579,"lng":-122.1919},{"n":"Darinka Stremenov","s":"New","src":"Checks","c":"NOD / Foreclosure","lat":37.3688,"lng":-122.0363},{"n":"Richard Laswell","s":"New","src":"Checks","c":"NOD / Foreclosure","lat":38.1558,"lng":-121.6913},{"n":"Maxine Fields","s":"New","src":"Checks","c":"NOD / Foreclosure","lat":38.3578,"lng":-121.9397},{"n":"Elizabeth Handy","s":"New","src":"Checks","c":"Liens","lat":39.7285,"lng":-121.8375},{"n":"Steven  Williams","s":"New","src":"Checks","c":"Liens","lat":37.883,"lng":-122.2681},{"n":"Carol  Cattell","s":"New","src":"Checks","c":"Liens","lat":38.0093,"lng":-121.8107},{"n":"Caller name not provided","s":"New","src":"Checks","c":"Tax Delinquent","lat":37.5683,"lng":-122.0277},{"n":"Leslie Claudio","s":"New","src":"Checks","c":"EQT Liens- Check","lat":37.936,"lng":-122.3346},{"n":"Michael Levy","s":"New","src":"Checks","c":"Tax Delinquent","lat":37.752,"lng":-122.1293},{"n":"Christian Nunez","s":"New","src":"Checks","c":"Liens","lat":37.9559,"lng":-121.245},{"n":"Nisha Mohammed","s":"New","src":"Checks","c":"Liens","lat":38.4088,"lng":-121.3716},{"n":"Antonio Ortiz","s":"Contacted","src":"Postcard","c":"Liens","lat":37.7918,"lng":-122.2311},{"n":"Sharon Moranda","s":"Contacted","src":"Postcard","c":"Ugly Houses","lat":38.0111,"lng":-121.3039},{"n":"Jacquelyn Soto","s":"Contacted","src":"Postcard","c":"Liens","lat":37.9873,"lng":-121.274},{"n":"David Ramos","s":"Contacted","src":"Postcard","c":"Liens","lat":37.9517,"lng":-121.2479},{"n":"Frank McGuire","s":"Contacted","src":"Postcard","c":"70% Distress","lat":37.9742,"lng":-122.3028},{"n":"John Brooks","s":"Contacted","src":"Postcard","c":"70% Distress","lat":37.8164,"lng":-122.2811},{"n":"Jesus Cisneros","s":"Contacted","src":"Postcard","c":"Liens","lat":37.2608,"lng":-121.902},{"n":"Rev Phinny","s":"Contacted","src":"Postcard","c":"Follow Up Letter","lat":37.6477,"lng":-121.0054},{"n":"AMINULLAH MAHMOOD","s":"Contacted","src":"Postcard","c":"Ugly Houses","lat":37.9977,"lng":-121.2835},{"n":"Remo Kumar","s":"Contacted","src":"Postcard","c":"High Equity","lat":37.396,"lng":-122.0048},{"n":"James","s":"Contacted","src":"Postcard","c":"70% Distress","lat":37.8249,"lng":-122.2526},{"n":"Katherine Tobie","s":"Contacted","src":"Postcard","c":"Tax Delinquent","lat":37.7175,"lng":-122.4033},{"n":"Marco","s":"Contacted","src":"Checks","c":"NTS","lat":37.7498,"lng":-121.1295},{"n":"Steven Martini","s":"Contacted","src":"Postcard","c":"Ugly House","lat":38.1843,"lng":-122.1423},{"n":"No Caller Name","s":"Contacted","src":"Postcard","c":"Tax Delinquent","lat":38.3566,"lng":-121.9877},{"n":"Sadik Alsamiri","s":"Contacted","src":"Checks","c":"Liens","lat":37.7584,"lng":-122.1679},{"n":"Robert Pacheco","s":"Contacted","src":"Postcard","c":"Ugly House","lat":37.669,"lng":-120.9128},{"n":"Shelly Sullivan","s":"Contacted","src":"Postcard","c":"Ugly House","lat":37.9748,"lng":-122.5317},{"n":"Z NUNEZ","s":"Contacted","src":"Postcard","c":"NOD / Foreclosure","lat":38.4141,"lng":-122.7261},{"n":"Frank Sanders","s":"Contacted","src":"Postcard","c":"Ugly House","lat":38.0013,"lng":-121.8183},{"n":"Veda Ambeau","s":"Contacted","src":"Postcard","c":"","lat":37.8045,"lng":-122.2714},{"n":"Sanchez Bulmaro","s":"Contacted","src":"Postcard","c":"","lat":37.8045,"lng":-122.2714},{"n":"Louise Zizileuskas","s":"Contacted","src":"Checks","c":"Liens","lat":37.5483,"lng":-121.9886},{"n":"Martin Rios","s":"Contacted","src":"Checks","c":"Tax Delinquent","lat":37.3362,"lng":-121.8906},{"n":"Sonya Hooks","s":"Contacted","src":"Checks","c":"Liens","lat":38.9018,"lng":-121.3172},{"n":"No Caller Name","s":"Contacted","src":"Checks","c":"NOD / Foreclosure","lat":37.999,"lng":-121.8235},{"n":"William Hines","s":"Contacted","src":"Checks","c":"Liens","lat":36.6974,"lng":-121.6151},{"n":"Veronica","s":"Contacted","src":"Checks","c":"Liens","lat":38.0556,"lng":-122.2119},{"n":"Christina Elmali","s":"Contacted","src":"Checks","c":"Liens","lat":39.2761,"lng":-121.672},{"n":"Trung Nguyen","s":"Contacted","src":"Postcard","c":"Liens","lat":37.3245,"lng":-121.9123},{"n":"Renee White","s":"Contacted","src":"Checks","c":"Liens","lat":37.457,"lng":-122.128},{"n":"Joseph Costa","s":"Contacted","src":"Postcard","c":"Tax Delinquent","lat":37.2864,"lng":-121.8353},{"n":"RASHEL ROSS","s":"Interested","src":"Postcard","c":"Liens","lat":37.39,"lng":-121.836},{"n":"Abdul","s":"Interested","src":"Postcard","c":"Ugly House","lat":38.106,"lng":-122.256},{"n":"William Hellendale","s":"Interested","src":"Checks","c":"Liens","lat":37.7772,"lng":-122.488},{"n":"Shailendra","s":"Interested","src":"Postcard","c":"Postcard","lat":37.9156,"lng":-121.3175},{"n":"Amir Singh","s":"Interested","src":"Checks","c":"Death of Joint Tenant","lat":37.7648,"lng":-121.9544},{"n":"Kimberly Green","s":"Interested","src":"Checks","c":"Tax Delinquent","lat":38.5183,"lng":-121.4759},{"n":"Sharon Evers","s":"Interested","src":"Checks","c":"Liens","lat":36.6003,"lng":-121.8946},{"n":"Dwayne Moore","s":"Interested","src":"Checks","c":"","lat":37.4672,"lng":-122.1432},{"n":"Damond Dixon","s":"Under Contract","src":"Checks","c":"Liens","lat":37.7579,"lng":-122.1875},{"n":"Stefani Brandt","s":"Appointment","src":"Postcard","c":"Liens","lat":37.2513,"lng":-121.8819},{"n":"Ing Kong","s":"Appointment","src":"Postcard","c":"Ugly Houses","lat":37.9746,"lng":-122.5217},{"n":"Dan Choi","s":"Appointment","src":"Checks","c":"Tax Delinquent","lat":37.7081,"lng":-122.1034},{"n":"Chung","s":"Appointment","src":"Checks","c":"Liens","lat":37.7616,"lng":-122.1831},{"n":"Marlene Martin","s":"Appointment","src":"Checks","c":"Liens","lat":38.6268,"lng":-121.5267},{"n":"Anne Smith","s":"Appointment","src":"Checks","c":"Tax Delinquent","lat":37.7531,"lng":-122.1793},{"n":"Lola Russo","s":"Appointment","src":"Checks","c":"Liens","lat":38.023,"lng":-121.8965},{"n":"James Perry Jr.","s":"Appointment","src":"Checks","c":"Tax Delinquent","lat":36.6069,"lng":-121.8416},{"n":"Linda Gheno","s":"Appointment","src":"Checks","c":"Liens","lat":37.6896,"lng":-121.8792},{"n":"Linda Dana","s":"Appointment","src":"Checks","c":"Liens","lat":38.6597,"lng":-121.7777},{"n":"Alvie Arthenack","s":"Appointment","src":"Checks","c":"Liens","lat":37.9748,"lng":-122.5317},{"n":"Denise Marks","s":"Acquired","src":"Postcard","c":"Postcard","lat":38.2606,"lng":-122.6424},{"n":"Dianne Andrews","s":"Acquired","src":"Checks","c":"Ugly Houses","lat":37.7631,"lng":-122.1631},{"n":"Dan Seth Firepine","s":"Acquired","src":"Checks","c":"Liens","lat":37.8878,"lng":-122.2575}];
+  const cities=[['San Francisco',37.775,-122.419],['Oakland',37.80,-122.27],['San Jose',37.335,-121.886],['Stockton',37.96,-121.29],['Sacramento',38.58,-121.49],['Santa Rosa',38.44,-122.71],['Modesto',37.64,-120.99]];
+  const wd=960, ht=690, pad=14;
+  const X=lng=>pad+((lng-W.lngmin)/(W.lngmax-W.lngmin))*(wd-2*pad);
+  const Y=lat=>pad+((W.latmax-lat)/(W.latmax-W.latmin))*(ht-2*pad);
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  let s=`<svg viewBox="0 0 ${wd} ${ht}" style="width:100%;height:auto;max-height:600px;display:block;background:var(--surface-2);border:1px solid var(--border);border-radius:10px" xmlns="http://www.w3.org/2000/svg">`;
+  for(let gx=0;gx<=6;gx++){const x=pad+gx*(wd-2*pad)/6;s+=`<line x1="${x}" y1="${pad}" x2="${x}" y2="${ht-pad}" stroke="var(--border)" stroke-width="0.5" opacity="0.5"/>`;}
+  for(let gy=0;gy<=6;gy++){const y=pad+gy*(ht-2*pad)/6;s+=`<line x1="${pad}" y1="${y}" x2="${wd-pad}" y2="${y}" stroke="var(--border)" stroke-width="0.5" opacity="0.5"/>`;}
+  cities.forEach(([nm,la,ln])=>{const x=X(ln),y=Y(la); if(x<pad||x>wd-pad||y<pad||y>ht-pad)return;
+    s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.5" fill="var(--ink-3)"/><text x="${(x+6).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="12" fill="var(--ink-3)" font-family="sans-serif">${nm}</text>`;});
+  PTS.forEach(p=>{const st=CAT[p.s]||CAT['New']; const x=X(p.lng),y=Y(p.lat);
+    const ring=p.s==='Acquired'?'stroke="#fff" stroke-width="1.5"':(p.s==='Appointment'||p.s==='Under Contract'?'stroke="var(--surface)" stroke-width="1"':'');
+    s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${st.r}" fill="${st.c}" ${ring} fill-opacity="0.9"><title>${esc(p.n)} — ${p.s} · ${p.src}${p.c?' · '+esc(p.c):''}</title></circle>`;});
+  s+=`</svg>`;
+  el.innerHTML=s;
+  const counts={}; PTS.forEach(p=>counts[p.s]=(counts[p.s]||0)+1);
+  document.getElementById('leadmaplegend').innerHTML=ORDER.filter(k=>counts[k]).map(k=>{
+    const st=CAT[k]; return `<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:${st.r*2}px;height:${st.r*2}px;border-radius:50%;background:${st.c};display:inline-block"></span>${k} <b style="color:var(--ink)">${counts[k]}</b></span>`;
+  }).join('');
+})();
+
 // --- Tabs ---
 function showTab(which){
   document.getElementById('tab-dash').classList.toggle('active', which==='dash');
@@ -417,6 +461,11 @@ function showTab(which){
 // --- Activity & data log (newest first) ---
 const SRC = { qb:['QuickBooks','var(--qb)'], rei:['REI Blackbook','var(--rei)'], mon:['Monday.com','var(--mon)'], sheet:['Google Sheet','var(--s5)'], recon:['Reconcile','var(--s3)'], sys:['System','var(--ink-3)'] };
 const LOG = [
+  ['Jul 10','mon','<b>Lead map added</b> — 82 active leads pinned by property address (New, Contacted, Interested, Appointment, Under Contract, Acquired). Clustered East Bay + Central Valley.'],
+  ['Jul 10','mon','All <b>374 direct-mail leads rebuilt</b> on the Iriga board: item name = person, property address moved into its own Property Address column (148 geocoded).'],
+  ['Jul 10','mon','New <b>Marketing Spend (QuickBooks)</b> board + combined Monday dashboard (spend, cost/lead $332, cost/postcard $0.544, ROA 0.0x, leads by stage/source).'],
+  ['Jul 10','qb','Refreshed QuickBooks direct-mail spend: AM- Direct Mail <b>$124,330</b> + Mail Services $2.49 = $124,333 YTD.'],
+  ['Jul 10','sys','Automations scheduled: <b>hourly REI→Monday lead sync</b> (7 AM–8 PM PT) + <b>daily 6 PM KPI refresh</b>.'],
   ['Jul 9','rei','Full contact database re-pulled live: <b>7,853 contacts</b> (1,202 added in 2026).'],
   ['Jul 9','rei','Performing leads geocoded (582): top city <b>Oakland</b> — 14 deals, 24 appts, 28 interested. East Bay leads overall.'],
   ['Jul 9','rei','Direct-mail leads: <b>377</b> (260 checks, 117 postcard); campaign attribution 14%.'],
