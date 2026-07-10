@@ -96,6 +96,23 @@
   .callout b{color:var(--ink);}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
   @media(max-width:680px){.two{grid-template-columns:1fr;}.row .lab{width:110px;}.row .num{width:78px;}}
+  .tabbar{display:flex;gap:4px;margin:4px 0 22px;border-bottom:1px solid var(--border);}
+  .tabbtn{padding:9px 16px;font-size:13.5px;font-weight:600;color:var(--ink-3);cursor:pointer;background:none;border:0;
+    border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .tabbtn.active{color:var(--ink);border-bottom-color:var(--qb);}
+  .tabview{display:none;}
+  .tabview.active{display:block;}
+  .logwrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+  .logrow{display:grid;grid-template-columns:96px 132px 1fr;gap:14px;padding:11px 16px;border-bottom:1px solid var(--border);
+    font-size:13.5px;align-items:baseline;}
+  .logrow:last-child{border-bottom:none;}
+  .logrow .lt{font-variant-numeric:tabular-nums;color:var(--ink-3);font-size:12px;}
+  .logrow .lsrc{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;}
+  .logrow .lmsg{color:var(--ink-2);}
+  .logrow .lmsg b{color:var(--ink);font-weight:600;}
+  .loghdr{display:grid;grid-template-columns:96px 132px 1fr;gap:14px;padding:9px 16px;border-bottom:1px solid var(--border);
+    font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;background:var(--surface-2);}
+  @media(max-width:680px){.logrow,.loghdr{grid-template-columns:70px 96px 1fr;gap:8px;}}
 </style>
 
 <div class="wrap">
@@ -107,6 +124,12 @@
     <button class="theme-btn" onclick="toggleTheme()">◐ Theme</button>
   </header>
 
+  <div class="tabbar">
+    <button class="tabbtn active" onclick="showTab('dash')">Dashboard</button>
+    <button class="tabbtn" onclick="showTab('log')">Activity Log</button>
+  </div>
+
+  <div class="tabview active" id="tab-dash">
   <div class="sources">
     <span class="src"><span class="dot" style="background:var(--qb)"></span>QuickBooks — direct-mail spend</span>
     <span class="src"><span class="dot" style="background:var(--rei)"></span>REI Blackbook — direct-mail leads</span>
@@ -280,6 +303,18 @@
     (77,763 mailed, 92 leads, 0 deals); QuickBooks confirms $0 booked direct-mail revenue. REI Blackbook deal tags are hand-applied — treat as
     indicative until reconciled against QuickBooks closings. Generated 2026-07-09.
   </div>
+  </div><!-- /tab-dash -->
+
+  <div class="tabview" id="tab-log">
+    <div class="section" style="margin-top:8px">
+      <h2>Activity &amp; data log</h2>
+      <p class="desc">Every data pull, reconciliation, and change behind this dashboard — newest first. Sources: <span style="color:var(--qb)">QuickBooks</span>, <span style="color:var(--rei)">REI Blackbook</span>, <span style="color:var(--mon)">Monday.com</span>, <span style="color:var(--s5)">Google Sheet</span>.</p>
+      <div class="logwrap">
+        <div class="loghdr"><div>Date</div><div>Source</div><div>Entry</div></div>
+        <div id="logrows"></div>
+      </div>
+    </div>
+  </div><!-- /tab-log -->
 </div>
 
 <script>
@@ -371,6 +406,40 @@ hbars(document.getElementById('camp'),[
   {k:'70% Distress',v:4},{k:'Tax Delinquent EQT',v:4},{k:'Ugly Houses',v:3},
   {k:'Other campaigns',v:11}
 ],{color:'var(--rei)',fmt:v=>v});
+
+// --- Tabs ---
+function showTab(which){
+  document.getElementById('tab-dash').classList.toggle('active', which==='dash');
+  document.getElementById('tab-log').classList.toggle('active', which==='log');
+  document.querySelectorAll('.tabbtn').forEach((b,i)=>b.classList.toggle('active', (which==='dash')===(i===0)));
+}
+
+// --- Activity & data log (newest first) ---
+const SRC = { qb:['QuickBooks','var(--qb)'], rei:['REI Blackbook','var(--rei)'], mon:['Monday.com','var(--mon)'], sheet:['Google Sheet','var(--s5)'], recon:['Reconcile','var(--s3)'], sys:['System','var(--ink-3)'] };
+const LOG = [
+  ['Jul 9','rei','Full contact database re-pulled live: <b>7,853 contacts</b> (1,202 added in 2026).'],
+  ['Jul 9','rei','Performing leads geocoded (582): top city <b>Oakland</b> — 14 deals, 24 appts, 28 interested. East Bay leads overall.'],
+  ['Jul 9','rei','Direct-mail leads: <b>377</b> (260 checks, 117 postcard); campaign attribution 14%.'],
+  ['Jul 9','sheet','Postcard KPI tracker read: <b>77,763 mailed, 92 leads</b>, 32.6% interest, $50,549 spend, 0 deals.'],
+  ['Jul 9','qb','AM- Direct Mail spend <b>$124,330 YTD</b>. Sales-by-customer returned 0 records — property sales are journaled, not invoiced.'],
+  ['Jul 9','recon','Cross-check: <b>QuickBooks confirms $0 booked</b> postcard revenue vs REI tags (~1 acquired) — tag deals unverified.'],
+  ['Jul 9','mon','Red Stone Upload: 12 batches / 47,803 pieces / $23,278. Pipeline: 3 under contract, 1,444 closed all-time.'],
+  ['Jul 9','sys','Dashboard scoped to <b>direct mail only</b> (removed other channels, Total Income, P&amp;L expenses); added Postcard tracker, ROI, and this Activity Log tab.'],
+  ['Jul 9','sys','Automation set up: <b>daily KPI refresh</b> routine (6 AM PT) + desktop app self-update.'],
+  ['Jul 8','qb','QuickBooks connected — Equity Track Inc; P&amp;L pulled (income $10.98M).'],
+  ['Jul 8','rei','REI Blackbook login verified (email verification) — headless session established.'],
+  ['Jul 8','mon','Monday.com workspaces mapped; Property Leads board (292 items) selected as the deals board.'],
+  ['Jul 8','sys','Integration bridge built (REI Blackbook → Monday → QuickBooks) and pushed to the repo.'],
+];
+(function(){
+  const el=document.getElementById('logrows'); if(!el) return;
+  el.innerHTML = LOG.map(([date,src,msg])=>{
+    const [label,color]=SRC[src]||['—','var(--ink-3)'];
+    return `<div class="logrow"><div class="lt">${date}</div>`+
+      `<div class="lsrc" style="color:${color}">${label}</div>`+
+      `<div class="lmsg">${msg}</div></div>`;
+  }).join('');
+})();
 
 function toggleTheme(){
   const r=document.documentElement;
