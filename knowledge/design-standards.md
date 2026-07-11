@@ -69,14 +69,35 @@ No "recommend and hope it's in stock" — the spec includes what's actually
 available now.
 
 **Output — the Spec Sheet:**
-1. Paint plan (SW codes: exterior body/trim/door + interior walls/trim/ceiling)
-2. Flooring (LVP/carpet/tile by room)
-3. Kitchen (cabinet color/style, counter, backsplash, faucet, appliance tier)
-4. Baths (vanity, tile, fixtures)
-5. Hardware package (door levers, hinges, pulls — finish family)
-6. Windows / interior doors / front door / garage door
-7. Exterior curb-appeal list (house numbers, lights, landscape basics)
-Every line: item, spec/code, finish, where it goes, and budget tier.
+
+*Exterior*
+1. Paint — body, trim, front door, garage door: each a SW code **+ sheen**
+   (body/trim typically flat or satin, front door semi-gloss/gloss, garage
+   door matched to body or a contrast accent)
+2. Garage door — style + color/finish (replace vs. paint call)
+3. Roof/gutters — color, only if being touched
+4. Fencing — material, style, color/stain
+5. Exterior lighting — fixture style/finish (sconces, post/path lights)
+6. Landscaping — plant list (drought-tolerant per Local Market Research),
+   mulch/rock, lawn vs. no-lawn call
+7. Curb-appeal extras — house numbers, mailbox, front door hardware
+
+*Interior*
+8. Paint — walls, trim/baseboards, ceilings, any accent: SW code **+ sheen**
+   (walls typically eggshell/satin, kitchens/baths satin/semi-gloss for
+   moisture, trim semi-gloss, ceilings flat)
+9. Flooring (LVP/carpet/tile by room) + interior door style + baseboard/
+   casing profile
+10. Kitchen (cabinet color/style, counter, backsplash, faucet, appliance tier)
+11. Baths (vanity, tile, fixtures)
+12. Hardware package — door levers, hinges, pulls, switch plates/outlet
+    covers, vent covers — one finish family, no mixing
+13. Interior lighting — fixture style/finish, ceiling fans where called for
+14. Windows — style/color if being replaced
+
+Every line: item, spec/code, **sheen where paint**, finish, where it goes,
+live vendor stock/price, and budget tier. Missing a sheen call is the same
+violation as missing a color code — flag it, don't skip it.
 
 ## Design tiers (match spec to exit price — buy-box aligned)
 
@@ -101,7 +122,9 @@ Every line: item, spec/code, finish, where it goes, and budget tier.
 
 ## Rules the Designer enforces
 
-1. **Every paint call-out = a Sherwin-Williams code.** No "light gray." Codes.
+1. **Every paint call-out = a Sherwin-Williams code + sheen.** No "light
+   gray," and no code without a sheen (flat/matte, eggshell, satin,
+   semi-gloss, gloss) — sheen is not optional trivia, it's a spec line.
 2. Spec matches the TIER — no T3 finishes in a T2 house (that's how rehab
    creeps past the 25–30% red line).
 3. One spec sheet per property, versioned in `projects/` — the team asks the
@@ -115,8 +138,17 @@ Every line: item, spec/code, finish, where it goes, and budget tier.
 7. Juan never picks a color, handle, or fixture. He approves a finished
    proposal in one pass — the Designer/Kristine own getting there.
 
-## Pilot project: 820 28th St, Oakland
+## Pilot project: 1464 Springdale Way, Petaluma
 
-The reset says stay in lane — so the Designer's first job is the focus deal:
-new-construction spec, T2/T3 call by Juan, full SW palette + finish package
-ready before Kiavi funds construction draws. In-lane, immediately useful.
+**This is the first live test of the Designer agent end to end** (Juan's
+call, 2026-07-11). Newly-bought property, quick flip/cosmetic makeup before
+listing — not new construction, existing T1-11 siding and a garage door that
+needs to go. Target vibe: Napa/Petaluma-hills wine-country, on a tight
+budget (see Local Market Research). Spec sheet: `projects/1464-springdale-way-
+petaluma-design-spec.md` — currently a stub, waiting on photos per the Photo
+Protocol above before the Designer can run the full spec.
+
+## Also in the pipeline: 820 28th St, Oakland
+
+Reset-focus deal — new-construction spec, T2/T3 call by Juan, full SW
+palette + finish package ready before Kiavi funds construction draws.
