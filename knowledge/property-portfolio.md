@@ -29,20 +29,16 @@
 - **519 Orizaba Ave, San Francisco (94132)** — est. value ~$1.57M; in KB inventory at $1.42M basis. Confirm hold vs. listed.
 - **2353 Menalto Ave, East Palo Alto (94303)** — small (910 sqft, 1/1, built 1950); not previously in KB. Confirm it's ours and its stage.
 
-## Address flag for the Designer pilot ⚠️
+## Designer pilot address — CONFIRMED
 
-The Petaluma pilot address is **not yet confirmed** and has three conflicting
-versions floating around:
-- Grok's generated prompt said **"1464 Sunrise Parkway, Petaluma"** (bought
-  $350K, ARV ~$520K).
-- Juan (2026-07-11 voice) said **"1464 Springdale Way"** — a Petaluma flip.
-- **164 Springdale Way** is a *different, already-sold* property in Emerald
-  Hills (above) — not Petaluma.
+**1464 Sunrise Parkway, Petaluma, CA** (confirmed by Juan/Christine
+2026-07-11). Grok's working numbers to verify with Kristine: bought ~$350K,
+target ARV ~$520K. Spec: `projects/1464-sunrise-parkway-petaluma-design-
+spec.md`.
 
-"Springdale Way" belongs to Emerald Hills, not Petaluma, so the pilot's real
-street address needs Juan/Kristine to confirm before any bids or permits.
-The stub spec is filed under the Springdale name for now — rename once
-confirmed.
+Note to avoid future mix-ups: this is **not** "Springdale Way." **164
+Springdale Way** is the separate, already-sold Emerald Hills property listed
+above — different house, different town.
 
 ## How the Designer should use this
 

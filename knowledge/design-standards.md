@@ -202,13 +202,13 @@ This is the loop the team repeats for every house:
 5. **Later questions** ("what color's the trim?", "how's the rehab number?")
    → ask the agent, it answers from the saved spec.
 
-## First live test: the Petaluma flip (address TBC)
+## First live test: 1464 Sunrise Parkway, Petaluma
 
 The Petaluma quick-flip is the first end-to-end test of this workflow
 (Juan's call, 2026-07-11) — T1-11 siding, garage door replacement, wine-
-country vibe on a budget. Stub at `projects/1464-springdale-way-petaluma-
-design-spec.md`, waiting on photos + a confirmed address. It's the first
-run, not the only use — the agent is built for the whole pipeline.
+country vibe on a budget. Spec at `projects/1464-sunrise-parkway-petaluma-
+design-spec.md`, waiting on photos. It's the first run, not the only use —
+the agent is built for the whole pipeline.
 
 ## Also in the pipeline: 820 28th St, Oakland
 

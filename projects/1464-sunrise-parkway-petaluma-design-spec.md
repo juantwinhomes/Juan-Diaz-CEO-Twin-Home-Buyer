@@ -1,16 +1,11 @@
-# Petaluma flip (address TBC) — Design Spec
+# 1464 Sunrise Parkway, Petaluma, CA — Design Spec
 
-> STATUS: stub — awaiting photos + address confirmation. First live pilot of
-> the Designer agent (Juan's call, 2026-07-11). See
-> `knowledge/design-standards.md` for the rules this spec must follow (SW
-> code + sheen on every paint call-out, local market research, live vendor
-> stock check, photo protocol).
->
-> ⚠️ **ADDRESS NOT CONFIRMED.** Grok's prompt said "1464 Sunrise Parkway,
-> Petaluma"; Juan said "1464 Springdale Way." Note "164 Springdale Way" is a
-> *different, already-sold* Emerald Hills property. Confirm the real Petaluma
-> street address with Juan/Kristine before bids or permits — see
-> `knowledge/property-portfolio.md`.
+> STATUS: stub — awaiting photos. First live pilot of the Designer agent
+> (Juan's call, 2026-07-11). Address confirmed 2026-07-11: **1464 Sunrise
+> Parkway, Petaluma** (not "Springdale Way" — that's the separate sold
+> Emerald Hills property). See `knowledge/design-standards.md` for the rules
+> this spec must follow (SW code + sheen on every paint call-out, location
+> market research, live vendor stock check, photo protocol, rehab estimate).
 
 ## Known context (from Juan, pre-photos)
 
@@ -20,8 +15,9 @@
   replacing, at least one room with a high ceiling to leverage.
 - Target vibe: Napa / Petaluma Hills wine-country — warm creams, terracotta
   accents, oil-rubbed bronze, drought-tolerant landscaping. Budget-conscious.
-- Design tier: **not yet set** — needs Juan/Kristine call once ARV and rehab
-  budget are pinned down (T1 vs T2, see tier table in design-standards.md).
+- Design tier: **not yet set** — Kristine to set once ARV and rehab budget
+  are pinned down (T1 vs T2, see tier table in design-standards.md). Grok's
+  working numbers to verify: bought ~$350K, target ARV ~$520K.
 
 ## Blocking on
 
@@ -36,5 +32,6 @@ not obvious from photos.
 Once photos are in: run the Designer agent on this property. It will
 produce the full Exterior → Interior spec sheet (paint w/ SW codes + sheen,
 flooring, kitchen, baths, hardware, lighting, garage door, fencing,
-landscaping) with live Home Depot/Empire Today/Granite Expo pricing, and
-flag anything still missing before Juan does his one-pass approval.
+landscaping) plus a phased rehab cost estimate with live Home Depot/Empire
+Today/Granite Expo pricing, and flag anything still missing. Kristine/team
+approve and execute — Juan is not in the loop.
