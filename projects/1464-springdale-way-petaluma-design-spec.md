@@ -1,9 +1,16 @@
-# 1464 Springdale Way, Petaluma, CA — Design Spec
+# Petaluma flip (address TBC) — Design Spec
 
-> STATUS: stub — awaiting photos. First live pilot of the Designer agent
-> (Juan's call, 2026-07-11). See `knowledge/design-standards.md` for the
-> rules this spec must follow (SW code + sheen on every paint call-out,
-> local market research, live vendor stock check, photo protocol).
+> STATUS: stub — awaiting photos + address confirmation. First live pilot of
+> the Designer agent (Juan's call, 2026-07-11). See
+> `knowledge/design-standards.md` for the rules this spec must follow (SW
+> code + sheen on every paint call-out, local market research, live vendor
+> stock check, photo protocol).
+>
+> ⚠️ **ADDRESS NOT CONFIRMED.** Grok's prompt said "1464 Sunrise Parkway,
+> Petaluma"; Juan said "1464 Springdale Way." Note "164 Springdale Way" is a
+> *different, already-sold* Emerald Hills property. Confirm the real Petaluma
+> street address with Juan/Kristine before bids or permits — see
+> `knowledge/property-portfolio.md`.
 
 ## Known context (from Juan, pre-photos)
 
