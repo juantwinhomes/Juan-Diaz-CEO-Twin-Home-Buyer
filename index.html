@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Twin Home Buyer — The Bay Area's trusted local cash home buyer. Get a no-obligation cash offer in just 5 minutes. No realtors, no fees, no repairs.">
+<title>Twin Home Buyer — Sell Your Bay Area House for Cash</title>
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --ink:#050d1f;
+  --navy:#0a1730;
+  --navy-2:#0e1f42;
+  --navy-3:#13294f;
+  --orange:#f6871f;
+  --amber:#ffb35c;
+  --ember:#ff6a2b;
+  --text:#f2f6ff;
+  --text-dim:#9fb2d4;
+  --line:rgba(159,178,212,.16);
+  --glass:rgba(19,41,79,.42);
+  --glass-hi:rgba(255,255,255,.06);
+  --glow-o:rgba(246,135,31,.45);
+  --glow-b:rgba(64,130,255,.35);
+  --radius:20px;
+  --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font);
+  background:var(--ink);
+  color:var(--text);
+  overflow-x:hidden;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--orange);color:var(--ink)}
+img,svg,canvas{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:4px}
+
+/* ============ SCROLL PROGRESS ============ */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:1000;
+  background:linear-gradient(90deg,var(--ember),var(--orange),var(--amber));
+  box-shadow:0 0 12px var(--glow-o)}
+
+/* ============ AMBIENT BACKGROUND ============ */
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+.orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.5;z-index:0;pointer-events:none}
+.orb-a{width:560px;height:560px;top:-160px;right:-120px;background:radial-gradient(circle,rgba(246,135,31,.35),transparent 65%)}
+.orb-b{width:640px;height:640px;top:38%;left:-220px;background:radial-gradient(circle,rgba(56,110,255,.28),transparent 65%)}
+.orb-c{width:520px;height:520px;bottom:-200px;right:8%;background:radial-gradient(circle,rgba(255,106,43,.22),transparent 65%)}
+
+main,header.site,footer.site{position:relative;z-index:1}
+
+/* ============ NAV ============ */
+header.site{
+  position:fixed;top:0;left:0;right:0;z-index:900;
+  transition:background .35s,box-shadow .35s,backdrop-filter .35s;
+}
+header.site.scrolled{
+  background:rgba(6,14,31,.72);
+  backdrop-filter:blur(18px) saturate(1.3);
+  -webkit-backdrop-filter:blur(18px) saturate(1.3);
+  box-shadow:0 8px 40px rgba(0,0,0,.45),inset 0 -1px 0 var(--line);
+}
+.nav{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:28px;padding:16px 24px}
+.brand{display:flex;align-items:center;gap:11px;font-weight:900;letter-spacing:.04em;font-size:1.02rem;line-height:1.05}
+.brand .glyph{width:40px;height:40px;filter:drop-shadow(0 0 10px var(--glow-o))}
+.brand b{color:var(--orange)}
+.nav-links{display:flex;gap:26px;margin-left:auto;font-size:.86rem;font-weight:600;color:var(--text-dim)}
+.nav-links a{position:relative;padding:4px 0;transition:color .25s}
+.nav-links a::after{content:"";position:absolute;left:0;bottom:-2px;height:2px;width:0;background:var(--orange);transition:width .3s;border-radius:2px}
+.nav-links a:hover{color:var(--text)}
+.nav-links a:hover::after{width:100%}
+.nav-phone{font-family:var(--mono);font-size:.85rem;color:var(--amber);font-weight:700;white-space:nowrap}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:13px 26px;border-radius:14px;font-weight:800;font-size:.92rem;letter-spacing:.02em;
+  background:linear-gradient(135deg,var(--ember),var(--orange) 55%,var(--amber));
+  color:#1a0d00;box-shadow:0 4px 24px var(--glow-o),inset 0 1px 0 rgba(255,255,255,.35);
+  transform:translateZ(0);transition:transform .25s,box-shadow .25s;white-space:nowrap;
+}
+.btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 10px 40px var(--glow-o),inset 0 1px 0 rgba(255,255,255,.4)}
+.btn:active{transform:translateY(0) scale(.99)}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line);box-shadow:none}
+.btn.ghost:hover{border-color:var(--orange);color:var(--amber);box-shadow:0 0 24px rgba(246,135,31,.18)}
+.btn.big{padding:17px 34px;font-size:1rem;border-radius:16px}
+
+/* ============ HERO ============ */
+.hero{
+  min-height:100svh;display:flex;align-items:center;
+  padding:130px 24px 40px;position:relative;perspective:1200px;
+}
+.hero-inner{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center;width:100%}
+.eyebrow{
+  font-family:var(--mono);font-size:.74rem;font-weight:700;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--amber);display:inline-flex;align-items:center;gap:10px;margin-bottom:22px;
+}
+.eyebrow::before{content:"";width:34px;height:1px;background:linear-gradient(90deg,transparent,var(--orange))}
+h1{
+  font-size:clamp(2.4rem,5.2vw,4.1rem);line-height:1.04;font-weight:900;letter-spacing:-.025em;
+  text-wrap:balance;margin-bottom:24px;
+}
+h1 .flame{
+  background:linear-gradient(100deg,var(--ember),var(--orange) 45%,var(--amber) 80%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 26px rgba(246,135,31,.35));
+}
+h1 .depth{display:inline-block;transform-style:preserve-3d}
+.hero-sub{color:var(--text-dim);font-size:1.08rem;max-width:52ch;margin-bottom:34px}
+.hero-sub b{color:var(--text)}
+.hero-ctas{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:44px}
+
+.stats{display:flex;gap:0;border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  background:rgba(10,23,48,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);max-width:560px}
+.stat{flex:1;padding:18px 10px;text-align:center;position:relative}
+.stat+.stat{border-left:1px solid var(--line)}
+.stat .num{display:block;font-family:var(--mono);font-size:1.55rem;font-weight:800;color:var(--amber);font-variant-numeric:tabular-nums;
+  text-shadow:0 0 18px rgba(255,179,92,.4);white-space:nowrap}
+.stat .lbl{display:block;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-top:2px}
+
+/* ---- 3D form card ---- */
+.form-scene{perspective:1400px}
+.offer-card{
+  transform-style:preserve-3d;will-change:transform;
+  background:linear-gradient(160deg,rgba(23,46,90,.72),rgba(10,23,48,.82));
+  border:1px solid rgba(255,255,255,.12);border-radius:26px;padding:34px 32px 30px;
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 1px rgba(246,135,31,.08),0 0 90px rgba(246,135,31,.10);
+  position:relative;transition:box-shadow .3s;
+}
+.offer-card::before{
+  content:"";position:absolute;inset:0;border-radius:26px;pointer-events:none;
+  background:linear-gradient(115deg,rgba(255,255,255,.14),transparent 32%,transparent 68%,rgba(246,135,31,.12));
+}
+.offer-card .lift{transform:translateZ(46px)}
+.offer-tag{
+  display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.7rem;font-weight:700;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--amber);
+  border:1px solid rgba(246,135,31,.4);border-radius:100px;padding:7px 16px;margin-bottom:16px;
+  background:rgba(246,135,31,.09);box-shadow:0 0 20px rgba(246,135,31,.15) inset;
+}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 0 rgba(246,135,31,.7);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 10px rgba(246,135,31,0)}100%{box-shadow:0 0 0 0 rgba(246,135,31,0)}}
+.offer-card h2{font-size:1.5rem;font-weight:900;letter-spacing:-.01em;line-height:1.2;margin-bottom:6px;text-wrap:balance}
+.offer-card .mins{color:var(--orange)}
+.offer-card p.small{color:var(--text-dim);font-size:.86rem;margin-bottom:22px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:7px}
+.field input,.field select{
+  width:100%;padding:14px 16px;border-radius:12px;font-size:.95rem;color:var(--text);
+  background:rgba(5,13,31,.6);border:1px solid var(--line);transition:border-color .25s,box-shadow .25s;
+}
+.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23f6871f' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+.field input::placeholder{color:rgba(159,178,212,.5)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(246,135,31,.18),0 0 24px rgba(246,135,31,.12)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.offer-card .btn{width:100%;margin-top:8px;font-size:1rem;padding:16px}
+.form-note{text-align:center;font-size:.74rem;color:var(--text-dim);margin-top:14px}
+.form-success{display:none;text-align:center;padding:40px 10px}
+.form-success .big-check{width:76px;height:76px;margin:0 auto 20px;filter:drop-shadow(0 0 24px rgba(246,135,31,.5))}
+.offer-card.sent form{display:none}
+.offer-card.sent .form-success{display:block}
+
+.badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;justify-content:center}
+.badge{font-size:.7rem;font-weight:700;letter-spacing:.06em;color:var(--text-dim);
+  border:1px solid var(--line);border-radius:100px;padding:6px 14px;display:inline-flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.03)}
+.badge .star{color:var(--amber)}
+
+/* ============ MARQUEE ============ */
+.marquee{
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(246,135,31,.07),rgba(56,110,255,.06),rgba(246,135,31,.07));
+  overflow:hidden;padding:16px 0;position:relative;
+}
+.marquee-track{display:flex;gap:0;width:max-content;animation:marquee 26s linear infinite}
+.marquee-track span{
+  font-family:var(--mono);font-size:.8rem;font-weight:700;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--text-dim);padding:0 34px;display:inline-flex;align-items:center;gap:34px;white-space:nowrap;
+}
+.marquee-track span i{color:var(--orange);font-style:normal;text-shadow:0 0 12px var(--glow-o)}
+@keyframes marquee{to{transform:translateX(-50%)}}
+
+/* ============ SECTIONS ============ */
+section{padding:110px 24px;position:relative}
+.wrap{max-width:1240px;margin:0 auto}
+.sec-head{text-align:center;max-width:760px;margin:0 auto 64px}
+.sec-head h2{font-size:clamp(1.9rem,3.6vw,2.9rem);font-weight:900;letter-spacing:-.02em;line-height:1.12;text-wrap:balance;margin:14px 0 16px}
+.sec-head p{color:var(--text-dim);font-size:1.03rem}
+.sec-head .flame{background:linear-gradient(100deg,var(--ember),var(--orange) 50%,var(--amber));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---- reveal ---- */
+.reveal{opacity:0;transform:translateY(46px) rotateX(8deg);transform-origin:center bottom;transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}.reveal.d4{transition-delay:.32s}
+
+/* ---- process ---- */
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;perspective:1400px}
+.card{
+  transform-style:preserve-3d;will-change:transform;position:relative;
+  background:linear-gradient(165deg,rgba(23,46,90,.55),rgba(10,23,48,.7));
+  border:1px solid var(--line);border-radius:var(--radius);padding:32px 26px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  transition:border-color .3s,box-shadow .3s;
+}
+.card:hover{border-color:rgba(246,135,31,.45);box-shadow:0 24px 60px rgba(0,0,0,.5),0 0 60px rgba(246,135,31,.12)}
+.card .lift{transform:translateZ(34px)}
+.step-num{
+  font-family:var(--mono);font-size:.72rem;font-weight:800;letter-spacing:.2em;color:var(--amber);
+  display:inline-block;border:1px solid rgba(246,135,31,.35);border-radius:8px;padding:4px 10px;margin-bottom:20px;
+  background:rgba(246,135,31,.08);
+}
+.card .icon{width:54px;height:54px;margin-bottom:18px;filter:drop-shadow(0 6px 16px rgba(246,135,31,.35))}
+.card h3{font-size:1.13rem;font-weight:800;margin-bottom:10px;letter-spacing:-.01em}
+.card p{color:var(--text-dim);font-size:.9rem}
+.connector{position:absolute;top:50%;right:-22px;width:22px;height:2px;
+  background:linear-gradient(90deg,var(--orange),transparent);opacity:.6}
+.grid-4 .card:last-child .connector{display:none}
+
+/* ---- problems / holo house ---- */
+.problems{background:linear-gradient(180deg,transparent,rgba(14,31,66,.5) 20%,rgba(14,31,66,.5) 80%,transparent)}
+.holo-wrap{display:flex;justify-content:center;margin:-10px 0 46px}
+#house{width:min(420px,80vw);height:auto;aspect-ratio:1;filter:drop-shadow(0 0 40px rgba(246,135,31,.25))}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;perspective:1400px}
+.list-card ul{list-style:none;margin-top:6px}
+.list-card li{
+  color:var(--text-dim);font-size:.9rem;padding:8px 0 8px 26px;position:relative;border-bottom:1px dashed rgba(159,178,212,.12);
+  transition:color .2s,transform .2s;
+}
+.list-card li:last-child{border-bottom:none}
+.list-card li::before{
+  content:"";position:absolute;left:2px;top:14px;width:12px;height:12px;
+  background:linear-gradient(135deg,var(--orange),var(--amber));border-radius:3px;
+  transform:rotate(45deg) scale(.7);box-shadow:0 0 10px rgba(246,135,31,.5);
+}
+.list-card li:hover{color:var(--text);transform:translateX(5px)}
+
+/* ---- benefits ---- */
+.grid-3b{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;perspective:1400px}
+.benefit{
+  text-align:center;padding:46px 30px;
+}
+.benefit .icon{margin:0 auto 22px;width:66px;height:66px}
+.benefit h3{font-size:1.35rem}
+.benefit .zero{
+  font-family:var(--mono);font-size:3rem;font-weight:900;line-height:1;
+  background:linear-gradient(180deg,var(--amber),var(--ember));-webkit-background-clip:text;background-clip:text;color:transparent;
+  display:block;margin-bottom:12px;filter:drop-shadow(0 0 22px rgba(246,135,31,.35));font-variant-numeric:tabular-nums;
+}
+
+/* ---- cities ---- */
+.city-search{max-width:440px;margin:0 auto 34px;position:relative}
+.city-search input{
+  width:100%;padding:16px 20px 16px 50px;border-radius:100px;font-size:.98rem;color:var(--text);
+  background:rgba(10,23,48,.7);border:1px solid var(--line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  transition:border-color .25s,box-shadow .25s;
+}
+.city-search input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(246,135,31,.16),0 0 30px rgba(246,135,31,.14)}
+.city-search svg{position:absolute;left:19px;top:50%;transform:translateY(-50%);width:18px;height:18px;opacity:.6}
+.cities-grid{display:flex;flex-wrap:wrap;gap:11px;justify-content:center;max-width:1050px;margin:0 auto}
+.city{
+  font-size:.85rem;font-weight:600;color:var(--text-dim);padding:9px 19px;border-radius:100px;
+  border:1px solid var(--line);background:rgba(19,41,79,.4);cursor:default;
+  transition:all .25s;transform:translateZ(0);
+}
+.city:hover{
+  color:#1a0d00;background:linear-gradient(135deg,var(--orange),var(--amber));border-color:transparent;
+  transform:translateY(-3px) scale(1.06);box-shadow:0 8px 26px var(--glow-o);font-weight:800;
+}
+.city.hide{display:none}
+.no-city{display:none;text-align:center;color:var(--text-dim);font-size:.9rem;margin-top:18px}
+
+/* ---- testimonials 3D carousel ---- */
+.stage{height:460px;position:relative;perspective:1500px;margin:0 auto;max-width:900px}
+.ring{
+  position:absolute;inset:0;transform-style:preserve-3d;
+  transition:transform 1s cubic-bezier(.35,.9,.3,1);
+}
+.t-card{
+  position:absolute;left:50%;top:50%;width:min(400px,84vw);margin-left:max(-200px,-42vw);margin-top:-175px;
+  height:350px;padding:36px 32px;border-radius:24px;
+  background:linear-gradient(165deg,rgba(23,46,90,.9),rgba(10,23,48,.95));
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 30px 70px rgba(0,0,0,.5);
+  backface-visibility:hidden;display:flex;flex-direction:column;
+}
+.t-card .stars{color:var(--amber);letter-spacing:5px;font-size:1.05rem;margin-bottom:16px;text-shadow:0 0 14px rgba(255,179,92,.5)}
+.t-card blockquote{color:var(--text-dim);font-size:.98rem;font-style:italic;flex:1}
+.t-card .who{display:flex;align-items:center;gap:13px;margin-top:20px}
+.avatar{
+  width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:1.05rem;color:#1a0d00;
+  background:linear-gradient(135deg,var(--orange),var(--amber));
+  box-shadow:0 0 20px rgba(246,135,31,.4);flex-shrink:0;
+}
+.t-card .who b{display:block;font-size:.95rem}
+.t-card .who span{font-size:.75rem;color:var(--text-dim)}
+.t-nav{display:flex;gap:14px;justify-content:center;margin-top:36px}
+.t-btn{
+  width:52px;height:52px;border-radius:50%;border:1px solid var(--line);color:var(--text);
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;
+  background:rgba(19,41,79,.5);transition:all .25s;
+}
+.t-btn:hover{border-color:var(--orange);color:var(--amber);box-shadow:0 0 24px rgba(246,135,31,.25);transform:scale(1.08)}
+
+/* ---- CTA ---- */
+.cta-band{padding:0 24px}
+.cta-inner{
+  max-width:1100px;margin:0 auto;text-align:center;padding:90px 40px;border-radius:34px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(ellipse 90% 120% at 50% 120%,rgba(246,135,31,.28),transparent 60%),
+    linear-gradient(165deg,var(--navy-3),var(--navy));
+  border:1px solid rgba(246,135,31,.28);
+  box-shadow:0 40px 100px rgba(0,0,0,.5),0 0 120px rgba(246,135,31,.12);
+}
+.cta-inner::before,.cta-inner::after{
+  content:"";position:absolute;width:340px;height:340px;border:1px solid rgba(246,135,31,.2);border-radius:28%;
+  animation:slowspin 26s linear infinite;pointer-events:none;
+}
+.cta-inner::before{top:-190px;left:-140px}
+.cta-inner::after{bottom:-200px;right:-150px;animation-direction:reverse}
+@keyframes slowspin{to{transform:rotate(360deg)}}
+.cta-inner h2{font-size:clamp(1.9rem,3.8vw,3rem);font-weight:900;letter-spacing:-.02em;text-wrap:balance;margin-bottom:16px}
+.cta-inner p{color:var(--text-dim);max-width:56ch;margin:0 auto 36px}
+.cta-inner .row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+
+/* ============ FOOTER ============ */
+footer.site{border-top:1px solid var(--line);margin-top:110px;background:rgba(5,13,31,.7);backdrop-filter:blur(10px)}
+.foot{max-width:1240px;margin:0 auto;padding:64px 24px 30px;display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:44px}
+.foot h4{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-bottom:18px;font-family:var(--mono)}
+.foot ul{list-style:none}
+.foot li{margin-bottom:11px}
+.foot a{color:var(--text-dim);font-size:.9rem;transition:color .2s}
+.foot a:hover{color:var(--amber)}
+.foot .about p{color:var(--text-dim);font-size:.9rem;margin:16px 0}
+.foot .contact-line{font-family:var(--mono);font-size:.88rem;color:var(--text);margin-bottom:8px}
+.copyright{border-top:1px solid var(--line);text-align:center;padding:22px;font-size:.78rem;color:var(--text-dim)}
+
+/* ============ RESPONSIVE ============ */
+@media(max-width:1020px){
+  .hero-inner{grid-template-columns:1fr;gap:44px}
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .connector{display:none}
+  .grid-3,.grid-3b{grid-template-columns:1fr;max-width:520px;margin:0 auto}
+  .foot{grid-template-columns:1fr 1fr}
+  .nav-links{display:none}
+}
+@media(max-width:640px){
+  .field-row{grid-template-columns:1fr}
+  .grid-4{grid-template-columns:1fr}
+  .stats{flex-wrap:wrap}
+  .stat{min-width:45%}
+  .foot{grid-template-columns:1fr}
+  .nav-phone{display:none}
+  section{padding:80px 18px}
+  .stage{height:430px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<canvas id="stars" aria-hidden="true"></canvas>
+<div class="orb orb-a" aria-hidden="true"></div>
+<div class="orb orb-b" aria-hidden="true"></div>
+<div class="orb orb-c" aria-hidden="true"></div>
+
+<!-- ============ NAV ============ -->
+<header class="site" id="nav">
+  <nav class="nav">
+    <a class="brand" href="#top" aria-label="Twin Home Buyer home">
+      <svg class="glyph" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <path d="M6 26L24 10l18 16" stroke="#f6871f" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M11 24v14h10v-9h6v9h10V24" stroke="#f2f6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="24" cy="7" r="2.4" fill="#ffb35c"/>
+      </svg>
+      <span>TWIN<br><b>HOME&nbsp;BUYER</b></span>
+    </a>
+    <div class="nav-links">
+      <a href="#how">How It Works</a>
+      <a href="#problems">We Buy Any House</a>
+      <a href="#cities">Cities</a>
+      <a href="#reviews">Reviews</a>
+    </div>
+    <a class="nav-phone" href="tel:+14154158946">(415) 415-TWIN</a>
+    <a class="btn" href="#offer">Get My Cash Offer</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="offer">
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <span class="eyebrow">Bay Area · Locally Owned · 100+ Five-Star Reviews</span>
+        <h1><span class="depth" id="h1-depth">The Bay Area's Trusted<br>Local <span class="flame">Cash Home Buyer</span></span></h1>
+        <p class="hero-sub">
+          Get a <b>no-obligation cash offer in just 5 minutes.</b> No realtors, no hidden fees,
+          no commissions, no repairs, no work. We buy houses as-is and close on your schedule.
+        </p>
+        <div class="hero-ctas">
+          <a class="btn big" href="#offer-form">Get My Cash Offer Today</a>
+          <a class="btn ghost big" href="tel:+14154158946">Call (415) 415-TWIN</a>
+        </div>
+        <div class="stats" aria-label="Track record">
+          <div class="stat"><span class="num" data-count="100" data-suffix="+">0</span><span class="lbl">5-Star Reviews</span></div>
+          <div class="stat"><span class="num" data-count="5" data-suffix=" min">0</span><span class="lbl">To Get an Offer</span></div>
+          <div class="stat"><span class="num" data-count="0" data-prefix="$">$0</span><span class="lbl">Fees or Repairs</span></div>
+          <div class="stat"><span class="num" data-count="7" data-suffix=" days">0</span><span class="lbl">Fastest Close</span></div>
+        </div>
+      </div>
+
+      <div class="form-scene">
+        <div class="offer-card tilt" id="offer-form" data-max-tilt="5">
+          <div class="lift">
+            <span class="offer-tag"><span class="pulse"></span>Free · No Obligation</span>
+            <h2>Get a Cash Offer in Just <span class="mins">5 Minutes</span></h2>
+            <p class="small">Tell us about your property and we'll email you a fair cash offer. No inspections, no gimmicks.</p>
+            <form id="lead-form" novalidate>
+              <div class="field-row">
+                <div class="field">
+                  <label for="f-name">Name *</label>
+                  <input id="f-name" name="name" type="text" placeholder="John Doe" required autocomplete="name">
+                </div>
+                <div class="field">
+                  <label for="f-phone">Phone *</label>
+                  <input id="f-phone" name="phone" type="tel" placeholder="510-123-4567" required autocomplete="tel">
+                </div>
+              </div>
+              <div class="field">
+                <label for="f-address">Property Address *</label>
+                <input id="f-address" name="address" type="text" placeholder="Your address" required autocomplete="street-address">
+              </div>
+              <div class="field">
+                <label for="f-source">How did you hear about us?</label>
+                <select id="f-source" name="source">
+                  <option value="">Select one</option>
+                  <option>Google</option>
+                  <option>Facebook / Instagram</option>
+                  <option>TV</option>
+                  <option>Mail</option>
+                  <option>Friend or family referral</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <button class="btn" type="submit">Get My Cash Offer Today</button>
+              <p class="form-note">* Indicates required field. Your info stays private — we never sell it.</p>
+            </form>
+            <div class="form-success" role="status">
+              <svg class="big-check" viewBox="0 0 76 76" fill="none" aria-hidden="true">
+                <circle cx="38" cy="38" r="34" stroke="#f6871f" stroke-width="4"/>
+                <path d="M24 39l10 10 18-20" stroke="#ffb35c" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h2>Got it — we're on it!</h2>
+              <p class="small" style="margin-top:8px">Our team will pull some data on your property and call you shortly with a fair cash offer.</p>
+            </div>
+            <div class="badges">
+              <span class="badge"><span class="star">★★★★★</span> 4.9 Google Rating</span>
+              <span class="badge">BBB Accredited</span>
+              <span class="badge">CA Licensed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MARQUEE ============ -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>No Realtors <i>✦</i> No Hidden Fees <i>✦</i> No Commissions <i>✦</i> No Repairs <i>✦</i> No Work <i>✦</i> As-Is, Any Condition <i>✦</i> Close On Your Schedule <i>✦</i></span>
+      <span>No Realtors <i>✦</i> No Hidden Fees <i>✦</i> No Commissions <i>✦</i> No Repairs <i>✦</i> No Work <i>✦</i> As-Is, Any Condition <i>✦</i> Close On Your Schedule <i>✦</i></span>
+    </div>
+  </div>
+
+  <!-- ============ PROCESS ============ -->
+  <section id="how">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow" style="justify-content:center">Our Process Is Simple</span>
+        <h2>Sell Your House for <span class="flame">Cash</span> in 4 Steps</h2>
+        <p>From first call to cash in hand — most sellers close in as few as 7 days.</p>
+      </div>
+      <div class="grid-4">
+        <div class="card tilt reveal" data-max-tilt="8">
+          <div class="lift">
+            <span class="step-num">STEP 01</span>
+            <svg class="icon" viewBox="0 0 54 54" fill="none" aria-hidden="true"><rect x="7" y="10" width="40" height="30" rx="6" stroke="#f6871f" stroke-width="3"/><path d="M14 20h26M14 27h18" stroke="#ffb35c" stroke-width="3" stroke-linecap="round"/></svg>
+            <h3>Send Us the Address</h3>
+            <p>Our team will pull some data to determine a fair price for your property.</p>
+          </div>
+          <span class="connector"></span>
+        </div>
+        <div class="card tilt reveal d1" data-max-tilt="8">
+          <div class="lift">
+            <span class="step-num">STEP 02</span>
+            <svg class="icon" viewBox="0 0 54 54" fill="none" aria-hidden="true"><rect x="16" y="6" width="22" height="42" rx="6" stroke="#f6871f" stroke-width="3"/><circle cx="27" cy="41" r="2.5" fill="#ffb35c"/><path d="M8 18c2-6 6-10 8-11M46 18c-2-6-6-10-8-11" stroke="#ffb35c" stroke-width="3" stroke-linecap="round"/></svg>
+            <h3>Get a Quick Call</h3>
+            <p>A quick call to gather basic information about the property and formulate your offer.</p>
+          </div>
+          <span class="connector"></span>
+        </div>
+        <div class="card tilt reveal d2" data-max-tilt="8">
+          <div class="lift">
+            <span class="step-num">STEP 03</span>
+            <svg class="icon" viewBox="0 0 54 54" fill="none" aria-hidden="true"><rect x="6" y="14" width="42" height="26" rx="6" stroke="#f6871f" stroke-width="3"/><circle cx="27" cy="27" r="7" stroke="#ffb35c" stroke-width="3"/><path d="M12 20v.1M42 34v.1" stroke="#ffb35c" stroke-width="4" stroke-linecap="round"/></svg>
+            <h3>Get a Cash Offer</h3>
+            <p>We'll email you a fair cash offer. No inspections, no gimmicks, and no work required.</p>
+          </div>
+          <span class="connector"></span>
+        </div>
+        <div class="card tilt reveal d3" data-max-tilt="8">
+          <div class="lift">
+            <span class="step-num">STEP 04</span>
+            <svg class="icon" viewBox="0 0 54 54" fill="none" aria-hidden="true"><rect x="8" y="10" width="38" height="36" rx="6" stroke="#f6871f" stroke-width="3"/><path d="M8 20h38M18 6v8M36 6v8" stroke="#f6871f" stroke-width="3" stroke-linecap="round"/><path d="M19 33l6 6 11-12" stroke="#ffb35c" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <h3>Close on Your Schedule</h3>
+            <p>Accept the offer and we schedule closing when you're ready — cash in as few as 7 days.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROBLEMS ============ -->
+  <section class="problems" id="problems">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow" style="justify-content:center">Got an Unwanted Property?</span>
+        <h2>We Solve <span class="flame">Real Estate Problems.</span></h2>
+        <p>Any reason. Any condition. Any issue. If it has a roof, we'll make you a fair cash offer.</p>
+      </div>
+      <div class="holo-wrap reveal">
+        <canvas id="house" width="420" height="420" aria-label="Rotating 3D holographic house"></canvas>
+      </div>
+      <div class="grid-3">
+        <div class="card list-card tilt reveal" data-max-tilt="6">
+          <div class="lift">
+            <h3>Any Reason</h3>
+            <ul>
+              <li>Death of a joint tenant</li>
+              <li>Admin of trust</li>
+              <li>Foreclosure</li>
+              <li>Just need cash</li>
+              <li>Inherited property</li>
+              <li>Relocation</li>
+              <li>Tired landlord</li>
+              <li>Avoiding bankruptcy</li>
+              <li>Health or medical issues</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card list-card tilt reveal d1" data-max-tilt="6">
+          <div class="lift">
+            <h3>Any Condition</h3>
+            <ul>
+              <li>Outdated or old house</li>
+              <li>New home builds</li>
+              <li>Storm, fire, or water damage</li>
+              <li>Termite damage</li>
+              <li>Incomplete construction</li>
+              <li>Hoarder house</li>
+              <li>Needs major repairs</li>
+              <li>Tenant occupied</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card list-card tilt reveal d2" data-max-tilt="6">
+          <div class="lift">
+            <h3>Any Issue</h3>
+            <ul>
+              <li>Tax liens</li>
+              <li>Title concerns</li>
+              <li>Code violations</li>
+              <li>Low home equity</li>
+              <li>Family issues</li>
+              <li>Late mortgage payments</li>
+              <li>Insurance cancellation</li>
+              <li>Properties out of area</li>
+              <li>Condemned house</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BENEFITS ============ -->
+  <section id="why">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow" style="justify-content:center">Why Sellers Choose Us</span>
+        <h2>Keep Your Equity. <span class="flame">Skip the Stress.</span></h2>
+        <p>We help Bay Area homeowners sell fast without traditional listing stress — no financing delays, no open houses, no waiting.</p>
+      </div>
+      <div class="grid-3b">
+        <div class="card benefit tilt reveal" data-max-tilt="7">
+          <div class="lift">
+            <span class="zero">$0</span>
+            <h3>No Commissions</h3>
+            <p>Skip agent fees and keep your equity. Sell directly to us and pay $0 in commissions or hidden fees.</p>
+          </div>
+        </div>
+        <div class="card benefit tilt reveal d1" data-max-tilt="7">
+          <div class="lift">
+            <span class="zero">AS-IS</span>
+            <h3>No Repairs</h3>
+            <p>Sell your house strictly as-is. We handle all cleaning, heavy repairs, and debris removal for you.</p>
+          </div>
+        </div>
+        <div class="card benefit tilt reveal d2" data-max-tilt="7">
+          <div class="lift">
+            <span class="zero">100%</span>
+            <h3>Paid Closing Costs</h3>
+            <p>We cover all typical closing fees and let you choose the exact date that works for your move.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CITIES ============ -->
+  <section id="cities">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow" style="justify-content:center">Service Area</span>
+        <h2>Do You Own Property in <span class="flame">Any of These Cities?</span></h2>
+        <p>We actively buy houses in these Bay Area cities and surrounding areas. Get a no-obligation cash offer in just 5 minutes.</p>
+      </div>
+      <div class="city-search reveal">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="#9fb2d4" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="#9fb2d4" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="search" id="city-filter" placeholder="Search cities…" aria-label="Search cities">
+      </div>
+      <div class="cities-grid reveal d1" id="cities-grid"></div>
+      <p class="no-city" id="no-city">We likely still buy there — call <a href="tel:+14154158946" style="color:var(--amber)">(415) 415-TWIN</a> to check.</p>
+    </div>
+  </section>
+
+  <!-- ============ TESTIMONIALS ============ -->
+  <section id="reviews">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow" style="justify-content:center">Real People, Real Results</span>
+        <h2>What Our <span class="flame">Clients Say</span></h2>
+        <p>100+ verified excellent ratings on Google.</p>
+      </div>
+      <div class="stage reveal">
+        <div class="ring" id="ring">
+          <div class="t-card">
+            <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+            <blockquote>"Stress-free process — they paid all the closing costs and I didn't have to do any cleaning or repairs. Juan Diaz and his team are men of their word. They close faster than any realtor listing ever could."</blockquote>
+            <div class="who"><span class="avatar">R</span><div><b>Rafael P.</b><span>Verified Google Review</span></div></div>
+          </div>
+          <div class="t-card">
+            <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+            <blockquote>"Juan Diaz and his team deliver on their promises and go above and beyond. Their professionalism, honesty, and hard work are very much respected. I recommend them 100%."</blockquote>
+            <div class="who"><span class="avatar">R</span><div><b>Robert R.</b><span>Verified Google Review</span></div></div>
+          </div>
+          <div class="t-card">
+            <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+            <blockquote>"Called Twin Home Buyer with questions. They listened, offered honest advice, and followed up just like they said they would. Super kind and no pressure. Great people!"</blockquote>
+            <div class="who"><span class="avatar">E</span><div><b>Edgar R.</b><span>Verified Google Review</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="t-nav">
+        <button class="t-btn" id="t-prev" aria-label="Previous review">‹</button>
+        <button class="t-btn" id="t-next" aria-label="Next review">›</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA ============ -->
+  <section class="cta-band">
+    <div class="cta-inner reveal">
+      <span class="eyebrow" style="justify-content:center">Ready When You Are</span>
+      <h2>Ready to Sell Your House <span class="flame">Fast for Cash?</span></h2>
+      <p>Skip the repairs, avoid agent fees, and get a fair cash offer today. Locally owned, family operated, and available 24/7.</p>
+      <div class="row">
+        <a class="btn big" href="#offer">Get My Cash Offer Now</a>
+        <a class="btn ghost big" href="tel:+14154158946">Call or Text (415) 415-TWIN</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site">
+  <div class="foot">
+    <div class="about">
+      <a class="brand" href="#top">
+        <svg class="glyph" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <path d="M6 26L24 10l18 16" stroke="#f6871f" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M11 24v14h10v-9h6v9h10V24" stroke="#f2f6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="24" cy="7" r="2.4" fill="#ffb35c"/>
+        </svg>
+        <span>TWIN<br><b>HOME&nbsp;BUYER</b></span>
+      </a>
+      <p>Based in the Bay Area, Twin Home Buyer is a locally-owned family operation. We buy houses as-is, covering all commissions and closing costs for a hassle-free cash exit.</p>
+      <div class="contact-line">170 Glenn Way, Suite 5</div>
+      <div class="contact-line">San Carlos, California 94070</div>
+      <div class="contact-line" style="margin-top:14px">CALL&nbsp; <a href="tel:+14154158946" style="color:var(--amber)">(415) 415-TWIN</a></div>
+      <div class="contact-line">TEXT&nbsp; <a href="sms:+14154158946" style="color:var(--amber)">(415) 415-TWIN</a></div>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#top">Home</a></li>
+        <li><a href="#how">Our Process</a></li>
+        <li><a href="#reviews">Reviews</a></li>
+        <li><a href="#cities">Service Area</a></li>
+        <li><a href="#offer">Get an Offer</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Situations</h4>
+      <ul>
+        <li><a href="#problems">Admin of Trust</a></li>
+        <li><a href="#problems">Death of a Joint Tenant</a></li>
+        <li><a href="#problems">Divorce Assets</a></li>
+        <li><a href="#problems">Foreclosures</a></li>
+        <li><a href="#problems">Inherited Property</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Trust</h4>
+      <ul>
+        <li><a href="#reviews">★ 4.9 Google Rating</a></li>
+        <li><a href="#reviews">BBB Accredited Business</a></li>
+        <li><a href="#reviews">California Local Business</a></li>
+        <li><a href="#reviews">As Seen on TV</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="copyright">© 2026 Twin Home Buyer. All Rights Reserved. · Juan Diaz, CEO</div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- scroll progress + nav ---------- */
+var progress = document.getElementById("progress");
+var nav = document.getElementById("nav");
+function onScroll(){
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  progress.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + "%";
+  nav.classList.toggle("scrolled", h.scrollTop > 30);
+}
+addEventListener("scroll", onScroll, {passive:true}); onScroll();
+
+/* ---------- reveal on scroll ---------- */
+var io = new IntersectionObserver(function(es){
+  es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } });
+},{threshold:.15});
+document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+
+/* ---------- animated counters ---------- */
+var cio = new IntersectionObserver(function(es){
+  es.forEach(function(e){
+    if(!e.isIntersecting) return;
+    cio.unobserve(e.target);
+    var el = e.target, end = +el.dataset.count,
+        pre = el.dataset.prefix || "", suf = el.dataset.suffix || "", t0 = null;
+    function tick(t){
+      if(!t0) t0 = t;
+      var p = Math.min((t - t0) / 1400, 1), ease = 1 - Math.pow(1 - p, 3);
+      el.textContent = pre + Math.round(end * ease) + suf;
+      if(p < 1) requestAnimationFrame(tick);
+    }
+    if(reduced){ el.textContent = pre + end + suf; } else { requestAnimationFrame(tick); }
+  });
+},{threshold:.6});
+document.querySelectorAll(".num[data-count]").forEach(function(el){ cio.observe(el); });
+
+/* ---------- 3D tilt cards ---------- */
+if(!reduced && matchMedia("(pointer:fine)").matches){
+  document.querySelectorAll(".tilt").forEach(function(card){
+    var max = +card.dataset.maxTilt || 7;
+    card.addEventListener("pointermove", function(ev){
+      var r = card.getBoundingClientRect();
+      var x = (ev.clientX - r.left) / r.width - .5;
+      var y = (ev.clientY - r.top) / r.height - .5;
+      card.style.transform = "rotateY(" + (x * max) + "deg) rotateX(" + (-y * max) + "deg) translateZ(0)";
+    });
+    card.addEventListener("pointerleave", function(){
+      card.style.transition = "transform .5s cubic-bezier(.2,.7,.2,1)";
+      card.style.transform = "rotateY(0) rotateX(0)";
+      setTimeout(function(){ card.style.transition = ""; }, 500);
+    });
+  });
+}
+
+/* ---------- hero headline mouse parallax ---------- */
+var depth = document.getElementById("h1-depth");
+if(depth && !reduced && matchMedia("(pointer:fine)").matches){
+  addEventListener("pointermove", function(e){
+    var x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5;
+    depth.style.transform = "translate(" + (x * -14) + "px," + (y * -10) + "px)";
+  }, {passive:true});
+}
+
+/* ---------- particle depth field ---------- */
+var cv = document.getElementById("stars"), cx = cv.getContext("2d");
+var W, H, dpr = Math.min(devicePixelRatio || 1, 2), pts = [];
+var mouse = {x:.5, y:.5};
+function sizeStars(){
+  W = innerWidth; H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + "px"; cv.style.height = H + "px";
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+sizeStars(); addEventListener("resize", sizeStars);
+addEventListener("pointermove", function(e){ mouse.x = e.clientX / W; mouse.y = e.clientY / H; }, {passive:true});
+var N = Math.min(170, Math.floor(innerWidth / 8));
+for(var i = 0; i < N; i++){
+  pts.push({x:Math.random()*2-1, y:Math.random()*2-1, z:Math.random()*.9+.1,
+            v:.0006+Math.random()*.0012, hue:Math.random()<.28});
+}
+function drawStars(){
+  cx.clearRect(0,0,W,H);
+  var f = Math.min(W,H) * .9;
+  var ox = (mouse.x - .5) * .16, oy = (mouse.y - .5) * .12;
+  for(var i = 0; i < pts.length; i++){
+    var p = pts[i];
+    p.z -= p.v;
+    if(p.z <= .06){ p.z = 1; p.x = Math.random()*2-1; p.y = Math.random()*2-1; }
+    var sx = W/2 + (p.x + ox * p.z) * f / p.z * .5;
+    var sy = H/2 + (p.y + oy * p.z) * f / p.z * .5;
+    if(sx < -20 || sx > W+20 || sy < -20 || sy > H+20) continue;
+    var r = (1 - p.z) * 2.4 + .3, a = (1 - p.z) * .8 + .08;
+    cx.beginPath();
+    cx.fillStyle = p.hue ? "rgba(246,135,31," + a + ")" : "rgba(140,170,230," + a * .8 + ")";
+    cx.arc(sx, sy, r, 0, 6.2832);
+    cx.fill();
+  }
+  if(!reduced) requestAnimationFrame(drawStars);
+}
+drawStars();
+
+/* ---------- holographic wireframe house ---------- */
+var hc = document.getElementById("house");
+if(hc){
+  var hx = hc.getContext("2d"), HS = 420;
+  hc.width = HS * dpr; hc.height = HS * dpr;
+  hx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // vertices: base cube + roof ridge + door + chimney
+  var V = [
+    [-1,1,-1],[1,1,-1],[1,1,1],[-1,1,1],          // 0-3 floor
+    [-1,-.2,-1],[1,-.2,-1],[1,-.2,1],[-1,-.2,1],  // 4-7 wall top
+    [0,-1.1,-1],[0,-1.1,1],                        // 8-9 roof ridge
+    [-.25,1,1.001],[.25,1,1.001],[-.25,.25,1.001],[.25,.25,1.001], // 10-13 door
+    [.45,-.75,-.35],[.75,-.75,-.35],[.75,-.75,.05],[.45,-.75,.05], // 14-17 chimney top
+    [.45,-.45,-.35],[.75,-.45,-.35],[.75,-.45,.05],[.45,-.45,.05]  // 18-21 chimney base
+  ];
+  var E = [
+    [0,1],[1,2],[2,3],[3,0],
+    [4,5],[5,6],[6,7],[7,4],
+    [0,4],[1,5],[2,6],[3,7],
+    [4,8],[5,8],[7,9],[6,9],[8,9],
+    [10,12],[12,13],[13,11],
+    [14,15],[15,16],[16,17],[17,14],
+    [14,18],[15,19],[16,20],[17,21]
+  ];
+  var ang = 0, tiltX = .42;
+  function drawHouse(){
+    hx.clearRect(0, 0, HS, HS);
+    ang += reduced ? 0 : .006;
+    var ca = Math.cos(ang), sa = Math.sin(ang);
+    var ct = Math.cos(tiltX), st = Math.sin(tiltX);
+    var P = [];
+    for(var i = 0; i < V.length; i++){
+      var x = V[i][0], y = V[i][1], z = V[i][2];
+      var rx = x * ca - z * sa, rz = x * sa + z * ca;         // rotate Y
+      var ry = y * ct - rz * st, rz2 = y * st + rz * ct;      // tilt X
+      var d = 4.6 + rz2, s = 470 / d;                          // perspective
+      P.push([HS/2 + rx * s, HS/2 + 26 + ry * s, d]);
+    }
+    // ground glow ring
+    hx.beginPath();
+    hx.strokeStyle = "rgba(246,135,31,.22)";
+    hx.lineWidth = 1.5;
+    hx.ellipse(HS/2, HS/2 + 148, 158, 40, 0, 0, 6.2832);
+    hx.stroke();
+    // edges
+    for(var j = 0; j < E.length; j++){
+      var a = P[E[j][0]], b = P[E[j][1]];
+      var near = Math.min(a[2], b[2]);
+      var alpha = Math.max(.18, Math.min(.95, (5.8 - near) / 2));
+      hx.beginPath();
+      hx.strokeStyle = "rgba(255,166,74," + alpha + ")";
+      hx.lineWidth = 2;
+      hx.shadowColor = "rgba(246,135,31,.8)";
+      hx.shadowBlur = 9;
+      hx.moveTo(a[0], a[1]); hx.lineTo(b[0], b[1]);
+      hx.stroke();
+    }
+    hx.shadowBlur = 0;
+    // vertex nodes
+    for(var k = 0; k < P.length; k++){
+      hx.beginPath();
+      hx.fillStyle = "rgba(255,206,140,.9)";
+      hx.arc(P[k][0], P[k][1], 2.4, 0, 6.2832);
+      hx.fill();
+    }
+    if(!reduced) requestAnimationFrame(drawHouse);
+  }
+  drawHouse();
+}
+
+/* ---------- cities ---------- */
+var CITIES = ["Alameda","Albany","American Canyon","Antioch","Atherton","Belmont","Berkeley","Brentwood","Burlingame","Campbell","Concord","Cupertino","Daly City","Danville","Dublin","East Palo Alto","El Cerrito","Emeryville","Fairfield","Foster City","Fremont","Gilroy","Half Moon Bay","Hayward","Livermore","Los Altos","Los Gatos","Martinez","Menlo Park","Millbrae","Milpitas","Morgan Hill","Mountain View","Napa","Newark","Novato","Oakland","Pacifica","Palo Alto","Petaluma","Pittsburg","Pleasant Hill","Pleasanton","Redwood City","Richmond","San Bruno","San Carlos","San Francisco","San Jose","San Leandro","San Mateo","San Rafael","San Ramon","Santa Clara","Santa Rosa","Saratoga","South San Francisco","Sunnyvale","Union City","Vacaville","Vallejo","Walnut Creek"];
+var grid = document.getElementById("cities-grid");
+CITIES.forEach(function(c){
+  var s = document.createElement("span");
+  s.className = "city"; s.textContent = c + ", CA";
+  grid.appendChild(s);
+});
+var filter = document.getElementById("city-filter"), noCity = document.getElementById("no-city");
+filter.addEventListener("input", function(){
+  var q = filter.value.trim().toLowerCase(), any = false;
+  grid.querySelectorAll(".city").forEach(function(el){
+    var hit = el.textContent.toLowerCase().indexOf(q) !== -1;
+    el.classList.toggle("hide", !hit);
+    if(hit) any = true;
+  });
+  noCity.style.display = any ? "none" : "block";
+});
+
+/* ---------- 3D testimonial ring ---------- */
+var ring = document.getElementById("ring");
+var tcards = ring.children, TN = tcards.length, RAD = innerWidth < 640 ? 300 : 430;
+for(var ti = 0; ti < TN; ti++){
+  tcards[ti].style.transform = "rotateY(" + (ti * 360 / TN) + "deg) translateZ(" + RAD + "px)";
+}
+var cur = 0, timer;
+function spin(){ ring.style.transform = "translateZ(-" + RAD + "px) rotateY(" + (-cur * 360 / TN) + "deg)"; }
+function next(){ cur++; spin(); }
+function auto(){ clearInterval(timer); if(!reduced) timer = setInterval(next, 5000); }
+spin(); auto();
+document.getElementById("t-next").addEventListener("click", function(){ next(); auto(); });
+document.getElementById("t-prev").addEventListener("click", function(){ cur--; spin(); auto(); });
+
+/* ---------- lead form (front-end only) ---------- */
+document.getElementById("lead-form").addEventListener("submit", function(e){
+  e.preventDefault();
+  var f = e.target;
+  if(!f.name.value.trim() || !f.phone.value.trim() || !f.address.value.trim()){
+    [f.name, f.phone, f.address].forEach(function(el){
+      el.style.borderColor = el.value.trim() ? "" : "#ff5a5a";
+    });
+    return;
+  }
+  document.getElementById("offer-form").classList.add("sent");
+});
+})();
+</script>
+</body>
+</html>
