@@ -111,9 +111,9 @@
 
   <div class="tiles">
     <div class="tile t-spend"><div class="k">DM Spend · YTD</div><div class="v">$124,333</div><div class="n">QuickBooks · AM-Direct Mail</div></div>
-    <div class="tile t-leads"><div class="k">Leads</div><div class="v">373</div><div class="n">Monday board · live</div></div>
-    <div class="tile"><div class="k">Cost / Lead</div><div class="v">$333</div><div class="n">spend ÷ leads</div></div>
-    <div class="tile"><div class="k">Active Pipeline</div><div class="v">84</div><div class="n">working → won</div></div>
+    <div class="tile t-leads"><div class="k">Leads</div><div class="v">378</div><div class="n">Monday board · live</div></div>
+    <div class="tile"><div class="k">Cost / Lead</div><div class="v">$329</div><div class="n">spend ÷ leads</div></div>
+    <div class="tile"><div class="k">Active Pipeline</div><div class="v">87</div><div class="n">working → won</div></div>
     <div class="tile"><div class="k">Postcards Mailed</div><div class="v">77,763</div><div class="n">$0.544 / piece</div></div>
     <div class="tile t-win"><div class="k">Revenue · REI</div><div class="v">$35.9K</div><div class="n">1 of 2 wins reported</div><div class="flag">▲ QuickBooks $0 — unreconciled</div></div>
     <div class="tile t-spend"><div class="k">Total ROA</div><div class="v">0.29x</div><div class="n">$35,919 ÷ $124,333 · net −$88.4K</div></div>
@@ -122,8 +122,8 @@
   <!-- 01 · FUNNEL -->
   <section class="scene">
     <div class="idx">Scene 01 · Pipeline</div>
-    <h2>373 in, 2 won</h2>
-    <p class="desc">Each disc's <b>area</b> is proportional to its stage count. The drop from 68 working conversations to 12 appointments is the steepest wall in the funnel — that's where follow-up muscle pays.</p>
+    <h2>378 in, 2 won</h2>
+    <p class="desc">Each disc's <b>area</b> is proportional to its stage count. The drop from 70 working conversations to 13 appointments is the steepest wall in the funnel — that's where follow-up muscle pays.</p>
     <div class="stage" id="funnelStage">
       <canvas class="c3d" id="funnelCanvas" height="440"></canvas>
       <div class="hint">drag to orbit</div>
@@ -131,12 +131,12 @@
     <div class="legend" id="funnelLegend"></div>
     <details class="tbl"><summary>View as table</summary><div class="tscroll">
       <table><tr><th>Stage</th><th class="r">Leads</th><th class="r">% of total</th></tr>
-      <tr><td>All direct-mail leads</td><td class="r">373</td><td class="r">100%</td></tr>
-      <tr><td>Working / contacted</td><td class="r">68</td><td class="r">18.2%</td></tr>
-      <tr><td>Appointment &amp; offer</td><td class="r">12</td><td class="r">3.2%</td></tr>
+      <tr><td>All direct-mail leads</td><td class="r">378</td><td class="r">100%</td></tr>
+      <tr><td>Working / contacted</td><td class="r">70</td><td class="r">18.5%</td></tr>
+      <tr><td>Appointment &amp; offer</td><td class="r">13</td><td class="r">3.4%</td></tr>
       <tr><td>Under contract</td><td class="r">2</td><td class="r">0.5%</td></tr>
       <tr><td>Won / acquired</td><td class="r">2</td><td class="r">0.5%</td></tr>
-      <tr><td>Dead / not interested (outside funnel)</td><td class="r">167</td><td class="r">44.8%</td></tr>
+      <tr><td>Dead / not interested (outside funnel)</td><td class="r">169</td><td class="r">44.7%</td></tr>
       </table></div></details>
   </section>
 
@@ -176,7 +176,7 @@
   <section class="scene">
     <div class="idx">Scene 03 · Territory</div>
     <h2>Where the pipeline lives</h2>
-    <p class="desc">81 geocoded leads standing on the Northern-California floor — <b>taller and brighter-to-deeper pins are further down the funnel</b>. The two acquisitions (Petaluma, Oakland) glow green. Hover a pin for the lead.</p>
+    <p class="desc">82 geocoded leads standing on the Northern-California floor — <b>taller and brighter-to-deeper pins are further down the funnel</b>. The two acquisitions (Petaluma, Oakland) glow green. Hover a pin for the lead.</p>
     <div class="stage" id="mapStage">
       <canvas class="c3d" id="mapCanvas" height="500"></canvas>
       <div class="hint">drag to orbit</div>
@@ -267,9 +267,9 @@ function loop(){ scenes.forEach(s=>s.frame()); requestAnimationFrame(loop); }
 
 /* ================= 01 · FUNNEL ================= */
 const STAGES = [
-  {k:'All leads',        n:373, ramp:'--r1'},
-  {k:'Working',          n:68,  ramp:'--r2'},
-  {k:'Appointment',      n:12,  ramp:'--r4'},
+  {k:'All leads',        n:378, ramp:'--r1'},
+  {k:'Working',          n:70,  ramp:'--r2'},
+  {k:'Appointment',      n:13,  ramp:'--r4'},
   {k:'Under contract',   n:2,   ramp:'--r5'},
   {k:'Won / acquired',   n:2,   ramp:'--r6'},
 ];
@@ -285,7 +285,7 @@ function drawFunnel(S, c){
   let y = total/2;
   const SEG=48, anchors=[];
   STAGES.forEach((st,i)=>{
-    const r = Math.max(20, Math.sqrt(st.n/373)*maxR);
+    const r = Math.max(20, Math.sqrt(st.n/378)*maxR);
     const base = cssv(st.ramp);
     const topY=y, botY=y-thick;
     const quads=[];
@@ -336,7 +336,7 @@ function drawFunnel(S, c){
 scenes.push(new Scene3D('funnelCanvas',{yaw:-0.5,pitch:0.34,dist:820,f:640,draw:drawFunnel}));
 document.getElementById('funnelLegend').innerHTML =
   STAGES.map(s=>`<span class="chip"><span class="dot" style="background:var(${s.ramp});color:var(${s.ramp})"></span>${s.k} <b>${s.n}</b></span>`).join('') +
-  `<span class="chip"><span class="dot" style="background:var(--dead);color:transparent"></span>Dead <b>167</b> · outside the funnel</span>`;
+  `<span class="chip"><span class="dot" style="background:var(--dead);color:transparent"></span>Dead <b>169</b> · outside the funnel</span>`;
 
 /* ================= 02 · 4D TERRAIN ================= */
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul'];
@@ -477,6 +477,7 @@ const PINS=[
 ["Chung",3,"C",37.7616,-122.1831],["Marlene Martin",3,"C",38.6268,-121.5267],["Anne Smith",3,"C",37.7531,-122.1793],
 ["Lola Russo",3,"C",38.023,-121.8965],["James Perry Jr.",3,"C",36.6069,-121.8416],["Linda Gheno",3,"C",37.6896,-121.8792],
 ["Linda Dana",3,"C",38.6597,-121.7777],["Alvie Arthenack",3,"C",37.9748,-122.5317],
+["Mark Lempert",3,"P",37.8837,-122.2661],
 ["Damond Dixon",4,"C",37.7579,-122.1875],
 ["Denise Marks",5,"P",38.2606,-122.6424],["Dianne Andrews",5,"C",37.7631,-122.1631]
 ];
