@@ -111,9 +111,9 @@
 
   <div class="tiles">
     <div class="tile t-spend"><div class="k">DM Spend · YTD</div><div class="v">$124,333</div><div class="n">QuickBooks · AM-Direct Mail</div></div>
-    <div class="tile t-leads"><div class="k">Leads</div><div class="v">401</div><div class="n">Monday board · live</div></div>
-    <div class="tile"><div class="k">Cost / Lead</div><div class="v">$310</div><div class="n">spend ÷ leads</div></div>
-    <div class="tile"><div class="k">Active Pipeline</div><div class="v">93</div><div class="n">working → won</div></div>
+    <div class="tile t-leads"><div class="k">Leads</div><div class="v">427</div><div class="n">Monday board · live</div></div>
+    <div class="tile"><div class="k">Cost / Lead</div><div class="v">$291</div><div class="n">spend ÷ leads</div></div>
+    <div class="tile"><div class="k">Active Pipeline</div><div class="v">94</div><div class="n">working → won</div></div>
     <div class="tile"><div class="k">Postcards Mailed</div><div class="v">77,763</div><div class="n">$0.544 / piece</div></div>
     <div class="tile t-win"><div class="k">Revenue · REI</div><div class="v">$35.9K</div><div class="n">1 of 3 wins reported</div><div class="flag">▲ QuickBooks $0 — unreconciled</div></div>
     <div class="tile t-spend"><div class="k">Total ROA</div><div class="v">0.29x</div><div class="n">$35,919 ÷ $124,333 · net −$88.4K</div></div>
@@ -122,8 +122,8 @@
   <!-- 01 · FUNNEL -->
   <section class="scene">
     <div class="idx">Scene 01 · Pipeline</div>
-    <h2>401 in, 3 won</h2>
-    <p class="desc">Each disc's <b>area</b> is proportional to its stage count. The drop from 74 working conversations to 14 appointments is the steepest wall in the funnel — that's where follow-up muscle pays.</p>
+    <h2>427 in, 3 won</h2>
+    <p class="desc">Each disc's <b>area</b> is proportional to its stage count. The drop from 75 working conversations to 14 appointments is the steepest wall in the funnel — that's where follow-up muscle pays.</p>
     <div class="stage" id="funnelStage">
       <canvas class="c3d" id="funnelCanvas" height="440"></canvas>
       <div class="hint">drag to orbit</div>
@@ -131,12 +131,12 @@
     <div class="legend" id="funnelLegend"></div>
     <details class="tbl"><summary>View as table</summary><div class="tscroll">
       <table><tr><th>Stage</th><th class="r">Leads</th><th class="r">% of total</th></tr>
-      <tr><td>All direct-mail leads</td><td class="r">401</td><td class="r">100%</td></tr>
-      <tr><td>Working / contacted</td><td class="r">74</td><td class="r">18.5%</td></tr>
-      <tr><td>Appointment &amp; offer</td><td class="r">14</td><td class="r">3.5%</td></tr>
+      <tr><td>All direct-mail leads</td><td class="r">427</td><td class="r">100%</td></tr>
+      <tr><td>Working / contacted</td><td class="r">75</td><td class="r">17.6%</td></tr>
+      <tr><td>Appointment &amp; offer</td><td class="r">14</td><td class="r">3.3%</td></tr>
       <tr><td>Under contract</td><td class="r">2</td><td class="r">0.5%</td></tr>
       <tr><td>Won / acquired</td><td class="r">3</td><td class="r">0.7%</td></tr>
-      <tr><td>Dead / not interested (outside funnel)</td><td class="r">181</td><td class="r">45.1%</td></tr>
+      <tr><td>Dead / not interested (outside funnel)</td><td class="r">199</td><td class="r">46.6%</td></tr>
       </table></div></details>
   </section>
 
@@ -267,8 +267,8 @@ function loop(){ scenes.forEach(s=>s.frame()); requestAnimationFrame(loop); }
 
 /* ================= 01 · FUNNEL ================= */
 const STAGES = [
-  {k:'All leads',        n:401, ramp:'--r1'},
-  {k:'Working',          n:74,  ramp:'--r2'},
+  {k:'All leads',        n:427, ramp:'--r1'},
+  {k:'Working',          n:75,  ramp:'--r2'},
   {k:'Appointment',      n:14,  ramp:'--r4'},
   {k:'Under contract',   n:2,   ramp:'--r5'},
   {k:'Won / acquired',   n:3,   ramp:'--r6'},
@@ -285,7 +285,7 @@ function drawFunnel(S, c){
   let y = total/2;
   const SEG=48, anchors=[];
   STAGES.forEach((st,i)=>{
-    const r = Math.max(20, Math.sqrt(st.n/401)*maxR);
+    const r = Math.max(20, Math.sqrt(st.n/427)*maxR);
     const base = cssv(st.ramp);
     const topY=y, botY=y-thick;
     const quads=[];
