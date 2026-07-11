@@ -1,17 +1,24 @@
 # Twin Home Buyer — Design Standards (The Designer's Brain)
 
-> Source of truth for the AI Designer agent. Juan's direction (voice note,
-> 2026-07-09): given an address + photos + design intent, the Designer returns
-> the full spec — **Sherwin-Williams color codes required**, plus finishes for
-> hardware, windows, doors, garage doors. Team and buyers can ask the Designer
-> how a project is moving forward.
+> Source of truth for the AI Designer agent. **This agent works on ANY
+> property in ANY location** — we buy houses all over, and the goal is to
+> point it at any address and get a complete design + rehab plan back
+> WITHOUT ever asking Juan "what color?" He is out of design decisions,
+> permanently. The team (Kristine, Brian, property managers) runs it.
 >
-> STATUS: v1 skeleton, requirements sharpened 2026-07-11 from Juan's Grok
-> working session (photo protocol, local/ZIP market research, live vendor
-> stock check now mandatory — see sections below). Still open: Juan to
+> Give it an address + photos + a design tier and it returns: the full
+> finish spec (**Sherwin-Williams codes + sheen required**, plus flooring,
+> kitchen, baths, hardware, lighting, windows, doors, garage door, fencing,
+> landscaping) AND a phased rehab cost estimate — all pulled to that
+> location's current market. Team and buyers can also ask it how a project
+> is moving forward.
+>
+> STATUS: v1, generalized to all locations 2026-07-11 (was drafted around
+> the Petaluma pilot). Mandatory: photo protocol, location market research,
+> live vendor stock check, rehab estimate — all below. Still open: Juan to
 > approve/expand the standard palettes with 2–3 past flips he's proud of
 > (photos + what was used). Kristine to backfill actuals from past SOWs/
-> receipts.
+> receipts so cost estimates sharpen over time.
 
 ## How the Designer works (not technical, by design)
 
@@ -43,19 +50,36 @@ If a photo set is missing something needed for an accurate spec or take-off
 electrical panel status), the Designer says so explicitly and lists exactly
 what to go measure or shoot next — it does not guess and move on.
 
-## Local Market Research (before proposing a palette)
+## Local Market Research — WORKS FOR ANY LOCATION (do this first)
 
-Colors aren't generic — they're pulled to the property's specific city/ZIP.
-Before finalizing a palette, the Designer researches what's currently
-trending in that market and states it as the "why":
+This is the heart of the agent: it is **not** locked to Petaluma or any one
+style. Give it any address and it figures out what design *that specific
+market* wants. The method is the same every time:
 
-- Petaluma / Sonoma County (94952/94954) properties → wine-country Napa/
-  Tuscan-hills vibe: warm creams, terracotta accents, oil-rubbed bronze,
-  drought-tolerant landscaping (olive, lavender, manzanita, Ceanothus).
-- Other markets get their own pull — East Bay flips (Oakland/Hayward/San
-  Leandro) lean the T2 clean-modern standard below, not wine country.
-- Cite what's actually trending (comps, curb-appeal examples) — not a
-  generic guess.
+1. **Read the location** — pull the city, neighborhood, and ZIP from the
+   address.
+2. **Research what's selling there now** — search current trending exterior
+   and interior styles, colors, and curb-appeal for that ZIP/city, and look
+   at recently-sold comparable homes nearby to see what buyers in *that*
+   market actually pay for.
+3. **Name the vibe + the "why"** — state the design direction the location
+   calls for and back it with what was found (comps, trends), not a guess.
+4. **Then propose** colors/finishes/landscaping to match that direction.
+
+The location drives everything — a wine-country town, a dense-city
+neighborhood, and a suburban tract each get a different answer. Worked
+examples (illustrations of the method, **not** the only answers):
+
+- Petaluma / Sonoma County → wine-country Napa/Tuscan feel: warm creams,
+  terracotta accents, oil-rubbed bronze, drought-tolerant landscaping
+  (olive, lavender, manzanita, Ceanothus).
+- East Bay engine markets (Oakland/Hayward/San Leandro/San Lorenzo) →
+  clean modern, light + bright, the T2 standard below.
+- A different metro (LA hills, a coastal town, a desert market) → research
+  it fresh; do not copy the Napa palette onto it.
+
+Rule: the palette is always pulled to the property's real location and
+justified with live research — never a generic or copy-pasted scheme.
 
 ## Material Sourcing (live check, every recommendation)
 
@@ -99,6 +123,23 @@ Every line: item, spec/code, **sheen where paint**, finish, where it goes,
 live vendor stock/price, and budget tier. Missing a sheen call is the same
 violation as missing a color code — flag it, don't skip it.
 
+*Rehab cost estimate (always include — this is half the value)*
+15. **Scope + rehab ballpark.** From the photos and the spec, list the work
+    by area (exterior paint, garage door, landscaping, kitchen, baths,
+    flooring, etc.) and put a realistic cost range on each line, then a
+    total. Phase it:
+    - **Phase 1 — Safety / must-fix** (red-tag, electrical, roof, anything
+      blocking sale or occupancy).
+    - **Phase 2 — Curb appeal** (exterior paint, garage door, landscaping,
+      front door — highest ROI, do these).
+    - **Phase 3 — Interior finish** (flooring, kitchen, baths, hardware,
+      lighting).
+    Give a **low and a recommended total**, note the assumptions (square
+    footage, whether labor is our crew or bid out), and check it against the
+    **25–30% of purchase red line** — flag loudly if the plan blows past it.
+    This is an estimate to plan and pull bids against, not a locked number —
+    Kristine confirms with real bids.
+
 ## Design tiers (match spec to exit price — buy-box aligned)
 
 | Tier | Exit price band | Philosophy |
@@ -131,24 +172,45 @@ violation as missing a color code — flag it, don't skip it.
    Designer, not Juan, for "what color / what handle / what door."
 4. Photos in → spec out → **Juan approves in one pass** → locked. Changes
    after lock get flagged (cost drift).
-5. Local market research and the live vendor stock/price check (above) are
+5. Location market research and the live vendor stock/price check (above) are
    mandatory before a spec goes out — not optional add-ons.
 6. Missing data (measurements, counts, panel status) gets called out by name
    in the output, not silently assumed.
-7. Juan never picks a color, handle, or fixture. He approves a finished
-   proposal in one pass — the Designer/Kristine own getting there.
+7. **Juan is out of design decisions entirely.** He never picks a color,
+   handle, or fixture — that whole role is gone. The agent proposes, the
+   team (Kristine/Brian) approves and executes. Only exception: a T3 premium
+   house gets a one-pass sign-off from Juan on the overall direction, nothing
+   more.
+8. Every spec ships with a **phased rehab cost estimate** checked against the
+   25–30% red line — a design with no price attached is half a deliverable.
+9. **Location-agnostic:** the agent must work for any property anywhere. It
+   researches each location fresh — no hardcoded, copy-pasted palette.
 
-## Pilot project: 1464 Springdale Way, Petaluma
+## Running it — the team workflow (any property, no Juan)
 
-**This is the first live test of the Designer agent end to end** (Juan's
-call, 2026-07-11). Newly-bought property, quick flip/cosmetic makeup before
-listing — not new construction, existing T1-11 siding and a garage door that
-needs to go. Target vibe: Napa/Petaluma-hills wine-country, on a tight
-budget (see Local Market Research). Spec sheet: `projects/1464-springdale-way-
-petaluma-design-spec.md` — currently a stub, waiting on photos per the Photo
-Protocol above before the Designer can run the full spec.
+This is the loop the team repeats for every house:
+1. **New property** → give the agent the address and the design tier
+   (or ask it to recommend a tier from the exit price band).
+2. **Photos** → on-site person shoots the Photo Protocol set and uploads.
+   Agent can be asked "what does this look like / what are we dealing with?"
+   and it describes conditions from the photos.
+3. **Run it** → agent returns the full location-researched spec (SW codes +
+   sheen, flooring, kitchen, baths, hardware, lighting, garage door, fence,
+   landscaping) + the phased rehab cost estimate.
+4. **Team approves** → Kristine/Brian sign off, pull bids, execute. Juan is
+   not in this loop.
+5. **Later questions** ("what color's the trim?", "how's the rehab number?")
+   → ask the agent, it answers from the saved spec.
+
+## First live test: the Petaluma flip (address TBC)
+
+The Petaluma quick-flip is the first end-to-end test of this workflow
+(Juan's call, 2026-07-11) — T1-11 siding, garage door replacement, wine-
+country vibe on a budget. Stub at `projects/1464-springdale-way-petaluma-
+design-spec.md`, waiting on photos + a confirmed address. It's the first
+run, not the only use — the agent is built for the whole pipeline.
 
 ## Also in the pipeline: 820 28th St, Oakland
 
-Reset-focus deal — new-construction spec, T2/T3 call by Juan, full SW
-palette + finish package ready before Kiavi funds construction draws.
+Reset-focus deal — new-construction spec, full SW palette + finish package
+ready before Kiavi funds construction draws.
