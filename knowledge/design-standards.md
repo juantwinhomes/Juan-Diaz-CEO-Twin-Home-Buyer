@@ -50,6 +50,11 @@ If a photo set is missing something needed for an accurate spec or take-off
 electrical panel status), the Designer says so explicitly and lists exactly
 what to go measure or shoot next — it does not guess and move on.
 
+**Hand the on-site person `knowledge/photo-cheat-sheet.md`** — a phone-
+friendly, tick-box version of this protocol (whole-house shots, the
+"stand back, don't zoom on the floor" rules, and the measure/write-down
+list). Same protocol, made foolproof for the field.
+
 ## Local Market Research — WORKS FOR ANY LOCATION (do this first)
 
 This is the heart of the agent: it is **not** locked to Petaluma or any one
