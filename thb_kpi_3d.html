@@ -1,0 +1,581 @@
+<title>Twin Home Buyer — 3D KPI Command Deck</title>
+<style>
+  :root{
+    --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --baseline:#c3c2b7; --border:rgba(11,11,11,.10);
+    --r1:#86b6ef; --r2:#5598e7; --r3:#2a78d6; --r4:#1c5cab; --r5:#104281; --r6:#0d366b;
+    --spend:#2a78d6; --leads:#1baf7a; --good:#0ca30c; --crit:#d03b3b; --dead:#898781;
+    --goodtext:#006300;
+    --tile:#ffffff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --baseline:#383835; --border:rgba(255,255,255,.10);
+      --r1:#cde2fb; --r2:#9ec5f4; --r3:#6da7ec; --r4:#3987e5; --r5:#256abf; --r6:#184f95;
+      --spend:#3987e5; --leads:#199e70; --good:#0ca30c; --crit:#d03b3b; --dead:#898781;
+      --goodtext:#0ca30c;
+      --tile:#201f1e;
+    }
+  }
+  :root[data-theme="dark"]{
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835; --border:rgba(255,255,255,.10);
+    --r1:#cde2fb; --r2:#9ec5f4; --r3:#6da7ec; --r4:#3987e5; --r5:#256abf; --r6:#184f95;
+    --spend:#3987e5; --leads:#199e70; --good:#0ca30c; --crit:#d03b3b; --dead:#898781;
+    --goodtext:#0ca30c; --tile:#201f1e;
+  }
+  :root[data-theme="light"]{
+    --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --baseline:#c3c2b7; --border:rgba(11,11,11,.10);
+    --r1:#86b6ef; --r2:#5598e7; --r3:#2a78d6; --r4:#1c5cab; --r5:#104281; --r6:#0d366b;
+    --spend:#2a78d6; --leads:#1baf7a; --good:#0ca30c; --crit:#d03b3b; --dead:#898781;
+    --goodtext:#006300; --tile:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+  .wrap{max-width:1160px;margin:0 auto;padding:30px 22px 70px;}
+  header.deck{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:10px;}
+  .eyebrow{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:11px;font-weight:600;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+  h1{font-size:clamp(26px,4vw,38px);font-weight:760;letter-spacing:-.025em;margin:6px 0 4px;text-wrap:balance;}
+  .sub{color:var(--ink2);font-size:14px;max-width:62ch;}
+  .sub b{color:var(--ink);}
+  .theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--ink2);
+    border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;font-weight:550;}
+  .theme-btn:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--r3);outline-offset:2px;}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:20px 0 26px;}
+  .tile{background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:13px 15px;
+    box-shadow:0 1px 2px rgba(0,0,0,.05);}
+  .tile .k{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:10.5px;font-weight:600;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .tile .v{font-size:26px;font-weight:760;letter-spacing:-.02em;margin-top:4px;line-height:1.05;}
+  .tile .n{font-size:12px;color:var(--ink2);margin-top:3px;}
+  .flag{display:inline-flex;align-items:center;gap:5px;margin-top:5px;font-size:11.5px;font-weight:650;color:var(--crit);}
+
+  .scene{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:18px 18px 14px;margin-top:26px;position:relative;box-shadow:0 1px 2px rgba(0,0,0,.05);}
+  .scene h2{font-size:16px;font-weight:720;letter-spacing:-.01em;margin:0;}
+  .scene .desc{color:var(--ink2);font-size:13px;margin:3px 0 10px;max-width:78ch;}
+  .stage{position:relative;}
+  canvas.c3d{display:block;width:100%;touch-action:none;cursor:grab;border-radius:10px;}
+  canvas.c3d:active{cursor:grabbing;}
+  .hint{position:absolute;top:10px;right:12px;font-family:ui-monospace,"SF Mono",Menlo,monospace;
+    font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);pointer-events:none;}
+  .flabel{position:absolute;pointer-events:none;white-space:nowrap;font-size:12.5px;color:var(--ink2);
+    transform:translate(0,-50%);}
+  .flabel b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums;}
+  .flabel .st{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);display:block;line-height:1.1;}
+  .tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--page);border-radius:8px;
+    padding:7px 10px;font-size:12px;line-height:1.35;max-width:240px;display:none;z-index:5;
+    box-shadow:0 4px 14px rgba(0,0,0,.25);}
+  .tip b{font-weight:700;}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12.5px;color:var(--ink2);align-items:center;}
+  .legend .chip{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none;}
+  .sq{width:10px;height:10px;border-radius:2px;display:inline-block;flex:none;}
+  .legend b{color:var(--ink);font-variant-numeric:tabular-nums;}
+
+  .controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 10px;}
+  .playbtn{border:1px solid var(--border);background:var(--tile);color:var(--ink);border-radius:999px;
+    padding:7px 16px;font-size:13px;font-weight:650;cursor:pointer;display:inline-flex;align-items:center;gap:7px;}
+  .playbtn:hover{border-color:var(--baseline);}
+  input[type=range]{flex:1;min-width:160px;accent-color:var(--spend);height:22px;}
+  .readout{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12px;color:var(--ink2);
+    font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .readout b{color:var(--ink);font-weight:700;}
+
+  details.tbl{margin-top:12px;border-top:1px solid var(--grid);padding-top:8px;}
+  details.tbl summary{cursor:pointer;font-size:12.5px;color:var(--ink2);font-weight:600;}
+  .tscroll{overflow-x:auto;}
+  table{border-collapse:collapse;font-size:13px;margin-top:8px;min-width:380px;}
+  th{text-align:left;color:var(--muted);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10.5px;
+    letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:5px 14px 5px 0;border-bottom:1px solid var(--grid);}
+  td{padding:6px 14px 6px 0;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;}
+  td.r,th.r{text-align:right;}
+  tr:last-child td{border-bottom:none;}
+
+  .foot{margin-top:34px;padding-top:14px;border-top:1px solid var(--grid);font-size:12px;color:var(--muted);max-width:100ch;}
+  .foot b{color:var(--ink2);}
+  @media(max-width:620px){ .flabel{font-size:11px;} .flabel .st{font-size:9px;} }
+</style>
+
+<div class="wrap">
+  <header class="deck">
+    <div>
+      <div class="eyebrow">Twin Home Buyer · Equity Track Inc — Direct-Mail Command Deck</div>
+      <h1>The pipeline, in three dimensions.</h1>
+      <div class="sub"><b>Drag any scene to orbit it.</b> Section 2 adds the fourth dimension — press play to move through the year. Figures pulled <b>Jul 11, 2026</b> from QuickBooks and the Monday.com leads board.</div>
+    </div>
+    <button class="theme-btn" id="themeBtn">◐ Theme</button>
+  </header>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">DM Spend · YTD</div><div class="v">$124,333</div><div class="n">QuickBooks · AM-Direct Mail</div></div>
+    <div class="tile"><div class="k">Leads</div><div class="v">373</div><div class="n">Monday board · live</div></div>
+    <div class="tile"><div class="k">Cost / Lead</div><div class="v">$333</div><div class="n">spend ÷ leads</div></div>
+    <div class="tile"><div class="k">Active Pipeline</div><div class="v">84</div><div class="n">working → won</div></div>
+    <div class="tile"><div class="k">Postcards Mailed</div><div class="v">77,763</div><div class="n">$0.544 / piece</div></div>
+    <div class="tile"><div class="k">Booked Revenue</div><div class="v">$0</div><div class="flag">▲ unreconciled — 2 won on board</div></div>
+  </div>
+
+  <!-- 1 · FUNNEL -->
+  <section class="scene">
+    <h2>1 · Pipeline funnel — 373 in, 2 won</h2>
+    <p class="desc">Each disc's <b>area</b> is proportional to its stage count. The drop from 68 working conversations to 12 appointments is the steepest wall in the funnel — that's where follow-up muscle pays.</p>
+    <div class="stage" id="funnelStage">
+      <canvas class="c3d" id="funnelCanvas" height="440"></canvas>
+      <div class="hint">drag to orbit</div>
+    </div>
+    <div class="legend" id="funnelLegend"></div>
+    <details class="tbl"><summary>View as table</summary><div class="tscroll">
+      <table><tr><th>Stage</th><th class="r">Leads</th><th class="r">% of total</th></tr>
+      <tr><td>All direct-mail leads</td><td class="r">373</td><td class="r">100%</td></tr>
+      <tr><td>Working / contacted</td><td class="r">68</td><td class="r">18.2%</td></tr>
+      <tr><td>Appointment &amp; offer</td><td class="r">12</td><td class="r">3.2%</td></tr>
+      <tr><td>Under contract</td><td class="r">2</td><td class="r">0.5%</td></tr>
+      <tr><td>Won / acquired</td><td class="r">2</td><td class="r">0.5%</td></tr>
+      <tr><td>Dead / not interested (outside funnel)</td><td class="r">167</td><td class="r">44.8%</td></tr>
+      </table></div></details>
+  </section>
+
+  <!-- 2 · 4D TERRAIN -->
+  <section class="scene">
+    <h2>2 · Seven months in motion — spend vs. leads</h2>
+    <p class="desc">Two lanes on one floor: <b>spend</b> (front) and <b>leads received</b> (back), January through July. Each lane scales to its own peak — hover any bar for the exact figure. The play button sweeps time, the fourth dimension.</p>
+    <div class="controls">
+      <button class="playbtn" id="playBtn">▶ Play the year</button>
+      <input type="range" id="timeSlider" min="0" max="7" step="0.01" value="7" aria-label="Timeline position, January through July">
+      <span class="readout" id="timeReadout"></span>
+    </div>
+    <div class="stage" id="terrainStage">
+      <canvas class="c3d" id="terrainCanvas" height="400"></canvas>
+      <div class="hint">drag to orbit</div>
+      <div class="tip" id="terrainTip"></div>
+    </div>
+    <div class="legend">
+      <span class="chip"><span class="sq" style="background:var(--spend)"></span>Spend · peak <b>$41.7K</b> (Jan)</span>
+      <span class="chip"><span class="sq" style="background:var(--leads)"></span>Leads · peak <b>112</b> (Jan)</span>
+      <span class="chip" style="color:var(--muted)">April dip = mail pause · June = relaunch</span>
+    </div>
+    <details class="tbl"><summary>View as table</summary><div class="tscroll">
+      <table><tr><th>Month</th><th class="r">Spend</th><th class="r">Leads</th></tr>
+      <tr><td>Jan</td><td class="r">$41,711</td><td class="r">112</td></tr>
+      <tr><td>Feb</td><td class="r">$30,860</td><td class="r">70</td></tr>
+      <tr><td>Mar</td><td class="r">$27,469</td><td class="r">56</td></tr>
+      <tr><td>Apr</td><td class="r">$759</td><td class="r">27</td></tr>
+      <tr><td>May</td><td class="r">$6,254</td><td class="r">19</td></tr>
+      <tr><td>Jun</td><td class="r">$17,268</td><td class="r">67</td></tr>
+      <tr><td>Jul (to date)</td><td class="r">$10</td><td class="r">26</td></tr>
+      </table></div></details>
+  </section>
+
+  <!-- 3 · MAP -->
+  <section class="scene">
+    <h2>3 · Where the pipeline lives</h2>
+    <p class="desc">81 geocoded leads standing on the Northern-California floor — <b>taller and darker pins are deeper in the funnel</b>. The two acquisitions (Petaluma, Oakland) are ringed. Hover a pin for the lead.</p>
+    <div class="stage" id="mapStage">
+      <canvas class="c3d" id="mapCanvas" height="500"></canvas>
+      <div class="hint">drag to orbit</div>
+      <div class="tip" id="mapTip"></div>
+    </div>
+    <div class="legend" id="mapLegend"></div>
+    <details class="tbl"><summary>View as table</summary><div class="tscroll">
+      <table><tr><th>Stage</th><th class="r">Pins on map</th></tr>
+      <tr><td>New</td><td class="r" id="tN"></td></tr>
+      <tr><td>Contacted</td><td class="r" id="tC"></td></tr>
+      <tr><td>Interested</td><td class="r" id="tI"></td></tr>
+      <tr><td>Appointment</td><td class="r" id="tA"></td></tr>
+      <tr><td>Under contract</td><td class="r" id="tU"></td></tr>
+      <tr><td>Acquired — Denise Marks (Petaluma) · Dianne Andrews (Oakland)</td><td class="r" id="tW"></td></tr>
+      </table>
+      <p style="font-size:12px;color:var(--muted);margin:8px 0 0">Leads without a usable property address (mostly inbound callers) aren't plotted; the full 373 live on the Monday board.</p>
+    </div></details>
+  </section>
+
+  <div class="foot">
+    <b>Sources.</b> Spend from QuickBooks Online (AM-Direct Mail + Mail Services, 2026 YTD Jan 1–Jul 11). Lead counts and stages live from Monday board “Direct Mail &amp; Postcard Leads” (373 after dedup; monthly lead counts use original REI receive dates, so they sum slightly higher). Geocoding via property addresses on the board. Booked revenue $0 — the 2 board wins are not yet reconciled to a QuickBooks closing. Companion to the standard KPI dashboard; same data, different dimension. Generated 2026-07-11.
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ---------- theme ---------- */
+const rootEl = document.documentElement;
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const cur = rootEl.getAttribute('data-theme') ||
+    (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  rootEl.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+});
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function cssv(n){ return getComputedStyle(rootEl).getPropertyValue(n).trim(); }
+function hexToRgb(h){ h=h.replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join('');
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)]; }
+function shade(hex, f){ // f<0 → toward black, f>0 → toward white
+  const [r,g,b]=hexToRgb(hex); const t=f<0?0:255; const a=Math.abs(f);
+  return `rgb(${Math.round(r+(t-r)*a)},${Math.round(g+(t-g)*a)},${Math.round(b+(t-b)*a)})`; }
+
+/* ---------- tiny 3D engine ---------- */
+class Scene3D {
+  constructor(canvasId, {yaw= -0.55, pitch=0.42, dist=760, f=620, autorotate=true, draw, onMove=null}){
+    this.cv = document.getElementById(canvasId);
+    this.ctx = this.cv.getContext('2d');
+    this.yaw=yaw; this.pitch=pitch; this.dist=dist; this.f=f;
+    this.autorotate = autorotate && !REDUCED;
+    this.drawFn = draw; this.onMove = onMove;
+    this.dirty = true; this.dragging=false;
+    const po = e => ({x:e.clientX, y:e.clientY});
+    this.cv.addEventListener('pointerdown', e=>{ this.dragging=true; this.autorotate=false;
+      this.last=po(e); this.cv.setPointerCapture(e.pointerId); });
+    this.cv.addEventListener('pointermove', e=>{
+      if(this.dragging){ const p=po(e);
+        this.yaw += (p.x-this.last.x)*0.008;
+        this.pitch = Math.min(1.25, Math.max(0.08, this.pitch + (p.y-this.last.y)*0.006));
+        this.last=p; this.dirty=true;
+      } else if(this.onMove){ const r=this.cv.getBoundingClientRect();
+        this.onMove(e.clientX-r.left, e.clientY-r.top); }
+    });
+    const up = ()=>{ this.dragging=false; };
+    this.cv.addEventListener('pointerup', up); this.cv.addEventListener('pointercancel', up);
+    this.cv.addEventListener('pointerleave', ()=>{ if(this.onMove) this.onMove(-1,-1); });
+    new ResizeObserver(()=>{ this.resize(); }).observe(this.cv);
+    this.resize();
+  }
+  resize(){
+    const dpr = window.devicePixelRatio||1;
+    const w = this.cv.clientWidth, h = parseInt(this.cv.getAttribute('height'),10);
+    this.cv.style.height = h+'px';
+    this.cv.width = Math.max(1, Math.round(w*dpr)); this.cv.height = Math.round(h*dpr);
+    this.W=w; this.H=h; this.dpr=dpr; this.dirty=true;
+  }
+  P(x,y,z){ // world → screen
+    const cy=Math.cos(this.yaw), sy=Math.sin(this.yaw);
+    const x1 = x*cy - z*sy, z1 = x*sy + z*cy;
+    const cp=Math.cos(this.pitch), sp=Math.sin(this.pitch);
+    const y2 = y*cp - z1*sp, z2 = y*sp + z1*cp;
+    const d = z2 + this.dist, s = this.f/d;
+    return {x:this.W/2 + x1*s, y:this.H*0.52 - y2*s, d, s};
+  }
+  frame(){
+    if(this.autorotate){ this.yaw += 0.0016; this.dirty=true; }
+    if(this.dirty){
+      const c=this.ctx; c.setTransform(this.dpr,0,0,this.dpr,0,0);
+      c.clearRect(0,0,this.W,this.H);
+      this.drawFn(this, c);
+      this.dirty=false;
+    }
+  }
+}
+const scenes=[];
+function loop(){ scenes.forEach(s=>s.frame()); requestAnimationFrame(loop); }
+
+/* theme / resize invalidation */
+function allDirty(){ scenes.forEach(s=>s.dirty=true); }
+new MutationObserver(allDirty).observe(rootEl,{attributes:true,attributeFilter:['data-theme']});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', allDirty);
+
+/* ================= 1 · FUNNEL ================= */
+const STAGES = [
+  {k:'All leads',        n:373, ramp:'--r1'},
+  {k:'Working',          n:68,  ramp:'--r2'},
+  {k:'Appointment',      n:12,  ramp:'--r4'},
+  {k:'Under contract',   n:2,   ramp:'--r5'},
+  {k:'Won / acquired',   n:2,   ramp:'--r6'},
+];
+const funnelStage = document.getElementById('funnelStage');
+const fLabels = STAGES.map(s=>{
+  const el=document.createElement('div'); el.className='flabel';
+  el.innerHTML = `<span class="st">${s.k}</span><b>${s.n}</b> <span style="color:var(--muted)">lead${s.n===1?'':'s'}</span>`;
+  funnelStage.appendChild(el); return el;
+});
+function drawFunnel(S, c){
+  const maxR=168, thick=30, gap=20;
+  const total = STAGES.length*thick + (STAGES.length-1)*gap;
+  let y = total/2;
+  const SEG=48, anchors=[];
+  STAGES.forEach((st,i)=>{
+    const r = Math.max(20, Math.sqrt(st.n/373)*maxR);
+    const base = cssv(st.ramp);
+    const topY=y, botY=y-thick;
+    // side wall: painter-sort segment quads
+    const quads=[];
+    for(let s0=0;s0<SEG;s0++){
+      const a0=s0/SEG*Math.PI*2, a1=(s0+1)/SEG*Math.PI*2;
+      const p=[S.P(Math.cos(a0)*r,topY,Math.sin(a0)*r), S.P(Math.cos(a1)*r,topY,Math.sin(a1)*r),
+               S.P(Math.cos(a1)*r,botY,Math.sin(a1)*r), S.P(Math.cos(a0)*r,botY,Math.sin(a0)*r)];
+      const d=(p[0].d+p[1].d+p[2].d+p[3].d)/4;
+      const lum = -0.42 + 0.34*Math.max(0, Math.cos((a0+a1)/2 + S.yaw + 0.7));
+      quads.push({p,d,fill:shade(base,lum)});
+    }
+    quads.sort((a,b)=>b.d-a.d);
+    quads.forEach(q=>{ c.beginPath(); c.moveTo(q.p[0].x,q.p[0].y);
+      for(let j=1;j<4;j++) c.lineTo(q.p[j].x,q.p[j].y); c.closePath();
+      c.fillStyle=q.fill; c.fill(); });
+    // top ellipse
+    c.beginPath();
+    for(let s0=0;s0<=SEG;s0++){ const a=s0/SEG*Math.PI*2;
+      const p=S.P(Math.cos(a)*r,topY,Math.sin(a)*r);
+      s0? c.lineTo(p.x,p.y) : c.moveTo(p.x,p.y); }
+    c.closePath(); c.fillStyle=shade(base,0.16); c.fill();
+    c.strokeStyle=shade(base,-0.25); c.lineWidth=1; c.stroke();
+    // won ring
+    if(i===STAGES.length-1){
+      c.beginPath();
+      for(let s0=0;s0<=SEG;s0++){ const a=s0/SEG*Math.PI*2;
+        const p=S.P(Math.cos(a)*(r+12),(topY+botY)/2,Math.sin(a)*(r+12));
+        s0? c.lineTo(p.x,p.y) : c.moveTo(p.x,p.y); }
+      c.closePath(); c.strokeStyle=cssv('--good'); c.lineWidth=1.6;
+      c.setLineDash([5,5]); c.stroke(); c.setLineDash([]);
+    }
+    // label anchor: right edge midpoint (labels placed after loop, in a fixed column)
+    anchors.push(S.P(r+6,(topY+botY)/2,0));
+    y -= (thick+gap);
+  });
+  // fixed right-hand label column with leader lines — no collisions at any orbit angle
+  const colX = S.W - 148;
+  let prevY = -1e9;
+  anchors.forEach((a,i)=>{
+    const ly = Math.max(a.y, prevY + 36); prevY = ly;
+    c.strokeStyle=cssv('--baseline'); c.lineWidth=1;
+    c.beginPath(); c.moveTo(a.x+3,a.y); c.lineTo(colX-10,ly); c.stroke();
+    const el=fLabels[i];
+    el.style.left = colX+'px';
+    el.style.top  = Math.min(S.H-18, Math.max(18, ly))+'px';
+  });
+}
+scenes.push(new Scene3D('funnelCanvas',{yaw:-0.5,pitch:0.34,dist:820,f:640,draw:drawFunnel}));
+document.getElementById('funnelLegend').innerHTML =
+  STAGES.map(s=>`<span class="chip"><span class="dot" style="background:var(${s.ramp})"></span>${s.k} <b>${s.n}</b></span>`).join('') +
+  `<span class="chip"><span class="dot" style="background:var(--dead)"></span>Dead <b>167</b> · outside the funnel</span>`;
+
+/* ================= 2 · 4D TERRAIN ================= */
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul'];
+const SPEND=[41711,30860,27469,759,6254,17268,10];
+const LEADS=[112,70,56,27,19,67,26];
+let T=7, playing=false;
+const slider=document.getElementById('timeSlider'), playBtn=document.getElementById('playBtn'),
+      readout=document.getElementById('timeReadout');
+const fmt$=v=> v>=1000? '$'+(v/1000).toFixed(1)+'K' : '$'+Math.round(v);
+function cume(arr,t){ let s=0; for(let m=0;m<7;m++) s+=arr[m]*Math.min(1,Math.max(0,t-m)); return s; }
+function setReadout(){
+  const mi=Math.min(6,Math.floor(T-0.0001));
+  const lab = T>=7 ? 'Full YTD' : 'Through '+MONTHS[Math.max(0,mi)];
+  readout.innerHTML = `${lab} · spend <b>${fmt$(cume(SPEND,T))}</b> · leads <b>${Math.round(cume(LEADS,T))}</b>`;
+}
+setReadout();
+const terrainScene = new Scene3D('terrainCanvas',{yaw:-0.62,pitch:0.46,dist:860,f:660,
+  draw:drawTerrain, onMove:pickTerrain});
+scenes.push(terrainScene);
+let barHits=[];
+function drawTerrain(S,c){
+  const bw=44, gapx=26, laneGap=64, floorW=7*(bw+gapx)-gapx, x0=-floorW/2;
+  const Hmax=170;
+  const ink=cssv('--ink'), muted=cssv('--muted'), grid=cssv('--grid');
+  // floor grid
+  c.strokeStyle=grid; c.lineWidth=1;
+  for(let gx=0;gx<=7;gx++){ const x=x0+gx*(bw+gapx)-gapx/2;
+    const a=S.P(x,0,-laneGap-50), b=S.P(x,0,laneGap+50);
+    c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); }
+  [-laneGap-50, 0, laneGap+50].forEach(z=>{
+    const a=S.P(x0-gapx/2,0,z), b=S.P(x0+floorW+gapx/2,0,z);
+    c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); });
+  barHits=[];
+  const lanes=[
+    {z:laneGap,  vals:SPEND, max:Math.max(...SPEND), col:cssv('--spend'), name:'Spend', fmt:fmt$},
+    {z:-laneGap, vals:LEADS, max:Math.max(...LEADS), col:cssv('--leads'), name:'Leads', fmt:v=>Math.round(v)},
+  ];
+  // build all boxes then painter-sort
+  const boxes=[];
+  lanes.forEach(l=>{
+    l.vals.forEach((v,m)=>{
+      const grow=Math.min(1,Math.max(0,T-m)); const e=grow*grow*(3-2*grow);
+      const h=Math.max(2,(v/l.max)*Hmax*e);
+      const cx=x0+m*(bw+gapx)+bw/2;
+      const ctr=S.P(cx,h/2,l.z);
+      boxes.push({cx,h,z:l.z,col:l.col,d:ctr.d,m,lane:l,val:v,shown:grow>0.02});
+    });
+  });
+  boxes.sort((a,b)=>b.d-a.d);
+  const peakLabels=[];
+  boxes.forEach(B=>{
+    if(!B.shown) return;
+    const hw=bw/2, hd=17;
+    const p=(dx,y,dz)=>S.P(B.cx+dx,y,B.z+dz);
+    const t1=p(-hw,B.h,-hd), t2=p(hw,B.h,-hd), t3=p(hw,B.h,hd), t4=p(-hw,B.h,hd);
+    const b1=p(-hw,0,-hd), b2=p(hw,0,-hd), b3=p(hw,0,hd), b4=p(-hw,0,hd);
+    const quad=(a,bq,cq,dq,fill)=>{ c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(bq.x,bq.y);
+      c.lineTo(cq.x,cq.y); c.lineTo(dq.x,dq.y); c.closePath(); c.fillStyle=fill; c.fill(); };
+    // two candidate side faces + front/back — draw all 4, painter within box (cheap: sort by avg d)
+    const faces=[
+      {pts:[t1,t2,b2,b1], d:(t1.d+t2.d)/2, f:shade(B.col,-0.28)},
+      {pts:[t3,t4,b4,b3], d:(t3.d+t4.d)/2, f:shade(B.col,-0.10)},
+      {pts:[t2,t3,b3,b2], d:(t2.d+t3.d)/2, f:shade(B.col,-0.38)},
+      {pts:[t4,t1,b1,b4], d:(t4.d+t1.d)/2, f:shade(B.col,-0.20)},
+    ].sort((a,b)=>b.d-a.d);
+    faces.forEach(F=>quad(F.pts[0],F.pts[1],F.pts[2],F.pts[3],F.f));
+    quad(t1,t2,t3,t4, shade(B.col,0.14));
+    const top=S.P(B.cx,B.h,B.z);
+    barHits.push({x:top.x,y:top.y,m:B.m,lane:B.lane,val:B.val});
+    // peak labels (selective direct labels: lane maxima only) — drawn after all boxes
+    if(B.val===B.lane.max && T>=B.m+1) peakLabels.push({x:top.x,y:top.y,txt:B.lane.fmt(B.val)});
+  });
+  c.font='600 11px ui-monospace,"SF Mono",Menlo,monospace'; c.textAlign='center';
+  peakLabels.forEach(L=>{ c.fillStyle=ink; c.fillText(L.txt, L.x, L.y-8); });
+  // month labels on floor
+  c.font='500 11px ui-monospace,"SF Mono",Menlo,monospace'; c.fillStyle=muted; c.textAlign='center';
+  MONTHS.forEach((mn,m)=>{
+    const p=S.P(x0+m*(bw+gapx)+bw/2, 0, laneGap+78);
+    c.fillText(mn,p.x,p.y);
+  });
+  // lane titles
+  c.textAlign='left';
+  const ls=S.P(x0+floorW+gapx, 8, laneGap), ll=S.P(x0+floorW+gapx, 8, -laneGap);
+  c.fillStyle=cssv('--ink2');
+  c.fillText('SPEND',ls.x,ls.y); c.fillText('LEADS',ll.x,ll.y);
+}
+const terrainTip=document.getElementById('terrainTip');
+function pickTerrain(mx,my){
+  if(mx<0){ terrainTip.style.display='none'; return; }
+  let best=null,bd=26*26;
+  barHits.forEach(h=>{ const dx=h.x-mx, dy=h.y-my, d=dx*dx+dy*dy;
+    if(d<bd){bd=d;best=h;} });
+  if(best){
+    const cumeV = best.lane.name==='Spend'? fmt$(cume(SPEND,best.m+1)) : Math.round(cume(LEADS,best.m+1));
+    terrainTip.innerHTML=`<b>${MONTHS[best.m]} · ${best.lane.name.toLowerCase()}</b><br>${best.lane.fmt(best.val)} this month · ${cumeV} YTD`;
+    terrainTip.style.display='block';
+    terrainTip.style.left=Math.min(terrainScene.W-190,Math.max(4,best.x+12))+'px';
+    terrainTip.style.top=Math.max(4,best.y-14)+'px';
+  } else terrainTip.style.display='none';
+}
+slider.addEventListener('input',()=>{ T=parseFloat(slider.value); playing=false;
+  playBtn.textContent='▶ Play the year'; terrainScene.dirty=true; setReadout(); });
+playBtn.addEventListener('click',()=>{
+  if(REDUCED){ T = T>=7 ? 0 : 7; slider.value=T; terrainScene.dirty=true; setReadout(); return; }
+  playing=!playing;
+  if(playing && T>=6.99) T=0;
+  playBtn.textContent = playing? '❚❚ Pause' : '▶ Play the year';
+});
+(function tick(){
+  if(playing){ T=Math.min(7,T+0.035); slider.value=T;
+    terrainScene.dirty=true; setReadout();
+    if(T>=7){ playing=false; playBtn.textContent='▶ Play the year'; } }
+  requestAnimationFrame(tick);
+})();
+
+/* ================= 3 · MAP ================= */
+/* [name, stage 0-5, source P|C, lat, lng] — stages: New Contacted Interested Appointment UnderContract Acquired */
+const PINS=[
+["Gaye Oram",0,"P",38.2786,-122.0212],["Harry McGowan",0,"C",39.7625,-121.8773],["Richard Newton",0,"C",38.4632,-122.6566],
+["Mary Simonton",0,"P",37.8045,-122.2714],["R Sekhon",0,"P",37.8045,-122.2714],["Oliver James Liggin",0,"P",37.3443,-121.8008],
+["No Caller Name",0,"P",37.7372,-122.2549],["Alonso Mora",0,"P",37.7879,-122.4075],["Mark",0,"P",38.0001,-121.8017],
+["Diane Ma",0,"P",38.3593,-121.9578],["Barbara Bray",0,"P",38.4347,-122.7038],["Beulah Brown",0,"P",37.8045,-122.2714],
+["Aline Alfred",0,"P",37.8357,-122.2798],["No Name Caller",0,"C",37.1056,-121.5937],["No Name Caller",0,"C",37.4883,-122.2479],
+["No Caller Name",0,"C",37.7579,-122.1919],["Darinka Stremenov",0,"C",37.3688,-122.0363],["Richard Laswell",0,"C",38.1558,-121.6913],
+["Maxine Fields",0,"C",38.3578,-121.9397],["Elizabeth Handy",0,"C",39.7285,-121.8375],["Steven Williams",0,"C",37.883,-122.2681],
+["Carol Cattell",0,"C",38.0093,-121.8107],["Caller unknown",0,"C",37.5683,-122.0277],["Leslie Claudio",0,"C",37.936,-122.3346],
+["Michael Levy",0,"C",37.752,-122.1293],["Christian Nunez",0,"C",37.9559,-121.245],["Nisha Mohammed",0,"C",38.4088,-121.3716],
+["Antonio Ortiz",1,"P",37.7918,-122.2311],["Sharon Moranda",1,"P",38.0111,-121.3039],["Jacquelyn Soto",1,"P",37.9873,-121.274],
+["David Ramos",1,"P",37.9517,-121.2479],["Frank McGuire",1,"P",37.9742,-122.3028],["John Brooks",1,"P",37.8164,-122.2811],
+["Jesus Cisneros",1,"P",37.2608,-121.902],["Rev Phinny",1,"P",37.6477,-121.0054],["Aminullah Mahmood",1,"P",37.9977,-121.2835],
+["Remo Kumar",1,"P",37.396,-122.0048],["James",1,"P",37.8249,-122.2526],["Katherine Tobie",1,"P",37.7175,-122.4033],
+["Marco",1,"C",37.7498,-121.1295],["Steven Martini",1,"P",38.1843,-122.1423],["No Caller Name",1,"P",38.3566,-121.9877],
+["Sadik Alsamiri",1,"C",37.7584,-122.1679],["Robert Pacheco",1,"P",37.669,-120.9128],["Shelly Sullivan",1,"P",37.9748,-122.5317],
+["Z Nunez",1,"P",38.4141,-122.7261],["Frank Sanders",1,"P",38.0013,-121.8183],["Veda Ambeau",1,"P",37.8045,-122.2714],
+["Sanchez Bulmaro",1,"P",37.8045,-122.2714],["Louise Zizileuskas",1,"C",37.5483,-121.9886],["Martin Rios",1,"C",37.3362,-121.8906],
+["Sonya Hooks",1,"C",38.9018,-121.3172],["No Caller Name",1,"C",37.999,-121.8235],["William Hines",1,"C",36.6974,-121.6151],
+["Veronica",1,"C",38.0556,-122.2119],["Christina Elmali",1,"C",39.2761,-121.672],["Trung Nguyen",1,"P",37.3245,-121.9123],
+["Renee White",1,"C",37.457,-122.128],["Joseph Costa",1,"P",37.2864,-121.8353],
+["Rashel Ross",2,"P",37.39,-121.836],["Abdul",2,"P",38.106,-122.256],["William Hellendale",2,"C",37.7772,-122.488],
+["Shailendra",2,"P",37.9156,-121.3175],["Amir Singh",2,"C",37.7648,-121.9544],["Kimberly Green",2,"C",38.5183,-121.4759],
+["Sharon Evers",2,"C",36.6003,-121.8946],["Dwayne Moore",2,"C",37.4672,-122.1432],
+["Stefani Brandt",3,"P",37.2513,-121.8819],["Ing Kong",3,"P",37.9746,-122.5217],["Dan Choi",3,"C",37.7081,-122.1034],
+["Chung",3,"C",37.7616,-122.1831],["Marlene Martin",3,"C",38.6268,-121.5267],["Anne Smith",3,"C",37.7531,-122.1793],
+["Lola Russo",3,"C",38.023,-121.8965],["James Perry Jr.",3,"C",36.6069,-121.8416],["Linda Gheno",3,"C",37.6896,-121.8792],
+["Linda Dana",3,"C",38.6597,-121.7777],["Alvie Arthenack",3,"C",37.9748,-122.5317],
+["Damond Dixon",4,"C",37.7579,-122.1875],
+["Denise Marks",5,"P",38.2606,-122.6424],["Dianne Andrews",5,"C",37.7631,-122.1631]
+];
+const STG=['New','Contacted','Interested','Appointment','Under contract','Acquired'];
+const STG_RAMP=['--r1','--r2','--r3','--r4','--r5','--r6'];
+const CITIES=[['San Francisco',37.775,-122.419],['Oakland',37.80,-122.27],['San Jose',37.335,-121.886],
+  ['Stockton',37.96,-121.29],['Sacramento',38.58,-121.49],['Santa Rosa',38.44,-122.71],['Modesto',37.64,-120.99],['Chico',39.73,-121.84]];
+const WIN={latmin:36.3,latmax:39.95,lngmin:-123.3,lngmax:-120.15};
+const MW=620, MD=470; // floor extents
+const mx_=lng=> ((lng-WIN.lngmin)/(WIN.lngmax-WIN.lngmin)-0.5)*MW;
+const mz_=lat=> ((lat-WIN.latmin)/(WIN.latmax-WIN.latmin)-0.5)*-MD; // north = away
+let pinHits=[];
+const mapScene = new Scene3D('mapCanvas',{yaw:-0.16,pitch:0.92,dist:700,f:900,draw:drawMap,onMove:pickMap});
+scenes.push(mapScene);
+function drawMap(S,c){
+  const grid=cssv('--grid'), muted=cssv('--muted'), base=cssv('--baseline');
+  // floor
+  c.strokeStyle=grid; c.lineWidth=1;
+  const GX=9, GZ=8;
+  for(let i=0;i<=GX;i++){ const x=-MW/2+i*MW/GX;
+    const a=S.P(x,0,-MD/2), b=S.P(x,0,MD/2);
+    c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); }
+  for(let i=0;i<=GZ;i++){ const z=-MD/2+i*MD/GZ;
+    const a=S.P(-MW/2,0,z), b=S.P(MW/2,0,z);
+    c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); }
+  // border
+  c.strokeStyle=base;
+  const corners=[[-MW/2,-MD/2],[MW/2,-MD/2],[MW/2,MD/2],[-MW/2,MD/2]];
+  c.beginPath(); corners.forEach(([x,z],i)=>{ const p=S.P(x,0,z); i? c.lineTo(p.x,p.y):c.moveTo(p.x,p.y); });
+  c.closePath(); c.stroke();
+  // cities
+  c.font='500 10.5px ui-monospace,"SF Mono",Menlo,monospace'; c.fillStyle=muted; c.textAlign='left';
+  CITIES.forEach(([nm,la,ln])=>{ const p=S.P(mx_(ln),0,mz_(la));
+    c.beginPath(); c.arc(p.x,p.y,2,0,7); c.fill(); c.fillText(nm,p.x+5,p.y-3); });
+  // pins painter-sorted
+  pinHits=[];
+  const ps = PINS.map(P0=>{
+    const [n,st,src,la,ln]=P0;
+    const x=mx_(ln), z=mz_(la), h=26+st*26;
+    const top=S.P(x,h,z), bot=S.P(x,0,z);
+    return {n,st,src,x,z,h,top,bot,d:top.d};
+  }).sort((a,b)=>b.d-a.d);
+  ps.forEach(p=>{
+    const col=cssv(STG_RAMP[p.st]);
+    c.strokeStyle=shade(col,-0.15); c.lineWidth=1.2;
+    c.beginPath(); c.moveTo(p.bot.x,p.bot.y); c.lineTo(p.top.x,p.top.y); c.stroke();
+    const r=(3+p.st*0.9)*Math.min(1.25,p.top.s*1.15);
+    c.beginPath(); c.arc(p.top.x,p.top.y,r,0,7);
+    c.fillStyle=col; c.fill();
+    c.strokeStyle=cssv('--surface'); c.lineWidth=1.4; c.stroke();
+    if(p.st===5){ // acquired halo + always-on label
+      c.beginPath(); c.arc(p.top.x,p.top.y,r+4.5,0,7);
+      c.strokeStyle=cssv('--good'); c.lineWidth=1.6; c.stroke();
+      c.font='600 11px ui-monospace,"SF Mono",Menlo,monospace';
+      c.fillStyle=cssv('--ink'); c.textAlign='left';
+      c.fillText(p.n, p.top.x+10, p.top.y-6);
+    }
+    pinHits.push({x:p.top.x,y:p.top.y,n:p.n,st:p.st,src:p.src});
+  });
+}
+const mapTip=document.getElementById('mapTip');
+function pickMap(mx,my){
+  if(mx<0){ mapTip.style.display='none'; return; }
+  let best=null,bd=15*15;
+  pinHits.forEach(h=>{ const dx=h.x-mx,dy=h.y-my,d=dx*dx+dy*dy; if(d<bd){bd=d;best=h;} });
+  if(best){
+    mapTip.innerHTML=`<b>${best.n}</b><br>${STG[best.st]} · ${best.src==='P'?'Postcard':'Checks / letter'}`;
+    mapTip.style.display='block';
+    mapTip.style.left=Math.min(mapScene.W-180,Math.max(4,best.x+12))+'px';
+    mapTip.style.top=Math.max(4,best.y-12)+'px';
+  } else mapTip.style.display='none';
+}
+/* map legend + table counts */
+(function(){
+  const counts=[0,0,0,0,0,0]; PINS.forEach(p=>counts[p[1]]++);
+  document.getElementById('mapLegend').innerHTML = STG.map((s,i)=>
+    `<span class="chip"><span class="dot" style="background:var(${STG_RAMP[i]})"></span>${s} <b>${counts[i]}</b></span>`).join('');
+  ['tN','tC','tI','tA','tU','tW'].forEach((id,i)=>document.getElementById(id).textContent=counts[i]);
+})();
+
+loop();
+</script>
