@@ -15,6 +15,7 @@ import {
   normalizePhone,
 } from "./store.js";
 import { renderDashboard } from "./dashboard.js";
+import { extractInboundFromEmail } from "./extractor.js";
 
 const app = express();
 app.use(express.json());
@@ -76,19 +77,8 @@ async function deliver(draft) {
   return result;
 }
 
-// ── Webhook: point REI BlackBook's inbound-text webhook here ────────────────────────
-app.post("/webhook/inbound-text", async (req, res) => {
-  const secret = process.env.WEBHOOK_SECRET;
-  if (secret && req.query.secret !== secret) return res.status(403).json({ error: "bad secret" });
-
-  const { phone, message, name } = parseInbound(req.body || {});
-  if (!phone || !message) {
-    return res.status(400).json({ error: "could not find phone/message in payload", received: Object.keys(req.body || {}) });
-  }
-
-  // Respond to REI BlackBook immediately; drafting happens after.
-  res.json({ ok: true });
-
+// Shared pipeline: record → guardrails → draft → send or queue for approval.
+async function processInbound({ phone, message, name }) {
   recordMessage(phone, { direction: "in", text: message, name });
 
   if (OPT_OUT_RE.test(message)) {
@@ -117,6 +107,55 @@ app.post("/webhook/inbound-text", async (req, res) => {
   } else {
     await notifyPendingDraft(draft);
   }
+}
+
+function checkSecret(req, res) {
+  const secret = process.env.WEBHOOK_SECRET;
+  if (secret && req.query.secret !== secret) {
+    res.status(403).json({ error: "bad secret" });
+    return false;
+  }
+  return true;
+}
+
+// ── Webhook: structured payload (REI BlackBook workflow webhook or Zapier POST) ─────
+app.post("/webhook/inbound-text", async (req, res) => {
+  if (!checkSecret(req, res)) return;
+
+  const { phone, message, name } = parseInbound(req.body || {});
+  if (!phone || !message) {
+    return res.status(400).json({ error: "could not find phone/message in payload", received: Object.keys(req.body || {}) });
+  }
+
+  // Respond immediately; drafting happens after.
+  res.json({ ok: true });
+  await processInbound({ phone, message, name });
+});
+
+// ── Webhook: raw notification email (Gmail → Zapier → here) ─────────────────────────
+// REI BlackBook has no native inbound-text trigger, but it can email you on every
+// incoming text. Forward that email's subject/body here and the lead's phone, name,
+// and message are extracted automatically.
+app.post("/webhook/inbound-email", async (req, res) => {
+  if (!checkSecret(req, res)) return;
+
+  const subject = String(req.body?.subject || "");
+  const body = String(req.body?.body || req.body?.body_plain || req.body?.text || "");
+  if (!subject && !body) {
+    return res.status(400).json({ error: "expected 'subject' and/or 'body' fields" });
+  }
+
+  const { phone, name, message, extractor } = await extractInboundFromEmail({ subject, body });
+  if (!phone || !message) {
+    return res.status(422).json({
+      error: "could not extract a phone number and message from the email",
+      extractor,
+      extracted: { phone, name, message },
+    });
+  }
+
+  res.json({ ok: true, extracted: { phone, name, message }, extractor });
+  await processInbound({ phone: normalizePhone(phone), message, name });
 });
 
 // ── Approval dashboard ──────────────────────────────────────────────────────────────

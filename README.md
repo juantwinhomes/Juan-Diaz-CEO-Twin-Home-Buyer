@@ -50,13 +50,30 @@ Check service status at `/health`.
 
 ### A. Send inbound texts to this service
 
-1. In REI BlackBook, open **Workflow Builder** and create a workflow triggered when a
-   contact **sends an inbound text** to your Profit Dial number(s).
-2. Add a **Webhook** step pointing to:
-   `https://<your-host>/webhook/inbound-text?secret=<WEBHOOK_SECRET>`
-3. Map the fields: contact phone → `phone`, message body → `message`, first/last name →
-   `first_name` / `last_name`. (Different labels? Set the `WEBHOOK_FIELD_*` variables in
-   `.env` instead of renaming things in REI BlackBook.)
+**Important:** REI BlackBook has no "inbound text received" trigger — not in Zapier
+(its Zapier triggers are contact-based only) and not in Workflow Builder (which only
+triggers on webforms, exact-match *keyword* texts, voicemails, and emails). The
+reliable path is REI BlackBook's **email notifications** for incoming texts:
+
+1. In REI BlackBook, turn on email notifications for incoming texts on your Profit
+   Dial number(s): see
+   [Set Up Task, Call & Text Notifications](https://support.reiblackbook.com/hc/en-us/articles/360012408653-Set-Up-Task-Call-Text-Notifications).
+2. In Zapier, create a Zap:
+   - **Trigger:** *Gmail → New Email Matching Search* — search for the REI BlackBook
+     notification emails (e.g. `from:(reiblackbook.com) "text message"`; check an
+     actual notification email for the exact sender/subject).
+   - **Action:** *Webhooks by Zapier → POST* to
+     `https://<your-host>/webhook/inbound-email?secret=<WEBHOOK_SECRET>`
+     with payload type **JSON** and two fields: `subject` → the email's Subject,
+     `body` → the email's Body Plain.
+3. Done — the service extracts the lead's phone, name, and message from the email
+   automatically (Claude does the parsing, with a regex fallback), so you don't need
+   any parsing steps in Zapier.
+
+If you ever get a payload with clean fields (from Make, or if REI BlackBook adds a
+native trigger), the structured endpoint also exists:
+`POST /webhook/inbound-text?secret=...` with `phone`, `message`, `first_name`,
+`last_name` (field names configurable via `WEBHOOK_FIELD_*`).
 
 ### B. Let this service send replies (needed for approve-send and auto mode)
 

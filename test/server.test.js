@@ -85,6 +85,39 @@ test("dashboard requires the token", async () => {
   assert.equal((await fetch(`${base}/dashboard?token=wrong`)).status, 403);
 });
 
+test("inbound-email webhook extracts phone/message and creates a draft", async () => {
+  const res = await fetch(`${base}/webhook/inbound-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      subject: "New Text Message from Giorgi, Steve",
+      body:
+        "You have received a new text message.\n\n" +
+        "From: Giorgi, Steve\n" +
+        "Phone: (650) 333-8189\n" +
+        'Message: "For $80,000-$100,000 it would sell for $4,200,000"\n',
+    }),
+  });
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  assert.equal(json.extracted.phone, "6503338189");
+  assert.match(json.extracted.message, /it would sell/);
+  await sleep(100);
+
+  const page = await fetch(`${base}/dashboard?token=test-token`).then((r) => r.text());
+  assert.match(page, /6503338189/);
+  assert.match(page, /it would sell/);
+});
+
+test("inbound-email webhook returns 422 when nothing extractable", async () => {
+  const res = await fetch(`${base}/webhook/inbound-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ subject: "Weekly newsletter", body: "No lead data here." }),
+  });
+  assert.equal(res.status, 422);
+});
+
 test("Google Chat webhook receives a formatted notification", async () => {
   const { notifyPendingDraft } = await import("../src/notify.js");
 
@@ -134,23 +167,26 @@ test("approve sends the reply to the configured webform", async () => {
   const fakeServer = fake.listen(0);
   process.env.REIBB_SEND_WEBFORM_URL = `http://127.0.0.1:${fakeServer.address().port}/webform`;
 
-  // Find Tony's pending draft id from the dashboard HTML.
-  const page = await fetch(`${base}/dashboard?token=test-token`).then((r) => r.text());
-  const id = page.match(/\/drafts\/([a-f0-9]+)\/approve/)?.[1];
-  assert.ok(id, "expected a pending draft on the dashboard");
+  try {
+    // Find Tony's pending draft id from the dashboard HTML (his card, specifically —
+    // other tests create drafts too).
+    const page = await fetch(`${base}/dashboard?token=test-token`).then((r) => r.text());
+    const id = page.match(/Tony Burke[\s\S]*?\/drafts\/([a-f0-9]+)\/approve/)?.[1];
+    assert.ok(id, "expected Tony's pending draft on the dashboard");
 
-  const res = await fetch(`${base}/drafts/${id}/approve`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ token: "test-token", replyText: "I may be able to — quick call today?" }),
-    redirect: "manual",
-  });
-  assert.equal(res.status, 302);
-  assert.equal(received.length, 1);
-  assert.equal(received[0].phone, "7075961590");
-  assert.equal(received[0].first_name, "Tony");
-  assert.equal(received[0].ai_reply, "I may be able to — quick call today?");
-
-  fakeServer.close();
-  delete process.env.REIBB_SEND_WEBFORM_URL;
+    const res = await fetch(`${base}/drafts/${id}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token: "test-token", replyText: "I may be able to — quick call today?" }),
+      redirect: "manual",
+    });
+    assert.equal(res.status, 302);
+    assert.equal(received.length, 1);
+    assert.equal(received[0].phone, "7075961590");
+    assert.equal(received[0].first_name, "Tony");
+    assert.equal(received[0].ai_reply, "I may be able to — quick call today?");
+  } finally {
+    fakeServer.close();
+    delete process.env.REIBB_SEND_WEBFORM_URL;
+  }
 });
