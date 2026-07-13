@@ -16,7 +16,7 @@
 | Voice interviewer | Gemini Live API (Google AI Studio free tier) | $0 |
 | Web app (applicant page + admin) | Next.js — ONE app, two routes | $0 |
 | Database / auth / file storage | Supabase free tier | $0 |
-| Hosting | Cloudflare Pages/Workers (fallback: Vercel free) | $0 |
+| Hosting | Vercel (existing account; Hobby tier for pilot, Pro ~$20/mo if permanent) | $0 |
 | Transcript scoring | Gemini (same free key) w/ rubric prompt | $0 |
 
 ## Architecture rules (non-negotiable)
@@ -104,8 +104,9 @@ multi-language, phone dial-out.
 3. Live API integration: ephemeral-token route, mic streaming, interview
    flow per AGENT-PROMPT.md, transcript capture.
 4. Audio upload + AI scoring button (SCORING-PROMPT.md).
-5. Deploy Cloudflare (fallback Vercel). Env vars: GEMINI_API_KEY,
-   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (server only).
+5. Deploy to Vercel (existing account — connect repo, deploy). Env vars:
+   GEMINI_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY,
+   SUPABASE_SERVICE_ROLE_KEY (server only).
 6. **Dry run: Seth + Carlo interview each other 5x, tune, THEN first real
    applicant.**
 
