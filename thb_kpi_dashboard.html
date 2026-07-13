@@ -140,10 +140,10 @@
   <!-- HERO KPIS -->
   <div class="grid kpis">
     <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Direct-Mail Spend</div><div class="val">$124.3K</div><div class="note">QuickBooks · YTD 2026</div></div>
-    <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Direct-Mail Leads</div><div class="val">427</div><div class="note">live on Monday board · by stage below</div></div>
-    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Cost / Lead</div><div class="val">$291</div><div class="note">$124,333 ÷ 427 leads</div></div>
+    <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Direct-Mail Leads</div><div class="val">428</div><div class="note">live on Monday board · by stage below</div></div>
+    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Cost / Lead</div><div class="val">$290</div><div class="note">$124,333 ÷ 428 leads</div></div>
     <div class="tile"><div class="bar" style="background:var(--s5)"></div><div class="cap">Postcards Mailed</div><div class="val">77,763</div><div class="note">39 batches (tracker)</div></div>
-    <div class="tile"><div class="bar" style="background:var(--s1)"></div><div class="cap">Active Pipeline</div><div class="val">94</div><div class="note">working+appt+UC+won (of 427)</div></div>
+    <div class="tile"><div class="bar" style="background:var(--s1)"></div><div class="cap">Active Pipeline</div><div class="val">94</div><div class="note">working+appt+UC+won (of 428)</div></div>
     <div class="tile"><div class="bar" style="background:var(--good)"></div><div class="cap">Revenue (REI)</div><div class="val">$35.9K</div><div class="note">1 of 2 wins reported · QB $0</div></div>
     <div class="tile"><div class="bar" style="background:var(--s3)"></div><div class="cap">Total ROA</div><div class="val">0.29x</div><div class="note">$35,918.75 rev ÷ $124,332.62 spend · net <b>−$88,413.87</b></div></div>
   </div>
@@ -312,10 +312,10 @@
   <div class="foot">
     <b>Scope.</b> Direct mail only — other channels (PPC, Property Leads, TV, etc.) and general revenue are excluded from this view.
     <b>Sources.</b> Direct-mail spend from the QuickBooks Online API (AM- Direct Mail, $124,330 YTD 2026; company-wide 2026 income $10.98M / net $5.01M, all channels). Direct-mail leads from the Monday board
-    (427 live, by stage: 134 new · 75 working · 14 appointment · 2 under contract · 3 won · 199 dead). Mail production from Monday.com "Equity Track Iriga – Operating System."
+    (428 live, by stage: 135 new · 75 working · 14 appointment · 2 under contract · 3 won · 199 dead). Mail production from Monday.com "Equity Track Iriga – Operating System."
     Sections 4–5 use Twin Home Buyer's own "KPI Postcard" Google Sheet (Dec 3 2025 – May 29 2026) — the authoritative postcard tracker
     (77,763 mailed, 92 leads, 0 deals). Revenue: REI Blackbook "Revenue" field — $35,918.75 on Dianne Andrews (checks deal); Denise Marks pending;
-    QuickBooks still shows $0 booked, so REI-reported revenue is the ROI source until reconciled. Generated 2026-07-11 (evening — lead count independently re-verified: 427 exact match).
+    QuickBooks still shows $0 booked, so REI-reported revenue is the ROI source until reconciled. Generated 2026-07-13 (lead count independently re-verified Jul 11; +1 new postcard call-in added Jul 13).
   </div>
   </div><!-- /tab-dash -->
 
@@ -400,13 +400,13 @@ hbars(document.getElementById('sheetresp'),[
 // 4c funnel
 (function(){
   const stages=[
-    {k:'Direct-mail leads',v:427,c:'var(--s1)'},
+    {k:'Direct-mail leads',v:428,c:'var(--s1)'},
     {k:'Working / contacted',v:75,c:'var(--s2)'},
     {k:'Appointment & offer',v:14,c:'var(--s1)'},
     {k:'Under contract',v:2,c:'var(--s3)'},
     {k:'Won / acquired',v:3,c:'var(--good)'}
   ];
-  const max=427;
+  const max=428;
   document.getElementById('funnel').innerHTML=stages.map(s=>{
     const w=Math.max(6,(s.v/max)*100);
     return `<div class="funnel-stage">
@@ -463,6 +463,7 @@ function showTab(which){
 // --- Activity & data log (newest first) ---
 const SRC = { qb:['QuickBooks','var(--qb)'], rei:['REI Blackbook','var(--rei)'], mon:['Monday.com','var(--mon)'], sheet:['Google Sheet','var(--s5)'], recon:['Reconcile','var(--s3)'], sys:['System','var(--ink-3)'] };
 const LOG = [
+  ['Jul 13','rei','<b>New postcard lead in</b> \u2014 hotline call-in (phone 510-275-1739, \u201cLiens\u201d mailing list, REI 20501726), added to the board \u2192 <b>428 leads</b>, cost/lead $290.50. 7 other new contacts were PPC/PPL/web \u2014 excluded as usual. Revenue check: Dianne Andrews $35,918.75 still the only entry; Denise Marks\u2019 Revenue field still blank in REI.'],
   ['Jul 11','recon','<b>Final double-check (independent re-scan): exact match.</b> Fresh live pull of all 1,230 REI contacts created in 2026, re-classified from scratch (source-wins rule) and diffed against all 427 board links: <b>0 missing, 0 extra, 0 duplicates</b> — 427 = 427 in both directions. 10 borderline contacts with paid-source (Bing PPC / PropertyLeads) but incidental mail tags correctly excluded per the source-wins rule.'],
   ['Jul 11','recon','<b>Audit round 2 — reconciled to the contact.</b> Every 2026 REI contact accounted for: 1,229 total = <b>427 direct-mail on the board</b> (401 tagged + 26 THB-hotline call-ins, new \'Direct Mail (Call-in)\' source label) + 645 other channels (PPC/PPL/web, excluded) + 156 with no channel signal (listed, not added) + 1 intentional duplicate. Cost/lead $291.'],
   ['Jul 11','recon','<b>Full audit: 23 more leads recovered</b> — complete REI↔board diff found 24 gaps (1 was the intentional Jose dup). Board now <b>401 = every 2026 REI direct-mail lead</b>. Includes a 3rd acquisition (<b>Bill, 1202 Via Lucas, San Lorenzo</b> — ⚠ tagged both Direct Mail source and PPC LEAD) and a 2nd appointment (<b>Miller Howard, Vallejo</b>). Cost/lead $310. Root cause: original backfill filter excluded mixed-tag leads; sync gap Jul 8–10.'],
