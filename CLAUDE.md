@@ -124,4 +124,28 @@ packet (9 pages)** — not yet in the repo. Ask Juan for it.
 Durable knowledge about Juan and Twin Home Buyer lives in `knowledge/`. Read it
 at the start of substantive work and keep it current as you learn more. Key
 files: `juan-grok-prompting-profile.md` (how Juan communicates — match it),
-`deal-pattern-buybox.md` (deal screening), `marketing-postcard-kpis.md`.
+`deal-pattern-buybox.md` (deal screening), `marketing-postcard-kpis.md`,
+`deal-note-template.md` (comp-note standard — see below),
+`direct-mail-followup-playbook.md` (mail sequence + follow-up).
+
+## Deal / Comp Note Standard (ALWAYS FOLLOW)
+
+Whenever anyone gives you comp data, a property, or deal info — raw or messy —
+**produce (or rewrite) the note in the `knowledge/deal-note-template.md` format.**
+This is a standing rule, not a per-request ask. Read that file for the full
+template and worked example. Non-negotiable rules, in Juan's read order:
+
+1. **Verdict on top** — 🟢 OFFER @ $__ / 🟡 WATCH / 🔴 PASS + one line why. He
+   decides in the first 5 seconds; detail goes below.
+2. **"The Gap" block second** — our max vs their target vs competition. That math
+   IS the deal. State ABOVE/BELOW and DEAL/PASS explicitly.
+3. **One number, one place** — each figure (especially the seller's target) appears
+   on exactly ONE line. Never write the same number two different ways.
+4. **Ceiling is sacred** — label max-to-flip "do not exceed w/o approval" (ties to
+   Juan's 85% rule; >$1–2K exposure routes to attorney/CPA per the reset).
+5. **Flag contradictions out loud** — a dedicated ⚠️ line for anything that doesn't
+   add up. Surfacing a bad number is the single most valuable thing in the note.
+
+Then fill the rest in order: Seller · Subject · Numbers · Comps · Data Checks ·
+Decision Needed. Keep it phone-readable (Juan reads while driving). If you can't
+fill "The Gap" cleanly, say so — that means the deal isn't ready to call yet.
