@@ -50,7 +50,9 @@ export async function POST(req: Request) {
   return NextResponse.json({
     interviewId: interview.id,
     ephemeralToken: authToken.name,
-    model: LIVE_MODEL,
+    // LIVE_MODEL env var overrides the default — lets us switch Live model
+    // names from Vercel settings without a code change (they rotate often)
+    model: process.env.LIVE_MODEL || LIVE_MODEL,
     systemPrompt: interviewerSystemPrompt(candidate.full_name, candidate.role_applied),
   });
 }

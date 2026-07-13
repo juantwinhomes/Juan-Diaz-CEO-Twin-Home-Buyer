@@ -36,6 +36,9 @@ export default function InterviewClient({
   const chunksRef = useRef<Blob[]>([]);
   const cleanupRef = useRef<() => void>(() => {});
   const endedRef = useRef(false);
+  // populated when the Live session errors/closes abnormally, so the final
+  // screen can show WHY instead of failing silently
+  const failReasonRef = useRef<string>("");
 
   async function start() {
     setStage("connecting");
@@ -126,8 +129,17 @@ export default function InterviewClient({
               currentCandidate = "";
             }
           },
-          onerror: () => endSession(false),
-          onclose: () => endSession(false),
+          onerror: (e: any) => {
+            console.error("Live session error:", e);
+            failReasonRef.current = e?.message || "connection error";
+            endSession(false);
+          },
+          onclose: (e: any) => {
+            console.error("Live session closed:", e?.code, e?.reason);
+            if (!failReasonRef.current && e?.reason)
+              failReasonRef.current = `closed (${e.code}): ${e.reason}`;
+            endSession(false);
+          },
         },
       });
       sessionRef.current = session;
@@ -229,13 +241,25 @@ export default function InterviewClient({
 
   if (stage === "uploading") return <main style={wrap}><h1>Saving your interview…</h1><p>Don&apos;t close this tab.</p></main>;
 
-  if (stage === "done")
+  if (stage === "done") {
+    // session died before any conversation happened — surface the reason
+    if (failReasonRef.current && transcriptRef.current.length === 0)
+      return (
+        <main style={wrap}>
+          <h1>Connection problem</h1>
+          <p>The interview could not start. Please share this with Twin Home Buyer:</p>
+          <p style={{ color: "#c00", fontSize: 14, background: "#fff", padding: 10, borderRadius: 6, wordBreak: "break-all" }}>
+            {failReasonRef.current}
+          </p>
+        </main>
+      );
     return (
       <main style={wrap}>
         <h1>✅ All done, {candidateName}!</h1>
         <p>Your interview was submitted. The Twin Home Buyer team will review it and get back to you within a few days.</p>
       </main>
     );
+  }
 
   return (
     <main style={wrap}>
