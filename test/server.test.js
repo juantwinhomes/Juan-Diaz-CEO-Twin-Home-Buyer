@@ -85,6 +85,43 @@ test("dashboard requires the token", async () => {
   assert.equal((await fetch(`${base}/dashboard?token=wrong`)).status, 403);
 });
 
+test("Google Chat webhook receives a formatted notification", async () => {
+  const { notifyPendingDraft } = await import("../src/notify.js");
+
+  // notify.js only talks to chat.googleapis.com for the Chat format, so stub fetch
+  // instead of standing up a server.
+  const calls = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    calls.push({ url, body: JSON.parse(opts.body) });
+    return new Response("{}", { status: 200 });
+  };
+  process.env.NOTIFY_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAA/messages?key=k&token=t";
+  process.env.PUBLIC_BASE_URL = "https://example.com";
+
+  try {
+    await notifyPendingDraft({
+      name: "Tony Burke",
+      phone: "7075961590",
+      inboundText: "Are you going to beat 719",
+      replyText: "I may be able to — quick call today?",
+    });
+  } finally {
+    globalThis.fetch = realFetch;
+    delete process.env.NOTIFY_WEBHOOK_URL;
+    delete process.env.PUBLIC_BASE_URL;
+  }
+
+  assert.equal(calls.length, 1);
+  const { body } = calls[0];
+  // Google Chat accepts a Message resource: only `text`, no extra fields.
+  assert.deepEqual(Object.keys(body), ["text"]);
+  assert.match(body.text, /Tony Burke/);
+  assert.match(body.text, /Are you going to beat 719/);
+  assert.match(body.text, /quick call today/);
+  assert.match(body.text, /dashboard\?token=test-token\|Review & send/);
+});
+
 test("approve sends the reply to the configured webform", async () => {
   // Stand up a fake REI BlackBook webform endpoint.
   const received = [];

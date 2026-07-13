@@ -70,11 +70,19 @@ triggers a texting workflow:
    step whose message is the merge field for `ai_reply`, sent from your Profit Dial
    number.
 
-### C. Get pinged when a draft needs approval (optional)
+### C. Get notified in Google Chat when a draft needs approval
 
-Set `NOTIFY_WEBHOOK_URL` to any URL that accepts a JSON POST — a Zapier/Make hook that
-texts or emails you, or a Slack incoming webhook. The payload includes the lead's
-message, the suggested reply, and a link to the dashboard.
+1. In **Google Chat**, open (or create) the space where you want alerts.
+2. Space name → **Apps & integrations** → **Webhooks** → **Add webhook**, name it
+   (e.g. "Lead Texts"), and copy the webhook URL.
+3. Paste it into `NOTIFY_WEBHOOK_URL` in `.env`, and set `PUBLIC_BASE_URL` to this
+   service's public URL so the message includes a **Review & send** link.
+
+Each inbound lead text then posts a Chat message with the lead's name and message, the
+AI-suggested reply, and a one-tap link to approve it.
+
+(Non–Google Chat URLs — Slack, Zapier, Make — also work; they receive a generic JSON
+POST instead.)
 
 ## Configuration
 
