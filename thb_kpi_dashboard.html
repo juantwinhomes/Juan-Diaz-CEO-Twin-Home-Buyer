@@ -143,7 +143,7 @@
     <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Direct-Mail Leads</div><div class="val">427</div><div class="note">live on Monday board · by stage below</div></div>
     <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Cost / Lead</div><div class="val">$291</div><div class="note">$124,333 ÷ 427 leads</div></div>
     <div class="tile"><div class="bar" style="background:var(--s5)"></div><div class="cap">Postcards Mailed</div><div class="val">77,763</div><div class="note">39 batches (tracker)</div></div>
-    <div class="tile"><div class="bar" style="background:var(--s1)"></div><div class="cap">Active Pipeline</div><div class="val">106</div><div class="note">working+appt+UC+won (of 427)</div></div>
+    <div class="tile"><div class="bar" style="background:var(--s1)"></div><div class="cap">Active Pipeline</div><div class="val">98</div><div class="note">working+appt+UC+won (of 427)</div></div>
     <div class="tile"><div class="bar" style="background:var(--good)"></div><div class="cap">Revenue (REI)</div><div class="val">$35.9K</div><div class="note">1 of 2 wins reported · QB $0</div></div>
     <div class="tile"><div class="bar" style="background:var(--s3)"></div><div class="cap">Total ROA</div><div class="val">0.29x</div><div class="note">$35,918.75 rev ÷ $124,332.62 spend · net <b>−$88,413.87</b></div></div>
   </div>
@@ -312,7 +312,7 @@
   <div class="foot">
     <b>Scope.</b> Direct mail only — other channels (PPC, Property Leads, TV, etc.) and general revenue are excluded from this view.
     <b>Sources.</b> Direct-mail spend from the QuickBooks Online API (AM- Direct Mail, $124,330 YTD 2026; company-wide 2026 income $10.98M / net $5.01M, all channels). Direct-mail leads from the Monday board
-    (427 live, by stage: 80 new · 88 working · 15 appointment · 1 under contract · 1 cancelled contract · 2 won · 240 dead). Mail production from Monday.com "Equity Track Iriga – Operating System."
+    (427 live, by stage: 80 new · 84 working · 11 appointment · 1 under contract · 1 cancelled contract · 2 won · 248 dead). Mail production from Monday.com "Equity Track Iriga – Operating System."
     Sections 4–5 use Twin Home Buyer's own "KPI Postcard" Google Sheet (Dec 3 2025 – May 29 2026) — the authoritative postcard tracker
     (77,763 mailed, 92 leads, 0 deals). Revenue: REI Blackbook "Revenue" field — $35,918.75 on Dianne Andrews (checks deal); Denise Marks pending;
     QuickBooks still shows $0 booked, so REI-reported revenue is the ROI source until reconciled. Generated 2026-07-13 (evening — all 135 New leads re-audited 1-by-1 against REI Blackbook).
@@ -401,8 +401,8 @@ hbars(document.getElementById('sheetresp'),[
 (function(){
   const stages=[
     {k:'Direct-mail leads',v:427,c:'var(--s1)'},
-    {k:'Working / contacted',v:88,c:'var(--s2)'},
-    {k:'Appointment & offer',v:15,c:'var(--s1)'},
+    {k:'Working / contacted',v:84,c:'var(--s2)'},
+    {k:'Appointment & offer',v:11,c:'var(--s1)'},
     {k:'Under contract',v:1,c:'var(--s3)'},
     {k:'Won / acquired',v:2,c:'var(--good)'}
   ];
@@ -463,6 +463,7 @@ function showTab(which){
 // --- Activity & data log (newest first) ---
 const SRC = { qb:['QuickBooks','var(--qb)'], rei:['REI Blackbook','var(--rei)'], mon:['Monday.com','var(--mon)'], sheet:['Google Sheet','var(--s5)'], recon:['Reconcile','var(--s3)'], sys:['System','var(--ink-3)'] };
 const LOG = [
+  ['Jul 13','recon','<b>Full-board stage audit — every one of the 427 leads re-verified against live REI data.</b> 10 more corrections: <b>8 → Dead</b> with final outcomes hiding under active stages (Miller Howard/15 Stevens Pl — Lost Deal; Dan Choi/18649 Stanton — offer declined; 1300 84th Ave Oakland — Dead Lead; 4458 Yuma Ct Pleasanton + 225 Olive Ave Modesto — We\u2019re Passing; 260 Medburn St Concord + 2302 Las Palomas Lincoln — declined; 419 Delta Dr Woodland — Not Interested) and <b>2 → Appointment</b> that were buried in Working (2234 E Euclid Ave + 2155 Watercourse St, Stockton). Unresponsive leads still on an active Follow-Up pipeline stay in Working. Cancelled contracts: still only Damond Dixon. Final: 80 new · 84 working · 11 appointment · 1 UC · 1 cancelled · 2 won · 248 dead.'],
   ['Jul 13','recon','<b>Property addresses reconciled across the full board.</b> All 427 leads checked 1-by-1 against the REI property-address field: <b>77 items fixed this pass</b> (45 outside New + 32 in New) — 43 blank items filled, 34 city-only items upgraded to full street addresses (incl. Jose Espinoza\u2019s under-contract property: 33025 Wildomar Rd, Lake Elsinore). Final: <b>183 leads have a property address (all shown), 244 have none in REI</b> — mostly anonymous hotline callers; those stay \u201cNo property address\u201d until captured in REI.'],
   ['Jul 13','recon','<b>New Leads audited 1-by-1 in REI — 55 re-staged, 32 addresses filled.</b> Every lead in the New group was re-pulled from REI Blackbook: <b>41 → Dead</b> (Remove From List, Do Not Mail, declined offer, unresponsive, wrong number, deceased, telemarketer/tenant, working with realtor, passing), <b>13 → Working/Contacted</b> (top-dollar askers, not-a-decision-maker, language barrier, not ready yet), <b>1 → Appointment: Harry McGowan</b> (344 Mesa Verde Ct, Chico — appointment booked in REI). 80 genuinely New remain. 32 items renamed with their REI property address. ⚠ Separately: <b>Bill (1202 Via Lucas, San Lorenzo, Won) was deleted from the board outside this session</b> — Won now counts 2; say the word to restore him.'],
   ['Jul 13','mon','<b>Cancelled Contract now tracked.</b> New “🚫 Cancelled Contract” group on the leads board (above Dead). <b>Damond Dixon</b> (7400 Rudsdale St #7G, Oakland — $166K offer renegotiated to $120K) moved there from Under Contract per Juan: contract cancelled, not closed. Under Contract now 1 (Jose Espinoza). No other board lead carries a cancelled-contract signal in REI.'],
