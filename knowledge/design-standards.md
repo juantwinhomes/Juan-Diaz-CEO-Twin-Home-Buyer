@@ -15,10 +15,11 @@
 >
 > STATUS: v1, generalized to all locations 2026-07-11 (was drafted around
 > the Petaluma pilot). Mandatory: photo protocol, location market research,
-> live vendor stock check, rehab estimate — all below. Still open: Juan to
-> approve/expand the standard palettes with 2–3 past flips he's proud of
-> (photos + what was used). Kristine to backfill actuals from past SOWs/
-> receipts so cost estimates sharpen over time.
+> live vendor stock check, rehab estimate — all below. Standard palette +
+> finish package now DECIDED (see "The House Colors" below) — the Twin made
+> Juan's calls so the team isn't blocked; Juan can override any single line
+> in one pass. Still sharpening: Kristine to backfill actuals from past SOWs/
+> receipts so cost estimates get tighter over time.
 
 ## How the Designer works (not technical, by design)
 
@@ -153,18 +154,54 @@ violation as missing a color code — flag it, don't skip it.
 | **T2 — East Bay engine flip** | $500K–$1M | THE standard. Clean modern, light + bright, nothing custom. Where 80% of projects live. |
 | **T3 — Premium** | $1M+ | Elevated finishes, statement front door/lighting. Juan approval required (matches his major-risk seat). |
 
-## Standard palette — SEED (from past projects; Juan to confirm/expand)
+## Standard palette — THE HOUSE COLORS (decided; not a to-do)
 
-### Sherwin-Williams (confirmed used before)
-- **SW 9130 Evergreen Fog** — accent/exterior (from a prior full paint plan)
-- _TODO Juan: the go-to white (Pure White SW 7005? Alabaster SW 7008?),
-  greige (Agreeable Gray SW 7029?), trim white, front-door color(s)._
+> This is the answer to "what color?" — the Designer never asks Juan, it uses
+> this. Default for every T2 flip; T1 = same palette in the cheapest product;
+> T3 = start here, then elevate. Adjust per property ONLY when Local Market
+> Research says the market wants something else (e.g. Petaluma wine-country
+> warm creams). Juan can veto any single line in one pass — until he does,
+> this is locked and the team builds to it.
 
-### Finishes
-- _TODO: hardware finish family (matte black? brushed nickel?), LVP color/brand,
-  cabinet white/shaker source, counter (quartz level), garage door style._
-- Vendor list: see Material Sourcing above (Home Depot, Empire Today,
-  Granite Expo, Alpine Valley).
+### Interior — Sherwin-Williams
+- **Walls (main living):** SW 7029 Agreeable Gray — eggshell. Light, neutral
+  greige; photographs bright, offends no buyer.
+- **Trim / baseboards / casing / interior doors:** SW 7008 Alabaster —
+  semi-gloss. Warm soft white, the standard partner to Agreeable Gray.
+- **Ceilings:** SW 7008 Alabaster — flat.
+- **Kitchen & bath walls:** SW 7029 Agreeable Gray — satin (moisture).
+- **Optional accent (feature wall / island):** SW 9130 Evergreen Fog or
+  SW 6258 Tricorn Black — satin.
+
+### Exterior — Sherwin-Williams (clean modern, light + bright = the T2 look)
+- **Body:** SW 7005 Pure White — satin. Crisp modern base.
+- **Trim:** SW 7005 Pure White — keep it tight and clean.
+- **Front door (the statement):** SW 9130 Evergreen Fog — semi-gloss (the
+  confirmed house color). Alt: SW 6258 Tricorn Black.
+- **Garage door:** match body (Pure White) for the clean T1/T2 look, or
+  SW 6258 Tricorn Black as a contrast accent when the curb needs a pop.
+- **Shutters / accents (if any):** SW 6258 Tricorn Black.
+- **Location override:** warm markets (Petaluma / wine-country) swap to warm
+  creams + terracotta accents per Local Market Research.
+
+### Finishes — the standard package
+- **Hardware finish family:** matte black — levers, hinges, pulls, plumbing
+  fixtures, house numbers. One family, no mixing. Softer/traditional buyer
+  alt: brushed/satin nickel.
+- **Flooring:** LVP throughout main areas — warm mid-tone oak, waterproof
+  rigid-core (Home Depot Lifeproof or equivalent in stock). Carpet only in
+  bedrooms on T1 budgets.
+- **Cabinets:** white shaker (Alabaster / Pure White). T2+ option: greige or
+  black island for contrast.
+- **Counters:** quartz, white with soft gray veining (Granite Expo entry
+  quartz) for T2/T3; entry granite or laminate acceptable on T1.
+- **Kitchen/bath fixtures:** matte black faucets, to match the hardware family.
+- **Garage door style:** modern flush or short-panel steel; no windows for
+  T1/T2 unless the elevation needs the detail.
+- **Appliances:** stainless, entry tier (T1/T2); brand-name mid tier (T3).
+- **Sourcing:** Home Depot (bulk / paint / hardware / landscaping), Empire
+  Today (carpet), Granite Expo / Alpine Valley (stone). Live stock/price
+  check per Material Sourcing above.
 
 ## Rules the Designer enforces
 
@@ -175,8 +212,10 @@ violation as missing a color code — flag it, don't skip it.
    creeps past the 25–30% red line).
 3. One spec sheet per property, versioned in `projects/` — the team asks the
    Designer, not Juan, for "what color / what handle / what door."
-4. Photos in → spec out → **Juan approves in one pass** → locked. Changes
-   after lock get flagged (cost drift).
+4. Photos in → spec out → **the team (Kristine/Brian) approves in one pass**
+   → locked. Changes after lock get flagged (cost drift). T3 premium is the
+   only spec that goes to Juan — a one-pass sign-off on overall direction
+   (see Rule 7).
 5. Location market research and the live vendor stock/price check (above) are
    mandatory before a spec goes out — not optional add-ons.
 6. Missing data (measurements, counts, panel status) gets called out by name
