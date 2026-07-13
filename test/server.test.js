@@ -1,0 +1,119 @@
+import { test, before, after } from "node:test";
+import assert from "node:assert";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+
+// Isolate test data and force test mode before the app loads.
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "reibb-test-"));
+process.env.NODE_ENV = "test";
+process.env.DATA_DIR = tmpDir;
+process.env.DASHBOARD_TOKEN = "test-token";
+delete process.env.ANTHROPIC_API_KEY; // force fallback drafting — no network in tests
+delete process.env.REIBB_SEND_WEBFORM_URL;
+delete process.env.NOTIFY_WEBHOOK_URL;
+
+const { default: app } = await import("../src/server.js");
+const { FALLBACK_REPLY } = await import("../src/drafter.js");
+
+let server, base;
+before(() => {
+  server = app.listen(0);
+  base = `http://127.0.0.1:${server.address().port}`;
+});
+after(() => {
+  server.close();
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+test("health endpoint reports status", async () => {
+  const res = await fetch(`${base}/health`);
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.mode, "approve");
+});
+
+test("inbound webhook creates a pending draft (fallback reply without API key)", async () => {
+  const res = await fetch(`${base}/webhook/inbound-text`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone: "(707) 596-1590", message: "Are you going to beat 719", first_name: "Tony", last_name: "Burke" }),
+  });
+  assert.equal(res.status, 200);
+  await sleep(100); // drafting happens after the webhook response
+
+  const page = await fetch(`${base}/dashboard?token=test-token`).then((r) => r.text());
+  assert.match(page, /Tony Burke/);
+  assert.match(page, /Are you going to beat 719/);
+  assert.ok(page.includes(FALLBACK_REPLY));
+});
+
+test("rejects payloads without phone/message", async () => {
+  const res = await fetch(`${base}/webhook/inbound-text`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ foo: "bar" }),
+  });
+  assert.equal(res.status, 400);
+});
+
+test("STOP opts the contact out and no draft is created", async () => {
+  await fetch(`${base}/webhook/inbound-text`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone: "4154819715", message: "STOP", first_name: "Ellen", last_name: "Ware" }),
+  });
+  await sleep(100);
+  // A later text from the same number is also ignored.
+  await fetch(`${base}/webhook/inbound-text`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone: "4154819715", message: "hello again" }),
+  });
+  await sleep(100);
+
+  const page = await fetch(`${base}/dashboard?token=test-token`).then((r) => r.text());
+  assert.ok(!page.includes("Ellen"));
+  assert.ok(!page.includes("hello again"));
+});
+
+test("dashboard requires the token", async () => {
+  assert.equal((await fetch(`${base}/dashboard`)).status, 403);
+  assert.equal((await fetch(`${base}/dashboard?token=wrong`)).status, 403);
+});
+
+test("approve sends the reply to the configured webform", async () => {
+  // Stand up a fake REI BlackBook webform endpoint.
+  const received = [];
+  const { default: express } = await import("express");
+  const fake = express().use(express.urlencoded({ extended: true }));
+  fake.post("/webform", (req, res) => {
+    received.push(req.body);
+    res.send("ok");
+  });
+  const fakeServer = fake.listen(0);
+  process.env.REIBB_SEND_WEBFORM_URL = `http://127.0.0.1:${fakeServer.address().port}/webform`;
+
+  // Find Tony's pending draft id from the dashboard HTML.
+  const page = await fetch(`${base}/dashboard?token=test-token`).then((r) => r.text());
+  const id = page.match(/\/drafts\/([a-f0-9]+)\/approve/)?.[1];
+  assert.ok(id, "expected a pending draft on the dashboard");
+
+  const res = await fetch(`${base}/drafts/${id}/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ token: "test-token", replyText: "I may be able to — quick call today?" }),
+    redirect: "manual",
+  });
+  assert.equal(res.status, 302);
+  assert.equal(received.length, 1);
+  assert.equal(received[0].phone, "7075961590");
+  assert.equal(received[0].first_name, "Tony");
+  assert.equal(received[0].ai_reply, "I may be able to — quick call today?");
+
+  fakeServer.close();
+  delete process.env.REIBB_SEND_WEBFORM_URL;
+});

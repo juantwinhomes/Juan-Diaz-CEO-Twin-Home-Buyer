@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# rei-blackbook-inbox-automation
+node_modules/
+data/

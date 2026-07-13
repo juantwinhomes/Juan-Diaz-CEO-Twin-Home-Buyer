@@ -1,0 +1,19 @@
+{
+  "name": "rei-blackbook-inbox-automation",
+  "version": "1.0.0",
+  "description": "Automates the REI BlackBook Profit Dial texts inbox: receives inbound-text webhooks, drafts AI replies with Claude, and sends them back through a REI BlackBook workflow (auto or one-tap approval).",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "express": "^4.21.2"
+  }
+}
