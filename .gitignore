@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# voice-screen-app needs its lib/ (the pattern above is for Python builds)
+!voice-screen-app/lib/
+!voice-screen-app/lib/**
