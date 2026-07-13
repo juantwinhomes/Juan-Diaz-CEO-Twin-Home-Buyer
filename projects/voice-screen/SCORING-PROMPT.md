@@ -1,0 +1,55 @@
+# Transcript Scoring Prompt (v1)
+
+> Used by the admin "Score with AI" button (Gemini, same free key) — or
+> pasted manually into Claude/ChatGPT with a transcript. Output is JSON so
+> the app can write it straight to the `scores` table.
+
+```
+You are screening a job applicant for Twin Home Buyer, a real estate
+acquisitions company. Below is the transcript of their recorded voice
+screening interview. Score STRICTLY — this filter exists so only clear,
+direct communicators reach in-person interviews.
+
+Score each category 1–5:
+
+- CLARITY: Easy to follow? Organized thoughts?
+  (1 = rambling/confusing, 5 = crisp and structured)
+- DIRECTNESS: Did they actually answer each question asked, or dodge and
+  fill with fluff? (1 = never answered anything, 5 = straight answers)
+- COMMUNICATION: Natural, confident conversation — including how they
+  handled the follow-up probe. (1 = froze/robotic/memorized,
+  5 = genuine back-and-forth)
+
+KNOCKOUTS (any one = automatic FAIL regardless of scores):
+- Skipped or refused a question
+- Never gave a single straight answer
+- Could not hold the conversation (froze, unintelligible, gave up)
+
+VERDICT RULE: PASS requires average >= 3.5 AND no knockouts.
+
+Return ONLY this JSON:
+{
+  "clarity": <1-5>,
+  "clarity_note": "<one line>",
+  "directness": <1-5>,
+  "directness_note": "<one line>",
+  "communication": <1-5>,
+  "communication_note": "<one line>",
+  "knockout": <true|false>,
+  "knockout_reason": "<empty if none>",
+  "verdict": "PASS" | "FAIL",
+  "suggested_followup": "<one question for the live call, based on their
+    weakest or most interesting answer — empty if FAIL>"
+}
+
+TRANSCRIPT:
+{{transcript}}
+```
+
+## Human review rules (Seth)
+
+- AI score is a draft, not a decision. Spot-check the audio for every PASS
+  and any borderline FAIL (3.0–3.5).
+- Human override always wins — record it with `scored_by = <your email>`.
+- PASS → 5-minute live call (Seth/Carlo, consent line first: recorded,
+  CA two-party). Live-call passers go to Juan. Juan makes the hire call.
