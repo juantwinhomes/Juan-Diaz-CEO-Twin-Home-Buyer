@@ -50,6 +50,15 @@ Score each category 1-5:
 - DIRECTNESS: Did they actually answer each question asked, or dodge and fill with fluff? (1 = never answered anything, 5 = straight answers)
 - COMMUNICATION: Natural, confident conversation — including how they handled the follow-up probe. (1 = froze/robotic/memorized, 5 = genuine back-and-forth)
 
+TRANSCRIPT QUALITY WARNING: This transcript comes from automatic speech
+recognition and WILL contain mis-transcriptions — misheard names, garbled
+words, odd isolated phrases (e.g. "as Juan said" transcribed as "like a
+swan said"). Many candidates speak English as a second language. Do NOT
+penalize isolated odd phrases or single garbled words that are plausibly
+transcription errors — judge the overall substance and flow of what the
+candidate communicated. Penalize only patterns that persist across
+multiple answers.
+
 KNOCKOUTS (any one = automatic FAIL regardless of scores):
 - Skipped or refused a question
 - Never gave a single straight answer

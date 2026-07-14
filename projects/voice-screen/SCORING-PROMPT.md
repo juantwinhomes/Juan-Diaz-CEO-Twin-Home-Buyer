@@ -20,6 +20,13 @@ Score each category 1–5:
   handled the follow-up probe. (1 = froze/robotic/memorized,
   5 = genuine back-and-forth)
 
+TRANSCRIPT QUALITY WARNING: the transcript comes from automatic speech
+recognition and will contain mis-transcriptions; many candidates speak
+English as a second language. Do NOT penalize isolated odd phrases or
+single garbled words plausibly caused by transcription errors — judge
+overall substance and flow. Penalize only patterns that persist across
+multiple answers.
+
 KNOCKOUTS (any one = automatic FAIL regardless of scores):
 - Skipped or refused a question
 - Never gave a single straight answer
