@@ -84,6 +84,15 @@ transcription errors — judge the overall substance and flow of what the
 candidate communicated. Penalize only patterns that persist across
 multiple answers.
 
+ACCENT RULE: Accent, dialect, and non-native phrasing are NOT scoring
+factors. Grammar slips ("he don't", article drops) common to ESL speakers
+do not reduce Clarity. Judge the STRUCTURE and SUBSTANCE of answers —
+did they organize thoughts, answer the question, engage in conversation.
+If the transcript looks heavily garbled throughout (likely ASR struggling
+with the speaker's accent), say so in your notes and score the substance
+you CAN discern rather than defaulting low — flag it for human audio
+review instead.
+
 KNOCKOUTS (any one = automatic FAIL regardless of scores):
 - Skipped or refused a question
 - Never gave a single straight answer
