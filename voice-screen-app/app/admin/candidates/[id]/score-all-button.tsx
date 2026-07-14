@@ -32,11 +32,7 @@ export default function ScoreAllButton({
 
   return (
     <div style={{ margin: "8px 0" }}>
-      <button
-        onClick={scoreAll}
-        disabled={busy}
-        style={{ padding: "8px 16px", borderRadius: 6, border: 0, background: "#0f766e", color: "#fff", cursor: "pointer" }}
-      >
+      <button onClick={scoreAll} disabled={busy} className="btn btn-teal">
         {busy ? "Scoring all…" : `Score all ${attempts} attempt${attempts === 1 ? "" : "s"} — 1 API call`}
       </button>
       {error && <p style={{ color: "#c00", fontSize: 13 }}>{error}</p>}

@@ -16,6 +16,17 @@ async function addCandidate(formData: FormData) {
   revalidatePath("/admin");
 }
 
+const STATUS_PILL: Record<string, string> = {
+  invited: "pill-blue",
+  interviewed: "pill-amber",
+  scored: "pill-amber",
+  passed: "pill-green",
+  hired: "pill-green",
+  live_call: "pill-blue",
+  failed: "pill-red",
+  declined: "pill-red",
+};
+
 export default async function AdminPage() {
   const supabase = await supabaseServer();
   const {
@@ -31,61 +42,60 @@ export default async function AdminPage() {
   const base = process.env.NEXT_PUBLIC_APP_URL || "";
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
-      <h1 style={{ fontSize: 22 }}>Candidates</h1>
+    <main className="fade-in">
+      <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
+        <h1 style={{ fontSize: 22, margin: 0 }}>Candidates</h1>
+        <span className="pill pill-gray">{(candidates ?? []).length} total</span>
+      </div>
 
-      <form
-        action={addCandidate}
-        style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "16px 0", alignItems: "center" }}
-      >
-        <input name="full_name" placeholder="Full name" required style={inp} />
-        <input name="role_applied" placeholder="Role" required style={inp} />
-        <input name="email" placeholder="Email" style={inp} />
-        <input name="phone" placeholder="Phone" style={inp} />
-        <button style={{ padding: "8px 16px", borderRadius: 6, border: 0, background: "#1a56db", color: "#fff", cursor: "pointer" }}>
-          Add + generate link
-        </button>
-      </form>
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h2 style={{ fontSize: 14, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: ".05em", color: "var(--muted)" }}>
+          Add candidate
+        </h2>
+        <form action={addCandidate} className="row">
+          <input name="full_name" placeholder="Full name" required className="input" style={{ flex: 2, minWidth: 160 }} />
+          <input name="role_applied" placeholder="Role" required className="input" style={{ flex: 2, minWidth: 140 }} />
+          <input name="email" placeholder="Email (optional)" className="input" style={{ flex: 2, minWidth: 160 }} />
+          <input name="phone" placeholder="Phone (optional)" className="input" style={{ flex: 1, minWidth: 120 }} />
+          <button className="btn">Add + generate link</button>
+        </form>
+      </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: 8 }}>
-        <thead>
-          <tr>
-            {["Name", "Role", "Status", "Invite link", ""].map((h) => (
-              <th key={h} style={{ textAlign: "left", padding: 10, borderBottom: "2px solid #eee", fontSize: 13, color: "#666" }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {(candidates ?? []).map((c) => (
-            <tr key={c.id}>
-              <td style={td}>{c.full_name}</td>
-              <td style={td}>{c.role_applied}</td>
-              <td style={td}>
-                <span style={{ padding: "2px 8px", borderRadius: 10, fontSize: 12, background: badge(c.status) }}>{c.status}</span>
-              </td>
-              <td style={{ ...td, fontSize: 12 }}>
-                <code>{`${base}/interview/${c.interview_token}`}</code>
-              </td>
-              <td style={td}>
-                <Link href={`/admin/candidates/${c.id}`}>Open →</Link>
-              </td>
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Invite link</th>
+              <th></th>
             </tr>
-          ))}
-          {(candidates ?? []).length === 0 && (
-            <tr><td style={td} colSpan={5}>No candidates yet — add one above.</td></tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {(candidates ?? []).map((c) => (
+              <tr key={c.id}>
+                <td style={{ fontWeight: 600 }}>{c.full_name}</td>
+                <td>{c.role_applied}</td>
+                <td>
+                  <span className={`pill ${STATUS_PILL[c.status] || "pill-gray"}`}>{c.status}</span>
+                </td>
+                <td style={{ maxWidth: 320 }}>
+                  <code className="linkbox">{`${base}/interview/${c.interview_token}`}</code>
+                </td>
+                <td>
+                  <Link href={`/admin/candidates/${c.id}`}>Open →</Link>
+                </td>
+              </tr>
+            ))}
+            {(candidates ?? []).length === 0 && (
+              <tr>
+                <td colSpan={5} className="muted">No candidates yet — add one above.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </main>
   );
-}
-
-const inp: React.CSSProperties = { padding: 8, border: "1px solid #ccc", borderRadius: 6 };
-const td: React.CSSProperties = { padding: 10, borderBottom: "1px solid #f0f0f0", fontSize: 14 };
-
-function badge(status: string) {
-  if (status === "passed" || status === "hired") return "#d1fadf";
-  if (status === "failed" || status === "declined") return "#fde2e2";
-  if (status === "interviewed" || status === "scored") return "#fef3c7";
-  return "#e5e7eb";
 }

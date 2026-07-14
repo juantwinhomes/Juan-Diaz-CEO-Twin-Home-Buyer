@@ -1,24 +1,16 @@
 import type { Metadata } from "next";
+import { COMPANY } from "@/lib/prompts";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Twin Home Buyer — Voice Screen",
+  title: `${COMPANY} — Voice Screen`,
   description: "Applicant voice screening",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body
-        style={{
-          margin: 0,
-          fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-          background: "#f6f7f9",
-          color: "#1a1a1a",
-        }}
-      >
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

@@ -27,24 +27,27 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ maxWidth: 360, margin: "10vh auto", padding: 24 }}>
-      <h1 style={{ fontSize: 22 }}>THB Voice Screen — Admin</h1>
-      <form onSubmit={signIn} style={{ display: "grid", gap: 12 }}>
-        <input
-          type="email" placeholder="Email" value={email} required
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ padding: 10, border: "1px solid #ccc", borderRadius: 6 }}
-        />
-        <input
-          type="password" placeholder="Password" value={password} required
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ padding: 10, border: "1px solid #ccc", borderRadius: 6 }}
-        />
-        <button disabled={busy} style={{ padding: 10, borderRadius: 6, border: 0, background: "#1a56db", color: "#fff", cursor: "pointer" }}>
-          {busy ? "Signing in…" : "Sign in"}
-        </button>
-        {error && <p style={{ color: "#c00", fontSize: 14 }}>{error}</p>}
-      </form>
+    <main style={{ maxWidth: 380, margin: "10vh auto" }} className="fade-in">
+      <div className="card" style={{ padding: 28 }}>
+        <h1 style={{ fontSize: 20, marginTop: 0 }}>Admin sign in</h1>
+        <p className="muted small" style={{ marginTop: -6 }}>
+          Hiring team access only.
+        </p>
+        <form onSubmit={signIn} className="stack" style={{ marginTop: 16 }}>
+          <input
+            className="input" type="email" placeholder="Email" value={email} required
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
+            className="input" type="password" placeholder="Password" value={password} required
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button className="btn" disabled={busy}>
+            {busy ? "Signing in…" : "Sign in"}
+          </button>
+          {error && <p style={{ color: "var(--red)", fontSize: 14, margin: 0 }}>{error}</p>}
+        </form>
+      </div>
     </main>
   );
 }

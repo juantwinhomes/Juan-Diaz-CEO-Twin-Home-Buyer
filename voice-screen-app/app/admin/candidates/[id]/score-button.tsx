@@ -26,11 +26,7 @@ export default function ScoreButton({ interviewId, rescore = false }: { intervie
 
   return (
     <div>
-      <button
-        onClick={score}
-        disabled={busy}
-        style={{ padding: "8px 16px", borderRadius: 6, border: 0, background: "#7c3aed", color: "#fff", cursor: "pointer" }}
-      >
+      <button onClick={score} disabled={busy} className="btn btn-purple">
         {busy ? "Scoring…" : rescore ? "Re-score with AI" : "Score with AI"}
       </button>
       {error && <p style={{ color: "#c00", fontSize: 13 }}>{error}</p>}

@@ -286,66 +286,90 @@ export default function InterviewClient({
     setStage("done");
   }
 
-  const wrap: React.CSSProperties = { maxWidth: 560, margin: "8vh auto", padding: 24, textAlign: "center" };
-  const btn: React.CSSProperties = { padding: "12px 28px", fontSize: 16, borderRadius: 8, border: 0, background: "#1a56db", color: "#fff", cursor: "pointer" };
+  const STEP_OF: Record<Stage, number> = {
+    consent: 1, miccheck: 2, connecting: 3, live: 3, uploading: 4, done: 4, error: 1,
+  };
+
+  function Shell({ children }: { children: React.ReactNode }) {
+    return (
+      <div className="candidate-bg">
+        <main className="card candidate-card fade-in">
+          <div className="steps" aria-hidden>
+            {[1, 2, 3, 4].map((n) => (
+              <span key={n} className={`step-dot ${STEP_OF[stage] >= n ? "active" : ""}`} />
+            ))}
+          </div>
+          {children}
+          <p className="small muted" style={{ marginTop: 22, marginBottom: 0 }}>
+            {COMPANY} · Hiring voice screen
+          </p>
+        </main>
+      </div>
+    );
+  }
 
   if (stage === "consent")
     return (
-      <main style={wrap}>
+      <Shell>
         <h1 style={{ fontSize: 24 }}>{COMPANY} — Voice Interview</h1>
         <p>Hi {candidateName}! This is a short (~5 minute) spoken interview for the <strong>{roleApplied}</strong> role. You&apos;ll talk with our AI interviewer using your microphone.</p>
         {attemptsUsed > 0 && (
-          <p style={{ background: "#eff6ff", padding: 10, borderRadius: 8, fontSize: 14 }}>
+          <p className="notice notice-blue">
             Retake — attempt {attemptsUsed + 1} of {MAX_ATTEMPTS}. The questions will be different this time.
           </p>
         )}
-        <p style={{ background: "#fff7ed", padding: 12, borderRadius: 8, fontSize: 15 }}>
+        <p className="notice notice-amber">
           <strong>This interview is recorded</strong> (audio and transcript) and reviewed by the {COMPANY} hiring team. By clicking below, you consent to the recording.
         </p>
-        <p style={{ fontSize: 14, color: "#666" }}>Find a quiet spot. You get up to {MAX_ATTEMPTS} attempts on this link.</p>
-        <button style={btn} onClick={beginMicCheck}>I consent — continue to mic check</button>
-      </main>
+        <p className="small muted">Find a quiet spot. You get up to {MAX_ATTEMPTS} attempts on this link.</p>
+        <button className="btn btn-lg" onClick={beginMicCheck}>I consent — continue to mic check</button>
+      </Shell>
     );
 
   if (stage === "miccheck")
     return (
-      <main style={wrap}>
+      <Shell>
         <h1 style={{ fontSize: 22 }}>Quick mic check</h1>
-        <p style={{ background: "#eff6ff", padding: 10, borderRadius: 8, fontSize: 14 }}>
+        <p className="notice notice-blue">
           🎧 <strong>Use headphones or earphones if you can</strong> — it makes the interview much smoother. Speakers can cause the interviewer to hear itself.
         </p>
         <p>Say something out loud — try <em>&quot;test, one two three&quot;</em> — and watch the bar move:</p>
-        <div style={{ height: 18, background: "#e5e7eb", borderRadius: 9, overflow: "hidden", margin: "16px 0" }}>
+        <div className="meter">
           <div
             style={{
-              height: "100%",
               width: `${Math.round(micLevel * 100)}%`,
-              background: micOk ? "#22c55e" : "#1a56db",
-              transition: "width .08s linear",
+              background: micOk ? "var(--green)" : "var(--brand)",
             }}
           />
         </div>
-        <p style={{ fontSize: 14, color: micOk ? "#15803d" : "#666" }}>
+        <p className="small" style={{ color: micOk ? "var(--green)" : "var(--muted)" }}>
           {micOk ? "✓ We can hear you — you're good to go." : "Waiting to hear you… if the bar never moves, check your mic settings and reload."}
         </p>
-        <button style={{ ...btn, opacity: micOk ? 1 : 0.5 }} disabled={!micOk} onClick={start}>
+        <button className="btn btn-lg" disabled={!micOk} onClick={start}>
           Start my interview
         </button>
-      </main>
+      </Shell>
     );
 
-  if (stage === "connecting") return <main style={wrap}><h1>Connecting…</h1><p>Your interviewer is picking up…</p></main>;
+  if (stage === "connecting")
+    return (
+      <Shell>
+        <h1 style={{ fontSize: 22 }}>Connecting…</h1>
+        <div className="spinner" />
+        <p className="muted">Your interviewer is picking up…</p>
+      </Shell>
+    );
 
   if (stage === "live")
     return (
-      <main style={wrap}>
-        <div style={{ width: 96, height: 96, margin: "24px auto", borderRadius: "50%", background: agentSpeaking ? "#1a56db" : "#22c55e", transition: "background .3s", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 32 }}>
+      <Shell>
+        <div className={`orb ${agentSpeaking ? "orb-speaking" : "orb-listening"}`}>
           {agentSpeaking ? "🔊" : "🎙️"}
         </div>
         <h1 style={{ fontSize: 20 }}>{agentSpeaking ? "Interviewer speaking…" : "Your turn — speak naturally"}</h1>
-        <p style={{ color: "#666" }}>The interview ends automatically. Max 8 minutes.</p>
+        <p className="muted">The interview ends automatically. Max 8 minutes.</p>
         <button
-          style={{ ...btn, background: "#6b7280" }}
+          className="btn btn-ghost"
           onClick={() => {
             if (window.confirm("End the interview now? If it isn't finished, this attempt may not be scoreable."))
               endSession(false);
@@ -353,48 +377,55 @@ export default function InterviewClient({
         >
           End interview early
         </button>
-      </main>
+      </Shell>
     );
 
-  if (stage === "uploading") return <main style={wrap}><h1>Saving your interview…</h1><p>Don&apos;t close this tab.</p></main>;
+  if (stage === "uploading")
+    return (
+      <Shell>
+        <h1 style={{ fontSize: 22 }}>Saving your interview…</h1>
+        <div className="spinner" />
+        <p className="muted">Don&apos;t close this tab.</p>
+      </Shell>
+    );
 
   if (stage === "done") {
     // session died before any conversation happened — surface the reason
     if (failReasonRef.current && transcriptRef.current.length === 0)
       return (
-        <main style={wrap}>
+        <Shell>
           <h1>Connection problem</h1>
           <p>The interview could not start. Please share this with {COMPANY}:</p>
-          <p style={{ color: "#c00", fontSize: 14, background: "#fff", padding: 10, borderRadius: 6, wordBreak: "break-all" }}>
+          <p className="notice notice-gray small" style={{ color: "var(--red)", wordBreak: "break-all" }}>
             {failReasonRef.current}
           </p>
-        </main>
+        </Shell>
       );
     const attemptsAfterThis = attemptsUsed + 1;
     const retakesLeft = MAX_ATTEMPTS - attemptsAfterThis;
     return (
-      <main style={wrap}>
+      <Shell>
         <h1>✅ All done, {candidateName}!</h1>
         <p>Your interview was submitted. The {COMPANY} team will review it and get back to you within a few days.</p>
         {retakesLeft > 0 && (
           <>
-            <p style={{ fontSize: 14, color: "#666" }}>
+            <p className="small muted">
               Not your best run? You may retake this interview {retakesLeft} more {retakesLeft === 1 ? "time" : "times"} — with different questions. The team sees all attempts.
             </p>
-            <button style={{ ...btn, background: "#6b7280" }} onClick={() => window.location.reload()}>
+            <button className="btn btn-secondary" onClick={() => window.location.reload()}>
               Retake interview ({retakesLeft} left)
             </button>
           </>
         )}
-      </main>
+      </Shell>
     );
   }
 
   return (
-    <main style={wrap}>
+    <Shell>
       <h1>Something went wrong</h1>
-      <p style={{ color: "#c00" }}>{error}</p>
+      <p style={{ color: "var(--red)" }}>{error}</p>
       <p>Please try the link again, or contact {COMPANY}.</p>
-    </main>
+    </Shell>
   );
 }
