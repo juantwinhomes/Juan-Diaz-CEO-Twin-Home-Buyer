@@ -7,13 +7,18 @@
 export const LIVE_MODEL = "gemini-3.1-flash-live-preview";
 export const SCORING_MODEL = "gemini-2.5-flash";
 
+// Hiring-entity name shown/spoken to candidates. Set NEXT_PUBLIC_COMPANY_NAME
+// in Vercel (e.g. "Equity Track") — MUST match the name on the job posting.
+export const COMPANY =
+  process.env.NEXT_PUBLIC_COMPANY_NAME || "Twin Home Buyer";
+
 // Three question banks — one per attempt, so retakes can't be gamed by
 // rehearsing the previous run's questions. Q4 always tests handling a
 // pushback line; Q3 always tests explaining/communicating something.
 export const QUESTION_BANKS = [
   {
     q1: "In about 30 seconds — what do you do best?",
-    q2: "Why Twin Home Buyer, specifically?",
+    q2: `Why ${COMPANY}, specifically?`,
     q3: "Tell me about a time you had to explain something complicated to someone. How did you do it?",
     q4: `A homeowner tells you: "I need to think about it." What do you say next?`,
   },
@@ -25,7 +30,7 @@ export const QUESTION_BANKS = [
   },
   {
     q1: "In about 30 seconds — what piece of work are you most proud of?",
-    q2: "What do you know about Twin Home Buyer, and what interests you about working here?",
+    q2: `What do you know about ${COMPANY}, and what interests you about working here?`,
     q3: "Tell me about a time you disagreed with someone at work and had to sort it out. What did you do?",
     q4: `A homeowner tells you: "I don't trust companies like yours." What do you say next?`,
   },
@@ -33,7 +38,7 @@ export const QUESTION_BANKS = [
 
 export function interviewerSystemPrompt(candidateName: string, roleApplied: string, bankIndex = 0) {
   const bank = QUESTION_BANKS[Math.min(bankIndex, QUESTION_BANKS.length - 1)];
-  return `You are the AI interviewer for Twin Home Buyer, a real estate investment company in the San Francisco Bay Area. You are conducting a short spoken screening interview with ${candidateName}, who applied for the role of ${roleApplied}.
+  return `You are the AI interviewer for ${COMPANY}, a real estate investment company in the San Francisco Bay Area. You are conducting a short spoken screening interview with ${candidateName}, who applied for the role of ${roleApplied}.
 
 YOUR GOAL
 Assess speaking ability only: clarity, directness, and ability to hold a natural conversation. You are NOT judging their resume or skills.
@@ -43,7 +48,7 @@ Professional, warm, brisk. Speak in short sentences. Never lecture. You are a sc
 
 FLOW (follow exactly, in order)
 
-1. OPENING: The candidate has already given recorded-interview consent on screen. Greet them: "Hi ${candidateName}, thanks for taking the time. This is a short recorded voice interview for Twin Home Buyer — about five minutes. Ready to start?" Wait for a yes, then continue.
+1. OPENING: The candidate has already given recorded-interview consent on screen. Greet them: "Hi ${candidateName}, thanks for taking the time. This is a short recorded voice interview for ${COMPANY} — about five minutes. Ready to start?" Wait for a yes, then continue.
 
 2. QUESTION 1: "${bank.q1}"
 
@@ -68,7 +73,7 @@ RULES
 }
 
 export function scoringPrompt(transcript: string) {
-  return `You are screening a job applicant for Twin Home Buyer, a real estate acquisitions company. Below is the transcript of their recorded voice screening interview. Score STRICTLY — this filter exists so only clear, direct communicators reach in-person interviews.
+  return `You are screening a job applicant for ${COMPANY}, a real estate acquisitions company. Below is the transcript of their recorded voice screening interview. Score STRICTLY — this filter exists so only clear, direct communicators reach in-person interviews.
 
 Score each category 1-5:
 - CLARITY: Easy to follow? Organized thoughts? (1 = rambling/confusing, 5 = crisp and structured)

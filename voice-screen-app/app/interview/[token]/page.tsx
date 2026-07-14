@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import InterviewClient from "./interview-client";
+import { COMPANY } from "@/lib/prompts";
 
 export default async function InterviewPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -12,7 +13,7 @@ export default async function InterviewPage({ params }: { params: Promise<{ toke
 
   const wrap: React.CSSProperties = { maxWidth: 560, margin: "8vh auto", padding: 24, textAlign: "center" };
 
-  if (!candidate) return <main style={wrap}><h1>Link not found</h1><p>Please check the link you received, or contact Twin Home Buyer.</p></main>;
+  if (!candidate) return <main style={wrap}><h1>Link not found</h1><p>Please check the link you received, or contact {COMPANY}.</p></main>;
 
   const { count: attemptsUsed } = await db
     .from("interviews")
@@ -23,7 +24,7 @@ export default async function InterviewPage({ params }: { params: Promise<{ toke
   const expired = candidate.token_expires_at && new Date(candidate.token_expires_at) < new Date();
   const closed = ["live_call", "hired", "declined"].includes(candidate.status);
   if (expired || closed || (attemptsUsed ?? 0) >= 3)
-    return <main style={wrap}><h1>Interview unavailable</h1><p>This interview link was already used or has expired. If you believe this is a mistake, contact Twin Home Buyer.</p></main>;
+    return <main style={wrap}><h1>Interview unavailable</h1><p>This interview link was already used or has expired. If you believe this is a mistake, contact {COMPANY}.</p></main>;
 
   return (
     <InterviewClient

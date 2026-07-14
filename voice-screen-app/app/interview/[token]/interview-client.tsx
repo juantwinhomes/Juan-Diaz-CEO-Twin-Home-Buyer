@@ -10,6 +10,7 @@
 
 import { useRef, useState } from "react";
 import { GoogleGenAI, Modality } from "@google/genai";
+import { COMPANY } from "@/lib/prompts";
 
 type Turn = { role: "agent" | "candidate"; text: string; ts: number };
 type Stage = "consent" | "miccheck" | "connecting" | "live" | "uploading" | "done" | "error";
@@ -281,7 +282,7 @@ export default function InterviewClient({
   if (stage === "consent")
     return (
       <main style={wrap}>
-        <h1 style={{ fontSize: 24 }}>Twin Home Buyer — Voice Interview</h1>
+        <h1 style={{ fontSize: 24 }}>{COMPANY} — Voice Interview</h1>
         <p>Hi {candidateName}! This is a short (~5 minute) spoken interview for the <strong>{roleApplied}</strong> role. You&apos;ll talk with our AI interviewer using your microphone.</p>
         {attemptsUsed > 0 && (
           <p style={{ background: "#eff6ff", padding: 10, borderRadius: 8, fontSize: 14 }}>
@@ -289,7 +290,7 @@ export default function InterviewClient({
           </p>
         )}
         <p style={{ background: "#fff7ed", padding: 12, borderRadius: 8, fontSize: 15 }}>
-          <strong>This interview is recorded</strong> (audio and transcript) and reviewed by the Twin Home Buyer hiring team. By clicking below, you consent to the recording.
+          <strong>This interview is recorded</strong> (audio and transcript) and reviewed by the {COMPANY} hiring team. By clicking below, you consent to the recording.
         </p>
         <p style={{ fontSize: 14, color: "#666" }}>Find a quiet spot. You get up to {MAX_ATTEMPTS} attempts on this link.</p>
         <button style={btn} onClick={beginMicCheck}>I consent — continue to mic check</button>
@@ -350,7 +351,7 @@ export default function InterviewClient({
       return (
         <main style={wrap}>
           <h1>Connection problem</h1>
-          <p>The interview could not start. Please share this with Twin Home Buyer:</p>
+          <p>The interview could not start. Please share this with {COMPANY}:</p>
           <p style={{ color: "#c00", fontSize: 14, background: "#fff", padding: 10, borderRadius: 6, wordBreak: "break-all" }}>
             {failReasonRef.current}
           </p>
@@ -361,7 +362,7 @@ export default function InterviewClient({
     return (
       <main style={wrap}>
         <h1>✅ All done, {candidateName}!</h1>
-        <p>Your interview was submitted. The Twin Home Buyer team will review it and get back to you within a few days.</p>
+        <p>Your interview was submitted. The {COMPANY} team will review it and get back to you within a few days.</p>
         {retakesLeft > 0 && (
           <>
             <p style={{ fontSize: 14, color: "#666" }}>
@@ -380,7 +381,7 @@ export default function InterviewClient({
     <main style={wrap}>
       <h1>Something went wrong</h1>
       <p style={{ color: "#c00" }}>{error}</p>
-      <p>Please try the link again, or contact Twin Home Buyer.</p>
+      <p>Please try the link again, or contact {COMPANY}.</p>
     </main>
   );
 }
