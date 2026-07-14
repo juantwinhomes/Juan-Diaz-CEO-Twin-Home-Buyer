@@ -18,6 +18,31 @@ type Stage = "consent" | "miccheck" | "connecting" | "live" | "uploading" | "don
 const HARD_CAP_MS = 8 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
 
+const STEP_OF: Record<Stage, number> = {
+  consent: 1, miccheck: 2, connecting: 3, live: 3, uploading: 4, done: 4, error: 1,
+};
+
+// Module-level so React treats it as a stable component — defining it inside
+// InterviewClient caused a full remount (and fade-in restart) on every
+// mic-level tick, making the page invisible until the meter pinned.
+function Shell({ step, children }: { step: number; children: React.ReactNode }) {
+  return (
+    <div className="candidate-bg">
+      <main className="card candidate-card fade-in">
+        <div className="steps" aria-hidden>
+          {[1, 2, 3, 4].map((n) => (
+            <span key={n} className={`step-dot ${step >= n ? "active" : ""}`} />
+          ))}
+        </div>
+        {children}
+        <p className="small muted" style={{ marginTop: 22, marginBottom: 0 }}>
+          {COMPANY} · Hiring voice screen
+        </p>
+      </main>
+    </div>
+  );
+}
+
 export default function InterviewClient({
   token,
   candidateName,
@@ -71,7 +96,8 @@ export default function InterviewClient({
           const v = (data[i] - 128) / 128;
           sum += v * v;
         }
-        const level = Math.min(1, Math.sqrt(sum / data.length) * 4);
+        // quantize so React only re-renders on visible changes, not 60fps
+        const level = Math.round(Math.min(1, Math.sqrt(sum / data.length) * 4) * 20) / 20;
         setMicLevel(level);
         if (level > 0.25) setMicOk(true);
         raf = requestAnimationFrame(tick);
@@ -286,31 +312,11 @@ export default function InterviewClient({
     setStage("done");
   }
 
-  const STEP_OF: Record<Stage, number> = {
-    consent: 1, miccheck: 2, connecting: 3, live: 3, uploading: 4, done: 4, error: 1,
-  };
-
-  function Shell({ children }: { children: React.ReactNode }) {
-    return (
-      <div className="candidate-bg">
-        <main className="card candidate-card fade-in">
-          <div className="steps" aria-hidden>
-            {[1, 2, 3, 4].map((n) => (
-              <span key={n} className={`step-dot ${STEP_OF[stage] >= n ? "active" : ""}`} />
-            ))}
-          </div>
-          {children}
-          <p className="small muted" style={{ marginTop: 22, marginBottom: 0 }}>
-            {COMPANY} · Hiring voice screen
-          </p>
-        </main>
-      </div>
-    );
-  }
+  const step = STEP_OF[stage];
 
   if (stage === "consent")
     return (
-      <Shell>
+      <Shell step={step}>
         <h1 style={{ fontSize: 24 }}>{COMPANY} — Voice Interview</h1>
         <p>Hi {candidateName}! This is a short (~5 minute) spoken interview for the <strong>{roleApplied}</strong> role. You&apos;ll talk with our AI interviewer using your microphone.</p>
         {attemptsUsed > 0 && (
@@ -328,7 +334,7 @@ export default function InterviewClient({
 
   if (stage === "miccheck")
     return (
-      <Shell>
+      <Shell step={step}>
         <h1 style={{ fontSize: 22 }}>Quick mic check</h1>
         <p className="notice notice-blue">
           🎧 <strong>Use headphones or earphones if you can</strong> — it makes the interview much smoother. Speakers can cause the interviewer to hear itself.
@@ -353,7 +359,7 @@ export default function InterviewClient({
 
   if (stage === "connecting")
     return (
-      <Shell>
+      <Shell step={step}>
         <h1 style={{ fontSize: 22 }}>Connecting…</h1>
         <div className="spinner" />
         <p className="muted">Your interviewer is picking up…</p>
@@ -362,7 +368,7 @@ export default function InterviewClient({
 
   if (stage === "live")
     return (
-      <Shell>
+      <Shell step={step}>
         <div className={`orb ${agentSpeaking ? "orb-speaking" : "orb-listening"}`}>
           {agentSpeaking ? "🔊" : "🎙️"}
         </div>
@@ -382,7 +388,7 @@ export default function InterviewClient({
 
   if (stage === "uploading")
     return (
-      <Shell>
+      <Shell step={step}>
         <h1 style={{ fontSize: 22 }}>Saving your interview…</h1>
         <div className="spinner" />
         <p className="muted">Don&apos;t close this tab.</p>
@@ -393,7 +399,7 @@ export default function InterviewClient({
     // session died before any conversation happened — surface the reason
     if (failReasonRef.current && transcriptRef.current.length === 0)
       return (
-        <Shell>
+        <Shell step={step}>
           <h1>Connection problem</h1>
           <p>The interview could not start. Please share this with {COMPANY}:</p>
           <p className="notice notice-gray small" style={{ color: "var(--red)", wordBreak: "break-all" }}>
@@ -404,7 +410,7 @@ export default function InterviewClient({
     const attemptsAfterThis = attemptsUsed + 1;
     const retakesLeft = MAX_ATTEMPTS - attemptsAfterThis;
     return (
-      <Shell>
+      <Shell step={step}>
         <h1>✅ All done, {candidateName}!</h1>
         <p>Your interview was submitted. The {COMPANY} team will review it and get back to you within a few days.</p>
         {retakesLeft > 0 && (
@@ -422,7 +428,7 @@ export default function InterviewClient({
   }
 
   return (
-    <Shell>
+    <Shell step={step}>
       <h1>Something went wrong</h1>
       <p style={{ color: "var(--red)" }}>{error}</p>
       <p>Please try the link again, or contact {COMPANY}.</p>
