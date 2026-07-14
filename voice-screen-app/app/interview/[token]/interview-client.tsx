@@ -53,7 +53,9 @@ export default function InterviewClient({
   // candidate can SEE their voice registering before anything counts.
   async function beginMicCheck() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
       streamRef.current = stream;
       const ctx = new AudioContext();
       const src = ctx.createMediaStreamSource(stream);
@@ -104,7 +106,11 @@ export default function InterviewClient({
       interviewIdRef.current = interviewId;
 
       // 2. Mic (already granted during mic check)
-      const stream = streamRef.current ?? (await navigator.mediaDevices.getUserMedia({ audio: true }));
+      const stream =
+        streamRef.current ??
+        (await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        }));
 
       // 3. Playback pipeline for model audio (24kHz PCM), plus a mix bus so
       // the recording captures BOTH sides of the conversation
@@ -165,6 +171,10 @@ export default function InterviewClient({
         config: {
           responseModalities: [Modality.AUDIO],
           systemInstruction: systemPrompt,
+          // pin ASR to English — prevents auto-detect flipping to other
+          // languages on accented speech or echo (Korean/Japanese garbage
+          // turns observed in testing)
+          speechConfig: { languageCode: "en-US" },
           inputAudioTranscription: {},
           outputAudioTranscription: {},
         },
@@ -301,6 +311,9 @@ export default function InterviewClient({
     return (
       <main style={wrap}>
         <h1 style={{ fontSize: 22 }}>Quick mic check</h1>
+        <p style={{ background: "#eff6ff", padding: 10, borderRadius: 8, fontSize: 14 }}>
+          🎧 <strong>Use headphones or earphones if you can</strong> — it makes the interview much smoother. Speakers can cause the interviewer to hear itself.
+        </p>
         <p>Say something out loud — try <em>&quot;test, one two three&quot;</em> — and watch the bar move:</p>
         <div style={{ height: 18, background: "#e5e7eb", borderRadius: 9, overflow: "hidden", margin: "16px 0" }}>
           <div
