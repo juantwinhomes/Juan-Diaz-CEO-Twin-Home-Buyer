@@ -59,14 +59,19 @@ export default function InterviewClient({
       // 2. Mic
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Record candidate audio for admin playback
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      // 3. Playback pipeline for model audio (24kHz PCM), plus a mix bus so
+      // the recording captures BOTH sides of the conversation
+      const playCtx = new AudioContext({ sampleRate: 24000 });
+      const mixDest = playCtx.createMediaStreamDestination();
+      // mic → mix bus only (NOT to speakers — that would echo)
+      playCtx.createMediaStreamSource(stream).connect(mixDest);
+
+      // Record the mixed conversation for admin playback
+      const recorder = new MediaRecorder(mixDest.stream, { mimeType: "audio/webm" });
       recorder.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
       recorder.start(1000);
       recorderRef.current = recorder;
 
-      // 3. Playback pipeline for model audio (24kHz PCM)
-      const playCtx = new AudioContext({ sampleRate: 24000 });
       let playhead = 0;
       function playPcm(base64: string) {
         const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
@@ -77,6 +82,7 @@ export default function InterviewClient({
         const src = playCtx.createBufferSource();
         src.buffer = buf;
         src.connect(playCtx.destination);
+        src.connect(mixDest); // AI voice → recording too
         playhead = Math.max(playhead, playCtx.currentTime) ;
         src.start(playhead);
         playhead += buf.duration;
