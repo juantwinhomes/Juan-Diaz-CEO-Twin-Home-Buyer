@@ -109,7 +109,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
               <div style={{ fontSize: 12, color: "#555", marginBottom: 4 }}>
                 Score #{sIdx + 1} of this attempt{sIdx === arr.length - 1 ? " (latest)" : " (superseded)"} · {new Date(s.created_at).toLocaleString()}
               </div>
-              <strong>{s.verdict}</strong> ({s.scored_by}) — Clarity {s.clarity} · Directness {s.directness} · Communication {s.communication}
+              <strong>{s.verdict}</strong> ({s.scored_by}) — <strong>Average {(((s.clarity ?? 0) + (s.directness ?? 0) + (s.communication ?? 0)) / 3).toFixed(2)} / 5</strong> · Clarity {s.clarity} · Directness {s.directness} · Communication {s.communication}
               {s.knockout && <div>⚠️ Knockout: {s.knockout_reason}</div>}
               {s.suggested_followup && <div>Live-call follow-up: “{s.suggested_followup}”</div>}
               {s.notes && <div>Notes: {s.notes}</div>}
