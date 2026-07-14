@@ -7,10 +7,11 @@
 export const LIVE_MODEL = "gemini-3.1-flash-live-preview";
 export const SCORING_MODEL = "gemini-2.5-flash";
 
-// Hiring-entity name shown/spoken to candidates. Set NEXT_PUBLIC_COMPANY_NAME
-// in Vercel (e.g. "Equity Track") — MUST match the name on the job posting.
+// Hiring-entity name shown/spoken to candidates — MUST match the job
+// posting. Overridable via NEXT_PUBLIC_COMPANY_NAME in Vercel if it ever
+// changes.
 export const COMPANY =
-  process.env.NEXT_PUBLIC_COMPANY_NAME || "Twin Home Buyer";
+  process.env.NEXT_PUBLIC_COMPANY_NAME || "Equity Track";
 
 // Three question banks — one per attempt, so retakes can't be gamed by
 // rehearsing the previous run's questions. Q4 always tests handling a
