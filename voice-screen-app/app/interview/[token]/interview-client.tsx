@@ -46,6 +46,7 @@ export default function InterviewClient({
   // populated when the Live session errors/closes abnormally, so the final
   // screen can show WHY instead of failing silently
   const failReasonRef = useRef<string>("");
+  const flushTurnsRef = useRef<() => void>(() => {});
 
   // Consent accepted → open the mic and show a live level meter so the
   // candidate can SEE their voice registering before anything counts.
@@ -149,6 +150,14 @@ export default function InterviewClient({
         const t = text.trim();
         if (t) transcriptRef.current.push({ role, text: t, ts: Date.now() });
       };
+      // flush any partial turn buffers — called on turn completion AND when
+      // the session ends, so a mid-goodbye "End" click doesn't lose words
+      flushTurnsRef.current = () => {
+        pushTurn("candidate", currentCandidate);
+        pushTurn("agent", currentAgent);
+        currentAgent = "";
+        currentCandidate = "";
+      };
 
       const session = await ai.live.connect({
         model,
@@ -170,14 +179,12 @@ export default function InterviewClient({
             if (sc.outputTranscription?.text) currentAgent += sc.outputTranscription.text;
             if (sc.inputTranscription?.text) currentCandidate += sc.inputTranscription.text;
             if (sc.turnComplete) {
-              pushTurn("candidate", currentCandidate);
-              pushTurn("agent", currentAgent);
+              const agentSaidComplete = currentAgent.toUpperCase().includes("INTERVIEW COMPLETE");
+              flushTurnsRef.current();
               // agent signals the scripted end of the interview
-              if (currentAgent.toUpperCase().includes("INTERVIEW COMPLETE")) {
+              if (agentSaidComplete) {
                 setTimeout(() => endSession(true), 4000); // let the goodbye finish playing
               }
-              currentAgent = "";
-              currentCandidate = "";
             }
           },
           onerror: (e: any) => {
@@ -236,6 +243,14 @@ export default function InterviewClient({
     if (endedRef.current) return;
     endedRef.current = true;
     setStage("uploading");
+    flushTurnsRef.current();
+    // If the interviewer already delivered its closing line, this interview
+    // IS complete — even if the candidate clicked End during the goodbye.
+    if (!completed) {
+      completed = transcriptRef.current.some(
+        (t) => t.role === "agent" && t.text.toUpperCase().includes("INTERVIEW COMPLETE")
+      );
+    }
     cleanupRef.current();
 
     // finish the recording
@@ -315,7 +330,15 @@ export default function InterviewClient({
         </div>
         <h1 style={{ fontSize: 20 }}>{agentSpeaking ? "Interviewer speaking…" : "Your turn — speak naturally"}</h1>
         <p style={{ color: "#666" }}>The interview ends automatically. Max 8 minutes.</p>
-        <button style={{ ...btn, background: "#6b7280" }} onClick={() => endSession(false)}>End interview early</button>
+        <button
+          style={{ ...btn, background: "#6b7280" }}
+          onClick={() => {
+            if (window.confirm("End the interview now? If it isn't finished, this attempt may not be scoreable."))
+              endSession(false);
+          }}
+        >
+          End interview early
+        </button>
       </main>
     );
 

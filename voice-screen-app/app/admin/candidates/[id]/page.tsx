@@ -82,7 +82,10 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
 
           {!iv.completed && (
             <p style={{ fontSize: 13, background: "#f3f4f6", padding: 8, borderRadius: 6 }}>
-              ⚠️ Ended early — not scoreable and does NOT count against the candidate&apos;s 3 attempts.
+              ⚠️ Ended early — does NOT count against the candidate&apos;s 3 attempts.
+              {Array.isArray(iv.transcript) && (iv.transcript as any[]).length >= 4
+                ? " Partial transcript available — you can score it if there's enough to judge."
+                : " Too little transcript to score."}
             </p>
           )}
 
@@ -103,7 +106,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
             </div>
           ))}
 
-          {iv.transcript && iv.completed && (
+          {Array.isArray(iv.transcript) && (iv.transcript as any[]).length >= 4 && (
             <ScoreButton interviewId={iv.id} rescore={(iv.scores ?? []).length > 0} />
           )}
 
