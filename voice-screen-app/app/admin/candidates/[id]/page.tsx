@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import ScoreButton from "./score-button";
+import ScoreAllButton from "./score-all-button";
 
 const STATUSES = ["invited", "interviewed", "scored", "passed", "failed", "live_call", "hired", "declined"];
 
@@ -69,6 +70,15 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
       </form>
 
       {withAudio.length === 0 && <p>No interview yet. Send them their invite link.</p>}
+
+      {(() => {
+        const scoreable = withAudio.filter(
+          (iv) => Array.isArray(iv.transcript) && (iv.transcript as any[]).length >= 4
+        ).length;
+        return scoreable > 1 ? (
+          <ScoreAllButton candidateId={candidate.id} attempts={scoreable} />
+        ) : null;
+      })()}
 
       {withAudio.map((iv, idx) => (
         <section key={iv.id} style={{ background: "#fff", borderRadius: 8, padding: 16, marginTop: 16 }}>

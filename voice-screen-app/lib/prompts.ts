@@ -111,3 +111,17 @@ Return ONLY valid JSON, no markdown fences:
 TRANSCRIPT:
 ${transcript}`;
 }
+
+// Batch variant: all of a candidate's attempts in ONE model call (saves
+// daily scoring quota). Reuses the exact rubric above to prevent drift.
+export function scoringPromptBatch(transcripts: string[]) {
+  const rubric = scoringPrompt("").split("TRANSCRIPT:")[0];
+  const blocks = transcripts
+    .map((t, i) => `=== ATTEMPT ${i + 1} ===\n${t}`)
+    .join("\n\n");
+  return `${rubric}BATCH MODE: Below are ${transcripts.length} separate interview attempts from the SAME candidate (each attempt used a different question set). Score EACH attempt independently against the rubric above — do not let one attempt influence another's scores.
+
+Return ONLY a valid JSON array of exactly ${transcripts.length} objects, in attempt order, no markdown fences. Each object has the exact shape described above.
+
+${blocks}`;
+}
