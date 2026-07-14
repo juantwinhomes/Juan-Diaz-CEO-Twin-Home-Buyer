@@ -21,8 +21,19 @@ export async function POST(req: Request) {
   if (!candidate) return NextResponse.json({ error: "Invalid link" }, { status: 404 });
   if (candidate.token_expires_at && new Date(candidate.token_expires_at) < new Date())
     return NextResponse.json({ error: "This link has expired" }, { status: 410 });
-  if (!["invited"].includes(candidate.status))
-    return NextResponse.json({ error: "This interview was already completed" }, { status: 409 });
+  if (["live_call", "hired", "declined"].includes(candidate.status))
+    return NextResponse.json({ error: "This interview is closed" }, { status: 409 });
+
+  // Up to 3 attempts per candidate; each attempt draws a different question
+  // bank (abandoned/errored sessions don't burn an attempt).
+  const MAX_ATTEMPTS = 3;
+  const { count: attemptsUsed } = await db
+    .from("interviews")
+    .select("*", { count: "exact", head: true })
+    .eq("candidate_id", candidate.id)
+    .eq("completed", true);
+  if ((attemptsUsed ?? 0) >= MAX_ATTEMPTS)
+    return NextResponse.json({ error: "All interview attempts have been used" }, { status: 409 });
 
   const { data: interview, error } = await db
     .from("interviews")
@@ -53,6 +64,12 @@ export async function POST(req: Request) {
     // LIVE_MODEL env var overrides the default — lets us switch Live model
     // names from Vercel settings without a code change (they rotate often)
     model: process.env.LIVE_MODEL || LIVE_MODEL,
-    systemPrompt: interviewerSystemPrompt(candidate.full_name, candidate.role_applied),
+    systemPrompt: interviewerSystemPrompt(
+      candidate.full_name,
+      candidate.role_applied,
+      attemptsUsed ?? 0
+    ),
+    attempt: (attemptsUsed ?? 0) + 1,
+    maxAttempts: MAX_ATTEMPTS,
   });
 }

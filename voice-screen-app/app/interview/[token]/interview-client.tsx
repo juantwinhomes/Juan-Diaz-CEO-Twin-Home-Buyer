@@ -12,22 +12,29 @@ import { useRef, useState } from "react";
 import { GoogleGenAI, Modality } from "@google/genai";
 
 type Turn = { role: "agent" | "candidate"; text: string; ts: number };
-type Stage = "consent" | "connecting" | "live" | "uploading" | "done" | "error";
+type Stage = "consent" | "miccheck" | "connecting" | "live" | "uploading" | "done" | "error";
 
 const HARD_CAP_MS = 8 * 60 * 1000;
+const MAX_ATTEMPTS = 3;
 
 export default function InterviewClient({
   token,
   candidateName,
   roleApplied,
+  attemptsUsed = 0,
 }: {
   token: string;
   candidateName: string;
   roleApplied: string;
+  attemptsUsed?: number;
 }) {
   const [stage, setStage] = useState<Stage>("consent");
   const [error, setError] = useState("");
   const [agentSpeaking, setAgentSpeaking] = useState(false);
+  const [micLevel, setMicLevel] = useState(0);
+  const [micOk, setMicOk] = useState(false);
+  const streamRef = useRef<MediaStream | null>(null);
+  const micCheckCleanupRef = useRef<() => void>(() => {});
 
   const transcriptRef = useRef<Turn[]>([]);
   const sessionRef = useRef<any>(null);
@@ -40,7 +47,45 @@ export default function InterviewClient({
   // screen can show WHY instead of failing silently
   const failReasonRef = useRef<string>("");
 
+  // Consent accepted → open the mic and show a live level meter so the
+  // candidate can SEE their voice registering before anything counts.
+  async function beginMicCheck() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const ctx = new AudioContext();
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      src.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      let raf = 0;
+      const tick = () => {
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const level = Math.min(1, Math.sqrt(sum / data.length) * 4);
+        setMicLevel(level);
+        if (level > 0.25) setMicOk(true);
+        raf = requestAnimationFrame(tick);
+      };
+      tick();
+      micCheckCleanupRef.current = () => {
+        cancelAnimationFrame(raf);
+        try { src.disconnect(); ctx.close(); } catch {}
+      };
+      setStage("miccheck");
+    } catch {
+      setError("Microphone access was blocked. Please allow the microphone and reload this page.");
+      setStage("error");
+    }
+  }
+
   async function start() {
+    micCheckCleanupRef.current(); // stop the meter; keep the stream
     setStage("connecting");
     try {
       // 1. Log consent + get ephemeral token (API key stays server-side)
@@ -56,8 +101,8 @@ export default function InterviewClient({
       const { interviewId, ephemeralToken, model, systemPrompt } = await res.json();
       interviewIdRef.current = interviewId;
 
-      // 2. Mic
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // 2. Mic (already granted during mic check)
+      const stream = streamRef.current ?? (await navigator.mediaDevices.getUserMedia({ audio: true }));
 
       // 3. Playback pipeline for model audio (24kHz PCM), plus a mix bus so
       // the recording captures BOTH sides of the conversation
@@ -223,15 +268,44 @@ export default function InterviewClient({
       <main style={wrap}>
         <h1 style={{ fontSize: 24 }}>Twin Home Buyer — Voice Interview</h1>
         <p>Hi {candidateName}! This is a short (~5 minute) spoken interview for the <strong>{roleApplied}</strong> role. You&apos;ll talk with our AI interviewer using your microphone.</p>
+        {attemptsUsed > 0 && (
+          <p style={{ background: "#eff6ff", padding: 10, borderRadius: 8, fontSize: 14 }}>
+            Retake — attempt {attemptsUsed + 1} of {MAX_ATTEMPTS}. The questions will be different this time.
+          </p>
+        )}
         <p style={{ background: "#fff7ed", padding: 12, borderRadius: 8, fontSize: 15 }}>
           <strong>This interview is recorded</strong> (audio and transcript) and reviewed by the Twin Home Buyer hiring team. By clicking below, you consent to the recording.
         </p>
-        <p style={{ fontSize: 14, color: "#666" }}>Find a quiet spot. The link works once.</p>
-        <button style={btn} onClick={start}>I consent — start my interview</button>
+        <p style={{ fontSize: 14, color: "#666" }}>Find a quiet spot. You get up to {MAX_ATTEMPTS} attempts on this link.</p>
+        <button style={btn} onClick={beginMicCheck}>I consent — continue to mic check</button>
       </main>
     );
 
-  if (stage === "connecting") return <main style={wrap}><h1>Connecting…</h1><p>Allow microphone access when your browser asks.</p></main>;
+  if (stage === "miccheck")
+    return (
+      <main style={wrap}>
+        <h1 style={{ fontSize: 22 }}>Quick mic check</h1>
+        <p>Say something out loud — try <em>&quot;test, one two three&quot;</em> — and watch the bar move:</p>
+        <div style={{ height: 18, background: "#e5e7eb", borderRadius: 9, overflow: "hidden", margin: "16px 0" }}>
+          <div
+            style={{
+              height: "100%",
+              width: `${Math.round(micLevel * 100)}%`,
+              background: micOk ? "#22c55e" : "#1a56db",
+              transition: "width .08s linear",
+            }}
+          />
+        </div>
+        <p style={{ fontSize: 14, color: micOk ? "#15803d" : "#666" }}>
+          {micOk ? "✓ We can hear you — you're good to go." : "Waiting to hear you… if the bar never moves, check your mic settings and reload."}
+        </p>
+        <button style={{ ...btn, opacity: micOk ? 1 : 0.5 }} disabled={!micOk} onClick={start}>
+          Start my interview
+        </button>
+      </main>
+    );
+
+  if (stage === "connecting") return <main style={wrap}><h1>Connecting…</h1><p>Your interviewer is picking up…</p></main>;
 
   if (stage === "live")
     return (
@@ -259,10 +333,22 @@ export default function InterviewClient({
           </p>
         </main>
       );
+    const attemptsAfterThis = attemptsUsed + 1;
+    const retakesLeft = MAX_ATTEMPTS - attemptsAfterThis;
     return (
       <main style={wrap}>
         <h1>✅ All done, {candidateName}!</h1>
         <p>Your interview was submitted. The Twin Home Buyer team will review it and get back to you within a few days.</p>
+        {retakesLeft > 0 && (
+          <>
+            <p style={{ fontSize: 14, color: "#666" }}>
+              Not your best run? You may retake this interview {retakesLeft} more {retakesLeft === 1 ? "time" : "times"} — with different questions. The team sees all attempts.
+            </p>
+            <button style={{ ...btn, background: "#6b7280" }} onClick={() => window.location.reload()}>
+              Retake interview ({retakesLeft} left)
+            </button>
+          </>
+        )}
       </main>
     );
   }

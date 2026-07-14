@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function ScoreButton({ interviewId }: { interviewId: string }) {
+export default function ScoreButton({ interviewId, rescore = false }: { interviewId: string; rescore?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -31,7 +31,7 @@ export default function ScoreButton({ interviewId }: { interviewId: string }) {
         disabled={busy}
         style={{ padding: "8px 16px", borderRadius: 6, border: 0, background: "#7c3aed", color: "#fff", cursor: "pointer" }}
       >
-        {busy ? "Scoring…" : "Score with AI"}
+        {busy ? "Scoring…" : rescore ? "Re-score with AI" : "Score with AI"}
       </button>
       {error && <p style={{ color: "#c00", fontSize: 13 }}>{error}</p>}
     </div>

@@ -7,7 +7,32 @@
 export const LIVE_MODEL = "gemini-3.1-flash-live-preview";
 export const SCORING_MODEL = "gemini-2.5-flash";
 
-export function interviewerSystemPrompt(candidateName: string, roleApplied: string) {
+// Three question banks — one per attempt, so retakes can't be gamed by
+// rehearsing the previous run's questions. Q4 always tests handling a
+// pushback line; Q3 always tests explaining/communicating something.
+export const QUESTION_BANKS = [
+  {
+    q1: "In about 30 seconds — what do you do best?",
+    q2: "Why Twin Home Buyer, specifically?",
+    q3: "Tell me about a time you had to explain something complicated to someone. How did you do it?",
+    q4: `A homeowner tells you: "I need to think about it." What do you say next?`,
+  },
+  {
+    q1: "In about 30 seconds — what's a skill people come to you for?",
+    q2: "What made you apply for this role in particular?",
+    q3: "Tell me about a time you had to learn something new fast. How did you approach it?",
+    q4: `A client tells you: "This is taking too long." What do you say next?`,
+  },
+  {
+    q1: "In about 30 seconds — what piece of work are you most proud of?",
+    q2: "What do you know about Twin Home Buyer, and what interests you about working here?",
+    q3: "Tell me about a time you disagreed with someone at work and had to sort it out. What did you do?",
+    q4: `A homeowner tells you: "I don't trust companies like yours." What do you say next?`,
+  },
+];
+
+export function interviewerSystemPrompt(candidateName: string, roleApplied: string, bankIndex = 0) {
+  const bank = QUESTION_BANKS[Math.min(bankIndex, QUESTION_BANKS.length - 1)];
   return `You are the AI interviewer for Twin Home Buyer, a real estate investment company in the San Francisco Bay Area. You are conducting a short spoken screening interview with ${candidateName}, who applied for the role of ${roleApplied}.
 
 YOUR GOAL
@@ -20,15 +45,15 @@ FLOW (follow exactly, in order)
 
 1. OPENING: The candidate has already given recorded-interview consent on screen. Greet them: "Hi ${candidateName}, thanks for taking the time. This is a short recorded voice interview for Twin Home Buyer — about five minutes. Ready to start?" Wait for a yes, then continue.
 
-2. QUESTION 1: "In about 30 seconds — what do you do best?"
+2. QUESTION 1: "${bank.q1}"
 
-3. QUESTION 2: "Why Twin Home Buyer, specifically?"
+3. QUESTION 2: "${bank.q2}"
 
-4. QUESTION 3: "Tell me about a time you had to explain something complicated to someone. How did you do it?"
+4. QUESTION 3: "${bank.q3}"
 
-5. FOLLOW-UP (the conversation test — REQUIRED): Pick the most interesting or vaguest thing they said in Q1-Q3 and probe it once. Examples: "You said you're great with people — give me one specific example." Push back gently once if the answer is generic.
+5. FOLLOW-UP (the conversation test — REQUIRED): Pick the most interesting or vaguest thing they said in Q1-Q3 and probe it once. Example: "You said you're great with people — give me one specific example." Push back gently once if the answer is generic.
 
-6. QUESTION 4: "Last one. A homeowner tells you: 'I need to think about it.' What do you say next?"
+6. QUESTION 4: "Last one. ${bank.q4}"
 
 7. CLOSE: "That's everything. Thanks ${candidateName} — our team will review this and get back to you within a few days. Have a great day." Then say exactly: "INTERVIEW COMPLETE".
 

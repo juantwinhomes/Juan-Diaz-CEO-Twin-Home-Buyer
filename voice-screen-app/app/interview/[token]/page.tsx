@@ -6,7 +6,7 @@ export default async function InterviewPage({ params }: { params: Promise<{ toke
   const db = supabaseAdmin();
   const { data: candidate } = await db
     .from("candidates")
-    .select("full_name, role_applied, status, token_expires_at")
+    .select("id, full_name, role_applied, status, token_expires_at")
     .eq("interview_token", token)
     .single();
 
@@ -14,8 +14,15 @@ export default async function InterviewPage({ params }: { params: Promise<{ toke
 
   if (!candidate) return <main style={wrap}><h1>Link not found</h1><p>Please check the link you received, or contact Twin Home Buyer.</p></main>;
 
+  const { count: attemptsUsed } = await db
+    .from("interviews")
+    .select("*", { count: "exact", head: true })
+    .eq("candidate_id", candidate.id)
+    .eq("completed", true);
+
   const expired = candidate.token_expires_at && new Date(candidate.token_expires_at) < new Date();
-  if (candidate.status !== "invited" || expired)
+  const closed = ["live_call", "hired", "declined"].includes(candidate.status);
+  if (expired || closed || (attemptsUsed ?? 0) >= 3)
     return <main style={wrap}><h1>Interview unavailable</h1><p>This interview link was already used or has expired. If you believe this is a mistake, contact Twin Home Buyer.</p></main>;
 
   return (
@@ -23,6 +30,7 @@ export default async function InterviewPage({ params }: { params: Promise<{ toke
       token={token}
       candidateName={candidate.full_name}
       roleApplied={candidate.role_applied}
+      attemptsUsed={attemptsUsed ?? 0}
     />
   );
 }

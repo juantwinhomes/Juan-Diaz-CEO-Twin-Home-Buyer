@@ -41,10 +41,23 @@ export async function POST(req: Request) {
     })
     .eq("id", interviewId);
 
+  // Expire the link only once all attempts are used; otherwise keep it
+  // alive so the candidate can retake (different question bank each time)
+  const { count: attemptsUsed } = await db
+    .from("interviews")
+    .select("*", { count: "exact", head: true })
+    .eq("candidate_id", interview.candidate_id)
+    .eq("completed", true);
+
   await db
     .from("candidates")
-    .update({ status: "interviewed", token_expires_at: new Date().toISOString() })
+    .update({
+      status: "interviewed",
+      ...((attemptsUsed ?? 0) >= 3
+        ? { token_expires_at: new Date().toISOString() }
+        : {}),
+    })
     .eq("id", interview.candidate_id);
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, attemptsUsed: attemptsUsed ?? 0 });
 }

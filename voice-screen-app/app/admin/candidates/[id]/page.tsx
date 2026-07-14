@@ -70,10 +70,10 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
 
       {withAudio.length === 0 && <p>No interview yet. Send them their invite link.</p>}
 
-      {withAudio.map((iv) => (
+      {withAudio.map((iv, idx) => (
         <section key={iv.id} style={{ background: "#fff", borderRadius: 8, padding: 16, marginTop: 16 }}>
           <h2 style={{ fontSize: 16 }}>
-            Interview — {iv.started_at ? new Date(iv.started_at).toLocaleString() : "not started"}
+            Attempt {withAudio.length - idx} — {iv.started_at ? new Date(iv.started_at).toLocaleString() : "not started"}
             {iv.completed ? " ✓ completed" : " (incomplete)"}
           </h2>
           <p style={{ fontSize: 13, color: "#666" }}>
@@ -91,8 +91,8 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
             </div>
           ))}
 
-          {iv.transcript && iv.completed && (iv.scores ?? []).length === 0 && (
-            <ScoreButton interviewId={iv.id} />
+          {iv.transcript && iv.completed && (
+            <ScoreButton interviewId={iv.id} rescore={(iv.scores ?? []).length > 0} />
           )}
 
           {iv.transcript && (
