@@ -80,10 +80,22 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
             Consent: {iv.consent_given ? `yes (${new Date(iv.consent_at).toLocaleString()})` : "NO"}
           </p>
 
+          {!iv.completed && (
+            <p style={{ fontSize: 13, background: "#f3f4f6", padding: 8, borderRadius: 6 }}>
+              ⚠️ Ended early — not scoreable and does NOT count against the candidate&apos;s 3 attempts.
+            </p>
+          )}
+
           {iv.signedUrl && <audio controls src={iv.signedUrl} style={{ width: "100%", margin: "8px 0" }} />}
 
-          {(iv.scores ?? []).map((s: any) => (
+          {(iv.scores ?? [])
+            .slice()
+            .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+            .map((s: any, sIdx: number, arr: any[]) => (
             <div key={s.id} style={{ background: s.verdict === "PASS" ? "#d1fadf" : s.verdict === "BORDERLINE" ? "#fef3c7" : "#fde2e2", borderRadius: 6, padding: 12, margin: "8px 0", fontSize: 14 }}>
+              <div style={{ fontSize: 12, color: "#555", marginBottom: 4 }}>
+                Score #{sIdx + 1} of this attempt{sIdx === arr.length - 1 ? " (latest)" : " (superseded)"} · {new Date(s.created_at).toLocaleString()}
+              </div>
               <strong>{s.verdict}</strong> ({s.scored_by}) — Clarity {s.clarity} · Directness {s.directness} · Communication {s.communication}
               {s.knockout && <div>⚠️ Knockout: {s.knockout_reason}</div>}
               {s.suggested_followup && <div>Live-call follow-up: “{s.suggested_followup}”</div>}
