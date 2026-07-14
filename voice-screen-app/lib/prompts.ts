@@ -5,7 +5,7 @@
 // https://ai.google.dev/gemini-api/docs/models for current Live API models.
 // Fallback option: gemini-2.5-flash-native-audio-preview-12-2025
 export const LIVE_MODEL = "gemini-3.1-flash-live-preview";
-export const SCORING_MODEL = "gemini-2.0-flash";
+export const SCORING_MODEL = "gemini-2.5-flash";
 
 export function interviewerSystemPrompt(candidateName: string, roleApplied: string) {
   return `You are the AI interviewer for Twin Home Buyer, a real estate investment company in the San Francisco Bay Area. You are conducting a short spoken screening interview with ${candidateName}, who applied for the role of ${roleApplied}.

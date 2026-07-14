@@ -33,10 +33,18 @@ export async function POST(req: Request) {
     .join("\n");
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-  const result = await ai.models.generateContent({
-    model: SCORING_MODEL,
-    contents: scoringPrompt(transcriptText),
-  });
+  let result;
+  try {
+    result = await ai.models.generateContent({
+      model: process.env.SCORING_MODEL || SCORING_MODEL,
+      contents: scoringPrompt(transcriptText),
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: `Scoring model error: ${e?.message || e}` },
+      { status: 502 }
+    );
+  }
 
   let parsed: any;
   try {
