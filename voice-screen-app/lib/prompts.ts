@@ -1,7 +1,10 @@
 // Interview + scoring prompts. Source of truth: projects/voice-screen/
 // AGENT-PROMPT.md and SCORING-PROMPT.md — keep in sync if edited.
 
-export const LIVE_MODEL = "gemini-2.0-flash-live-001";
+// Live model names rotate — if connect fails with "model not found", check
+// https://ai.google.dev/gemini-api/docs/models for current Live API models.
+// Fallback option: gemini-2.5-flash-native-audio-preview-12-2025
+export const LIVE_MODEL = "gemini-3.1-flash-live-preview";
 export const SCORING_MODEL = "gemini-2.0-flash";
 
 export function interviewerSystemPrompt(candidateName: string, roleApplied: string) {
