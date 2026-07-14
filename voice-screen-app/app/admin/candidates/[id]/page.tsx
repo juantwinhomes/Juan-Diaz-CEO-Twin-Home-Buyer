@@ -83,7 +83,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
           {iv.signedUrl && <audio controls src={iv.signedUrl} style={{ width: "100%", margin: "8px 0" }} />}
 
           {(iv.scores ?? []).map((s: any) => (
-            <div key={s.id} style={{ background: s.verdict === "PASS" ? "#d1fadf" : "#fde2e2", borderRadius: 6, padding: 12, margin: "8px 0", fontSize: 14 }}>
+            <div key={s.id} style={{ background: s.verdict === "PASS" ? "#d1fadf" : s.verdict === "BORDERLINE" ? "#fef3c7" : "#fde2e2", borderRadius: 6, padding: 12, margin: "8px 0", fontSize: 14 }}>
               <strong>{s.verdict}</strong> ({s.scored_by}) — Clarity {s.clarity} · Directness {s.directness} · Communication {s.communication}
               {s.knockout && <div>⚠️ Knockout: {s.knockout_reason}</div>}
               {s.suggested_followup && <div>Live-call follow-up: “{s.suggested_followup}”</div>}

@@ -32,7 +32,15 @@ KNOCKOUTS (any one = automatic FAIL regardless of scores):
 - Never gave a single straight answer
 - Could not hold the conversation (froze, unintelligible, gave up)
 
-VERDICT RULE: PASS requires average >= 3.5 AND no knockouts.
+VERDICT RULE (computed by the system from the scores; env-tunable):
+- PASS: average >= 3.0 and no knockouts -> live call
+- BORDERLINE: average >= 2.5 -> human decides (trainable / role-dependent;
+  e.g. technical-executor roles can pass here on Seth's review)
+- FAIL: below 2.5, or ANY knockout at any score (Juan's non-negotiable:
+  cannot-hold-a-conversation fails regardless of other strengths)
+Calibration note (2026-07-14): top current salesperson benchmarked 3.33
+on a cold run — bar set at 3.0 accordingly. Bands via PASS_BAR /
+BORDERLINE_BAR env vars. Pending Juan sign-off.
 
 Return ONLY this JSON:
 {

@@ -53,6 +53,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "AI returned unparseable output — retry" }, { status: 502 });
   }
 
+  // Deterministic verdict from the scores — the AI's verdict field is only a
+  // recommendation. Bands are tunable via env without code changes.
+  const PASS_BAR = Number(process.env.PASS_BAR || 3.0);
+  const BORDERLINE_BAR = Number(process.env.BORDERLINE_BAR || 2.5);
+  const avg = (Number(parsed.clarity) + Number(parsed.directness) + Number(parsed.communication)) / 3;
+  parsed.verdict = parsed.knockout
+    ? "FAIL"
+    : avg >= PASS_BAR
+      ? "PASS"
+      : avg >= BORDERLINE_BAR
+        ? "BORDERLINE"
+        : "FAIL";
+
   const { error } = await db.from("scores").insert({
     interview_id: interviewId,
     clarity: parsed.clarity,

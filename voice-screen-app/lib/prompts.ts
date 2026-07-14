@@ -64,7 +64,10 @@ KNOCKOUTS (any one = automatic FAIL regardless of scores):
 - Never gave a single straight answer
 - Could not hold the conversation (froze, unintelligible, gave up)
 
-VERDICT RULE: PASS requires average >= 3.5 AND no knockouts.
+VERDICT RULE (the system recomputes the final verdict from your scores —
+give your honest recommendation): PASS if average >= 3.0 and no knockouts;
+BORDERLINE if average >= 2.5 (worth human review — e.g. strong substance,
+weak polish); FAIL below 2.5 or on any knockout.
 
 Return ONLY valid JSON, no markdown fences:
 {
