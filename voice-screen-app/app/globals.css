@@ -138,3 +138,42 @@ code.linkbox {
   display: block; background: #f6f8fa; border: 1px solid var(--line);
   padding: 8px 10px; border-radius: 8px; font-size: 12px; word-break: break-all;
 }
+
+/* ---------- Dark mode (follows device/browser setting) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1517;
+    --card: #171f23;
+    --ink: #e7ecf0;
+    --muted: #93a3af;
+    --brand: #1f9c8b;
+    --brand-ink: #5ed3c2;
+    --brand-soft: #12302b;
+    --line: #26323a;
+    --green: #57d9a3;
+    --green-bg: #11301f;
+    --amber: #f5c045;
+    --amber-bg: #33290e;
+    --red: #ff8d80;
+    --red-bg: #391511;
+    --blue: #7ab5ff;
+    --blue-bg: #122741;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 18px rgba(0, 0, 0, 0.35);
+  }
+  .candidate-bg {
+    background: linear-gradient(160deg, #0e1a18 0%, #0f1517 55%, #101820 100%);
+  }
+  .btn-secondary { background: #232d33; color: var(--ink); }
+  .btn-ghost { color: var(--muted); border-color: var(--line); }
+  .input, select.input { background: #10171a; color: var(--ink); border-color: var(--line); }
+  .pill-gray { background: #232d33; color: var(--muted); }
+  .table tbody tr:hover td { background: #1b2429; }
+  .table td { border-bottom-color: #202a30; }
+  .notice-amber { background: #33290e; }
+  .notice-gray { background: #1d262b; }
+  .meter { background: #232d33; }
+  .step-dot { background: #2b363d; }
+  .spinner { border-color: #2b363d; border-top-color: var(--brand); }
+  code.linkbox { background: #10171a; border-color: var(--line); }
+  .admin-header { background: #0a2f2a; }
+}
