@@ -177,3 +177,19 @@ code.linkbox {
   code.linkbox { background: #10171a; border-color: var(--line); }
   .admin-header { background: #0a2f2a; }
 }
+
+/* Sales practice mode */
+.script-panel {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.6;
+  background: var(--brand-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  margin: 8px 0;
+  max-height: 460px;
+  overflow-y: auto;
+  text-align: left;
+}

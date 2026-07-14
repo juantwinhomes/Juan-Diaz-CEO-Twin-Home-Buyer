@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { interviewerSystemPrompt, LIVE_MODEL } from "@/lib/prompts";
+import { johnSystemPrompt } from "@/lib/sales-prompts";
 
 // Candidate clicked "I consent, start interview".
 // Validates the invite token, logs consent, creates the interview row,
@@ -64,11 +65,15 @@ export async function POST(req: Request) {
     // LIVE_MODEL env var overrides the default — lets us switch Live model
     // names from Vercel settings without a code change (they rotate often)
     model: process.env.LIVE_MODEL || LIVE_MODEL,
-    systemPrompt: interviewerSystemPrompt(
-      candidate.full_name,
-      candidate.role_applied,
-      attemptsUsed ?? 0
-    ),
+    systemPrompt:
+      candidate.mode === "sales"
+        ? johnSystemPrompt(candidate.difficulty === "hard" ? "hard" : "easy")
+        : interviewerSystemPrompt(
+            candidate.full_name,
+            candidate.role_applied,
+            attemptsUsed ?? 0
+          ),
+    mode: candidate.mode || "hiring",
     attempt: (attemptsUsed ?? 0) + 1,
     maxAttempts: MAX_ATTEMPTS,
   });

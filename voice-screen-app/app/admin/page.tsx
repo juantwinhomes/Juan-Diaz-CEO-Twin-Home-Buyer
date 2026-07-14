@@ -6,11 +6,14 @@ import { supabaseServer } from "@/lib/supabase/server";
 async function addCandidate(formData: FormData) {
   "use server";
   const supabase = await supabaseServer();
+  const mode = formData.get("mode") === "sales" ? "sales" : "hiring";
   const { error } = await supabase.from("candidates").insert({
     full_name: String(formData.get("full_name") || "").trim(),
     phone: String(formData.get("phone") || "").trim() || null,
     email: String(formData.get("email") || "").trim() || null,
     role_applied: String(formData.get("role_applied") || "").trim(),
+    mode,
+    difficulty: mode === "sales" && formData.get("difficulty") === "hard" ? "hard" : "easy",
   });
   if (error) throw new Error(error.message);
   revalidatePath("/admin");
@@ -27,25 +30,44 @@ const STATUS_PILL: Record<string, string> = {
   declined: "pill-red",
 };
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string }>;
+}) {
   const supabase = await supabaseServer();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/admin/login");
 
-  const { data: candidates } = await supabase
-    .from("candidates")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const { mode: modeFilter } = await searchParams;
+  let query = supabase.from("candidates").select("*").order("created_at", { ascending: false });
+  if (modeFilter === "hiring" || modeFilter === "sales") query = query.eq("mode", modeFilter);
+  const { data: candidates } = await query;
 
   const base = process.env.NEXT_PUBLIC_APP_URL || "";
+
+  const tab = (href: string, label: string, active: boolean) => (
+    <Link
+      href={href}
+      className={`pill ${active ? "pill-green" : "pill-gray"}`}
+      style={{ textDecoration: "none", padding: "6px 14px" }}
+    >
+      {label}
+    </Link>
+  );
 
   return (
     <main className="fade-in">
       <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
         <h1 style={{ fontSize: 22, margin: 0 }}>Candidates</h1>
-        <span className="pill pill-gray">{(candidates ?? []).length} total</span>
+        <div className="row">
+          {tab("/admin", "All", !modeFilter)}
+          {tab("/admin?mode=hiring", "🎓 Hiring", modeFilter === "hiring")}
+          {tab("/admin?mode=sales", "📞 Sales practice", modeFilter === "sales")}
+          <span className="pill pill-gray">{(candidates ?? []).length}</span>
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 18 }}>
@@ -57,8 +79,19 @@ export default async function AdminPage() {
           <input name="role_applied" placeholder="Role" required className="input" style={{ flex: 2, minWidth: 140 }} />
           <input name="email" placeholder="Email (optional)" className="input" style={{ flex: 2, minWidth: 160 }} />
           <input name="phone" placeholder="Phone (optional)" className="input" style={{ flex: 1, minWidth: 120 }} />
+          <select name="mode" className="input" style={{ width: "auto" }} defaultValue={modeFilter === "sales" ? "sales" : "hiring"}>
+            <option value="hiring">🎓 Hiring interview</option>
+            <option value="sales">📞 Sales practice call</option>
+          </select>
+          <select name="difficulty" className="input" style={{ width: "auto" }} title="Difficulty (sales mode only)">
+            <option value="easy">Easy John</option>
+            <option value="hard">Hard John</option>
+          </select>
           <button className="btn">Add + generate link</button>
         </form>
+        <p className="small muted" style={{ margin: "8px 0 0" }}>
+          Difficulty applies to sales practice calls only.
+        </p>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
@@ -67,6 +100,7 @@ export default async function AdminPage() {
             <tr>
               <th>Name</th>
               <th>Role</th>
+              <th>Mode</th>
               <th>Status</th>
               <th>Invite link</th>
               <th></th>
@@ -77,6 +111,11 @@ export default async function AdminPage() {
               <tr key={c.id}>
                 <td style={{ fontWeight: 600 }}>{c.full_name}</td>
                 <td>{c.role_applied}</td>
+                <td>
+                  <span className={`pill ${c.mode === "sales" ? "pill-blue" : "pill-gray"}`}>
+                    {c.mode === "sales" ? `📞 ${c.difficulty === "hard" ? "hard" : "easy"}` : "🎓 hiring"}
+                  </span>
+                </td>
                 <td>
                   <span className={`pill ${STATUS_PILL[c.status] || "pill-gray"}`}>{c.status}</span>
                 </td>
@@ -90,7 +129,7 @@ export default async function AdminPage() {
             ))}
             {(candidates ?? []).length === 0 && (
               <tr>
-                <td colSpan={5} className="muted">No candidates yet — add one above.</td>
+                <td colSpan={6} className="muted">No candidates yet — add one above.</td>
               </tr>
             )}
           </tbody>

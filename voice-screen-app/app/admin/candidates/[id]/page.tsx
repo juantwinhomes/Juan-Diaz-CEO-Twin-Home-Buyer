@@ -65,8 +65,15 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
       <Link href="/admin" className="small">← All candidates</Link>
 
       <div className="card" style={{ marginTop: 12, marginBottom: 18 }}>
-        <h1 style={{ fontSize: 22, marginTop: 0 }}>{candidate.full_name}</h1>
-        <p className="muted" style={{ marginTop: -8 }}>
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <h1 style={{ fontSize: 22, margin: 0 }}>{candidate.full_name}</h1>
+          <span className={`pill ${candidate.mode === "sales" ? "pill-blue" : "pill-gray"}`}>
+            {candidate.mode === "sales"
+              ? `📞 Sales practice · ${candidate.difficulty === "hard" ? "Hard" : "Easy"} John`
+              : "🎓 Hiring interview"}
+          </span>
+        </div>
+        <p className="muted" style={{ marginTop: 4 }}>
           {candidate.role_applied} · {candidate.email || "no email"} · {candidate.phone || "no phone"}
         </p>
 
@@ -81,7 +88,9 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
             </select>
             <button className="btn btn-secondary">Save</button>
           </form>
-          {scoreableCount > 1 && <ScoreAllButton candidateId={candidate.id} attempts={scoreableCount} />}
+          {scoreableCount > 1 && candidate.mode !== "sales" && (
+            <ScoreAllButton candidateId={candidate.id} attempts={scoreableCount} />
+          )}
         </div>
       </div>
 
@@ -117,6 +126,13 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
 
           {iv.signedUrl && <audio controls src={iv.signedUrl} style={{ width: "100%", margin: "8px 0" }} />}
 
+          {iv.candidate_notes && (
+            <details style={{ marginTop: 6 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 600, fontSize: 14 }}>Their prep notes</summary>
+              <p className="notice notice-gray small" style={{ whiteSpace: "pre-wrap" }}>{iv.candidate_notes}</p>
+            </details>
+          )}
+
           {(iv.scores ?? [])
             .slice()
             .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
@@ -125,12 +141,29 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
                 <div className="small muted" style={{ marginBottom: 4 }}>
                   Score #{sIdx + 1} of this attempt{sIdx === arr.length - 1 ? " (latest)" : " (superseded)"} · {new Date(s.created_at).toLocaleString()}
                 </div>
-                <strong>{s.verdict}</strong> ({s.scored_by}) —{" "}
-                <strong>
-                  Average {(((s.clarity ?? 0) + (s.directness ?? 0) + (s.communication ?? 0)) / 3).toFixed(2)} / 5
-                </strong>{" "}
-                · Clarity {s.clarity} · Directness {s.directness} · Communication {s.communication}
-                {s.knockout && <div>⚠️ Knockout: {s.knockout_reason}</div>}
+                {s.outcome ? (
+                  <>
+                    <span className={`pill ${s.outcome === "INTERESTED" ? "pill-green" : s.outcome === "NOT_INTERESTED" ? "pill-red" : "pill-gray"}`} style={{ marginRight: 8 }}>
+                      Seller: {s.outcome.replace("_", " ")}
+                    </span>
+                    <strong>{s.verdict}</strong> ({s.scored_by}) —{" "}
+                    <strong>
+                      Average {(((s.warmth ?? 0) + (s.clarity ?? 0) + (s.confidence ?? 0) + (s.professionalism ?? 0) + (s.conversational ?? 0) + (s.completeness ?? 0) + (s.ending_handling ?? 0)) / 7).toFixed(2)} / 5
+                    </strong>
+                    <div className="small" style={{ marginTop: 4 }}>
+                      Warmth {s.warmth} · Clarity {s.clarity} · Confidence {s.confidence} · Professionalism {s.professionalism} · Conversational {s.conversational} · Completeness {s.completeness} · Ending {s.ending_handling}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <strong>{s.verdict}</strong> ({s.scored_by}) —{" "}
+                    <strong>
+                      Average {(((s.clarity ?? 0) + (s.directness ?? 0) + (s.communication ?? 0)) / 3).toFixed(2)} / 5
+                    </strong>{" "}
+                    · Clarity {s.clarity} · Directness {s.directness} · Communication {s.communication}
+                  </>
+                )}
+                {s.knockout && <div>⚠️ {s.outcome ? "Flag" : "Knockout"}: {s.knockout_reason}</div>}
                 {s.suggested_followup && <div>Live-call follow-up: “{s.suggested_followup}”</div>}
                 {s.notes && <div className="small" style={{ marginTop: 4 }}>Notes: {s.notes}</div>}
               </div>

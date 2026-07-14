@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { scoringPrompt, SCORING_MODEL } from "@/lib/prompts";
+import { salesScoringPrompt } from "@/lib/sales-prompts";
 
 // Admin-only: send an interview transcript to Gemini with the THB rubric,
 // store the result in `scores`, and update candidate status.
@@ -24,12 +25,21 @@ export async function POST(req: Request) {
   if (!interviewId) return NextResponse.json({ error: "Missing interviewId" }, { status: 400 });
 
   const db = supabaseAdmin();
-  const { data: interview } = await db.from("interviews").select("*").eq("id", interviewId).single();
+  const { data: interview } = await db
+    .from("interviews")
+    .select("*, candidates(mode)")
+    .eq("id", interviewId)
+    .single();
   if (!interview?.transcript)
     return NextResponse.json({ error: "No transcript to score" }, { status: 404 });
 
+  const isSales = (interview as any).candidates?.mode === "sales";
   const transcriptText = (interview.transcript as any[])
-    .map((t) => `${t.role === "agent" ? "INTERVIEWER" : "CANDIDATE"}: ${t.text}`)
+    .map((t) =>
+      isSales
+        ? `${t.role === "agent" ? "JOHN (seller)" : "APPLICANT (agent)"}: ${t.text}`
+        : `${t.role === "agent" ? "INTERVIEWER" : "CANDIDATE"}: ${t.text}`
+    )
     .join("\n");
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
@@ -37,7 +47,7 @@ export async function POST(req: Request) {
   try {
     result = await ai.models.generateContent({
       model: process.env.SCORING_MODEL || SCORING_MODEL,
-      contents: scoringPrompt(transcriptText),
+      contents: isSales ? salesScoringPrompt(transcriptText) : scoringPrompt(transcriptText),
     });
   } catch (e: any) {
     return NextResponse.json(
@@ -57,29 +67,65 @@ export async function POST(req: Request) {
   // recommendation. Bands are tunable via env without code changes.
   const PASS_BAR = Number(process.env.PASS_BAR || 3.0);
   const BORDERLINE_BAR = Number(process.env.BORDERLINE_BAR || 2.5);
-  const avg = (Number(parsed.clarity) + Number(parsed.directness) + Number(parsed.communication)) / 3;
-  parsed.verdict = parsed.knockout
-    ? "FAIL"
-    : avg >= PASS_BAR
-      ? "PASS"
-      : avg >= BORDERLINE_BAR
-        ? "BORDERLINE"
-        : "FAIL";
 
-  const { error } = await db.from("scores").insert({
-    interview_id: interviewId,
-    clarity: parsed.clarity,
-    directness: parsed.directness,
-    communication: parsed.communication,
-    knockout: !!parsed.knockout,
-    knockout_reason: parsed.knockout_reason || null,
-    verdict: parsed.verdict,
-    suggested_followup: parsed.suggested_followup || null,
-    scored_by: "ai",
-    notes: [parsed.clarity_note, parsed.directness_note, parsed.communication_note]
-      .filter(Boolean)
-      .join(" · "),
-  });
+  let row: Record<string, unknown>;
+  if (isSales) {
+    const cats = [
+      parsed.warmth, parsed.clarity, parsed.confidence, parsed.professionalism,
+      parsed.conversational, parsed.completeness, parsed.ending_handling,
+    ].map(Number);
+    const avg = cats.reduce((a, b) => a + b, 0) / cats.length;
+    const verdict = parsed.flag
+      ? "FAIL"
+      : avg >= PASS_BAR
+        ? "PASS"
+        : avg >= BORDERLINE_BAR
+          ? "BORDERLINE"
+          : "FAIL";
+    row = {
+      interview_id: interviewId,
+      warmth: parsed.warmth,
+      clarity: parsed.clarity,
+      confidence: parsed.confidence,
+      professionalism: parsed.professionalism,
+      conversational: parsed.conversational,
+      completeness: parsed.completeness,
+      ending_handling: parsed.ending_handling,
+      outcome: parsed.outcome || "INCOMPLETE",
+      knockout: !!parsed.flag,
+      knockout_reason: parsed.flag_reason || null,
+      verdict,
+      scored_by: "ai",
+      notes: [parsed.coaching_note, parsed.summary_note].filter(Boolean).join(" · "),
+    };
+    parsed.verdict = verdict;
+  } else {
+    const avg =
+      (Number(parsed.clarity) + Number(parsed.directness) + Number(parsed.communication)) / 3;
+    parsed.verdict = parsed.knockout
+      ? "FAIL"
+      : avg >= PASS_BAR
+        ? "PASS"
+        : avg >= BORDERLINE_BAR
+          ? "BORDERLINE"
+          : "FAIL";
+    row = {
+      interview_id: interviewId,
+      clarity: parsed.clarity,
+      directness: parsed.directness,
+      communication: parsed.communication,
+      knockout: !!parsed.knockout,
+      knockout_reason: parsed.knockout_reason || null,
+      verdict: parsed.verdict,
+      suggested_followup: parsed.suggested_followup || null,
+      scored_by: "ai",
+      notes: [parsed.clarity_note, parsed.directness_note, parsed.communication_note]
+        .filter(Boolean)
+        .join(" · "),
+    };
+  }
+
+  const { error } = await db.from("scores").insert(row);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   await db

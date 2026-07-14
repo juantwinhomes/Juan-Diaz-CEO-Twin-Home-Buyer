@@ -48,15 +48,22 @@ export default function InterviewClient({
   candidateName,
   roleApplied,
   attemptsUsed = 0,
+  mode = "hiring",
+  script = "",
 }: {
   token: string;
   candidateName: string;
   roleApplied: string;
   attemptsUsed?: number;
+  mode?: "hiring" | "sales";
+  script?: string;
 }) {
+  const isSales = mode === "sales";
   const [stage, setStage] = useState<Stage>("consent");
   const [error, setError] = useState("");
   const [agentSpeaking, setAgentSpeaking] = useState(false);
+  const [notes, setNotes] = useState("");
+  const notesRef = useRef("");
   const [micLevel, setMicLevel] = useState(0);
   const [micOk, setMicOk] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
@@ -216,7 +223,9 @@ export default function InterviewClient({
             if (sc.outputTranscription?.text) currentAgent += sc.outputTranscription.text;
             if (sc.inputTranscription?.text) currentCandidate += sc.inputTranscription.text;
             if (sc.turnComplete) {
-              const agentSaidComplete = currentAgent.toUpperCase().includes("INTERVIEW COMPLETE");
+              const upperAgent = currentAgent.toUpperCase();
+              const agentSaidComplete =
+                upperAgent.includes("INTERVIEW COMPLETE") || upperAgent.includes("CALL COMPLETE");
               flushTurnsRef.current();
               // agent signals the scripted end of the interview
               if (agentSaidComplete) {
@@ -285,7 +294,10 @@ export default function InterviewClient({
     // IS complete — even if the candidate clicked End during the goodbye.
     if (!completed) {
       completed = transcriptRef.current.some(
-        (t) => t.role === "agent" && t.text.toUpperCase().includes("INTERVIEW COMPLETE")
+        (t) =>
+          t.role === "agent" &&
+          (t.text.toUpperCase().includes("INTERVIEW COMPLETE") ||
+            t.text.toUpperCase().includes("CALL COMPLETE"))
       );
     }
     cleanupRef.current();
@@ -304,6 +316,7 @@ export default function InterviewClient({
     form.set("interviewId", interviewIdRef.current);
     form.set("transcript", JSON.stringify(transcriptRef.current));
     form.set("completed", String(completed));
+    if (notesRef.current.trim()) form.set("notes", notesRef.current.trim());
     if (audioBlob) form.set("audio", audioBlob, "interview.webm");
 
     try {
@@ -317,8 +330,16 @@ export default function InterviewClient({
   if (stage === "consent")
     return (
       <Shell step={step}>
-        <h1 style={{ fontSize: 24 }}>{COMPANY} — Voice Interview</h1>
-        <p>Hi {candidateName}! This is a short (~5 minute) spoken interview for the <strong>{roleApplied}</strong> role. You&apos;ll talk with our AI interviewer using your microphone.</p>
+        <h1 style={{ fontSize: 24 }}>
+          {isSales ? "Twin Home Buyer — Practice Call" : `${COMPANY} — Voice Interview`}
+        </h1>
+        {isSales ? (
+          <p>
+            Hi {candidateName}! In this exercise <strong>you are the agent</strong> making a follow-up call, and our AI plays <strong>John</strong> — a homeowner who filled out a form about selling his house. Run the call using the script (shown on the next screens). Speak naturally, listen to his answers, and be yourself — John reacts to how you treat him.
+          </p>
+        ) : (
+          <p>Hi {candidateName}! This is a short (~5 minute) spoken interview for the <strong>{roleApplied}</strong> role. You&apos;ll talk with our AI interviewer using your microphone.</p>
+        )}
         {attemptsUsed > 0 && (
           <p className="notice notice-blue">
             Retake — attempt {attemptsUsed + 1} of {MAX_ATTEMPTS}. The questions will be different this time.
@@ -351,8 +372,27 @@ export default function InterviewClient({
         <p className="small" style={{ color: micOk ? "var(--green)" : "var(--muted)" }}>
           {micOk ? "✓ We can hear you — you're good to go." : "Waiting to hear you… if the bar never moves, check your mic settings and reload."}
         </p>
+        {isSales && (
+          <>
+            <details style={{ textAlign: "left", marginTop: 14 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 600, fontSize: 14 }}>📄 Review your call script (it stays on screen during the call)</summary>
+              <pre className="script-panel">{script}</pre>
+            </details>
+            <textarea
+              className="input"
+              rows={4}
+              placeholder="Your own notes (optional) — visible during the call, saved with your attempt"
+              value={notes}
+              onChange={(e) => { setNotes(e.target.value); notesRef.current = e.target.value; }}
+              style={{ marginTop: 10, textAlign: "left", resize: "vertical" }}
+            />
+            <p className="small muted" style={{ margin: "8px 0" }}>
+              When you start, John answers the phone — <strong>you speak first</strong>, just like a real call.
+            </p>
+          </>
+        )}
         <button className="btn btn-lg" disabled={!micOk} onClick={start}>
-          Start my interview
+          {isSales ? "📞 Call John" : "Start my interview"}
         </button>
       </Shell>
     );
@@ -360,10 +400,49 @@ export default function InterviewClient({
   if (stage === "connecting")
     return (
       <Shell step={step}>
-        <h1 style={{ fontSize: 22 }}>Connecting…</h1>
+        <h1 style={{ fontSize: 22 }}>{isSales ? "Ringing John…" : "Connecting…"}</h1>
         <div className="spinner" />
-        <p className="muted">Your interviewer is picking up…</p>
+        <p className="muted">{isSales ? "He usually picks up fast." : "Your interviewer is picking up…"}</p>
       </Shell>
+    );
+
+  if (stage === "live" && isSales)
+    return (
+      <div className="candidate-bg">
+        <main className="card fade-in" style={{ maxWidth: 1020, width: "100%", padding: 24 }}>
+          <div className="row" style={{ alignItems: "flex-start" }}>
+            <div style={{ flex: "1 1 400px", minWidth: 300, textAlign: "left" }}>
+              <h2 style={{ fontSize: 14, margin: "0 0 6px", textTransform: "uppercase", letterSpacing: ".05em", color: "var(--muted)" }}>📄 Script</h2>
+              <pre className="script-panel">{script}</pre>
+            </div>
+            <div style={{ flex: "1 1 300px", minWidth: 280, textAlign: "center" }}>
+              <div className={`orb ${agentSpeaking ? "orb-speaking" : "orb-listening"}`} style={{ margin: "8px auto" }}>
+                {agentSpeaking ? "🗣️" : "🎙️"}
+              </div>
+              <h1 style={{ fontSize: 18, margin: "4px 0" }}>{agentSpeaking ? "John is talking…" : "Your line — talk to John"}</h1>
+              <p className="muted small" style={{ marginTop: 0 }}>He just picked up — you speak first. Max 8 minutes.</p>
+              <textarea
+                className="input"
+                rows={6}
+                placeholder="Your notes"
+                value={notes}
+                onChange={(e) => { setNotes(e.target.value); notesRef.current = e.target.value; }}
+                style={{ textAlign: "left", resize: "vertical" }}
+              />
+              <button
+                className="btn btn-ghost"
+                style={{ marginTop: 10 }}
+                onClick={() => {
+                  if (window.confirm("Hang up now? If the call isn't finished, this attempt may not be scoreable."))
+                    endSession(false);
+                }}
+              >
+                Hang up
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
     );
 
   if (stage === "live")
@@ -412,7 +491,7 @@ export default function InterviewClient({
     return (
       <Shell step={step}>
         <h1>✅ All done, {candidateName}!</h1>
-        <p>Your interview was submitted. The {COMPANY} team will review it and get back to you within a few days.</p>
+        <p>Your {isSales ? "practice call" : "interview"} was submitted. The {isSales ? "Twin Home Buyer" : COMPANY} team will review it and get back to you within a few days.</p>
         {retakesLeft > 0 && (
           <>
             <p className="small muted">

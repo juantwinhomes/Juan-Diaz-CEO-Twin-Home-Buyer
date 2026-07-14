@@ -9,6 +9,7 @@ export async function POST(req: Request) {
   const transcriptRaw = String(form.get("transcript") || "[]");
   const completed = String(form.get("completed")) === "true";
   const audio = form.get("audio") as File | null;
+  const candidateNotes = String(form.get("notes") || "").trim();
 
   if (!interviewId) return NextResponse.json({ error: "Missing interviewId" }, { status: 400 });
 
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
       transcript,
       audio_url,
       completed,
+      ...(candidateNotes ? { candidate_notes: candidateNotes } : {}),
     })
     .eq("id", interviewId);
 
