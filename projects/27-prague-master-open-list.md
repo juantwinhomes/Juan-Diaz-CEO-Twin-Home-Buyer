@@ -10,26 +10,30 @@
 
 ---
 
-## 🚧 BLOCKER — PROPERTY IS STILL OCCUPIED (surfaced 7/15)
-The homeowner/occupant is **still living in 27 Prague**, so we **can't get
-inside to measure**. We only have exterior/partial window measurements; the
-interior windows must be measured from inside. **This blocks far more than
-windows** — the entire interior scope (kitchen, bath, interior paint, flooring,
-cabinets) can't proceed while the unit is occupied. **This is the real timeline
-issue**, bigger than any long-lead order.
+## 🔑 ACCESS — SELLER OUT MONDAY 7/20 (updated 7/15)
+Property is still occupied; **seller has not moved out yet but is out by Monday
+7/20.** Interior can't be measured or worked until then — we only have exterior/
+partial window measurements. Voluntary move-out, so **no negotiation / not a
+Juan escalation.** Monday is the timeline anchor: the window-order clock starts
+the day we get inside.
 
-- **Need to confirm:** occupant status — former seller on a rent-back /
-  post-close occupancy, a tenant on an inherited lease, or seller not yet moved
-  out — and whether there's a **written agreement** (right of entry + notice terms).
-- **Access plan:** proper written notice per the agreement → **one coordinated
-  visit** that measures ALL interior items at once (windows, cabinets, bath) —
-  don't send vendors separately.
-- **Juan's lane:** if the occupant won't cooperate or we need to move up their
-  **move-out date** (cash-for-keys, etc.), that's a seller/occupant negotiation
-  → Juan. If there's a signed occupancy/lease, entry terms → **attorney** first
-  (legal exposure = reset rule).
-- **The date that matters:** the **vacancy / move-out date** sets the whole
-  27 Prague completion timeline. No vacancy date = no completion date.
+**Split the work so we don't lose the days between now and Monday:**
+- **Now → before Monday:** Cesar does the **EXTERIOR punch list** — no access
+  needed (landscaping, garage cement, garage window from outside, wooden garage
+  entry door, exterior paint, driveway, roof/gutters, etc.). Covers Juan's
+  "Cesar go ASAP / everything outside."
+- **Monday 7/20 (seller out):** confirm vacancy + get keys → **one interior
+  visit** = Cesar + window vendor measure **everything inside at once** (all
+  windows, cabinets, bath). No separate vendor trips.
+- **Tue/Wed 7/21–22:** window cost + lead time to Juan → **Juan approves order**
+  → order windows + range + shower doors, **file permits** (kitchen cabinets +
+  bath). Long-lead goes first.
+- Interior construction sequences behind the ETAs; completion date locks once
+  the window lead time is known.
+
+**Confirm:** is the Monday move-out **firm / in writing**? If there's a post-
+close occupancy agreement, check for a hard date + per-diem if he slips. Assign
+who verifies the seller is actually out Monday.
 
 ## ⭐ THE 4 THINGS THAT DECIDE THE TIMELINE (do these first)
 These are long-lead — order/file them BEFORE cosmetic work or the whole job slips.
