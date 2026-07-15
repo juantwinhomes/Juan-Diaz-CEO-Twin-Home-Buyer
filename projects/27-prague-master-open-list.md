@@ -10,6 +10,27 @@
 
 ---
 
+## 🚧 BLOCKER — PROPERTY IS STILL OCCUPIED (surfaced 7/15)
+The homeowner/occupant is **still living in 27 Prague**, so we **can't get
+inside to measure**. We only have exterior/partial window measurements; the
+interior windows must be measured from inside. **This blocks far more than
+windows** — the entire interior scope (kitchen, bath, interior paint, flooring,
+cabinets) can't proceed while the unit is occupied. **This is the real timeline
+issue**, bigger than any long-lead order.
+
+- **Need to confirm:** occupant status — former seller on a rent-back /
+  post-close occupancy, a tenant on an inherited lease, or seller not yet moved
+  out — and whether there's a **written agreement** (right of entry + notice terms).
+- **Access plan:** proper written notice per the agreement → **one coordinated
+  visit** that measures ALL interior items at once (windows, cabinets, bath) —
+  don't send vendors separately.
+- **Juan's lane:** if the occupant won't cooperate or we need to move up their
+  **move-out date** (cash-for-keys, etc.), that's a seller/occupant negotiation
+  → Juan. If there's a signed occupancy/lease, entry terms → **attorney** first
+  (legal exposure = reset rule).
+- **The date that matters:** the **vacancy / move-out date** sets the whole
+  27 Prague completion timeline. No vacancy date = no completion date.
+
 ## ⭐ THE 4 THINGS THAT DECIDE THE TIMELINE (do these first)
 These are long-lead — order/file them BEFORE cosmetic work or the whole job slips.
 
