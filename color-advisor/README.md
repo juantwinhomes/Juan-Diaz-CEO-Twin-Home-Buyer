@@ -10,10 +10,35 @@ existing `claude` login, no API keys to manage.
 
 - [Claude Code](https://claude.com/claude-code) installed and logged in
   (`claude` available on your PATH)
-- This repo cloned locally (the tool reads the trained framework from
-  `training/2026-color-trends.md`)
 
-## Usage
+## Windows app (color-advisor.exe)
+
+`color-advisor.exe` is a self-contained Windows app — the trained framework
+is embedded in the binary, so it does NOT need the repo cloned. Run from
+Command Prompt or PowerShell:
+
+```
+color-advisor.exe "1425 Elm St, Petaluma CA" C:\Users\Juan\Desktop\property.jpg
+```
+
+The report prints to the screen and is saved under `reports\` next to where
+you ran it.
+
+### Rebuilding the binaries
+
+The Go source embeds `trends.md` / `example.md` (copies of the files in
+`training/`). After updating the training docs, re-sync and rebuild:
+
+```bash
+cd color-advisor
+cp ../training/2026-color-trends.md trends.md
+cp ../training/sample-property-color-decision.md example.md
+GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o color-advisor.exe .
+GOOS=darwin  GOARCH=arm64 go build -ldflags="-s -w" -o color-advisor-mac .
+GOOS=linux   GOARCH=amd64 go build -ldflags="-s -w" -o color-advisor-linux .
+```
+
+## Shell script (Mac/Linux, no build needed)
 
 ```bash
 ./color-advisor/color-advisor.sh "1425 Elm St, Petaluma CA" ~/Desktop/property.jpg
