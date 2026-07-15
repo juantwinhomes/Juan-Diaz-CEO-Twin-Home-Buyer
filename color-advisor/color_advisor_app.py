@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """color-advisor — Twin Home Buyer exterior color recommendation app.
 
-Double-click friendly Python app (Tkinter GUI) that connects to Claude
-through the Claude Code CLI (your existing `claude` login — no API keys).
+ONE input: a property address, or a Zillow / Redfin / Realtor / Google Maps
+link. No photo upload needed — Claude researches the property on the web
+(listing data, property records) and applies the trained 2026 color framework.
+
+Connects to Claude through the Claude Code CLI (your existing `claude`
+login — no API keys).
 
 Two ways to use it:
-  GUI:  python color_advisor_app.py
-        (or double-click it if .py files open with Python)
-  CLI:  python color_advisor_app.py "123 Main St, Petaluma CA" photo.jpg
+  Window:  python color_advisor_app.py
+  CLI:     python color_advisor_app.py "123 Main St, Petaluma CA"
+           python color_advisor_app.py "https://www.zillow.com/homedetails/..."
 
 Requires: Python 3.8+ and Claude Code installed & logged in
           (https://claude.com/claude-code)
-
-The trained 2026 color framework is embedded below — this single file is
-fully self-contained.
 """
 
-import os
 import re
 import shutil
 import subprocess
@@ -31,49 +31,61 @@ EXAMPLE = "# Sample Property Color Decision — Small Green Ranch (July 2026)\n\
 
 PROMPT_TEMPLATE = """You are the color advisor for Twin Home Buyer, a house-flipping business.
 
-Property address: {address}
-Property photo on disk: {image}
+Property (address or listing link): {query}
 
-First, use the Read tool to view the photo at the path above. Then decide the
-best exterior color scheme for THIS specific property by applying the trained
-2026 framework below, exactly as written.
+Research this property on the web yourself:
+1. Use WebSearch to find it — search the address plus "zillow", "redfin",
+   and "realtor.com". If the input is already a listing URL, start there.
+2. Use WebFetch on the best listing / property-record pages you find.
+3. Extract every exterior fact you can: house style, year built, stories,
+   square footage, roof type/material, exterior siding material and current
+   color if described, garage (attached? street-facing?), lot size and
+   landscaping maturity, neighborhood character.
+
+Then decide the best exterior color scheme for THIS property by applying the
+trained 2026 framework below, exactly as written.
 
 === TRAINED FRAMEWORK (source of truth) ===
 {trends}
 
-=== WORKED EXAMPLE (follow this format and rigor) ===
+=== WORKED EXAMPLE (follow this rigor) ===
 {example}
 
 === YOUR TASK ===
 Produce a markdown report with exactly these sections:
 
-# Color Recommendation — {address}
+# Color Recommendation — {query}
 
-## Property read (fixed elements first)
-Bullet the fixed elements you observe in the photo (roof, masonry, concrete,
-driveway), the house style, lot/landscaping maturity, visible neighbor context,
-and house size. Only describe what you can actually see.
+## What I found
+Bullet the property facts you confirmed from the web (with which site each
+came from), covering style, year, roof, siding, garage, lot/landscaping,
+neighborhood. Only state facts you actually found — never invent.
 
 ## Recommended scheme
 A table: Element | Color (name + code + approx hex) | Rationale.
 Cover body/siding, trim, garage door (if street-facing: body color rule),
-front door, fixtures/numbers, and any fence or notable element in the photo.
+front door, fixtures/numbers.
 
 ## Runner-up
-One alternative scheme in a sentence or two, and why it lost.
+One alternative scheme and why it lost.
+
+## Verify before painting
+Since you worked from listing data rather than viewing photos, list the 2-3
+specific things Juan should eyeball in a photo or drive-by that could change
+the call (e.g. actual roof color temperature, neighbor colors, masonry).
 
 ## Free wins
-2-4 cheap curb-appeal fixes visible in the photo.
+2-3 cheap curb-appeal fixes typical for this property type/age.
 
-Rules: pick colors ONLY from the trained shortlist unless a fixed element
-forces otherwise (then say why). Apply the reusable rules from the worked
-example. Be decisive — one recommended scheme, not a menu.
+Rules: pick colors ONLY from the trained shortlist unless a confirmed fixed
+element forces otherwise (then say why). Be decisive — one recommended
+scheme, not a menu. If you genuinely cannot find the property at all, say so
+plainly and give the safe default flip scheme from the framework instead.
 
 OUTPUT FORMAT — critical: your entire final response must be the raw markdown
 report itself, starting with the "# Color Recommendation" heading. Do NOT
-write the report to a file, do NOT attach or send files, and do NOT reply
-with a summary or commentary — your response text IS the report and is saved
-to a file by the calling program."""
+write files, do NOT attach or send files, and do NOT reply with a summary or
+commentary — your response text IS the report."""
 
 
 def find_claude():
@@ -83,8 +95,8 @@ def find_claude():
         return path
     candidates = [
         Path.home() / ".local" / "bin" / "claude",
+        Path.home() / ".local" / "bin" / "claude.exe",
         Path.home() / "AppData" / "Roaming" / "npm" / "claude.cmd",
-        Path.home() / "AppData" / "Local" / "Programs" / "claude" / "claude.exe",
         Path("/usr/local/bin/claude"),
         Path("/opt/homebrew/bin/claude"),
     ]
@@ -95,17 +107,16 @@ def find_claude():
 
 
 def slugify(text):
-    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    s = re.sub(r"https?://", "", text.lower())
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    return s[:60] or "property"
 
 
-def analyze(address, image_path, claude_bin):
-    """Run the analysis through the Claude Code CLI. Returns the report text."""
-    image_abs = str(Path(image_path).resolve())
-    prompt = PROMPT_TEMPLATE.format(
-        address=address, image=image_abs, trends=TRENDS, example=EXAMPLE
-    )
+def analyze(query, claude_bin):
+    """Run the web-research analysis through the Claude Code CLI."""
+    prompt = PROMPT_TEMPLATE.format(query=query, trends=TRENDS, example=EXAMPLE)
     result = subprocess.run(
-        [claude_bin, "-p", prompt, "--allowedTools", "Read"],
+        [claude_bin, "-p", prompt, "--allowedTools", "WebSearch,WebFetch"],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -118,10 +129,10 @@ def analyze(address, image_path, claude_bin):
     return result.stdout.strip()
 
 
-def save_report(address, report):
+def save_report(query, report):
     reports = Path("reports")
     reports.mkdir(exist_ok=True)
-    out = reports / f"{slugify(address)}-{date.today().strftime('%Y%m%d')}.md"
+    out = reports / f"{slugify(query)}-{date.today().strftime('%Y%m%d')}.md"
     out.write_text(report + "\n", encoding="utf-8")
     return out
 
@@ -129,19 +140,17 @@ def save_report(address, report):
 # ---------------------------------------------------------------- CLI mode
 
 
-def run_cli(address, image):
+def run_cli(query):
     claude_bin = find_claude()
     if not claude_bin:
         sys.exit(
             "Error: the 'claude' CLI was not found. Install Claude Code first: "
             "https://claude.com/claude-code"
         )
-    if not Path(image).is_file():
-        sys.exit(f"Error: image not found: {image}")
-    print(f"Analyzing {address} ...", file=sys.stderr)
-    report = analyze(address, image, claude_bin)
+    print(f"Researching {query} ...", file=sys.stderr)
+    report = analyze(query, claude_bin)
     print(report)
-    out = save_report(address, report)
+    out = save_report(query, report)
     print(f"\nReport saved: {out}", file=sys.stderr)
 
 
@@ -150,54 +159,40 @@ def run_cli(address, image):
 
 def run_gui():
     import tkinter as tk
-    from tkinter import filedialog, messagebox, scrolledtext
+    from tkinter import messagebox, scrolledtext
 
     root = tk.Tk()
     root.title("Twin Home Buyer — Color Advisor")
-    root.geometry("780x640")
+    root.geometry("820x620")
 
     frm = tk.Frame(root, padx=12, pady=10)
     frm.pack(fill="both", expand=True)
 
-    tk.Label(frm, text="Property address:").grid(row=0, column=0, sticky="w")
-    address_var = tk.StringVar()
-    tk.Entry(frm, textvariable=address_var, width=60).grid(
-        row=0, column=1, sticky="we", padx=6, pady=4
-    )
+    tk.Label(
+        frm, text="Property address — or paste a Zillow / Redfin / Google Maps link:"
+    ).grid(row=0, column=0, sticky="w")
+    query_var = tk.StringVar()
+    entry = tk.Entry(frm, textvariable=query_var)
+    entry.grid(row=1, column=0, sticky="we", pady=4)
+    entry.focus()
+    frm.columnconfigure(0, weight=1)
 
-    tk.Label(frm, text="Property photo:").grid(row=1, column=0, sticky="w")
-    photo_var = tk.StringVar()
-    tk.Entry(frm, textvariable=photo_var, width=60).grid(
-        row=1, column=1, sticky="we", padx=6, pady=4
-    )
-
-    def browse():
-        p = filedialog.askopenfilename(
-            title="Choose property photo",
-            filetypes=[("Images", "*.jpg *.jpeg *.png *.webp"), ("All files", "*.*")],
-        )
-        if p:
-            photo_var.set(p)
-
-    tk.Button(frm, text="Browse...", command=browse).grid(row=1, column=2, padx=4)
+    analyze_btn = tk.Button(frm, text="Get color recommendation", width=26)
+    analyze_btn.grid(row=2, column=0, pady=6)
 
     status_var = tk.StringVar(value="Ready.")
     tk.Label(frm, textvariable=status_var, fg="gray25").grid(
-        row=2, column=0, columnspan=3, sticky="w", pady=(4, 2)
+        row=3, column=0, sticky="w", pady=(0, 4)
     )
 
     output = scrolledtext.ScrolledText(frm, wrap="word", font=("Consolas", 10))
-    output.grid(row=3, column=0, columnspan=3, sticky="nsew", pady=6)
-    frm.rowconfigure(3, weight=1)
-    frm.columnconfigure(1, weight=1)
+    output.grid(row=4, column=0, sticky="nsew", pady=4)
+    frm.rowconfigure(4, weight=1)
 
-    analyze_btn = tk.Button(frm, text="Analyze property", width=20)
-    analyze_btn.grid(row=4, column=0, columnspan=3, pady=4)
-
-    def worker(address, image, claude_bin):
+    def worker(query, claude_bin):
         try:
-            report = analyze(address, image, claude_bin)
-            out = save_report(address, report)
+            report = analyze(query, claude_bin)
+            out = save_report(query, report)
 
             def done():
                 output.delete("1.0", "end")
@@ -206,7 +201,7 @@ def run_gui():
                 analyze_btn.config(state="normal")
 
             root.after(0, done)
-        except Exception as e:  # show any failure in the window
+        except Exception as e:
             def failed():
                 status_var.set("Failed.")
                 messagebox.showerror("Color Advisor", str(e))
@@ -215,13 +210,11 @@ def run_gui():
             root.after(0, failed)
 
     def on_analyze():
-        address = address_var.get().strip()
-        image = photo_var.get().strip()
-        if not address:
-            messagebox.showwarning("Color Advisor", "Enter the property address.")
-            return
-        if not image or not Path(image).is_file():
-            messagebox.showwarning("Color Advisor", "Choose a valid photo file.")
+        query = query_var.get().strip()
+        if not query:
+            messagebox.showwarning(
+                "Color Advisor", "Paste the property address or listing link."
+            )
             return
         claude_bin = find_claude()
         if not claude_bin:
@@ -232,23 +225,22 @@ def run_gui():
             )
             return
         analyze_btn.config(state="disabled")
-        status_var.set("Analyzing... Claude is studying the photo (1-3 minutes).")
+        status_var.set("Researching the property on the web... (2-4 minutes)")
         output.delete("1.0", "end")
-        threading.Thread(
-            target=worker, args=(address, image, claude_bin), daemon=True
-        ).start()
+        threading.Thread(target=worker, args=(query, claude_bin), daemon=True).start()
 
     analyze_btn.config(command=on_analyze)
+    entry.bind("<Return>", lambda e: on_analyze())
     root.mainloop()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3:
-        run_cli(sys.argv[1], sys.argv[2])
+    if len(sys.argv) == 2:
+        run_cli(sys.argv[1])
     elif len(sys.argv) == 1:
         run_gui()
     else:
         sys.exit(
-            'Usage:\n  GUI:  python color_advisor_app.py\n'
-            '  CLI:  python color_advisor_app.py "<address>" <photo>'
+            'Usage:\n  Window: python color_advisor_app.py\n'
+            '  CLI:    python color_advisor_app.py "<address or listing link>"'
         )
