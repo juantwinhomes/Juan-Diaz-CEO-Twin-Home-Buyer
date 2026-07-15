@@ -144,8 +144,9 @@ def run_cli(query):
     claude_bin = find_claude()
     if not claude_bin:
         sys.exit(
-            "Error: the 'claude' CLI was not found. Install Claude Code first: "
-            "https://claude.com/claude-code"
+            "Error: Claude Code is not installed. In PowerShell run:\n"
+            "  irm https://claude.ai/install.ps1 | iex\n"
+            "then reopen PowerShell, run 'claude' to log in once, and retry."
         )
     print(f"Researching {query} ...", file=sys.stderr)
     report = analyze(query, claude_bin)
@@ -219,9 +220,15 @@ def run_gui():
         claude_bin = find_claude()
         if not claude_bin:
             messagebox.showerror(
-                "Color Advisor",
-                "The 'claude' CLI was not found.\n\nInstall Claude Code and log in "
-                "first:\nhttps://claude.com/claude-code",
+                "Color Advisor — one-time setup needed",
+                "Claude Code is not installed on this PC yet.\n\n"
+                "1. Open PowerShell (Start menu, type: powershell)\n"
+                "2. Paste this and press Enter:\n\n"
+                "   irm https://claude.ai/install.ps1 | iex\n\n"
+                "3. Close PowerShell, open it again, type:  claude\n"
+                "   Your browser opens - sign in with your Claude account\n"
+                "   (needs a Pro/Max/Team plan), then type:  /exit\n\n"
+                "4. Reopen this app. That's the whole login - you only do it once.",
             )
             return
         analyze_btn.config(state="disabled")
