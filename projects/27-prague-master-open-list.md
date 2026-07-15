@@ -24,7 +24,7 @@
 > • Tue/Wed: window cost + lead time to Juan → he approves → order windows,
 >   range, shower doors + file permits (kitchen cabinets + bathroom). Long-lead
 >   first so it doesn't blow the timeline.
-> • Cesar owns the site, Kristine runs the board; reviewed on the Sunday
+> • Cesar owns the site + purchasing/ordering (compras, per Juan 7/15), Kristine runs the board; reviewed on the Sunday
 >   dashboard. Only ask of Juan: OK the window order next week. Nothing today.
 
 ## 🔑 ACCESS — SELLER OUT MONDAY 7/20 (updated 7/15)
