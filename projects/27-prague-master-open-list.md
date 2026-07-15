@@ -62,17 +62,19 @@ These are long-lead — order/file them BEFORE cosmetic work or the whole job sl
 
 ---
 
-## 🏠 EXTERIOR / OUTSIDE (Juan: "everything outside" + Yis's video)
-- ⬜ **Landscaping** — `[Yis][board]` — **still needs work per Yis's video.**
-- ⬜ **Wooden garage entrance door (the person/walk-in door)** — `[Yis]` — NOT
-  the vehicle garage door (that's installed ✅). This is the **wooden pedestrian
-  entry door** into the garage — still needs to be done.
-- ⬜ **Exterior painting** — `[Yis]` — *(Yis's video: "paning/planning" — reading
-  this as exterior painting. **Kristine/Cesar: confirm — painting? paneling?**)*
-- ⬜ Grass — `[board]` — confirm what's left
-- ✅ Bamboo Reed Fencing — `[board: Done]` — confirm rest of fencing/gates
-- ⬜ Driveway / walkways — concrete condition — `[add]`
-- ⬜ Roof / gutters, exterior lights, house numbers, front door, drainage — `[add]` — Cesar confirms on walk
+## 🏠 EXTERIOR / OUTSIDE — CESAR CONFIRMED, DUE MONDAY 7/20 (updated 7/15)
+Cesar's confirmed remaining exterior punch list (target: complete by Monday).
+Kristine tracks each to completion.
+- ⬜ Finish landscaping
+- ⬜ Finish planting
+- ⬜ Replace remaining rotten wood
+- ⬜ Finish both terraces / decks
+- ⬜ Finish leveling the concrete
+- ⬜ Finish the garage door
+- ⬜ Finish the (exterior) window work — *note: separate from the interior
+  window MEASUREMENT/ORDER, which happens Monday once we're inside*
+- (rolls up the earlier scaffold: garage cement = "leveling the concrete";
+  landscaping/planting/grass; garage door; window work)
 
 ## 🚗 GARAGE (Juan flagged)
 - ⬜ **Garage cement / concrete floor** — `[Juan]` — repair/pour/finish
