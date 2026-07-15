@@ -10,6 +10,23 @@
 
 ---
 
+## ✉️ FINAL UPDATE SENT TO JUAN (7/15)
+> The hold-up isn't the windows — the seller is still in the house, so we can't
+> measure inside or start interior work. He's out **Monday 7/20** on his own, so
+> nothing for Juan to negotiate.
+>
+> Plan:
+> • Now–Monday: Cesar does the full OUTSIDE punch list (landscaping, garage
+>   cement, garage window, wooden garage entry door, exterior paint, driveway)
+>   — no access needed.
+> • Mon 7/20 (seller out): Cesar + window vendor measure everything inside in
+>   ONE visit — windows, cabinets, bath.
+> • Tue/Wed: window cost + lead time to Juan → he approves → order windows,
+>   range, shower doors + file permits (kitchen cabinets + bathroom). Long-lead
+>   first so it doesn't blow the timeline.
+> • Cesar owns the site, Kristine runs the board; reviewed on the Sunday
+>   dashboard. Only ask of Juan: OK the window order next week. Nothing today.
+
 ## 🔑 ACCESS — SELLER OUT MONDAY 7/20 (updated 7/15)
 Property is still occupied; **seller has not moved out yet but is out by Monday
 7/20.** Interior can't be measured or worked until then — we only have exterior/
