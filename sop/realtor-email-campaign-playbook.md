@@ -38,7 +38,8 @@ a verdict. Channel gets judged at the 500-send gate below.
 | 4 | Bench juan@ from rotation | Seth | Free insurance on the most expensive inbox (see re-entry rule) |
 | 5 | Add 3 follow-ups — D3: "any listing needing a cash exit?" · D7: proof/case · D14: breakup | Twin drafts, Seth approves | Touches 2–4 are where replies live; one-touch = full risk, third of reward |
 | 6 | Assign reply owner: Carlo, 1-business-hour SLA, goal = book 10-min call | Carlo | Replies are perishable; conversion happens in reply handling |
-| 7 | Resume at 30/day from 4 accounts | Seth | Same volume, clean foundation |
+| 7 | Verify campaign schedule timezone (currently `America/Dawson` — should be explicit Pacific) | Seth | Don't let sends drift into bad hours (Juan's flag) |
+| 8 | **Controlled test batch:** resume with 50–100 verified leads across 4 senders, 30/day cap held | Seth | Real bounce + message read before committing the full 1,800 (Juan's D) |
 
 **juan@ re-entry rule:** back in rotation after 3 consecutive days of 100%
 warmup inbox placement (was 3/7 spam on Jul 15, health 89%). If spam placement
@@ -46,7 +47,11 @@ recurs, the bench was a real catch; if not, it's back by Friday at zero cost.
 
 ## Decision gates (no spend until earned)
 
-- **At 500 clean sends with follow-ups live (~4–6 weeks):**
+- **Test-batch gates (Juan's, govern the 50–100 lead relaunch):** bounce must be
+  <2% on the cleaned list; if bounce is clean but replies are still 0 after
+  ~150–200 verified sends → revisit messaging/positioning with real data. Do
+  NOT rewrite copy before then — messaging is unproven, not disproven.
+- **Scale gates (govern the full-list rollout), at 500 clean sends with follow-ups live (~4–6 weeks):**
   - **Scale trigger:** ≥2% reply rate AND ≥5 real agent conversations (or 1
     referred deal) → buy 2 lookalike sending domains (~$50), move all cold
     volume off twinhomebuyer.com permanently, scale to 100–150/day.
@@ -59,6 +64,14 @@ recurs, the bench was a real catch; if not, it's back by Friday at zero cost.
 
 `sent → real replies (manually verified) → conversations → referred deals → $`
 Never trust Instantly's auto-counts — verify replies by hand (learned Jul 15).
+
+## Source of truth note (Jul 15)
+
+Juan's own analysis (run separately) reached the same call — pause, verify,
+small clean test, no messaging rewrite, no scaling — from an earlier snapshot
+(60 sends / 3 bounces / 5%). Live Instantly numbers are worse: 100 sends /
+10 bounces / 10%. Use the live API pull as the single source of truth for the
+Monday dashboard.
 
 ## Open questions
 
