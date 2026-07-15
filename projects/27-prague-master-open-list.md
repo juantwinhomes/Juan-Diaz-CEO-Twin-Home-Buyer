@@ -10,7 +10,33 @@
 
 ---
 
-## ✉️ FINAL UPDATE SENT TO JUAN (7/15)
+## ⚠️ MAJOR CONTEXT UPDATE (7/15 PM) — read this first
+
+**Ownership handoff (Juan, "crystal clear" message):** Juan is **stepping away
+from the construction side** — no babysitting, no chasing updates.
+- **Cesar owns BOTH projects** and is running point — he makes the rotation /
+  resource call and owns timelines, measurements, pricing, purchasing, execution.
+- **Kristine owns the office side** — punch-list tracker, permits coordination,
+  updates to Juan.
+- **Juan's only asks:** an honest go/no-go on 27th, clear timelines + resource
+  allocation on both, and the rotation decision (from Cesar).
+
+**TWO separate projects — do not conflate:**
+| | **Prague St (San Mateo)** | **751 San Mateo (27th Ave)** |
+|---|---|---|
+| Deadline | **Exterior done by Monday 7/20** | Wrap ~**Thursday 7/23**, then rotate to Prague |
+| Crew | Yiss + Jose (outside push) | Cesar + Luis + Jaime Lopez |
+| Pending | Exterior punch list; interior opens Mon (seller out) | Plants, mulch, paint, touch-ups, **final electric permit** |
+| Out of our control | Windows lead time (order after Mon measure) | **Deliveries: garage door, shower enclosures, range** |
+| Permits | Kitchen cabinets + bathroom (via Stuart's plans) | Final electric permit |
+
+**CORRECTION:** the **range** and **shower doors** are **751 / 27th Ave**
+pending deliveries — NOT Prague. Juan cited them as *examples* of long-lead
+delays. **Prague's confirmed long-lead item is WINDOWS**; Prague's interior
+appliance/fixture scope (which may or may not include a range/shower doors) is
+TBD until Monday's interior walk.
+
+## ✉️ (SUPERSEDED) EARLIER PRAGUE-ONLY UPDATE TO JUAN (7/15)
 > The hold-up isn't the windows — the seller is still in the house, so we can't
 > measure inside or start interior work. He's out **Monday 7/20** on his own, so
 > nothing for Juan to negotiate.
@@ -52,13 +78,14 @@ the day we get inside.
 close occupancy agreement, check for a hard date + per-diem if he slips. Assign
 who verifies the seller is actually out Monday.
 
-## ⭐ THE 4 THINGS THAT DECIDE THE TIMELINE (do these first)
-These are long-lead — order/file them BEFORE cosmetic work or the whole job slips.
+## ⭐ PRAGUE LONG-LEAD / TIMELINE DRIVERS (do these first)
+Order/file BEFORE cosmetic work or the whole job slips.
 
-1. ⏳ **Windows** — `[board: Stand by]` — get price + lead time → Juan says order/no. **This drives everything.**
-2. ⬜ **Range** — `[Juan]` — pull out of generic "Appliances," measure, order.
-3. ⬜ **Shower doors** — `[Juan]` — measure, order (the delay lesson).
-4. ⬜ **Permits: kitchen cabinets + bathroom** — `[Juan]` — file now; city approval time is long-lead.
+1. ⏳ **Windows** — measure inside Monday → get price + lead time → Cesar orders (Juan OKs cost). **This drives Prague's timeline.**
+2. ⬜ **Permits: kitchen cabinets + bathroom** — via Stuart's plans; approval time is long-lead, start now.
+3. ⬜ **Interior appliance/fixture scope** — TBD at Monday's walk (may include a range / shower doors for Prague — confirm on site; don't assume).
+
+> NOTE: range + shower doors currently pending are on **751 / 27th Ave**, not Prague.
 
 ---
 
