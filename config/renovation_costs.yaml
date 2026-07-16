@@ -1,0 +1,24 @@
+# Bay Area renovation cost model. All figures are estimates for underwriting,
+# not bids. Update these from actual Twin Home Buyer job costs (the learning loop).
+
+# $/sqft by scope. Scope is chosen from listing-language evidence.
+per_sqft:
+  cosmetic: 65        # paint, floors, fixtures, light landscaping
+  moderate: 110       # kitchen + baths, some systems
+  heavy: 175          # full interior renovation, layout changes, most systems
+  gut: 250            # down-to-studs, structural work, additions
+
+# Uncertainty band applied around the point estimate.
+range_pct: 0.20
+
+# Big-ticket adders (flat $) applied when the specific problem is evidenced.
+adders:
+  foundation: 60000
+  fire_damage: 80000
+  roof: 30000
+  sewer_lateral: 15000
+  water_damage: 25000
+  unpermitted_legalization: 30000
+
+# When there is no interior access / no photos, assume at least this scope.
+unknown_condition_min_scope: heavy

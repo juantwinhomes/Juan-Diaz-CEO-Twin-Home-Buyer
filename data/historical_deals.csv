@@ -1,0 +1,2 @@
+address,city,state,zip,outcome,original_asking_price,contract_price,rehab_budget,final_rehab_cost,holding_months,final_resale_price,net_profit,problems_encountered,why_juan_liked_or_disliked,notes
+864 Kathryne Ave,San Mateo,CA,94401,reference_case,898000,1200000,,,,,,"public records showed different bed/bath counts; repair scope unavailable","single-story ranch, corner lot, open great room, 4bd/3ba, strong resale neighborhood, renovated comps $1.48M-$1.85M","Reference pattern: undervalued_bay_area_heavy_fix. Fill in actuals if Twin Home Buyer transacts on it."

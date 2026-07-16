@@ -1,0 +1,43 @@
+# Target markets and hard property filters.
+# Listings failing a hard filter are rejected before scoring.
+
+target_markets:
+  - city: San Mateo
+    state: CA
+  - city: Redwood City
+    state: CA
+  - city: San Carlos
+    state: CA
+  - city: Belmont
+    state: CA
+  - city: Burlingame
+    state: CA
+  - city: Millbrae
+    state: CA
+  - city: South San Francisco
+    state: CA
+  - city: Daly City
+    state: CA
+
+hard_filters:
+  property_types: [single_family]      # only SFR for now
+  min_sqft: 1100
+  min_beds: 3
+  max_beds: 5
+  max_listing_price: 2000000           # acquisition budget ceiling
+  min_listing_price: 300000            # below this something is wrong with the data
+  exclude_hoa: true                    # skip properties with meaningful HOA restrictions
+
+# Listings whose remarks scream turnkey are dropped before scoring
+# unless they also show a pricing anomaly.
+retail_ready_phrases:
+  - fully remodeled
+  - completely renovated
+  - turnkey
+  - turn-key
+  - move-in ready
+  - move in ready
+  - designer finishes
+  - brand new kitchen
+  - newly renovated
+  - stunning remodel

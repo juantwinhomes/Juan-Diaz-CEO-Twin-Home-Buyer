@@ -1,0 +1,32 @@
+# Deal-math assumptions. Every dollar of transaction cost lives here.
+# Changing these changes MAO and net profit for every property — human approval required.
+
+# Purchase price assumption: listing price is used as the expected purchase
+# price and is ALWAYS labeled as an assumption in output.
+purchase_price_assumption: listing_price
+
+holding_months: 6
+
+# Monthly holding costs
+property_tax_annual_pct: 0.0125     # of purchase price
+insurance_monthly: 350
+utilities_maintenance_monthly: 600
+
+# Financing (hard money / private lending profile)
+financing:
+  loan_to_cost: 0.85                # share of purchase + rehab that is financed
+  annual_rate: 0.105
+  points_pct: 0.015                 # of loan amount, paid up front
+
+# Closing costs
+buyer_closing_pct: 0.015            # of purchase price
+seller_closing_pct: 0.01            # of ARV
+commission_pct: 0.05                # of ARV
+
+# Renovation contingency
+contingency_pct_of_repairs: 0.15
+
+# Required profit: the larger of these two determines MAO
+required_profit:
+  pct_of_arv: 0.12
+  minimum: 120000

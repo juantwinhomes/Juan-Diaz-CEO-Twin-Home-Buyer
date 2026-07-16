@@ -1,0 +1,54 @@
+# The transparent 100-point opportunity score.
+# Component maximums must sum to 100. Risk penalties subtract after.
+
+weights:
+  financial_spread: 35        # net profit, ROI on total cost, ARV spread
+  distress_motivation: 20     # fixer/as-is/probate language, motivation signals
+  property_fundamentals: 15   # SFR, size, layout, garage, lot, expansion room
+  comp_confidence: 15         # comp count, proximity, recency, renovated support
+  market_liquidity: 10        # days on market, demand proxies
+  base_confidence: 5          # data completeness (all fields present and consistent)
+
+# Financial spread sub-targets (full points at or above these values)
+financial:
+  full_points_net_profit: 250000     # projected net profit that earns max points
+  min_viable_net_profit: 50000       # below this, financial score is 0
+  full_points_roi: 0.20              # return on total project cost
+  ppsf_discount_flag: 0.15           # listing PPSF >=15% below neighborhood median
+  ppsf_renovated_discount_flag: 0.25 # listing PPSF >=25% below renovated comp PPSF
+
+# Execution-risk penalties (points subtracted; cap total at -25)
+risk_penalties:
+  foundation: 10
+  fire_damage: 10
+  water_damage: 6
+  unpermitted: 6
+  tenant_occupied: 5
+  hillside: 6
+  flood_zone: 6
+  title_issues: 8
+  no_interior_access: 4
+  inconsistent_records: 4
+  low_comp_confidence: 8      # applied when comp confidence < 0.4
+max_total_risk_penalty: 25
+min_risk_penalty_when_any: 5  # any flagged risk costs at least this much
+
+score_bands:
+  - min: 90
+    label: immediate_acquisition_review
+    action: "Immediate acquisition review — alert Juan and the acquisitions team now"
+  - min: 80
+    label: call_agent_today
+    action: "Contact the listing agent today"
+  - min: 70
+    label: underwrite_manually
+    action: "Manual underwriting required"
+  - min: 60
+    label: watchlist
+    action: "Add to watchlist; recheck on price reduction or status change"
+  - min: 0
+    label: reject
+    action: "Reject"
+
+crm_export_min_score: 80
+alert_min_score: 90
