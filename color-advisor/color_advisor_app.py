@@ -162,6 +162,93 @@ write files, do NOT attach or send files, and do NOT reply with a summary or
 commentary — your response text IS the report."""
 
 
+GROK_KEY_FILE = Path.home() / ".color_advisor_grok_key"
+
+
+def load_grok_key():
+    import os
+    key = os.environ.get("XAI_API_KEY", "").strip()
+    if key:
+        return key
+    if GROK_KEY_FILE.exists():
+        return GROK_KEY_FILE.read_text().strip()
+    return ""
+
+
+def save_grok_key(key):
+    try:
+        GROK_KEY_FILE.write_text(key.strip())
+    except Exception:
+        pass
+
+
+def extract_render_prompt(report):
+    m = re.search(r"## AI render prompt\s*```[a-z]*\n(.*?)```", report, re.DOTALL)
+    return m.group(1).strip() if m else ""
+
+
+def grok_after_image(api_key, image_ref, prompt, out_path):
+    """Call xAI Grok image-edits API to repaint the listing photo.
+
+    image_ref: a public image URL, or a local file path (sent as data URI).
+    Saves the result PNG/JPG to out_path. Returns out_path.
+    """
+    import base64
+    import json
+    import urllib.request
+
+    ref = image_ref.strip()
+    if not ref.lower().startswith(("http://", "https://", "data:")):
+        f = Path(ref)
+        if not f.is_file():
+            raise RuntimeError(f"Photo not found: {ref}")
+        ext = f.suffix.lower().lstrip(".") or "jpeg"
+        if ext == "jpg":
+            ext = "jpeg"
+        ref = f"data:image/{ext};base64," + base64.b64encode(f.read_bytes()).decode()
+
+    body = json.dumps({
+        "model": "grok-imagine-image-quality",
+        "prompt": prompt,
+        "image": ref,
+        "response_format": "b64_json",
+    }).encode()
+    req = urllib.request.Request(
+        "https://api.x.ai/v1/images/edits",
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + api_key,
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            payload = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors="replace")[:500]
+        raise RuntimeError(f"Grok API error {e.code}: {detail}")
+    img = decode_grok_response(payload)
+    out_path.write_bytes(img)
+    return out_path
+
+
+def decode_grok_response(payload):
+    """Handle both b64_json and url response shapes."""
+    import base64
+    import urllib.request
+
+    data = (payload or {}).get("data") or []
+    if not data:
+        raise RuntimeError("Grok returned no image: " + str(payload)[:300])
+    item = data[0]
+    if item.get("b64_json"):
+        return base64.b64decode(item["b64_json"])
+    if item.get("url"):
+        with urllib.request.urlopen(item["url"], timeout=120) as r:
+            return r.read()
+    raise RuntimeError("Unrecognized Grok response shape: " + str(item)[:300])
+
+
 def find_claude():
     """Locate the claude CLI, checking common install paths too."""
     path = shutil.which("claude")
@@ -309,13 +396,18 @@ def strip_palette_block(report):
     return re.sub(r"## Palette\s*```palette.*?```\s*", "", report, flags=re.DOTALL).strip()
 
 
-def build_html(query, report, swatches):
+def build_html(query, report, swatches, after_img_name=None):
     chips = "".join(
         f'<div class="chip"><div class="color" style="background:{h}"></div>'
         f"<strong>{escape(el)}</strong><span>{escape(name)}</span><code>{h}</code></div>"
         for el, name, h in swatches
     )
     svg = house_svg(pick_colors(swatches)) if swatches else ""
+    after_html = (
+        f'<h3>AI "after" preview (Grok)</h3><img src="{escape(after_img_name)}" '
+        'style="max-width:100%;border-radius:8px" alt="AI after image">'
+        if after_img_name else ""
+    )
     body = escape(strip_palette_block(report))
     body = re.sub(
         r"(https?://[^\s\)\|<]+)",
@@ -338,20 +430,21 @@ def build_html(query, report, swatches):
 </style></head><body>
 <h1>Twin Home Buyer — Color Recommendation</h1>
 <h2>{escape(query)}</h2>
+{after_html}
 <div class="preview">{svg}</div>
 <div class="palette">{chips}</div>
 <pre>{body}</pre>
 </body></html>"""
 
 
-def save_report(query, report, swatches):
+def save_report(query, report, swatches, after_img_name=None):
     reports = Path("reports")
     reports.mkdir(exist_ok=True)
     stem = f"{slugify(query)}-{date.today().strftime('%Y%m%d')}"
     md = reports / f"{stem}.md"
     md.write_text(report + "\n", encoding="utf-8")
     html = reports / f"{stem}.html"
-    html.write_text(build_html(query, report, swatches), encoding="utf-8")
+    html.write_text(build_html(query, report, swatches, after_img_name), encoding="utf-8")
     return md, html
 
 
@@ -375,7 +468,7 @@ def analyze(query, claude_bin):
 # ---------------------------------------------------------------- CLI mode
 
 
-def run_cli(query):
+def run_cli(query, photo_ref=None):
     claude_bin = find_claude()
     if not claude_bin:
         sys.exit(
@@ -400,7 +493,23 @@ def run_cli(query):
         print("\nPalette:", file=sys.stderr)
         for el, name, h in swatches:
             print(f"  {el}: {name}  {h}", file=sys.stderr)
-    md, html = save_report(query, report, swatches)
+    after_name = None
+    grok_key = load_grok_key()
+    if photo_ref and grok_key:
+        print("Generating AI after-photo with Grok ...", file=sys.stderr)
+        stem = f"{slugify(query)}-{date.today().strftime('%Y%m%d')}"
+        out = Path("reports") / f"{stem}-after.png"
+        out.parent.mkdir(exist_ok=True)
+        rp = extract_render_prompt(report) or "Repaint this house's exterior using the recommended colors; change nothing else."
+        try:
+            grok_after_image(grok_key, photo_ref, rp, out)
+            after_name = out.name
+            print(f"AI after-photo: {out}", file=sys.stderr)
+        except Exception as e:
+            print(f"Grok after-photo failed: {e}", file=sys.stderr)
+    elif photo_ref:
+        print("No Grok key found (set XAI_API_KEY) — skipping AI photo.", file=sys.stderr)
+    md, html = save_report(query, report, swatches, after_name)
     print(f"\nReport saved: {md}", file=sys.stderr)
     print(f"Visual report (open in browser): {html}", file=sys.stderr)
 
@@ -442,6 +551,28 @@ def run_gui():
     entry.grid(row=2, column=0, sticky="we", pady=4)
     entry.focus()
     frm.columnconfigure(0, weight=1)
+
+    grok_bar = tk.Frame(frm)
+    grok_bar.grid(row=2, column=0, sticky="we", pady=(34, 0))
+    grok_bar.grid_remove()  # placeholder to keep row math simple
+
+    extras = tk.Frame(frm)
+    extras.grid(row=7, column=0, sticky="we", pady=(4, 0))
+    tk.Label(extras, text="Optional — AI after-photo (Grok):", fg="gray25").grid(
+        row=0, column=0, columnspan=4, sticky="w"
+    )
+    tk.Label(extras, text="xAI API key:").grid(row=1, column=0, sticky="w")
+    grok_key_var = tk.StringVar(value=load_grok_key())
+    tk.Entry(extras, textvariable=grok_key_var, show="*", width=32).grid(
+        row=1, column=1, sticky="we", padx=6
+    )
+    tk.Label(extras, text="Listing photo URL or file:").grid(row=1, column=2, sticky="w")
+    photo_var = tk.StringVar()
+    tk.Entry(extras, textvariable=photo_var, width=36).grid(
+        row=1, column=3, sticky="we", padx=6
+    )
+    extras.columnconfigure(1, weight=1)
+    extras.columnconfigure(3, weight=2)
 
     btn_bar = tk.Frame(frm)
     btn_bar.grid(row=3, column=0, pady=6)
@@ -572,13 +703,36 @@ def run_gui():
     open_html_btn.config(command=on_open_html)
 
     # --- analysis ---------------------------------------------------------
-    def worker(query, claude_bin):
+    def worker(query, claude_bin, grok_key, photo_ref):
         try:
             report = analyze(query, claude_bin)
             swatches = parse_palette(report)
-            md, html = save_report(query, report, swatches)
+            after_name = None
+            grok_err = None
+            if grok_key and photo_ref:
+                root.after(0, lambda: status_var.set(
+                    "Report done — generating AI after-photo with Grok..."))
+                try:
+                    stem = f"{slugify(query)}-{date.today().strftime('%Y%m%d')}"
+                    out = Path("reports") / f"{stem}-after.png"
+                    out.parent.mkdir(exist_ok=True)
+                    rp = extract_render_prompt(report) or (
+                        "Repaint this house's exterior using the recommended colors; "
+                        "change nothing else."
+                    )
+                    grok_after_image(grok_key, photo_ref, rp, out)
+                    after_name = out.name
+                    save_grok_key(grok_key)
+                except Exception as ge:
+                    grok_err = str(ge)
+            md, html = save_report(query, report, swatches, after_name)
 
             def done():
+                if grok_err:
+                    messagebox.showwarning(
+                        "Grok after-photo failed",
+                        "The report is ready, but the AI photo failed:\n\n" + grok_err,
+                    )
                 render_palette(swatches)
                 output.delete("1.0", "end")
                 output.insert("1.0", strip_palette_block(report))
@@ -612,7 +766,9 @@ def run_gui():
         output.delete("1.0", "end")
         render_palette([])
         threading.Thread(
-            target=worker, args=(query, state["claude_bin"]), daemon=True
+            target=worker,
+            args=(query, state["claude_bin"], grok_key_var.get().strip(), photo_var.get().strip()),
+            daemon=True,
         ).start()
 
     analyze_btn.config(command=on_analyze)
@@ -625,10 +781,13 @@ def run_gui():
 if __name__ == "__main__":
     if len(sys.argv) == 2:
         run_cli(sys.argv[1])
+    elif len(sys.argv) == 3:
+        run_cli(sys.argv[1], sys.argv[2])
     elif len(sys.argv) == 1:
         run_gui()
     else:
         sys.exit(
             'Usage:\n  Window: python color_advisor_app.py\n'
-            '  CLI:    python color_advisor_app.py "<address or listing link>"'
+            '  CLI:    python color_advisor_app.py "<address>" [photo URL or file]\n'
+            '  (set XAI_API_KEY for the optional Grok AI after-photo)'
         )
