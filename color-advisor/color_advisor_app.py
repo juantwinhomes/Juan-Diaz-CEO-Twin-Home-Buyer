@@ -31,6 +31,8 @@ TRENDS = "# 2026 Exterior Color Trends — Flip Decision Guide\n\nResearched Jul
 
 EXAMPLE = "# Sample Property Color Decision — Small Green Ranch (July 2026)\n\nWorked example of applying `2026-color-trends.md` to a real property photo.\nKeep this format for future property color calls.\n\n## Property read (fixed elements first)\n\n- Small single-story ranch/bungalow, shingle siding, dated pale celery-mint\n  green with white trim; street-facing garage with matching mint door.\n- Light gray composition roof + warm gray concrete driveway → cool/neutral\n  fixed elements → green-gray family over khaki/beige.\n- Mature landscaping (boxwood hedges, lawn, weeping birch) → supports a green\n  body color.\n- Street comps: cream/brick house on one side, terracotta-orange on the other\n  → muted sage differentiates without being the odd house out.\n- Small footprint → mid-light body (small-house rule); deep tones door-only.\n\n## Decision\n\n| Element | Color | Rationale |\n|---|---|---|\n| Body/siding | Evergreen Fog SW 9130 | 2026 ranch sweet spot; suits gray roof + mature landscaping; modernizes existing green character |\n| Trim/fascia | Alabaster SW 7008 | Creamy warm white, not stark |\n| Garage door | Body color (Evergreen Fog) | Street-facing door must recede, not accent |\n| Front door | Warm black / Urbane Bronze SW 7048 (alt: navy for resale data) | Single accent moment |\n| Fixtures/numbers | Matte black | Current, ties to door |\n| Picket fence | Fresh Alabaster or remove | Weathered fence drags the frontage |\n\nRunner-up scheme: Universal Khaki SW 6150 body + Alabaster trim + black door\n(max-safety neutral) — rejected here because the lot's landscaping and the\norange neighbor make the sage work harder.\n\n## Reusable rules confirmed by this example\n\n1. Street-facing garage doors get the body color, never an accent.\n2. Mature landscaping → green family; bare lot → warm neutral.\n3. Small house → mid-light body, accent saved for the door.\n4. Always check both neighbors before committing a body color.\n5. Note the free wins in every assessment (power-wash, fence paint, debris).\n"
 
+STRATEGY = '# Palette Purchasing Strategy — built from EQUITY TRACK\'s own HD data\n\nDerived from `data/purchase-history-2024-2026.csv` (order-level; see\ndata-limits note at bottom). Companion to `2026-color-trends.md` and\n`purchase-history-knowledge.md`.\n\n## What the purchase data shows\n\n| Pattern | Number | Meaning |\n|---|---|---|\n| Returns | **810 transactions, -$95,499** (21% of all transactions) | Heavy over-buy-and-return churn — trips, restocking risk, price-protection losses |\n| Small runs | 634 purchases under $100 ($33k) | Truck-run tax: labor hours spent on sub-$100 store trips |\n| Median order | $195 | Buying is reactive/as-needed, not staged |\n| Spend curve | 69% of project spend in the FIRST third, only 10% in the final third | Finish materials (paint included) are bought late, small, and piecemeal |\n| Orders per project | avg 48 per flip | ~48 separate buying events per property |\n| Online share | 6% | Almost everything is in-store trips |\n\n## The strategy: standardize the palette, then buy it like inventory\n\nBecause EQUITY TRACK runs ~20+ flips/year with a $12.4k median HD materials\nbudget each, a **fixed company palette** turns paint from a per-house custom\ndecision into a repeatable SKU list:\n\n### 1. The standard EQUITY TRACK exterior palette (from the 2026 framework)\n\n| Role | Primary | Alternate (warm-roof houses) |\n|---|---|---|\n| Body A (green-gray) | Evergreen Fog SW 9130 / Behr match | — |\n| Body B (warm neutral) | Universal Khaki SW 6150 / Behr match | Balboa Mist (greige) |\n| Body C (cottage) | Sea Salt SW 6204 / Behr "Softened Green" PPU10-14 | — |\n| Trim (always) | Alabaster SW 7008 / Behr "Swiss Coffee" #12 | — |\n| Door accent | Naval SW 6244 or Urbane Bronze SW 7048 | — |\n| Fixtures | Matte black | — |\n\nThe color-advisor app picks WHICH body color per property; the SKUs stay\nconstant. Three body colors + one trim + two doors covers ~every flip.\n\n### 2. Buying rules the palette enables\n\n- **Stage one finish order per project** instead of piecemeal: when a\n  project enters its final third, place ONE consolidated order (paint from\n  the standard palette + the app\'s shopping list). Target: cut the ~48\n  orders/project meaningfully.\n- **Buy trim paint in bulk**: Alabaster/Swiss Coffee is on every house —\n  buy 5-gal buckets on Pro pricing, hold 2-3 in inventory; it never\n  strands (next flip always uses it).\n- **Order online for pickup** (only 6% today): consolidating to known SKUs\n  makes online ordering trivial and kills small store runs.\n- **Attack the return rate**: standard SKUs mean leftover paint transfers\n  to the next project instead of going back to the store. Target returns\n  under 10% of transactions (from 21%).\n- Keep coding tools separately ("pps tools") and ALWAYS enter the job name\n  (25% of historic spend is unattributed).\n\n### 3. What this is worth (rough)\n\n- Returns churn: even halving the -$95k/31mo return flow saves labor and\n  price-protection leakage worth thousands/yr.\n- 634 sub-$100 runs ≈ hundreds of crew-hours; consolidated staging\n  reclaims most of them.\n- Bulk 5-gal trim + Pro-desk quotes on staged orders: typically 10-20%\n  under shelf on paint.\n\n## Data limits — what we still can\'t see\n\nThe current export is ORDER-level: dates, jobs, totals — **no SKUs, no\nproduct names, no paint colors**. To analyze what was actually ordered\n(brands, colors, quantities), export the ITEM-level history: Home Depot\nPro Xtra → Purchase Tracking → include item detail / itemized receipts.\nOnce provided, update this file with: actual paint spend share, brands\nbought, and whether current buying already clusters around any colors.\n'
+
 INSTALL_HELP = (
     "Claude Code is not installed on this PC yet.\n\n"
     "1. Open PowerShell (Start menu, type: powershell)\n"
@@ -71,6 +73,9 @@ trained 2026 framework below, exactly as written.
 === WORKED EXAMPLE (follow this rigor) ===
 {example}
 
+=== COMPANY PALETTE & PURCHASING STRATEGY (EQUITY TRACK standard) ===
+{strategy}
+
 === YOUR TASK ===
 Produce a markdown report with exactly these sections:
 
@@ -85,9 +90,21 @@ neighborhood. Only state facts you actually found — never invent.
 A table: Element | Color (name + code + approx hex) | Rationale.
 Cover body/siding, trim, garage door (if street-facing: body color rule),
 front door, fixtures/numbers.
+IMPORTANT: choose the body color from the COMPANY STANDARD PALETTE
+(Body A: Evergreen Fog / Body B: Universal Khaki / Body C: Sea Salt),
+trim is ALWAYS Alabaster, door is Naval or Urbane Bronze — deviate only if
+a confirmed fixed element forces it, and say why.
 
 ## Runner-up
-One alternative scheme and why it lost.
+One alternative scheme (also from the standard palette) and why it lost.
+
+## Budget check
+Estimate the total paint + supplies cost for this property from the
+shopping list quantities and typical Home Depot pricing. Then put it in
+company context: EQUITY TRACK's median TOTAL Home Depot materials budget
+per flip is $12,406 (mean $16,024) — state what share of a typical
+project budget this paint job represents, and flag if the property's size
+makes it likely to run above the company median.
 
 ## Verify before painting
 Since you worked from listing data rather than viewing photos, list the 2-3
@@ -108,6 +125,11 @@ Format as a table: Item | Product | Qty | Link — where Link is a Home Depot
 search URL of the form https://www.homedepot.com/s/behr%20marquee%20exterior%20satin
 (URL-encode the query; use specific queries per product). Do not invent
 direct product-page URLs — search URLs only.
+Apply the company purchasing rules: trim paint (Alabaster/Swiss Coffee) in
+5-gallon buckets — note "pull from standing inventory if available"; frame
+the list as ONE consolidated finish-phase order for online pickup, not
+multiple store runs; remind to enter the job name (property address) at
+checkout so spend is attributed.
 
 ## Palette
 A machine-readable palette of the RECOMMENDED scheme, one line per element,
@@ -275,7 +297,7 @@ def save_report(query, report, swatches):
 
 def analyze(query, claude_bin):
     """Run the web-research analysis through the Claude Code CLI."""
-    prompt = PROMPT_TEMPLATE.format(query=query, trends=TRENDS, example=EXAMPLE)
+    prompt = PROMPT_TEMPLATE.format(query=query, trends=TRENDS, example=EXAMPLE, strategy=STRATEGY)
     result = subprocess.run(
         [claude_bin, "-p", prompt, "--allowedTools", "WebSearch,WebFetch"],
         capture_output=True,
