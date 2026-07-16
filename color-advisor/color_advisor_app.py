@@ -33,6 +33,102 @@ EXAMPLE = "# Sample Property Color Decision — Small Green Ranch (July 2026)\n\
 
 STRATEGY = '# Palette Purchasing Strategy — built from EQUITY TRACK\'s own HD data\n\nDerived from `data/purchase-history-2024-2026.csv` (order-level; see\ndata-limits note at bottom). Companion to `2026-color-trends.md` and\n`purchase-history-knowledge.md`.\n\n## What the purchase data shows\n\n| Pattern | Number | Meaning |\n|---|---|---|\n| Returns | **810 transactions, -$95,499** (21% of all transactions) | Heavy over-buy-and-return churn — trips, restocking risk, price-protection losses |\n| Small runs | 634 purchases under $100 ($33k) | Truck-run tax: labor hours spent on sub-$100 store trips |\n| Median order | $195 | Buying is reactive/as-needed, not staged |\n| Spend curve | 69% of project spend in the FIRST third, only 10% in the final third | Finish materials (paint included) are bought late, small, and piecemeal |\n| Orders per project | avg 48 per flip | ~48 separate buying events per property |\n| Online share | 6% | Almost everything is in-store trips |\n\n## The strategy: standardize the palette, then buy it like inventory\n\nBecause EQUITY TRACK runs ~20+ flips/year with a $12.4k median HD materials\nbudget each, a **fixed company palette** turns paint from a per-house custom\ndecision into a repeatable SKU list:\n\n### 1. The standard EQUITY TRACK exterior palette (from the 2026 framework)\n\n| Role | Primary | Alternate (warm-roof houses) |\n|---|---|---|\n| Body A (green-gray) | Evergreen Fog SW 9130 / Behr match | — |\n| Body B (warm neutral) | Universal Khaki SW 6150 / Behr match | Balboa Mist (greige) |\n| Body C (cottage) | Sea Salt SW 6204 / Behr "Softened Green" PPU10-14 | — |\n| Trim (always) | Alabaster SW 7008 / Behr "Swiss Coffee" #12 | — |\n| Door accent | Naval SW 6244 or Urbane Bronze SW 7048 | — |\n| Fixtures | Matte black | — |\n\nThe color-advisor app picks WHICH body color per property; the SKUs stay\nconstant. Three body colors + one trim + two doors covers ~every flip.\n\n### 2. Buying rules the palette enables\n\n- **Stage one finish order per project** instead of piecemeal: when a\n  project enters its final third, place ONE consolidated order (paint from\n  the standard palette + the app\'s shopping list). Target: cut the ~48\n  orders/project meaningfully.\n- **Buy trim paint in bulk**: Alabaster/Swiss Coffee is on every house —\n  buy 5-gal buckets on Pro pricing, hold 2-3 in inventory; it never\n  strands (next flip always uses it).\n- **Order online for pickup** (only 6% today): consolidating to known SKUs\n  makes online ordering trivial and kills small store runs.\n- **Attack the return rate**: standard SKUs mean leftover paint transfers\n  to the next project instead of going back to the store. Target returns\n  under 10% of transactions (from 21%).\n- Keep coding tools separately ("pps tools") and ALWAYS enter the job name\n  (25% of historic spend is unattributed).\n\n### 3. What this is worth (rough)\n\n- Returns churn: even halving the -$95k/31mo return flow saves labor and\n  price-protection leakage worth thousands/yr.\n- 634 sub-$100 runs ≈ hundreds of crew-hours; consolidated staging\n  reclaims most of them.\n- Bulk 5-gal trim + Pro-desk quotes on staged orders: typically 10-20%\n  under shelf on paint.\n\n## Data limits — what we still can\'t see\n\nThe current export is ORDER-level: dates, jobs, totals — **no SKUs, no\nproduct names, no paint colors**. To analyze what was actually ordered\n(brands, colors, quantities), export the ITEM-level history: Home Depot\nPro Xtra → Purchase Tracking → include item detail / itemized receipts.\nOnce provided, update this file with: actual paint spend share, brands\nbought, and whether current buying already clusters around any colors.\n'
 
+INTERIOR_FRAMEWORK = """EQUITY TRACK interior flip framework (2026):
+- Fixed elements first: floor tone (warm oak / gray LVP / tile), countertop
+  undertones, existing tile. The wall color must flatter what is NOT being
+  replaced in a like-for-like remodel.
+- ONE wall color for the whole house (flip rule — speed, touch-ups, flow):
+  Option A (bright/small/darker homes): Alabaster SW 7008 (~#EDEAE0)
+  Option B (warm floors, larger homes): Accessible Beige SW 7036 (~#D1C7B8)
+  Option C (gray LVP / cool floors): Agreeable Gray SW 7029 (~#D1CBC1)
+- Trim, doors, ceilings: Pure White SW 7005 (~#F2F0EA), semi-gloss trim,
+  flat ceiling. Same white everywhere.
+- Kitchen: cabinets Pure White; island or lower-cabinet accent allowed in
+  Evergreen Fog SW 9130 (~#95978A) when counters are neutral.
+- Bath: vanity accent Naval SW 6244 (~#1F3A5F) or Evergreen Fog; walls same
+  whole-house neutral.
+- Hardware/fixtures: matte black or brushed nickel — one finish per house.
+- 2026 direction: warm neutrals over stark white; buyers respond to bright,
+  warm, listing-photo-friendly rooms. No accent walls in flips.
+"""
+
+BACKYARD_FRAMEWORK = """EQUITY TRACK backyard/landscape framework (from the company palette):
+- Fences & planter boxes: redwood tone — stain to match ~#96522E/#A65E38
+  (semi-transparent redwood stain). Never gray/weathered in the after look.
+- Decks: same redwood-family semi-transparent stain.
+- Ground: dark brown bark mulch (~#3E2C20), 2-3 inches, sharp spade edges.
+- Grass: small, defined patches only (~#4E8A3C) — low-water, not big lawns.
+- Rock: AVOID rock borders around mulch or paths (company rule). A single
+  low rock row around a small grass patch is the maximum.
+- Plants: layered drought-tolerant — evergreen structure (~#2F4A2E),
+  lavender color pop (~#8B7FC7), silver-green succulents (~#8FA88C).
+- Painted exterior elements visible from yard (pergolas, sheds, gates):
+  body color of the house scheme or Alabaster trim white; matte black
+  hardware and light fixtures.
+- Concrete: clean/power-washed, natural — never painted.
+"""
+
+PHOTO_PROMPT_TEMPLATE = """You are the color advisor for Twin Home Buyer, a house-flipping business.
+
+Project: {query}
+Area: {area}
+Photos on disk (use the Read tool to view EVERY one before deciding):
+{photo_list}
+
+Look at the photos carefully, identify the fixed elements that stay in a
+like-for-like flip remodel, then decide the best color scheme for this {area}
+by applying the framework below exactly.
+
+=== FRAMEWORK (source of truth) ===
+{framework}
+
+=== YOUR TASK ===
+Produce a markdown report with exactly these sections:
+
+# Color Recommendation — {query} ({area})
+
+## What I see
+Bullet what the photos actually show: room/space type, fixed elements
+(floors, counters, tile, fencing, concrete, plants), condition, light
+levels. Only describe what is visible.
+
+## Recommended scheme
+A table: Element | Color (name + code + approx hex) | Rationale.
+Cover every paintable/stainable element visible in the photos.
+Choose ONLY from the framework options unless a fixed element forces
+otherwise (then say why).
+
+## Runner-up
+One alternative and why it lost.
+
+## Budget check
+Estimate paint/stain + supplies cost from what is visible. Context:
+EQUITY TRACK's median TOTAL Home Depot materials budget per flip is
+$12,406 — state what share this represents.
+
+## Home Depot shopping list
+Table: Item | Product (Behr/Home Depot equivalents, note in-store
+color-match to SW codes) | Qty | Link (homedepot.com search URLs only,
+URL-encoded). One consolidated order; job name at checkout reminder.
+
+## AI render prompt
+A paste-ready fenced code block for an AI image tool: keep the space,
+structure and layout exactly as photographed; change ONLY the specified
+paint/stain colors to the exact hex values of the recommended scheme.
+
+## Palette
+A machine-readable palette of the RECOMMENDED scheme in a fenced block
+exactly like:
+
+```palette
+Walls|Alabaster SW 7008|#EDEAE0
+Trim|Pure White SW 7005|#F2F0EA
+```
+
+OUTPUT FORMAT — critical: your entire final response must be the raw
+markdown report starting with the "# Color Recommendation" heading. No
+files, no commentary — the response text IS the report."""
+
 INSTALL_HELP = (
     "Claude Code is not installed on this PC yet.\n\n"
     "1. Open PowerShell (Start menu, type: powershell)\n"
@@ -448,11 +544,28 @@ def save_report(query, report, swatches, after_img_name=None):
     return md, html
 
 
-def analyze(query, claude_bin):
-    """Run the web-research analysis through the Claude Code CLI."""
-    prompt = PROMPT_TEMPLATE.format(query=query, trends=TRENDS, example=EXAMPLE, strategy=STRATEGY)
+def build_prompt(query, mode, photos=None):
+    if mode == "exterior":
+        return (
+            PROMPT_TEMPLATE.format(query=query, trends=TRENDS, example=EXAMPLE, strategy=STRATEGY),
+            "WebSearch,WebFetch",
+        )
+    area = "interior" if mode == "interior" else "backyard"
+    framework = INTERIOR_FRAMEWORK if mode == "interior" else BACKYARD_FRAMEWORK
+    photo_list = "\n".join(f"- {Path(ph).resolve()}" for ph in (photos or []))
+    return (
+        PHOTO_PROMPT_TEMPLATE.format(
+            query=query, area=area, photo_list=photo_list, framework=framework
+        ),
+        "Read",
+    )
+
+
+def analyze(query, claude_bin, mode="exterior", photos=None):
+    """Run the analysis through the Claude Code CLI."""
+    prompt, tools = build_prompt(query, mode, photos)
     result = subprocess.run(
-        [claude_bin, "-p", prompt, "--allowedTools", "WebSearch,WebFetch"],
+        [claude_bin, "-p", prompt, "--allowedTools", tools],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -543,21 +656,64 @@ def run_gui():
     check_btn = tk.Button(login_bar, text="Check login", state="disabled")
     check_btn.pack(side="right")
 
-    tk.Label(
-        frm, text="Property address — or paste a Zillow / Redfin / Google Maps link:"
-    ).grid(row=1, column=0, sticky="w")
+    mode_bar = tk.Frame(frm)
+    mode_bar.grid(row=1, column=0, sticky="w", pady=(0, 2))
+    mode_var = tk.StringVar(value="exterior")
+    query_label_var = tk.StringVar(
+        value="Property address — or paste a Zillow / Redfin / Google Maps link:"
+    )
+    photos_state = {"files": []}
+
+    def on_mode_change():
+        m = mode_var.get()
+        if m == "exterior":
+            query_label_var.set(
+                "Property address — or paste a Zillow / Redfin / Google Maps link:"
+            )
+            photo_bar.grid_remove()
+        else:
+            query_label_var.set("Property address or project name (labels the report):")
+            photo_bar.grid()
+
+    for text, val in (
+        ("Exterior (by address)", "exterior"),
+        ("Interior (upload photos)", "interior"),
+        ("Backyard (upload photos)", "backyard"),
+    ):
+        tk.Radiobutton(
+            mode_bar, text=text, value=val, variable=mode_var, command=on_mode_change
+        ).pack(side="left", padx=(0, 10))
+
+    tk.Label(frm, textvariable=query_label_var).grid(row=2, column=0, sticky="w")
     query_var = tk.StringVar()
     entry = tk.Entry(frm, textvariable=query_var)
-    entry.grid(row=2, column=0, sticky="we", pady=4)
+    entry.grid(row=3, column=0, sticky="we", pady=4)
     entry.focus()
     frm.columnconfigure(0, weight=1)
 
-    grok_bar = tk.Frame(frm)
-    grok_bar.grid(row=2, column=0, sticky="we", pady=(34, 0))
-    grok_bar.grid_remove()  # placeholder to keep row math simple
+    photo_bar = tk.Frame(frm)
+    photo_bar.grid(row=4, column=0, sticky="we", pady=(0, 2))
+    photos_label_var = tk.StringVar(value="No photos selected.")
+
+    def browse_photos():
+        from tkinter import filedialog
+
+        picked = filedialog.askopenfilenames(
+            title="Choose photos of the space",
+            filetypes=[("Images", "*.jpg *.jpeg *.png *.webp"), ("All files", "*.*")],
+        )
+        if picked:
+            photos_state["files"] = list(picked)
+            names = ", ".join(Path(f).name for f in picked[:4])
+            more = f" +{len(picked)-4} more" if len(picked) > 4 else ""
+            photos_label_var.set(f"{len(picked)} photo(s): {names}{more}")
+
+    tk.Button(photo_bar, text="Choose photos...", command=browse_photos).pack(side="left")
+    tk.Label(photo_bar, textvariable=photos_label_var, fg="gray25").pack(side="left", padx=8)
+    photo_bar.grid_remove()
 
     extras = tk.Frame(frm)
-    extras.grid(row=7, column=0, sticky="we", pady=(4, 0))
+    extras.grid(row=9, column=0, sticky="we", pady=(4, 0))
     tk.Label(extras, text="Optional — AI after-photo (Grok):", fg="gray25").grid(
         row=0, column=0, columnspan=4, sticky="w"
     )
@@ -575,7 +731,7 @@ def run_gui():
     extras.columnconfigure(3, weight=2)
 
     btn_bar = tk.Frame(frm)
-    btn_bar.grid(row=3, column=0, pady=6)
+    btn_bar.grid(row=5, column=0, pady=6)
     analyze_btn = tk.Button(btn_bar, text="Get color recommendation", width=26, state="disabled")
     analyze_btn.pack(side="left", padx=4)
     open_html_btn = tk.Button(btn_bar, text="Open visual report", width=18, state="disabled")
@@ -583,12 +739,12 @@ def run_gui():
 
     status_var = tk.StringVar(value="")
     tk.Label(frm, textvariable=status_var, fg="gray25").grid(
-        row=4, column=0, sticky="w", pady=(0, 4)
+        row=6, column=0, sticky="w", pady=(0, 4)
     )
 
     # --- palette swatch panel ---------------------------------------------
     visual_bar = tk.Frame(frm)
-    visual_bar.grid(row=5, column=0, sticky="we", pady=(2, 6))
+    visual_bar.grid(row=7, column=0, sticky="we", pady=(2, 6))
     canvas = tk.Canvas(visual_bar, width=420, height=210, highlightthickness=0)
     canvas.pack(side="left", padx=(0, 10))
     palette_frame = tk.Frame(visual_bar)
@@ -618,10 +774,7 @@ def run_gui():
         canvas.create_text(6, 200, anchor="w", font=("Arial", 7),
                            text="Illustration of the scheme — not the actual house", fill="#3A362F")
 
-    def render_palette(swatches):
-        render_house(swatches)
-        for w in palette_frame.winfo_children():
-            w.destroy()
+    def render_chips(swatches):
         for el, name, h in swatches[:8]:
             chip = tk.Frame(palette_frame, bd=1, relief="solid")
             chip.pack(side="left", padx=5, pady=2)
@@ -632,9 +785,15 @@ def run_gui():
             tk.Label(chip, text=el, font=("Arial", 8, "bold"), wraplength=120).pack()
             tk.Label(chip, text=name, font=("Arial", 8), wraplength=120).pack()
 
+    def render_palette(swatches):
+        render_house(swatches)
+        for w in palette_frame.winfo_children():
+            w.destroy()
+        render_chips(swatches)
+
     output = scrolledtext.ScrolledText(frm, wrap="word", font=("Consolas", 10))
-    output.grid(row=6, column=0, sticky="nsew", pady=4)
-    frm.rowconfigure(6, weight=1)
+    output.grid(row=8, column=0, sticky="nsew", pady=4)
+    frm.rowconfigure(8, weight=1)
 
     # --- login verification ----------------------------------------------
     def set_login_state(ok, message):
@@ -703,9 +862,9 @@ def run_gui():
     open_html_btn.config(command=on_open_html)
 
     # --- analysis ---------------------------------------------------------
-    def worker(query, claude_bin, grok_key, photo_ref):
+    def worker(query, claude_bin, grok_key, photo_ref, mode, photos):
         try:
-            report = analyze(query, claude_bin)
+            report = analyze(query, claude_bin, mode, photos)
             swatches = parse_palette(report)
             after_name = None
             grok_err = None
@@ -733,7 +892,13 @@ def run_gui():
                         "Grok after-photo failed",
                         "The report is ready, but the AI photo failed:\n\n" + grok_err,
                     )
-                render_palette(swatches)
+                if mode == "exterior":
+                    render_palette(swatches)
+                else:
+                    canvas.delete("all")
+                    for w in palette_frame.winfo_children():
+                        w.destroy()
+                    render_chips(swatches)
                 output.delete("1.0", "end")
                 output.insert("1.0", strip_palette_block(report))
                 state["html_path"] = str(html)
@@ -755,19 +920,34 @@ def run_gui():
             messagebox.showwarning("Color Advisor", "Verify your Claude login first.")
             return
         query = query_var.get().strip()
+        mode = mode_var.get()
+        photos = photos_state["files"] if mode != "exterior" else None
         if not query:
             messagebox.showwarning(
-                "Color Advisor", "Paste the property address or listing link."
+                "Color Advisor",
+                "Paste the property address (or a project name for photo modes).",
             )
             return
+        if mode != "exterior" and not photos:
+            messagebox.showwarning(
+                "Color Advisor", "Choose at least one photo of the space first."
+            )
+            return
+        photo_ref = photo_var.get().strip()
+        if not photo_ref and photos:
+            photo_ref = photos[0]  # auto-use first uploaded photo for the Grok after-image
         analyze_btn.config(state="disabled")
         open_html_btn.config(state="disabled")
-        status_var.set("Researching the property on the web... (2-4 minutes)")
+        status_var.set(
+            "Researching the property on the web... (2-4 minutes)"
+            if mode == "exterior"
+            else "Studying your photos and picking colors... (1-3 minutes)"
+        )
         output.delete("1.0", "end")
         render_palette([])
         threading.Thread(
             target=worker,
-            args=(query, state["claude_bin"], grok_key_var.get().strip(), photo_var.get().strip()),
+            args=(query, state["claude_bin"], grok_key_var.get().strip(), photo_ref, mode, photos),
             daemon=True,
         ).start()
 
