@@ -131,6 +131,14 @@ the list as ONE consolidated finish-phase order for online pickup, not
 multiple store runs; remind to enter the job name (property address) at
 checkout so spend is attributed.
 
+## AI render prompt
+A paste-ready prompt Juan can use with any AI image tool (attaching the
+listing photo) to generate a photorealistic "after" image. Put it in a
+fenced code block. It must state: keep the house structure and photo
+unchanged except colors; repaint body/trim/garage/door with the exact hex
+values of the recommended scheme; matte black fixtures; bright daylight,
+real-estate listing photo style; no other alterations.
+
 ## Palette
 A machine-readable palette of the RECOMMENDED scheme, one line per element,
 inside a fenced code block exactly like this (accurate 6-digit hex for each
@@ -242,6 +250,55 @@ def parse_palette(report):
     return swatches
 
 
+def pick_colors(swatches):
+    """Map palette swatches to house parts with sensible fallbacks."""
+    c = {"body": "#B5A488", "trim": "#EDEAE0", "door": "#1F3A5F",
+         "garage": None, "fixtures": "#26221E"}
+    for el, _name, h in swatches:
+        e = el.lower()
+        if "body" in e or "siding" in e:
+            c["body"] = h
+        elif "trim" in e or "fascia" in e:
+            c["trim"] = h
+        elif "garage" in e:
+            c["garage"] = h
+        elif "door" in e:
+            c["door"] = h
+        elif "fixture" in e or "number" in e:
+            c["fixtures"] = h
+    if not c["garage"]:
+        c["garage"] = c["body"]
+    return c
+
+
+def house_svg(colors):
+    """Illustrated house preview painted in the recommended colors."""
+    b, t, d, g, f = (colors["body"], colors["trim"], colors["door"],
+                     colors["garage"], colors["fixtures"])
+    return f'''<svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" role="img">
+<rect width="560" height="300" fill="#DDE3DC"/>
+<rect y="235" width="560" height="65" fill="#4E8A3C"/>
+<polygon points="255,235 330,235 360,300 225,300" fill="#B3ADA0"/>
+<polygon points="60,110 300,110 280,60 80,60" fill="#8A8A85"/>
+<rect x="70" y="108" width="220" height="127" fill="{b}"/>
+<rect x="66" y="104" width="228" height="8" fill="{t}"/>
+<rect x="90" y="130" width="60" height="50" fill="#D8DEE2" stroke="{t}" stroke-width="5"/>
+<line x1="120" y1="130" x2="120" y2="180" stroke="{t}" stroke-width="3"/>
+<rect x="255" y="150" width="42" height="85" fill="{d}"/>
+<circle cx="290" cy="195" r="3" fill="{t}"/>
+<rect x="205" y="140" width="6" height="18" fill="{f}"/>
+<rect x="216" y="140" width="6" height="18" fill="{f}"/>
+<polygon points="300,235 300,125 320,120 460,120 460,235" fill="{b}"/>
+<rect x="296" y="116" width="168" height="8" fill="{t}"/>
+<rect x="325" y="150" width="105" height="85" fill="{g}" stroke="{t}" stroke-width="4"/>
+<line x1="325" y1="178" x2="430" y2="178" stroke="{t}" stroke-width="2"/>
+<line x1="325" y1="206" x2="430" y2="206" stroke="{t}" stroke-width="2"/>
+<circle cx="480" cy="150" r="28" fill="#3E6B34"/>
+<rect x="476" y="170" width="8" height="35" fill="#6B4F35"/>
+<text x="12" y="290" font-family="Arial" font-size="11" fill="#3A362F">Illustration of the recommended scheme — not the actual house</text>
+</svg>'''
+
+
 def text_color_for(hex_color):
     """Black or white text, whichever reads better on this background."""
     r, g, b = (int(hex_color[i : i + 2], 16) for i in (1, 3, 5))
@@ -258,6 +315,7 @@ def build_html(query, report, swatches):
         f"<strong>{escape(el)}</strong><span>{escape(name)}</span><code>{h}</code></div>"
         for el, name, h in swatches
     )
+    svg = house_svg(pick_colors(swatches)) if swatches else ""
     body = escape(strip_palette_block(report))
     body = re.sub(
         r"(https?://[^\s\)\|<]+)",
@@ -275,10 +333,12 @@ def build_html(query, report, swatches):
  .chip strong {{ display:block; font-size:.85em; }}
  .chip span {{ display:block; font-size:.78em; color:#555; padding:0 4px; }}
  .chip code {{ font-size:.75em; color:#777; }}
+ .preview {{ margin:1em 0; }} .preview svg {{ max-width:560px; width:100%; border-radius:8px; }}
  pre {{ white-space:pre-wrap; background:#fafafa; border:1px solid #eee; border-radius:8px; padding:1em; font-family: Consolas, monospace; font-size:.9em; }}
 </style></head><body>
 <h1>Twin Home Buyer — Color Recommendation</h1>
 <h2>{escape(query)}</h2>
+<div class="preview">{svg}</div>
 <div class="palette">{chips}</div>
 <pre>{body}</pre>
 </body></html>"""
@@ -396,10 +456,39 @@ def run_gui():
     )
 
     # --- palette swatch panel ---------------------------------------------
-    palette_frame = tk.Frame(frm)
-    palette_frame.grid(row=5, column=0, sticky="we", pady=(2, 6))
+    visual_bar = tk.Frame(frm)
+    visual_bar.grid(row=5, column=0, sticky="we", pady=(2, 6))
+    canvas = tk.Canvas(visual_bar, width=420, height=210, highlightthickness=0)
+    canvas.pack(side="left", padx=(0, 10))
+    palette_frame = tk.Frame(visual_bar)
+    palette_frame.pack(side="left", fill="both", expand=True)
+
+    def render_house(swatches):
+        canvas.delete("all")
+        if not swatches:
+            return
+        c = pick_colors(swatches)
+        b, t, d, g = c["body"], c["trim"], c["door"], c["garage"]
+        # sky + ground
+        canvas.create_rectangle(0, 0, 420, 165, fill="#DDE3DC", width=0)
+        canvas.create_rectangle(0, 165, 420, 210, fill="#4E8A3C", width=0)
+        # main house
+        canvas.create_polygon(40, 78, 225, 78, 210, 42, 55, 42, fill="#8A8A85", width=0)
+        canvas.create_rectangle(48, 76, 218, 165, fill=b, width=0)
+        canvas.create_rectangle(45, 72, 221, 78, fill=t, width=0)
+        canvas.create_rectangle(62, 92, 107, 128, fill="#D8DEE2", outline=t, width=3)
+        canvas.create_rectangle(178, 105, 208, 165, fill=d, width=0)
+        # garage wing
+        canvas.create_rectangle(218, 88, 340, 165, fill=b, width=0)
+        canvas.create_rectangle(215, 84, 343, 90, fill=t, width=0)
+        canvas.create_rectangle(235, 110, 320, 165, fill=g, outline=t, width=3)
+        canvas.create_line(235, 128, 320, 128, fill=t, width=2)
+        canvas.create_line(235, 146, 320, 146, fill=t, width=2)
+        canvas.create_text(6, 200, anchor="w", font=("Arial", 7),
+                           text="Illustration of the scheme — not the actual house", fill="#3A362F")
 
     def render_palette(swatches):
+        render_house(swatches)
         for w in palette_frame.winfo_children():
             w.destroy()
         for el, name, h in swatches[:8]:
