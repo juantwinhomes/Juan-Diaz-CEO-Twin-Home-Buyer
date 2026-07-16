@@ -192,6 +192,31 @@ col X.
 **Triage cadence:** new rows processed within 3 business days; full queue
 re-ranked weekly (fits the Sunday review / Monday dashboard rhythm).
 
+## LIVE FORM v1 — deltas from the spec (published 2026-07-16, Seth)
+
+Seth built and published the form with these changes vs. the spec above:
+
+- **Departments** (checkboxes, multi-select): Operations, Marketing,
+  HR/Recruiting, Accounting, Sales.
+- **Removed:** "What happens if we don't build this?" (Q7) and
+  "How much per month, roughly?" (Q14). Rubric note: the −3 "nothing happens"
+  factor has no direct input now — infer from urgency + problem description.
+- **"If add-on: which existing project?"** is free text, not a dropdown —
+  dedupe stays a manual triage step.
+- **Systems list** adds "AI Tools — Claude/ChatGPT/Grok" and merges
+  "Podio / Make.com / Zapier."
+- **File upload is live** ("Upload your SOP, or Claude/Grok conversation if
+  Available") — added manually as planned.
+- Section 3 (Money) kept only the "Exactly how?" paragraph, required.
+- ⚠️ **Open check at publish time:** confirm the money gate question uses
+  "Go to section based on answer" (Yes → Section 3, No/Not sure → Section 4).
+  Screenshot showed default "continue to next section" on Section 2.
+
+Sheet-sync facts (for whoever maintains the tracker): columns map by question
+ID; deleted questions leave orphan columns (relink the destination sheet
+before first responses to clean up); renamed questions do not rename headers;
+keep triage columns on a separate tab so form-added columns never collide.
+
 ## v2 triggers (when a website becomes worth it)
 
 Only move off Google Forms if one of these actually happens:
