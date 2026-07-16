@@ -97,6 +97,18 @@ the call (e.g. actual roof color temperature, neighbor colors, masonry).
 ## Free wins
 2-3 cheap curb-appeal fixes typical for this property type/age.
 
+## Home Depot shopping list
+A ready-to-buy list for the recommended scheme. Home Depot sells Behr, not
+Sherwin-Williams, so for each paint pick give the closest BEHR equivalent
+(name + code) and note it can also be color-matched to the SW color in store.
+Estimate quantities from the square footage you found (exterior body: ~1 gal
+per 350 sq ft per coat, 2 coats; trim: ~1 gal per 750 linear-ish ft, round
+up). Include primer, caulk, painter's tape, rollers/brushes.
+Format as a table: Item | Product | Qty | Link — where Link is a Home Depot
+search URL of the form https://www.homedepot.com/s/behr%20marquee%20exterior%20satin
+(URL-encode the query; use specific queries per product). Do not invent
+direct product-page URLs — search URLs only.
+
 ## Palette
 A machine-readable palette of the RECOMMENDED scheme, one line per element,
 inside a fenced code block exactly like this (accurate 6-digit hex for each
@@ -225,6 +237,11 @@ def build_html(query, report, swatches):
         for el, name, h in swatches
     )
     body = escape(strip_palette_block(report))
+    body = re.sub(
+        r"(https?://[^\s\)\|<]+)",
+        r'<a href="\1" target="_blank">\1</a>',
+        body,
+    )
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>Color Recommendation — {escape(query)}</title>
 <style>
