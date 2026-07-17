@@ -64,7 +64,14 @@ HOLDING_MONTHLY_PCT_REHAB = 0.005      # carry on rehab budget
 MAX_REHAB_PCT_OF_PURCHASE = 0.30
 
 # ---- Agent layer ----
-AGENT_MODEL = "claude-opus-4-8"
+# Provider for the analysis brain (override with env FLIP_SCOUT_PROVIDER):
+#   "anthropic" — Claude API (ANTHROPIC_API_KEY)
+#   "xai"       — Grok via xAI API (XAI_API_KEY)
+#   "grok-cli"  — local `grok` CLI, uses the CLI's own auth/subscription
+LLM_PROVIDER = "anthropic"
+AGENT_MODEL = "claude-opus-4-8"          # anthropic provider
+XAI_MODEL = "grok-4"                     # xai provider
+GROK_CLI_CMD = ["grok", "--prompt"]      # grok-cli provider; prompt appended
 MAX_LEADS_TO_AGENT = 15          # cap Claude calls per daily scan
 MIN_SCORE_TO_SURFACE = 8.0       # only 8+ goes in the email
 

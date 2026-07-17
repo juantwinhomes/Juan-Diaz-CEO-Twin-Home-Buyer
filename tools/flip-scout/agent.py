@@ -1,22 +1,22 @@
 """
-Claude agent layer — the judgment the math can't do.
+Agent layer — the judgment the math can't do.
 
 The pipeline hands the agent a candidate with fixed numbers (comps, tiered
 underwriting, guardrail flags). The agent reads the listing remarks and
 context, picks the rehab tier, judges ADU potential and risks, scores 1-10,
 and writes the email-ready summary. It cannot change the math — it chooses
 between pre-computed tiers.
+
+Which model answers is decided by providers.py (Claude API, xAI Grok API,
+or a local grok CLI) — the analysis contract is identical either way.
 """
 
 import json
 from typing import List, Literal
 
-import anthropic
 from pydantic import BaseModel, Field
 
-from config import AGENT_MODEL
-
-client = anthropic.Anthropic()
+import providers
 
 
 class LeadVerdict(BaseModel):
@@ -68,43 +68,25 @@ unverified. Be skeptical — a false PURSUE costs Juan real money."""
 
 
 def analyze_lead(candidate: dict) -> LeadVerdict:
-    """One structured Claude call per candidate."""
+    """One structured model call per candidate."""
     payload = json.dumps(candidate, indent=2, default=str)
-    response = client.messages.parse(
-        model=AGENT_MODEL,
-        max_tokens=16000,
-        thinking={"type": "adaptive"},
-        system=SYSTEM,
-        messages=[{
-            "role": "user",
-            "content": (
-                "Analyze this candidate lead. All numbers below are "
-                "pre-computed and authoritative.\n\n" + payload
-            ),
-        }],
-        output_format=LeadVerdict,
+    return providers.structured(
+        SYSTEM,
+        "Analyze this candidate lead. All numbers below are pre-computed "
+        "and authoritative.\n\n" + payload,
+        LeadVerdict,
     )
-    return response.parsed_output
 
 
 def write_performance_report(scan_stats: dict, surfaced: list[dict]) -> str:
-    """One Claude call to write the closing performance section of the email."""
-    response = client.messages.create(
-        model=AGENT_MODEL,
-        max_tokens=16000,
-        thinking={"type": "adaptive"},
-        system=SYSTEM,
-        messages=[{
-            "role": "user",
-            "content": (
-                "Write the short performance-report section that closes Juan's "
-                "daily flip-scout email: 3-6 sentences. Cover lead counts and "
-                "funnel, the strongest lead if any, notable market signals "
-                "(price drops, thin inventory), and one concrete suggested "
-                "improvement to the scan. Plain prose, no headers.\n\n"
-                f"Scan stats: {json.dumps(scan_stats, default=str)}\n\n"
-                f"Surfaced leads: {json.dumps(surfaced, default=str)}"
-            ),
-        }],
+    """One model call to write the closing performance section of the email."""
+    return providers.text(
+        SYSTEM,
+        "Write the short performance-report section that closes Juan's "
+        "daily flip-scout email: 3-6 sentences. Cover lead counts and "
+        "funnel, the strongest lead if any, notable market signals "
+        "(price drops, thin inventory), and one concrete suggested "
+        "improvement to the scan. Plain prose, no headers.\n\n"
+        f"Scan stats: {json.dumps(scan_stats, default=str)}\n\n"
+        f"Surfaced leads: {json.dumps(surfaced, default=str)}",
     )
-    return next(b.text for b in response.content if b.type == "text")

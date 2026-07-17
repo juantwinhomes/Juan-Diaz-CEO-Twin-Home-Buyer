@@ -30,8 +30,29 @@ cd tools/flip-scout
 pip install -r requirements.txt
 
 python scout.py --dry-run    # ingest + comps only, no API key needed
-ANTHROPIC_API_KEY=... python scout.py    # full daily scan
+ANTHROPIC_API_KEY=... python scout.py    # full daily scan (Claude, default)
 ```
+
+### Using Grok instead of the Anthropic API
+
+The analysis brain is pluggable (`providers.py`); set `FLIP_SCOUT_PROVIDER`:
+
+```sh
+# xAI Grok API (recommended Grok path — reliable structured JSON)
+FLIP_SCOUT_PROVIDER=xai XAI_API_KEY=... python scout.py
+
+# Local grok CLI — uses whatever auth the CLI already has (e.g. Juan's
+# Grok subscription); the CLI must accept `grok --prompt "<text>"` and
+# print its answer to stdout. Command is configurable via GROK_CLI_CMD
+# in config.py.
+FLIP_SCOUT_PROVIDER=grok-cli python scout.py
+```
+
+All providers are validated against the same Pydantic verdict schema, so the
+scoring contract and report format are identical. The CLI path instructs
+JSON-only output, extracts the first JSON object from stdout, and retries
+once on malformed output — but the xAI API path is sturdier for unattended
+daily runs.
 
 Output: `reports/flip-scout-YYYY-MM-DD.md` (email-ready) and `flip_scout.db`
 (SQLite: listing history, price drops, verdicts, scan log).
@@ -44,7 +65,8 @@ Output: `reports/flip-scout-YYYY-MM-DD.md` (email-ready) and `flip_scout.db`
 | `redfin.py` | Data source (unofficial gis-csv endpoint + remarks fetch) |
 | `comps.py` | 1-mile haversine comps → implied value + discount |
 | `underwrite.py` | Deterministic deal math at 3 rehab tiers + buy-box gates |
-| `agent.py` | Claude structured analysis + performance report |
+| `agent.py` | Structured lead analysis + performance report (provider-agnostic) |
+| `providers.py` | LLM backends: Anthropic API, xAI Grok API, local grok CLI |
 | `db.py` | SQLite dedup (by MLS#), price-drop detection, scan log |
 | `scout.py` | Daily scan entry point |
 
