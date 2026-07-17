@@ -74,10 +74,11 @@ MAX_REHAB_PCT_OF_PURCHASE = 0.30
 #   "anthropic" — Claude API (ANTHROPIC_API_KEY)
 #   "xai"       — Grok via xAI API (XAI_API_KEY)
 #   "grok-cli"  — local `grok` CLI, uses the CLI's own auth/subscription
-LLM_PROVIDER = "anthropic"
+LLM_PROVIDER = "grok-cli"                # local default: rides SuperGrok sub
 AGENT_MODEL = "claude-opus-4-8"          # anthropic provider
 XAI_MODEL = "grok-4"                     # xai provider
-GROK_CLI_CMD = ["grok", "--prompt"]      # grok-cli provider; prompt appended
+GROK_CLI_CMD = ["grok", "-p"]            # grok-cli provider; prompt appended
+                                         # (run `grok login` once first)
 MAX_LEADS_TO_AGENT = 15          # cap Claude calls per daily scan
 MIN_SCORE_TO_SURFACE = 8.0       # only 8+ goes in the email
 
