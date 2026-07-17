@@ -23,14 +23,24 @@ The math is computed in code and handed to the model as fixed — the agent
 chooses between pre-computed tiers and judges what math can't (condition,
 comp applicability, ADU upside, risk), but cannot invent numbers.
 
-## Run
+## Run — App (recommended)
 
 ```sh
-cd tools/flip-scout
 pip install -r requirements.txt
+streamlit run app.py
+```
 
-python scout.py --dry-run    # ingest + comps only, no API key needed
-ANTHROPIC_API_KEY=... python scout.py    # full daily scan (Claude, default)
+Opens in the browser: pick cities (or All), pick the analysis brain
+(Claude / Grok API / Grok CLI), paste the key, hit **Run Scan**. Dry-run
+mode is free and needs no key. Leads over $1.5M are flagged
+"Juan sign-off required" (the historical loss zone).
+
+## Run — CLI (for cron / Task Scheduler)
+
+```sh
+python scout.py --dry-run                       # ingest + comps only, free
+python scout.py --regions "San Francisco" "Oakland"   # subset of cities
+ANTHROPIC_API_KEY=... python scout.py           # full daily scan (Claude, default)
 ```
 
 ### Using Grok instead of the Anthropic API
@@ -68,7 +78,8 @@ Output: `reports/flip-scout-YYYY-MM-DD.md` (email-ready) and `flip_scout.db`
 | `agent.py` | Structured lead analysis + performance report (provider-agnostic) |
 | `providers.py` | LLM backends: Anthropic API, xAI Grok API, local grok CLI |
 | `db.py` | SQLite dedup (by MLS#), price-drop detection, scan log |
-| `scout.py` | Daily scan entry point |
+| `scout.py` | Scan pipeline + CLI entry point |
+| `app.py` | Streamlit app: city picker, provider picker, run button, results |
 
 ## Notes / known limits
 

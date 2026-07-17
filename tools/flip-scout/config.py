@@ -11,10 +11,16 @@ Grounded in two sources:
 """
 
 # ---- Territory (Redfin region IDs, verified 2026-07-17) ----
+# Optional per-region "price_max" overrides the global BUY_BOX cap. Anything
+# surfaced above $1.5M is flagged "JUAN SIGN-OFF REQUIRED" in the report —
+# that price band is where every historical loss lived.
 REGIONS = {
-    "San Francisco": {"region_id": 17151, "region_type": 6},
-    "San Mateo":     {"region_id": 17490, "region_type": 6},
-    "Sunnyvale":     {"region_id": 19457, "region_type": 6},
+    "San Francisco": {"region_id": 17151, "region_type": 6, "price_max": 1_500_000},
+    "Oakland":       {"region_id": 13654, "region_type": 6, "price_max": 1_500_000},
+    "San Jose":      {"region_id": 17420, "region_type": 6, "price_max": 1_500_000},
+    "San Mateo":     {"region_id": 17490, "region_type": 6, "price_max": 2_500_000},
+    "Belmont":       {"region_id": 1362,  "region_type": 6, "price_max": 2_500_000},
+    "Sunnyvale":     {"region_id": 19457, "region_type": 6, "price_max": 2_500_000},
 }
 
 # SF priority neighborhoods (matched against the CSV LOCATION column).
