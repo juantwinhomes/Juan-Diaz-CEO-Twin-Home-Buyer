@@ -59,24 +59,42 @@ with sync_playwright() as pw:
     if proxy_server:
         launch_kwargs["proxy"] = {"server": proxy_server}
     browser = pw.chromium.launch(**launch_kwargs)
-    page = browser.new_page()
+    # Reuse saved browser state so BlackBook recognizes this as the same
+    # (already-verified) device instead of emailing a new verification link.
+    if os.path.exists(STATE_PATH):
+        context = browser.new_context(storage_state=STATE_PATH)
+    else:
+        context = browser.new_context()
+    page = context.new_page()
     page.goto(url, wait_until="domcontentloaded", timeout=45000)
+    page.wait_for_timeout(4000)
 
-    # Standard email/password form; selectors verified on first live run.
-    page.fill('input[type="email"], input[name*="email" i], input[name*="user" i]', email)
-    page.fill('input[type="password"]', password)
-    page.click('button[type="submit"], input[type="submit"]')
-    page.wait_for_load_state("networkidle", timeout=45000)
+    if page.locator('input[type="password"]').count() > 0:
+        # Standard email/password form; selectors verified on first live run.
+        page.fill('input[type="email"], input[name*="email" i], input[name*="user" i]', email)
+        page.fill('input[type="password"]', password)
+        page.click('button[type="submit"], input[type="submit"]')
+        page.wait_for_load_state("domcontentloaded", timeout=45000)
+        page.wait_for_timeout(5000)
 
     page.screenshot(path=SHOT_PATH, full_page=False)
+    body = page.inner_text("body")[:2000].lower()
 
-    still_login = page.locator('input[type="password"]').count() > 0
-    if still_login:
+    if "verify your email" in body:
+        context.storage_state(path=STATE_PATH)  # keep cookies: the emailed
+        # link must be opened in THIS state for device trust to stick.
+        print(f"VERIFICATION REQUIRED — BlackBook emailed a login link. "
+              f"Open it with this saved state. Screenshot: {SHOT_PATH}",
+              file=sys.stderr)
+        browser.close()
+        sys.exit(4)
+
+    if page.locator('input[type="password"]').count() > 0:
         print(f"LOGIN FAILED — still on login page. Screenshot: {SHOT_PATH}",
               file=sys.stderr)
         browser.close()
         sys.exit(3)
 
-    page.context.storage_state(path=STATE_PATH)
+    context.storage_state(path=STATE_PATH)
     print(f"LOGGED IN. State: {STATE_PATH}  Screenshot: {SHOT_PATH}")
     browser.close()
