@@ -46,9 +46,19 @@ if not (url and email and password):
     sys.exit(2)
 
 with sync_playwright() as pw:
-    # Use the environment's pre-installed Chromium (do not `playwright install`).
-    browser = pw.chromium.launch(
-        headless=True, executable_path="/opt/pw-browsers/chromium")
+    # Use the environment's pre-installed Chromium (do not `playwright install`)
+    # and route it through the agent proxy explicitly — Chromium doesn't pick
+    # up HTTPS_PROXY on its own here.
+    # --ssl-version-max=tls1.2: the agent proxy's TLS interceptor resets
+    # Chromium's TLS 1.3 ClientHello; 1.2 (still verified) works. This only
+    # affects the browser->proxy hop — the proxy re-terminates TLS upstream.
+    launch_kwargs = {"headless": True,
+                     "executable_path": "/opt/pw-browsers/chromium",
+                     "args": ["--no-sandbox", "--ssl-version-max=tls1.2"]}
+    proxy_server = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+    if proxy_server:
+        launch_kwargs["proxy"] = {"server": proxy_server}
+    browser = pw.chromium.launch(**launch_kwargs)
     page = browser.new_page()
     page.goto(url, wait_until="domcontentloaded", timeout=45000)
 
