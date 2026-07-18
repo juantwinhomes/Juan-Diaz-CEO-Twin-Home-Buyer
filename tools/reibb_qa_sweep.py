@@ -36,12 +36,18 @@ def parse_record(text):
     lines = [l.strip() for l in text.split("\n")]
     lines = [l for l in lines if l]
     fields = {}
+    # The About panel lists its labels in ABOUT_LABELS order. Walk them
+    # sequentially with a moving cursor so duplicated words elsewhere on the
+    # page (tab bar "Notes", nav "Contacts", etc.) can't be mistaken for a
+    # field label.
+    cursor = lines.index("Category") if "Category" in lines else 0
     for label in ABOUT_LABELS:
         try:
-            i = lines.index(label, lines.index("About") if "About" in lines else 0)
+            i = lines.index(label, cursor)
         except ValueError:
             fields[label] = ""
             continue
+        cursor = i + 1
         val = lines[i + 1] if i + 1 < len(lines) else ""
         fields[label] = "" if val in BOUNDARY or val in {"-", "--"} else val
 
@@ -141,48 +147,60 @@ def qa_check(f):
 
 
 def field_matrix(f):
-    """Per-field value + status, in the playbook's worked-example format.
+    """Per-field value + status, arranged in the playbook's section order:
+    contact info -> source -> pipeline status -> property.
     Status: PASS (green) / FAIL (red, required missing or wrong) /
-    CHECK (amber, conditional field empty)."""
+    CHECK (amber, conditional field empty). On a story mismatch, only the
+    fields that need changing go red."""
     dispo = f.get("Call Disposition", "").lower()
     cat = f.get("Category", "").lower()
-    snum = stage_num(f.get("Lead Stage", ""))
+    stage = f.get("Lead Stage", "")
+    snum = stage_num(stage)
     is_dead = dispo in DEAD_DISPOS or cat in {"lost/dead", "won"}
-    mismatch = ((cat in CAT_STAGE and snum and snum not in CAT_STAGE[cat])
-                or (dispo in DEAD_DISPOS and snum and snum not in DEAD_STAGES)
-                or (dispo in DEAD_DISPOS and cat == "active"))
+
+    cat_stage_mm = cat in CAT_STAGE and snum and snum not in CAT_STAGE[cat]
+    dead_stage_mm = dispo in DEAD_DISPOS and snum and snum not in DEAD_STAGES
+    dead_cat_mm = dispo in DEAD_DISPOS and cat == "active"
+
+    cat_bad = not f.get("Category") or cat_stage_mm or dead_cat_mm
+    stage_bad = not stage or cat_stage_mm or dead_stage_mm
+    dispo_bad = not f.get("Call Disposition")
+
     notes_val = f.get("Notes") or (f"{f.get('Notes Count', 0)} note(s)"
                                    if f.get("Notes Count") else "")
-    csd = " / ".join(x if x else "—" for x in
-                     (f.get("Category"), f.get("Lead Stage"), f.get("Call Disposition")))
 
     def req(v):
         return (v, "PASS" if v else "FAIL")
 
     return [
+        # Contact info
         ("Full Name",) + req(f.get("Name", "")),
         ("Phone (Mobile)",) + req(f.get("Phone (Mobile)", "")),
+        ("Email",) + req(f.get("Email", "")),
+        ("Contact Type",) + req(f.get("Contact Type", "")),
+        # Source
         ("Source",) + req(f.get("Source", "")),
+        ("Campaign", f.get("Campaign", ""),
+         "PASS" if f.get("Campaign") else "CHECK"),
         ("Tags", ", ".join(f.get("Tags", [])),
          "PASS" if f.get("Tags") else "FAIL"),
+        ("Social Profile / URL", "; ".join(f.get("Social", [])),
+         "PASS" if f.get("Social") else "FAIL"),
+        # Pipeline status
+        ("Category", f.get("Category", ""), "FAIL" if cat_bad else "PASS"),
+        ("Lead Stage", stage, "FAIL" if stage_bad else "PASS"),
+        ("Call Disposition", f.get("Call Disposition", ""),
+         "FAIL" if dispo_bad else "PASS"),
         ("Notes",) + req(notes_val),
         ("Sales Agent",) + req(f.get("Sales Agent", "")),
         ("Next Step", f.get("Next Step", ""),
          "PASS" if f.get("Next Step") else ("CHECK" if is_dead else "FAIL")),
+        ("Amount Offer", f.get("Amount Offer", ""),
+         "PASS" if f.get("Amount Offer") else "CHECK"),
+        # Property
         ("Property Address",) + req(f.get("Property Address", "")),
         ("Associated Deal", "Linked" if f.get("Deal Linked") else "Not linked",
          "PASS" if f.get("Deal Linked") else "FAIL"),
-        ("Contact Type",) + req(f.get("Contact Type", "")),
-        ("Email",) + req(f.get("Email", "")),
-        ("Social Profile / URL", "; ".join(f.get("Social", [])),
-         "PASS" if f.get("Social") else "FAIL"),
-        ("Campaign", f.get("Campaign", ""),
-         "PASS" if f.get("Campaign") else "CHECK"),
-        ("Amount Offer", f.get("Amount Offer", ""),
-         "PASS" if f.get("Amount Offer") else "CHECK"),
-        ("Category / Stage / Dispo", csd,
-         "FAIL" if (mismatch or not f.get("Category") or not f.get("Lead Stage")
-                    or not f.get("Call Disposition")) else "PASS"),
     ]
 
 
