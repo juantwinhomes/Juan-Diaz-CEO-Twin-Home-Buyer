@@ -31,7 +31,9 @@ if not (url and email and password):
     sys.exit(2)
 
 with sync_playwright() as pw:
-    browser = pw.chromium.launch(headless=True)
+    # Use the environment's pre-installed Chromium (do not `playwright install`).
+    browser = pw.chromium.launch(
+        headless=True, executable_path="/opt/pw-browsers/chromium")
     page = browser.new_page()
     page.goto(url, wait_until="domcontentloaded", timeout=45000)
 
