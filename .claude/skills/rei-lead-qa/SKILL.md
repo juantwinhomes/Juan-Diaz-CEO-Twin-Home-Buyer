@@ -25,6 +25,19 @@ format. Never hardcode rules here.
 
 ## Step 2 — Pull the leads (Playwright, read-only)
 
+**Use the working scripts first** — they encode the proven login and sweep
+flow (proxy config, TLS workaround, device-trust state, field parsing):
+
+1. `python3 tools/reibb_login.py <scratchpad>/reibb_state.json` — exits 0 if
+   logged in; exit 4 means BlackBook emailed a verification link: report that
+   here and stop (Juan pastes the link; open it with the saved state).
+2. `python3 tools/reibb_qa_sweep.py <scratchpad>/reibb_state.json <N>` —
+   sweeps the N most recent contacts and writes `qa_report.md` +
+   `qa_results.jsonl` next to the state file.
+
+Fall back to the manual procedure below only if the scripts break (UI
+change, selector drift) — and fix the scripts after.
+
 1. Open REI BlackBook in the browser; confirm logged in. If the login page
    appears, stop and report "sweep blocked — Blackbook login needed" instead
    of guessing credentials.
