@@ -20,9 +20,24 @@ from playwright.sync_api import sync_playwright
 STATE_PATH = sys.argv[1] if len(sys.argv) > 1 else "/tmp/reibb_state.json"
 SHOT_PATH = STATE_PATH.rsplit(".", 1)[0] + ".png"
 
-url = os.environ.get("REIBB_URL", "")
-email = os.environ.get("REIBB_EMAIL", "")
-password = os.environ.get("REIBB_PASS", "")
+# Local override file wins over env vars (lets us update creds without
+# touching environment settings); file lives outside the repo, never committed.
+_overrides = {}
+_env_file = os.path.expanduser("~/.reibb.env")
+if os.path.exists(_env_file):
+    with open(_env_file) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, _, v = line.partition("=")
+                _overrides[k.strip()] = v.strip()
+
+def _get(name):
+    return _overrides.get(name) or os.environ.get(name, "")
+
+url = _get("REIBB_URL")
+email = _get("REIBB_EMAIL")
+password = _get("REIBB_PASS")
 
 if not (url and email and password):
     missing = [n for n, v in [("REIBB_URL", url), ("REIBB_EMAIL", email),
