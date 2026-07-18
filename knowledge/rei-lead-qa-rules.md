@@ -53,7 +53,7 @@ Pending" when the call said reschedule).
 
 - **Category:** `Active`, `Lost/Dead`, `Won`
 - **Lead Stage:** `0 Invalid Leads`, `1 New Lead`, `2 Follow Up`,
-  `3 Appointment Booked`, `4 Offer Sent`, `5 <name TBC — Juan to confirm>`,
+  `3 Appointment Booked`, `4 Offer Sent`, `5 Under Contract`,
   `6 Cancelled Contract`, `7 Reinstated`, `8 Clear to Close`,
   `9 Lost / Dead Lead`, `10 Acquired`
 
@@ -61,7 +61,7 @@ Pending" when the call said reschedule).
 
 | Category | Allowed Lead Stages |
 |----------|--------------------|
-| Active | 1 New Lead, 2 Follow Up, 3 Appointment Booked, 4 Offer Sent, 5, 7 Reinstated, 8 Clear to Close |
+| Active | 1 New Lead, 2 Follow Up, 3 Appointment Booked, 4 Offer Sent, 5 Under Contract, 7 Reinstated, 8 Clear to Close |
 | Lost/Dead | 0 Invalid Leads, 6 Cancelled Contract, 9 Lost / Dead Lead |
 | Won | 10 Acquired |
 
