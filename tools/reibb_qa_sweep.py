@@ -81,6 +81,17 @@ def parse_record(text):
 DEAD_DISPOS = {"out of buy box", "not interested", "listed with agent",
                "sold elsewhere", "bad number", "pass", "dead"}
 
+# Confirmed picklists (2026-07-18). Category -> allowed leading stage numbers.
+CAT_STAGE = {"active": {"1", "2", "3", "4", "5", "7", "8"},
+             "lost/dead": {"0", "6", "9"},
+             "won": {"10"}}
+DEAD_STAGES = {"0", "6", "9"}
+
+
+def stage_num(stage):
+    m = re.match(r"(\d+)", stage.strip())
+    return m.group(1) if m else ""
+
 
 def qa_check(f):
     issues = []
@@ -105,14 +116,22 @@ def qa_check(f):
         issues.append("No notes on record (required)")
 
     dispo = f.get("Call Disposition", "").lower()
-    stage = f.get("Lead Stage", "").lower()
+    stage = f.get("Lead Stage", "")
     cat = f.get("Category", "").lower()
-    is_dead = dispo in DEAD_DISPOS or cat == "dead"
+    snum = stage_num(stage)
+    is_dead = dispo in DEAD_DISPOS or cat in {"lost/dead", "won"}
     if not f.get("Next Step") and not is_dead:
-        issues.append("Next Step missing (required unless lead is dead/closed)")
-    if dispo in DEAD_DISPOS and "new lead" in stage:
-        issues.append(f"Story mismatch: Stage '{f['Lead Stage']}' vs Disposition "
-                      f"'{f['Call Disposition']}' — dead lead still staged as new")
+        issues.append("Next Step missing (required unless lead is Lost/Dead or Won)")
+    if cat in CAT_STAGE and snum and snum not in CAT_STAGE[cat]:
+        issues.append(f"Story mismatch: Category '{f['Category']}' does not "
+                      f"allow Stage '{stage}' (per Category x Stage matrix)")
+    if dispo in DEAD_DISPOS and snum and snum not in DEAD_STAGES:
+        issues.append(f"Story mismatch: Disposition '{f['Call Disposition']}' "
+                      f"(dead lead) but Stage is '{stage}' — should be "
+                      f"0 Invalid Leads, 6 Cancelled Contract, or 9 Lost / Dead Lead")
+    if dispo in DEAD_DISPOS and cat == "active":
+        issues.append(f"Story mismatch: Disposition '{f['Call Disposition']}' "
+                      f"(dead lead) but Category is 'Active' — should be Lost/Dead")
     if not f.get("Deal Linked"):
         issues.append("Contact not linked to a Deal (required)")
 
@@ -127,8 +146,11 @@ def field_matrix(f):
     CHECK (amber, conditional field empty)."""
     dispo = f.get("Call Disposition", "").lower()
     cat = f.get("Category", "").lower()
-    is_dead = dispo in DEAD_DISPOS or cat == "dead"
-    mismatch = dispo in DEAD_DISPOS and "new lead" in f.get("Lead Stage", "").lower()
+    snum = stage_num(f.get("Lead Stage", ""))
+    is_dead = dispo in DEAD_DISPOS or cat in {"lost/dead", "won"}
+    mismatch = ((cat in CAT_STAGE and snum and snum not in CAT_STAGE[cat])
+                or (dispo in DEAD_DISPOS and snum and snum not in DEAD_STAGES)
+                or (dispo in DEAD_DISPOS and cat == "active"))
     notes_val = f.get("Notes") or (f"{f.get('Notes Count', 0)} note(s)"
                                    if f.get("Notes Count") else "")
     csd = " / ".join(x if x else "—" for x in

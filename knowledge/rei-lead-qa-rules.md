@@ -49,30 +49,37 @@ combination not on this matrix = FAIL ("story mismatch"), exactly like the
 worked example (Stage "3 Appointment Booked" vs Disposition "Appointment
 Pending" when the call said reschedule).
 
-> **DRAFT — Juan to red-line.** Stage and disposition names below are inferred
-> from the playbook's worked example and standard REI BlackBook pipelines.
-> Replace with the exact picklist values from our account, then delete this
-> banner.
+**Confirmed picklist values (from account screenshots, 2026-07-18):**
 
-| Category | Lead Stage | Allowed Dispositions |
-|----------|-----------|----------------------|
-| Active | 1 New Lead | No Answer, Left Voicemail, Contact Made, Wrong Number |
-| Active | 2 Contact Made | Contact Made, Callback Scheduled, Gathering Info |
-| Active | 3 Appointment Booked | Appointment Booked, Appointment Confirmed |
-| Active | 3 Appointment Booked → reschedule happened | Appointment Reschedule |
-| Active | 4 Visit Completed | Visit Completed, Offer Pending |
-| Active | 5 Offer Made | Offer Sent, Negotiating, Follow-Up Set |
-| Active | 6 Under Contract | Contract Signed, In Escrow |
-| Nurture | Long-Term Follow-Up | Follow-Up Set, Not Ready — Nurture |
-| Dead | Closed — Lost | Not Interested, Listed with Agent, Sold Elsewhere, Bad Number, Pass |
-| Closed | Closed — Won | Deal Closed |
+- **Category:** `Active`, `Lost/Dead`, `Won`
+- **Lead Stage:** `0 Invalid Leads`, `1 New Lead`, `2 Follow Up`,
+  `3 Appointment Booked`, `4 Offer Sent`, `5 <name TBC — Juan to confirm>`,
+  `6 Cancelled Contract`, `7 Reinstated`, `8 Clear to Close`,
+  `9 Lost / Dead Lead`, `10 Acquired`
+
+**Category × Stage matrix (enforced):**
+
+| Category | Allowed Lead Stages |
+|----------|--------------------|
+| Active | 1 New Lead, 2 Follow Up, 3 Appointment Booked, 4 Offer Sent, 5, 7 Reinstated, 8 Clear to Close |
+| Lost/Dead | 0 Invalid Leads, 6 Cancelled Contract, 9 Lost / Dead Lead |
+| Won | 10 Acquired |
+
+> **Still needed from Juan:** (1) the name of Stage 5 (between "4 Offer Sent"
+> and "6 Cancelled Contract"); (2) the full **Call Disposition** picklist, so
+> the Stage × Disposition pairs can be enforced too. Until then, disposition
+> consistency uses the hard rules below only.
 
 Hard rules regardless of matrix state:
+- Disposition indicating a dead/disqualified lead (e.g., "Out of Buy Box",
+  "Not Interested", "Listed with Agent") → Stage must be 0, 6, or 9 and
+  Category must be `Lost/Dead` — not "1 New Lead" / `Active`.
 - Disposition mentions reschedule/cancel → Stage must NOT still say
   booked/confirmed.
-- Category `Dead`/`Closed` → Next Step may be empty; every other Category
-  requires a future-dated Next Step.
-- Stage at or past "Offer Made" → Amount Offer becomes REQUIRED (rule 18).
+- Category `Lost/Dead` or `Won` → Next Step may be empty; `Active` requires
+  a future-dated Next Step.
+- Stage at or past "4 Offer Sent" (except 6/9) → Amount Offer becomes
+  REQUIRED (rule 18).
 
 ## 3. Verdict logic
 
