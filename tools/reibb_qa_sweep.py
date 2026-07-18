@@ -121,6 +121,49 @@ def qa_check(f):
     return verdict, issues
 
 
+def field_matrix(f):
+    """Per-field value + status, in the playbook's worked-example format.
+    Status: PASS (green) / FAIL (red, required missing or wrong) /
+    CHECK (amber, conditional field empty)."""
+    dispo = f.get("Call Disposition", "").lower()
+    cat = f.get("Category", "").lower()
+    is_dead = dispo in DEAD_DISPOS or cat == "dead"
+    mismatch = dispo in DEAD_DISPOS and "new lead" in f.get("Lead Stage", "").lower()
+    notes_val = f.get("Notes") or (f"{f.get('Notes Count', 0)} note(s)"
+                                   if f.get("Notes Count") else "")
+    csd = " / ".join(x if x else "—" for x in
+                     (f.get("Category"), f.get("Lead Stage"), f.get("Call Disposition")))
+
+    def req(v):
+        return (v, "PASS" if v else "FAIL")
+
+    return [
+        ("Full Name",) + req(f.get("Name", "")),
+        ("Phone (Mobile)",) + req(f.get("Phone (Mobile)", "")),
+        ("Source",) + req(f.get("Source", "")),
+        ("Tags", ", ".join(f.get("Tags", [])),
+         "PASS" if f.get("Tags") else "FAIL"),
+        ("Notes",) + req(notes_val),
+        ("Sales Agent",) + req(f.get("Sales Agent", "")),
+        ("Next Step", f.get("Next Step", ""),
+         "PASS" if f.get("Next Step") else ("CHECK" if is_dead else "FAIL")),
+        ("Property Address",) + req(f.get("Property Address", "")),
+        ("Associated Deal", "Linked" if f.get("Deal Linked") else "Not linked",
+         "PASS" if f.get("Deal Linked") else "FAIL"),
+        ("Contact Type",) + req(f.get("Contact Type", "")),
+        ("Email",) + req(f.get("Email", "")),
+        ("Social Profile / URL", "; ".join(f.get("Social", [])),
+         "PASS" if f.get("Social") else "FAIL"),
+        ("Campaign", f.get("Campaign", ""),
+         "PASS" if f.get("Campaign") else "CHECK"),
+        ("Amount Offer", f.get("Amount Offer", ""),
+         "PASS" if f.get("Amount Offer") else "CHECK"),
+        ("Category / Stage / Dispo", csd,
+         "FAIL" if (mismatch or not f.get("Category") or not f.get("Lead Stage")
+                    or not f.get("Call Disposition")) else "PASS"),
+    ]
+
+
 with sync_playwright() as pw:
     b = pw.chromium.launch(headless=True, executable_path="/opt/pw-browsers/chromium",
                            args=["--no-sandbox", "--ssl-version-max=tls1.2"],
@@ -152,7 +195,8 @@ with sync_playwright() as pw:
         results.append({"url": url, "name": f.get("Name", "?"),
                         "address": f.get("Property Address", "?"),
                         "owner": f.get("Sales Agent", "?"),
-                        "verdict": verdict, "issues": issues})
+                        "verdict": verdict, "issues": issues,
+                        "matrix": field_matrix(f)})
         print(f"[{verdict}] {f.get('Name','?')} — {len(issues)} issue(s)")
 
     ctx.storage_state(path=STATE)
