@@ -86,13 +86,22 @@ geography. Premium-county leads are in scope for the channel, but any
 with >25–30% rehab). Premium-county leads default to wholesale/assignment
 exits unless the flip math clears the gate.
 
+**Rationale (per Seth, 2026-07-21):** the 7 counties were selected on
+**PropertyLeads channel performance** — counties whose PropertyLeads leads
+were not performing were removed **from this channel's targeting only**.
+That is why Contra Costa is out: as a PropertyLeads source it consumed
+~$10,475 for 42 leads on the old set without producing, so it was cut from
+the lead buy. **This does NOT change the company flip buy-box** — West
+CC/Richmond remains flip-engine core and stays fully in play for deals from
+every other channel (postcards, referrals, etc.). Channel targeting and
+purchase criteria are separate decisions.
+
 **Open items to close (Twin to chase):**
-- Written rationale from the meeting: why these 7, and the intended exit
-  strategy for premium-county leads. (Meeting date/attendees/notes not yet
-  in the repo — "no major direction change without a written update.")
-- ~~Confirm Contra Costa's exclusion was deliberate~~ **CONFIRMED (Seth,
-  2026-07-21): deliberate — agreed in the same meeting.** West CC/Richmond
-  remains flip-engine core but is intentionally not in the PropertyLeads set.
+- Meeting notes/date/attendees still not in the repo — capture them so the
+  decision trail is written, not remembered.
+- Intended exit strategy for premium-county leads (SF, San Mateo, Marin,
+  Sonoma): default wholesale/assignment, with any purchase still gated by
+  the flip buy-box (fat margin + rehab cap + Juan approval).
 - Re-verdict on the 7-county set: **Sept 6, 2026**, judged on cost per
   contract vs the old-set benchmark (~$20.3K/contract).
 
