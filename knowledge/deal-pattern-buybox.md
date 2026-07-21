@@ -59,6 +59,42 @@ San Carlos, Walnut Creek).
 | **AMBER** | Premium Peninsula / over $1.5M — **only** with a fat margin AND a hard rehab cap. |
 | **RED** | Rehab over ~30% of purchase, OR a high-price buy with a thin spread. |
 
+## Channel-Specific Buy-Box — PropertyLeads ONLY (effective July 8, 2026)
+
+> Decided in a team meeting; confirmed by Seth 2026-07-21 with a screenshot of
+> the live PropertyLeads territory config. **This applies to the PropertyLeads
+> lead-buy channel only** — it does NOT replace the flip buy-box above, which
+> still governs what we actually purchase.
+
+The PropertyLeads targeting was deliberately changed to these 7 counties
+(all "Motivated Seller Leads"; PropertyLeads filter set IDs in parens):
+
+| County | Filter Set ID | Flip buy-box status |
+|---|---|---|
+| Alameda | 965275 | ✅ CORE — the proven engine |
+| San Francisco | 998173 | ⚠️ AMBER — premium; barbell wins/losses |
+| San Mateo | 998177 | ⚠️ AMBER — premium Peninsula loss pattern |
+| Solano | 998181 | ✅ Proven smaller market (Vallejo) |
+| Sonoma | 998185 | ⚠️ One known loss (Petaluma −$210K) |
+| Marin | 998193 | ⚠️ Premium, no deal history in records |
+| Santa Cruz | 999915 | ➖ No deal history in records |
+
+**How to reconcile the two buy-boxes:** lead-gen geography ≠ purchase
+geography. Premium-county leads are in scope for the channel, but any
+*purchase* there still goes through the flip buy-box gate (AMBER = fat margin
++ hard rehab cap + Juan's personal approval; losses cluster at >$1.5M buys
+with >25–30% rehab). Premium-county leads default to wholesale/assignment
+exits unless the flip math clears the gate.
+
+**Open items to close (Twin to chase):**
+- Written rationale from the meeting: why these 7, and the intended exit
+  strategy for premium-county leads. (Meeting date/attendees/notes not yet
+  in the repo — "no major direction change without a written update.")
+- Confirm **Contra Costa's exclusion was deliberate** — West CC/Richmond is
+  part of the proven flip engine and is NOT in the PropertyLeads set.
+- Re-verdict on the 7-county set: **Sept 6, 2026**, judged on cost per
+  contract vs the old-set benchmark (~$20.3K/contract).
+
 ## Data Hygiene / Confidence
 
 - **Strongest records** (both settlement statement + expense sheet): 255 Amber,
