@@ -1,39 +1,61 @@
 Bateman Collective / Twin Home Buyer -- Lead Tracking Dashboard
 
 Overview
-Total Leads,=COUNTA(A40:A94)
-Junk Leads (Test Lead + Duplicate Lead),"=COUNTIF(F40:F94,""Test Lead"")+COUNTIF(F40:F94,""Duplicate Lead"")"
+Total Leads,=COUNTA(A62:A116)
+Junk Leads (Test Lead + Duplicate Lead),"=COUNTIF(F62:F116,""Test Lead"")+COUNTIF(F62:F116,""Duplicate Lead"")"
 Actionable Leads (Total - Junk),=B4-B5
-Qualified Leads (Appointment + Contract),"=COUNTIF(F40:F94,""Qualified | Appointment"")+COUNTIF(F40:F94,""Qualified | Contract"")"
+Qualified Leads (Appointment + Contract),"=COUNTIF(F62:F116,""Qualified | Appointment"")+COUNTIF(F62:F116,""Qualified | Contract"")"
 Qualified Rate (of Actionable Leads),"=IFERROR(B7/B6,0)"
 
 Leads by Source
-Facebook,"=COUNTIF(H40:H94,""Facebook"")"
-Google,"=COUNTIF(H40:H94,""Google"")"
-Print,"=COUNTIF(H40:H94,""Print"")"
+Facebook,"=COUNTIF(H62:H116,""Facebook"")"
+Google,"=COUNTIF(H62:H116,""Google"")"
+Print,"=COUNTIF(H62:H116,""Print"")"
 
 Leads by Disposition
-Qualified | Appointment,"=COUNTIF(F40:F94,""Qualified | Appointment"")"
-Qualified | Contract,"=COUNTIF(F40:F94,""Qualified | Contract"")"
-Unqualified Seller | Other,"=COUNTIF(F40:F94,""Unqualified Seller | Other"")"
-Unqualified Seller | Poor Location,"=COUNTIF(F40:F94,""Unqualified Seller | Poor Location"")"
-Unqualified Seller | Retail,"=COUNTIF(F40:F94,""Unqualified Seller | Retail"")"
-Unqualified Seller | Already Listed,"=COUNTIF(F40:F94,""Unqualified Seller | Already Listed"")"
-Non-Seller | Other,"=COUNTIF(F40:F94,""Non-Seller | Other"")"
-Non-Seller | SPAM,"=COUNTIF(F40:F94,""Non-Seller | SPAM"")"
-No Contact,"=COUNTIF(F40:F94,""No Contact"")"
-Test Lead,"=COUNTIF(F40:F94,""Test Lead"")"
-Duplicate Lead,"=COUNTIF(F40:F94,""Duplicate Lead"")"
-(No Disposition Set),=COUNTBLANK(F40:F94)
+Qualified | Appointment,"=COUNTIF(F62:F116,""Qualified | Appointment"")"
+Qualified | Contract,"=COUNTIF(F62:F116,""Qualified | Contract"")"
+Unqualified Seller | Other,"=COUNTIF(F62:F116,""Unqualified Seller | Other"")"
+Unqualified Seller | Poor Location,"=COUNTIF(F62:F116,""Unqualified Seller | Poor Location"")"
+Unqualified Seller | Retail,"=COUNTIF(F62:F116,""Unqualified Seller | Retail"")"
+Unqualified Seller | Already Listed,"=COUNTIF(F62:F116,""Unqualified Seller | Already Listed"")"
+Non-Seller | Other,"=COUNTIF(F62:F116,""Non-Seller | Other"")"
+Non-Seller | SPAM,"=COUNTIF(F62:F116,""Non-Seller | SPAM"")"
+No Contact,"=COUNTIF(F62:F116,""No Contact"")"
+Test Lead,"=COUNTIF(F62:F116,""Test Lead"")"
+Duplicate Lead,"=COUNTIF(F62:F116,""Duplicate Lead"")"
+(No Disposition Set),=COUNTBLANK(F62:F116)
 
 Google Ads Cost Analysis
 Google Ads Spend (this period),25400
 Google Leads Count,=B12
-Qualified Leads from Google,"=COUNTIFS(H40:H94,""Google"",F40:F94,""Qualified | Appointment"")+COUNTIFS(H40:H94,""Google"",F40:F94,""Qualified | Contract"")"
+Qualified Leads from Google,"=COUNTIFS(H62:H116,""Google"",F62:F116,""Qualified | Appointment"")+COUNTIFS(H62:H116,""Google"",F62:F116,""Qualified | Contract"")"
 Cost Per Lead (Google),"=IFERROR(B30/B31,0)"
 Cost Per Qualified Lead (Google),"=IFERROR(B30/B32,0)"
 
-"Note: Google Ads spend of $25,400 is from Google Ads account screenshots (2026-07-21): $14.1K for Jun 1-30, 2026 + $11.3K for Jul 1-21, 2026 (values as rounded/displayed in the Google Ads UI), approximating the Google Leads date range (6/8-7/20/2026). Replace with an exact billing figure for more precision."
+Meta (Facebook) Ads Cost Analysis
+"Total Meta Spend (Last 30 Days: Jun 21 - Jul 20, 2026)",2695.78
+  - BOFU - Bateman Spend (lead-gen campaign),11.84
+  - TOFU - Bateman Spend (awareness campaign),2683.94
+Meta Impressions,67862
+Meta Reach (accounts),38744
+Facebook Leads Count,=B11
+Qualified Leads from Facebook,"=COUNTIFS(H62:H116,""Facebook"",F62:F116,""Qualified | Appointment"")+COUNTIFS(H62:H116,""Facebook"",F62:F116,""Qualified | Contract"")"
+Cost Per Facebook Lead (total Meta spend basis),"=IFERROR(B37/B42,0)"
+Cost Per Qualified Facebook Lead,"=IFERROR(B37/B43,""N/A - 0 qualified"")"
+
+Combined Ad Performance (Google + Meta)
+Total Ad Spend (Google + Meta),=B30+B37
+Total Leads (all sources),=B4
+Total Actionable Leads,=B6
+Total Qualified Leads,=B7
+Blended Cost Per Lead (all leads),"=IFERROR(B48/B49,0)"
+Blended Cost Per Actionable Lead,"=IFERROR(B48/B6,0)"
+Blended Cost Per Qualified Lead,"=IFERROR(B48/B51,0)"
+
+"Note (Google Ads): $25,400 spend is from Google Ads screenshots (2026-07-21): $14.1K for Jun 1-30 + $11.3K for Jul 1-21, 2026 (rounded as shown in the UI), approximating the Google Leads date range. Replace with exact billing for precision."
+"Note (Meta Ads): $2,695.78 is the total across 17 Meta campaigns for the Last 30 Days (Jun 21 - Jul 20, 2026). Most of it ($2,683.94) is the TOFU awareness campaign; the BOFU lead-gen campaign directly spent only $11.84. Facebook cost-per-lead uses total Meta spend as the marketing cost basis. 0 of the 11 Facebook leads were qualified."
+"Note (Combined): Google and Meta spend windows differ slightly (Google ~6 weeks vs Meta last 30 days) and lead attribution is approximate, so blended figures are directional."
 
 All Leads (Facebook + Google combined)
 Date,Name,Address,Phone Number,Email,Disposition,Notes,Source,Campaign,Tracking Link
