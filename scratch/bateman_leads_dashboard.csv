@@ -1,0 +1,94 @@
+Bateman Collective / Twin Home Buyer -- Lead Tracking Dashboard
+
+Overview
+Total Leads,=COUNTA(A40:A94)
+Junk Leads (Test Lead + Duplicate Lead),"=COUNTIF(F40:F94,""Test Lead"")+COUNTIF(F40:F94,""Duplicate Lead"")"
+Actionable Leads (Total - Junk),=B4-B5
+Qualified Leads (Appointment + Contract),"=COUNTIF(F40:F94,""Qualified | Appointment"")+COUNTIF(F40:F94,""Qualified | Contract"")"
+Qualified Rate (of Actionable Leads),"=IFERROR(B7/B6,0)"
+
+Leads by Source
+Facebook,"=COUNTIF(H40:H94,""Facebook"")"
+Google,"=COUNTIF(H40:H94,""Google"")"
+Print,"=COUNTIF(H40:H94,""Print"")"
+
+Leads by Disposition
+Qualified | Appointment,"=COUNTIF(F40:F94,""Qualified | Appointment"")"
+Qualified | Contract,"=COUNTIF(F40:F94,""Qualified | Contract"")"
+Unqualified Seller | Other,"=COUNTIF(F40:F94,""Unqualified Seller | Other"")"
+Unqualified Seller | Poor Location,"=COUNTIF(F40:F94,""Unqualified Seller | Poor Location"")"
+Unqualified Seller | Retail,"=COUNTIF(F40:F94,""Unqualified Seller | Retail"")"
+Unqualified Seller | Already Listed,"=COUNTIF(F40:F94,""Unqualified Seller | Already Listed"")"
+Non-Seller | Other,"=COUNTIF(F40:F94,""Non-Seller | Other"")"
+Non-Seller | SPAM,"=COUNTIF(F40:F94,""Non-Seller | SPAM"")"
+No Contact,"=COUNTIF(F40:F94,""No Contact"")"
+Test Lead,"=COUNTIF(F40:F94,""Test Lead"")"
+Duplicate Lead,"=COUNTIF(F40:F94,""Duplicate Lead"")"
+(No Disposition Set),=COUNTBLANK(F40:F94)
+
+Google Ads Cost Analysis
+Google Ads Spend (this period),25400
+Google Leads Count,=B12
+Qualified Leads from Google,"=COUNTIFS(H40:H94,""Google"",F40:F94,""Qualified | Appointment"")+COUNTIFS(H40:H94,""Google"",F40:F94,""Qualified | Contract"")"
+Cost Per Lead (Google),"=IFERROR(B30/B31,0)"
+Cost Per Qualified Lead (Google),"=IFERROR(B30/B32,0)"
+
+"Note: Google Ads spend of $25,400 is from Google Ads account screenshots (2026-07-21): $14.1K for Jun 1-30, 2026 + $11.3K for Jul 1-21, 2026 (values as rounded/displayed in the Google Ads UI), approximating the Google Leads date range (6/8-7/20/2026). Replace with an exact billing figure for more precision."
+
+All Leads (Facebook + Google combined)
+Date,Name,Address,Phone Number,Email,Disposition,Notes,Source,Campaign,Tracking Link
+7/20/2026 1:06:14,Jeffrey Bryant,"26385 Adrian Ave, Hayward, CA, USA",9254372355,jeffyb@comcast.net,,,Facebook,BOFU - Bateman,
+7/17/2026 11:23:39,Wendy Zampardi,"3119 Hillside Drive, Fortuna, CA, USA",7077232369,wzampardi@gmail...,Non-Seller | Other,The property is a vacant la...,Facebook,BOFU - Bateman,
+7/17/2026 3:37:25,,"1 Green Point Lane, Novato, CA, USA",9162135913,,Unqualified Seller | Already Listed,The listing agent is also the...,Facebook,BOFU - Bateman,
+7/14/2026 11:33:18,Test Lead,"555 W 1275 N, Lehi, UT, USA",3852528245,test@gmail.com,Test Lead,,Facebook,,
+7/13/2026 8:37:00,SAN FRANCSCO CA,"San Francisco, CA",4157562546,,No Contact,Called the lead but he ment...,Facebook,BOFU - Bateman,https://app.calltrackingmet...
+7/13/2026 10:15:23,,"Sacramento, CA, USA",9162876881,,No Contact,,Facebook,BOFU - Bateman,
+7/13/2026 10:14:35,,3726ja,9162876881,,No Contact,,Facebook,BOFU - Bateman,
+7/11/2026 8:15:30,,424 mark ave,7736907284,,No Contact,,Facebook,BOFU - Bateman,
+7/11/2026 2:40:00,MODESTO CA,"Modesto, CA",2096147838,,Non-Seller | SPAM,,Facebook,BOFU - Bateman,
+7/11/2026 1:52:47,,Mariarivera @$icloud,2097719288,,No Contact,,Facebook,BOFU - Bateman,
+7/10/2026 8:39:36,,"3770 Lincoln Boulevard, Oroville, CA, USA",5309220470,,No Contact,,Facebook,BOFU - Bateman,
+7/20/2026 2:50:34,Stephanie Aguilar,1645 Concord Ave,5593956021,stephaniecambero...,Unqualified Seller | Other,"Not in a rush to sell, just w...",Google,23913739190,
+7/20/2026 12:04:5,,"1200 DeKalb Ave NE, Atlanta, GA, USA",4085153786,,Unqualified Seller | Poor Location,Out of Twin Home Buyer's...,Google,23913739190,
+7/20/2026 1:34:09,Alyssia Esquivel,1270 South Rose,2097185350,alyssiaesquivel98...,,,Google,23913739190,
+7/16/2026 10:52:19,Chris J. Giro,"18 Hampton Rd, Occidental, CA 95465, USA",7072929001,sebastopolglass@...,Unqualified Seller | Other,We passed on this lead - a...,Google,23913739190,
+7/15/2026 9:46:34,Jesse Davis,"2440 Orchard Ln, Martinez, CA, USA",9258122778,yozerzjessedavis...,Non-Seller | Other,The property is already for...,Google,23913739190,
+7/15/2026 4:16:54,Roger William,"2318 Amboy Avenue, Stockton, CA, USA",9255658415,rogerwjohnson1@...,No Contact,The lead is unresponsive,Google,23913739190,
+7/14/2026 1:06:17,Leticia Araujo-Perez,"4029 Folsom Street, San Francisco, CA, USA",5103947767,leticiaaraujoperez...,Non-Seller | Other,The lead decided to go wit...,Google,23913739190,
+7/11/2026 3:45:00,J WEGLEITNER,"Vallejo, CA",7077126984,,Non-Seller | SPAM,Spoke to this lead/someon...,Google,BOFU - Bateman,https://app.calltrackingmet...
+7/11/2026 6:37:40,,"309 De Anza Drive, Vallejo, CA, USA",7076233206,,No Contact,,Google,23913739190,
+7/10/2026 9:59:00,KEUING WALTER,"Oakland:Fruitvale Da, CA",5104852812,,Non-Seller | Other,The lead is asking if we bu...,Print,,https://app.calltrackingmet...
+7/8/2026 6:58:29,Baljit Singh,"867 Osprey Drive, Lathrop, CA, USA",9255010086,singhbaljit01@iclo...,Unqualified Seller | Other,We passed on this lead,Google,23913739190,
+7/7/2026 5:13:41 PM,MK Ding,"1549 5th Avenue, Oakland, CA",6508420448,mkding71@gmail.c...,Qualified | Appointment,Appointmnet completed - w...,Google,23913739190,
+7/6/2026 7:54:57,,1070 Bare Oak Ave,5593602132,,No Contact,,Google,23913739190,
+7/6/2026 2:05:23,Tony Bal,"12 E St, Empire, CA, USA",2093805564,devraz_78@yahoo...,Unqualified Seller | Other,We passed on this lead,Google,23913739190,
+7/4/2026 11:31:22,Edward Ceja,"615 4th Court, Mendota, CA, USA",5593887135,anthony4990m@g...,No Contact,The lead became unrespon...,Google,23913739190,
+7/3/2026 1:46:59,Daniel Gamblin Jordan,"645 Russell St, Vallejo, CA, USA",7075340307,danieljordan2332...,Unqualified Seller | Other,Daniel Gamblin Jordan - 6...,Google,23913739190,
+6/30/2026 4:30:2,,"2328 Lafayette Drive, Antioch, CA, USA",9255868512,,No Contact,,Google,23913739190,
+6/28/2026 7:47:29,Robert Gunn,"3375 17th Street, Apt 311 San Francisco, CA",4157941602,gunncomm@com...,Qualified | Contract,Contract already sent - wai...,Google,23913739190,
+6/27/2026 2:51:25,Rosendo Mercado,"5602 Walerga Road, Sacramento, CA, USA",9168212648,mercadoross@ya...,Unqualified Seller | Other,Lead says that someone fill...,Google,23913739190,
+6/24/2026 4:53:57,Maria Lemons,"955 W Clubhouse Dr, Prescott, AZ, USA",9283087823,alize9lemons@gm...,Unqualified Seller | Poor Location,,Google,23913739190,
+6/24/2026 4:15:20,,"1904 Everest Place, Tracy, CA, USA",4089871053,,No Contact,,Google,23913739190,
+6/23/2026 9:21:51,,"5053 Veranda Terrace, Davis, CA, USA",7076850229,,Non-Seller | Other,Lead mentioned that he wa...,Google,23913739190,
+6/22/2026 11:21:42,Martha Reece,"5475 East Illinois Avenue, Fresno, CA, USA",5599388160,greeg1035@gmail...,Qualified | Contract,The lead already signed th...,Google,23913739190,
+6/22/2026 1:09:55,Kashov Sharma,"1000 W 26th St unit 213, Austin, TX, USA",8318692049,pratibh55@gmail.com,Non-Seller | Other,Lead submitted a PPC form...,Google,23913739190,
+6/20/2026 7:10:54,Oscar Cantu,"9 West Yorkshire Drive, Stockton, CA, USA",2094566874,oscarcantu06@m...,Non-Seller | Other,For property visit on June...,Google,23913739190,
+6/19/2026 11:52:12,Thomas Burke,"191 Orange St, Kingsburg, CA, USA",5598451968,dairychemworkz@...,Unqualified Seller | Retail,,Google,23913739190,
+6/16/2026 5:19:40,Jaimin Patel,"104 Woodbridge Cir, San Mateo, CA, USA",4152861222,tgovind@excite.com,Non-Seller | SPAM,Called the lead and said th...,Google,23913739190,
+6/15/2026 10:39:0,MARCHETTI SEBAS,"San Mateo, CA",6505200300,,No Contact,The lead became unrespon...,google,,https://app.calltrackingmet...
+6/15/2026 11:38:00,WIRELESS CALLER,"Los Altos, CA",6505189183,,Unqualified Seller | Retail,Seller wants to sell but decl...,google,,https://app.calltrackingmet...
+6/14/2026 3:49:36,Jhanel Kies,"2454 Vista Grande, Fairfield, CA, USA",6505189183,C1011w@yahoo.com,Unqualified Seller | Retail,Seller wants to sell but decl...,Google,23913739190,
+6/13/2026 12:17:08,,"8926 Mountain Home Court, Elk Grove, CA",2092773700,,Non-Seller | Other,Lead is not the property ow...,Google,23913739190,
+6/13/2026 10:13:4,Gurjit Chahal,"15055 Hollyock Ct, Lathrop, CA, USA",2094823376,gurjit.chahal95@o...,Unqualified Seller | Retail,we are passing low equity,Google,23913739190,
+6/11/2026 2:44:12,Name Test,"4545 E Golden Autumn Vw, Eagle Mountain",4545454545,Test@gmail.com,Test Lead,,Google,,
+6/11/2026 2:33:59,Test Lead Only Test,"170 Glen Way, Atlanta, GA, USA",5103945339,test@leadgmail.com,Test Lead,,Google,,
+6/11/2026 2:13:00,OAKLAND CA,"Oakland:Trinidad Da, CA",5103945339,,Test Lead,,Print,,https://app.calltrackingmet...
+6/11/2026 2:05:50,Juan Diaz,"100 Palm Avenue, San Carlos, CA, USA",5108001662,bryan@twinhome...,Duplicate Lead,"Existing lead - May 03, 2024",Google,23913739190,
+6/11/2026 1:17:20,,"4917 N Holt Ave apt 103, Fresno CA 93705",5593497823,,Non-Seller | SPAM,This seller is offering his ne...,Google,23913739190,
+6/9/2026 4:45:00,WIRELESS CALLER,"Clovis, CA",5597671593,,Unqualified Seller | Poor Location,,google,,https://app.calltrackingmet...
+6/9/2026 3:11:41 PM,Test Lead,"777 W 2260 N, Lehi, UT",7777777777,test@gmail.com,Test Lead,,Google,,
+6/9/2026 2:24:11 PM,Test Lead,"555 East 3375 North, Lehi, UT",5555555555,test@gmail.com,Test Lead,,Google,,
+6/9/2026 12:25:29,,"711 Saddlehorn Drive, Centerton, AR, USA",3147360371,,Unqualified Seller | Poor Location,,Google,23913739190,
+6/8/2026 7:45:33,Juan Diaz,"100 Palm Avenue, San Carlos, CA, USA",5103945339,juan@twinhomebu...,Test Lead,,Google,23913739190,
+6/8/2026 6:19:35,Marta Acosta,"1719 Richard Way, Ceres, CA, USA",2094991377,acostaam03@gm...,Unqualified Seller | Poor Location,,Google,23913739190,
+6/8/2026 10:55:00,Test Lead,"555 Test Lead, Lehi, UT",8015555555,testlead@batema...,Test Lead,,Google,,
