@@ -3,6 +3,17 @@
 Working repo for Twin Home Buyer / Equity Track Inc. Holds the integration bridge
 (REI Blackbook → Monday.com → QuickBooks) and CEO-facing KPI reports.
 
+## Standing instruction: DIRECT MAIL ONLY
+
+Juan's scope is the **direct-mail channel only** (postcards, mailed checks, mailed
+letters). In every report, dashboard, board update, and reply:
+- Never surface company-wide P&L, other channels (PPC/PPL/TV/web), or all-channel
+  income/net figures unless Juan explicitly asks.
+- The leads board contains only leads with a Direct Mail source or a mail tag in
+  REI Blackbook (source wins; hotline call-ins without mail evidence are excluded).
+- All KPIs (cost/lead, ROA, net return) are computed on direct-mail spend and
+  direct-mail revenue only.
+
 ## Standing instruction: KPI dashboard on every update
 
 Whenever Juan asks for an **update / status / refresh / recap / "how are we doing"**,
