@@ -90,8 +90,9 @@ exits unless the flip math clears the gate.
 - Written rationale from the meeting: why these 7, and the intended exit
   strategy for premium-county leads. (Meeting date/attendees/notes not yet
   in the repo — "no major direction change without a written update.")
-- Confirm **Contra Costa's exclusion was deliberate** — West CC/Richmond is
-  part of the proven flip engine and is NOT in the PropertyLeads set.
+- ~~Confirm Contra Costa's exclusion was deliberate~~ **CONFIRMED (Seth,
+  2026-07-21): deliberate — agreed in the same meeting.** West CC/Richmond
+  remains flip-engine core but is intentionally not in the PropertyLeads set.
 - Re-verdict on the 7-county set: **Sept 6, 2026**, judged on cost per
   contract vs the old-set benchmark (~$20.3K/contract).
 
