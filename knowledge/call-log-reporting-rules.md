@@ -24,7 +24,7 @@ https://claude.ai/code/artifact/d87e6569-da8a-4f4b-8008-3f00fceae46d
 | PropertyLeads (PPL) | `Property Leads`, `Property leads`, `PropertyLeads` (3 spellings = 1 channel) |
 | Motivated Leads (PPL) | `Motivated Leads` |
 | PPC (Google/Bing Ads) | `PPC Lead` (log does NOT record Google vs Bing — flagged as logging gap) |
-| Direct Mail (Checks) | source `Direct Mail` + campaign contains `Check`; **plus all `Liens Area###`, `NOD Area###`, `NTS Area###` campaigns (per Seth, 2026-07-22 — these are check mailers)** |
+| Direct Mail (Checks) | source `Direct Mail` + **any campaign that isn't a Letter or Postcard campaign** — per Seth + the Direct Mail team (2026-07-22). Includes `(Checks)` campaigns, all `Liens/NOD/NTS Area###` campaigns, and generic/mislabeled campaign names |
 | Direct Mail (Letters) | source `Direct Mail` + campaign contains `Letter` |
 | Direct Mail (Postcard) | source `Postcard`, plus source `Direct Mail` with campaign starting `Postcard` |
 | TV Commercial | `TV Commercial` |
@@ -32,10 +32,12 @@ https://claude.ai/code/artifact/d87e6569-da8a-4f4b-8008-3f00fceae46d
 | Other | Leadgeeks, Webforn, Realtor, Facebook Ads, blank |
 
 **Checks, Letters, and Postcards are DIFFERENT products — never lump them.**
-Seth has said this repeatedly. Split by campaign-name suffix. Calls whose campaign
-carries no format marker go in a visible "DM — format not logged" bucket — never
-guess. Known logging errors to expect: TV campaigns filed under Direct Mail,
-postcard campaigns under generic Direct Mail.
+Seth has said this repeatedly. Split by campaign name: Letters and Postcard are
+identified by their campaign names; **everything else under the Direct Mail source
+defaults to Checks** (confirmed by Seth with the Direct Mail team, 2026-07-22 —
+no "unattributed" bucket needed). Known logging errors to expect and flag:
+TV-named campaigns filed under Direct Mail, postcard campaigns under generic
+Direct Mail, blank campaign names.
 
 ## Metric definitions (established through several revisions)
 
