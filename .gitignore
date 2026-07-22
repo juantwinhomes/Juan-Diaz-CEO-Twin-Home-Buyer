@@ -224,3 +224,11 @@ package-lock.json
 # Desktop app build output
 desktop/node_modules/
 desktop/dist/
+
+# REI BlackBook authenticated session + credentials (NEVER commit)
+auth/
+.auth/
+playwright/.auth/
+
+# Read-only REI data pulls (contains PII: owner names, addresses, revenue)
+scripts/out/
