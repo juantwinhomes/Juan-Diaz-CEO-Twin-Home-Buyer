@@ -11,6 +11,51 @@
 > Next: resolve the permit conflict below, then move to Phase 2 (room-by-room
 > shopping checklist).
 
+## Property Disposition & Site Operations (from WhatsApp, July 2026)
+
+**Confirmed goal: the modern farmhouse design plan stands — the objective is to finish the
+house.** The items below are about *when* construction can start, not *whether* the design
+work continues. Phase 2/3 design/sourcing work is not blocked by this.
+
+**Situation:** the property has (or had) a **city red tag** — this is very likely why
+Stuart Morgan's official permit scope is narrowly limited to kitchen + 2 bathrooms + code
+items (a minimal-scope permit to clear a red tag, not a full reno permit). A tenant
+situation is being resolved via **Cash for Keys**: a **$10,000 payment to Dan and Ruby**
+once the signed agreement is confirmed and they've had ~8 hours of agreed access to
+retrieve belongings, per the attorney's direction. This is a voluntary buyout, not a
+contested court eviction.
+
+**Sequence:** tenant/co-signer sign the agreement → attorney confirms → building
+department (re: the red tag) → trash-out/cleanup can begin → then construction phase.
+**Target: wrap up by Monday.**
+
+**Team roles (per Juan's own written plan, posted to the group so nobody works off private
+side-channels):**
+- **Juan** — coordinates directly with Dan, decides what's trash vs. keep, prioritizes
+  outside cleanup first. Explicitly does *not* want to be "the navigator" of this project
+  going forward — buying houses is his focus now.
+- **Christine (Kristine Joy)** — attorney liaison, confirms all documents signed, gives the
+  official green light, handles backend/team coordination.
+- **Cesar Cuellar** — assigns a helper to Jaime, oversees field operations, supports Jaime.
+- **Jaime (Jose Jaime Gaera)** — on-site supervisor (the one with the Ford truck/white
+  utility truck), meets Dan and Ruby, executes trash removal per Juan's direction (outside
+  first), reports progress to Cesar and Christine.
+
+**Hard rule right now: no plywood is to be removed** until Christine confirms the
+documents are fully signed.
+
+**Context worth keeping in mind:** Juan mentioned his father passed away a few days ago and
+he's personally stretched thin — explains the hard delegation to Cesar/Kristine and his
+"I don't want to be a construction guy" line. Also: Juan does not want to add anyone to
+payroll for this — work with the team already in place. He also floated using AI (this
+Twin, or a similar tool) as a fallback if Stuart Morgan doesn't have bandwidth for
+follow-up documentation work.
+
+**Company-wide context:** they're juggling roughly 6 properties at once right now —
+explains the "limited people, multiple projects" resource constraint.
+
+---
+
 ## 🚩 UNRESOLVED — needs Juan's answer before proceeding further
 
 The official permitted scope (submission set, prepared by Stuart Morgan / Remod Homes,
