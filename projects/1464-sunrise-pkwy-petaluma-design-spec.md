@@ -6,9 +6,10 @@
 > Design lead on this project: John (Philippines team), working under Juan.
 > Process being followed: `sop/Finish_Fixture_Specification_SOP` ("Shop, Don't Design").
 >
-> **STATUS: Phase 1 (Existing Conditions Inventory) — COMPLETE.**
-> Next: resolve the permit conflict below, then move to Phase 2 (room-by-room
-> shopping checklist).
+> **STATUS: Phase 1 (Existing Conditions Inventory) — nearly complete.**
+> House interior (upstairs + downstairs) is fully inventoried. **Garage still needs its
+> own walkthrough pass** (see Garage section below) before Phase 1 is truly done.
+> Also resolve the permit conflict below before framing/exterior/garage work proceeds.
 
 ## 🚩 UNRESOLVED — needs Juan's answer before proceeding further
 
@@ -193,6 +194,20 @@ none of this counts as a real spec until it's confirmed in-scope** — several o
 - Kitchen sink double faucet — confirmed as 2 fixtures (resolved).
 - Yellow room wall color — never explicitly confirmed (ceiling condition was, wall color
   wasn't).
+
+## Garage — NOT YET INVENTORIED
+
+Only fragments exist so far, not a real Phase 1 pass:
+- Garage door (exterior) — needs replacement, quote on file (Precision), pending permit
+  conflict resolution.
+- Squares/wood pieces on the garage ceiling — need removal so the garage door can open
+  fully (per Kristine's early update).
+- Kitchen → Garage door — wood, dirty, needs repaint.
+- Water heater inside garage — being repaired/re-strapped per the official permit.
+
+**Still missing:** garage flooring, wall condition/finish, any shelving/storage, lighting,
+electrical panel location if inside the garage, and general condition. This needs its own
+walkthrough pass before Phase 1 can be called fully complete.
 
 ## Next Steps
 
