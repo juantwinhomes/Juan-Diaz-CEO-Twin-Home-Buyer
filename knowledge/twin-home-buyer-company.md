@@ -82,6 +82,9 @@
 | Eliseo Sánchez | Field/trucks/site video | Field ops |
 | Mary Grace Pardines | PH team coordination (chats with Juan) | PH team |
 | "BEC" | Accounting firm coordination ("BEC CFO") | External accounting |
+| Chris | Follow-up on active acquisitions (Stage 7, with Kyle) | Acquisitions follow-up |
+| Kyle | Follow-up on active acquisitions (Stage 7); also top Claude user | Acquisitions follow-up |
+| Thea | Agent calls on offers (Stage 6) | Acquisitions / agent contact |
 
 **Open seat (Juan's own diagnosis, Nov 2025):** "boots on the ground in San
 Carlos" — local oversight of bills/filing/admin over the PH team. He wants
@@ -114,6 +117,10 @@ recommendation from the PI assessment._
 
 - **Lists / skip trace:** DealMachine, Property Radar, Profit Dial
   (ReiBlackbook), Smarty/NCOA (return-mail pipeline), HomeScout (AI filtering).
+- **MLS / research:** Paragon (MLS remarks/instructions), PropertyRadar (ownership,
+  liens, NOD). **Comps AI:** DeepSeek (primary for Stage-2 equity screen).
+- **Acquisition process:** MLS Acquisition Pipeline SOP — 7 stages / 3 kill-gates,
+  see `mls-acquisition-pipeline.md`. Claude does Stage-5 synthesis.
 - **CRM:** REI BlackBook (auto-tagging, lead scoring 1–100 Green/Yellow/Red,
   workflows, merge fields). Evaluated switching ("REI BlackBook vs Simply") — stayed.
 - **Dialers / AI agents:** Synthflow ("25 robotic agents"), Kixi live agents,
