@@ -11,6 +11,31 @@
 > Next: resolve the permit conflict below, then move to Phase 2 (room-by-room
 > shopping checklist).
 
+## UPDATE (7/16/2026) — Eviction closed, Monday inspection is the key date
+
+**Cash-for-keys is fully closed.** Dan (Daniel Allen Larsen) and Ruby both signed and were
+paid ($5,000 cashier's check each via Wells Fargo, per attorney Paul's advice). Police
+Department confirmed nothing further needed from them. Property is in active trash-out —
+yard being cleared to bare ground (plants, a play structure, rose bushes all going),
+confirming a blank-slate landscaping starting point per the design plan.
+
+**🎯 Monday, 10 AM — the pivotal meeting.** Code Enforcement + the Building Department
+inspector + **Stuart Morgan** will all be on-site. This is almost certainly where the
+structural/exterior permit conflict (flagged below) gets resolved — hold off on any garage
+door/exterior spend until after this. Cleanup deadline is **Saturday**, so the property is
+spotless before the inspectors arrive (Sonia — new name, likely cleaning crew — coordinating
+with Cesar on this).
+
+**Juan has fully handed off and wants to see design progress.** His own words: *"I'm going
+to check with the guys here to see if you guys already have based on the videos... what
+materials we're going to go with, carpet, all those things... see if you guys can design
+and show me the finished product as to what it looks like in the end. My job is pretty much
+done here... Caesar is now taking the lead on taking it to the finish line, along with
+Stuart's involved on the building side."* This raises the priority on Phase 2/3 — he
+specifically wants to see a visual/finished-look output, not just a spec list.
+
+---
+
 ## Property Disposition & Site Operations (from WhatsApp, July 2026)
 
 **Confirmed goal: the modern farmhouse design plan stands — the objective is to finish the
