@@ -207,14 +207,26 @@ none of this counts as a real spec until it's confirmed in-scope** — several o
   plus 2 white cabinet/storage units in the middle of the garage.
 - **Water heater:** confirmed present, tall white unit with piping — being repaired/
   re-strapped per the official permit.
-- **Flooring:** bare concrete, stained/dirty in areas.
+- **Flooring:** concrete, sealed/painted gray finish, stained/dirty in areas.
 - **Kitchen → Garage door:** wood, dirty, needs repaint.
+- **Framing:** mixed condition — some sections down to exposed studs with pink batt
+  insulation visible (near garage door/main bay), other sections have white wall finish
+  (near water heater).
+- **Electrical panel/breaker box:** mounted on the stud wall near the garage door opening —
+  this is the "main panel repair" item from the permit; location now confirmed.
+- **Storage:** 3 wood cabinet/box units mounted/stored on the wall near the ceiling (2 dark
+  reddish-brown, 1 orange/yellow-stained) — appear stored rather than built-in, plus the
+  built-in cabinet/hutch and 2 white cabinet units noted earlier.
+- **Lighting:** 2 fixtures — 1 round, 1 linear/tube-style (~1 meter).
+- The doorway/space near the water heater that looked like a separate laundry room is
+  **part of the garage itself**, not a distinct room — no separate inventory needed.
 
 **Garage Phase 1 inventory: complete.**
 
 ## Next Steps
 
-1. **Resolve the structural/exterior permit conflict with Juan — overdue, send today.**
-2. Move to Phase 2 (room-by-room shopping checklist) now that Phase 1 is closed.
-3. Phase 3 (real product research) can start on kitchen appliances/hardware immediately —
+1. **Phase 1 is fully complete — ready for final output** per the SOP template.
+2. **Resolve the structural/exterior permit conflict with Juan — overdue, send today.**
+3. Move to Phase 2 (room-by-room shopping checklist) now that Phase 1 is closed.
+4. Phase 3 (real product research) can start on kitchen appliances/hardware immediately —
    that scope is unambiguously approved regardless of the permit conflict outcome.
