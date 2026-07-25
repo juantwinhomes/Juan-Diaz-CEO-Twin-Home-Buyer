@@ -11,6 +11,28 @@
 > Next: resolve the permit conflict below, then move to Phase 2 (room-by-room
 > shopping checklist).
 
+## UPDATE (7/19/2026, day before inspection) — Property cleaned, red tag cause still unknown
+
+**Property is fully cleaned and ready for Monday's inspection** — Juan's own walkthrough:
+electrical checked out fine, plumbing is all copper and in good condition, a pool that
+used to be in the back has been removed. **Juan himself does not know the specific reason
+the red tag was placed** — he's speculating (plumbing, or something tied to the pool) but
+has no confirmed answer. This means Monday's meeting is a genuine fact-finding meeting, not
+a formality — don't assume a specific outcome going in.
+
+**Kitchen cabinets may get upgraded regardless of the red-tag outcome** (per Juan, in
+passing) — consistent with the existing two-tone cabinet flag already in the plan.
+
+**Background context (historical, not actionable):** the prior tenants had reportedly been
+living at the property ~3 years without paying rent, which is part of why this became a
+formal eviction/cash-for-keys situation rather than a routine move-out.
+
+**Car removal:** Peddle pickup rescheduled to Monday, July 20, 7:00–11:00 AM — same day as
+the inspection, before the 10 AM arrival. Dump site confirmed: Republic Services Petaluma
+Landfill.
+
+---
+
 ## UPDATE (7/16/2026) — Eviction closed, Monday inspection is the key date
 
 **Cash-for-keys is fully closed.** Dan (Daniel Allen Larsen) and Ruby both signed and were
