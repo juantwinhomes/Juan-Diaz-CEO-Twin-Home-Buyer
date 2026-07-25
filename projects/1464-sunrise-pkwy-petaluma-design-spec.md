@@ -11,6 +11,25 @@
 > Next: resolve the permit conflict below, then move to Phase 2 (room-by-room
 > shopping checklist).
 
+## STANDING RULE (Juan, direct instruction) — no recycled decisions
+
+**Juan's own words:** *"We don't want to say 'oh I used this carpet 3 years ago, so let's
+just use this again' — that's not how we design, how I design, we cannot do that at all,
+whatsoever."* Every material/product decision on this project gets decided fresh, based on
+this property's actual conditions and design direction — never carried over from a past
+project just because it's familiar. Applies to carpet specifically (no default brand
+assumed) and to every other selection going forward.
+
+**Also confirmed directly by Juan:** the AI-fed, comprehensive "ask AI what's everything in
+a flip" process is exactly the approach he wants — validates the Phase 1–6 SOP process
+being followed here.
+
+**New team members added to the WhatsApp group:** Bryan Hombre (tasked with generating
+design ideas, reportedly using a Grok AI conversation Juan had that may contain additional
+selections/resources — worth requesting access to that if possible) and Gonzalo.
+
+---
+
 ## UPDATE (7/19/2026, day before inspection) — Property cleaned, red tag cause still unknown
 
 **Property is fully cleaned and ready for Monday's inspection** — Juan's own walkthrough:
