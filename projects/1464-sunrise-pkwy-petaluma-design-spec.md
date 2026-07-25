@@ -269,14 +269,49 @@ current state.
 
 ---
 
-## Design Direction (from earlier discussion — status uncertain pending permit resolution)
+## Design Direction — grounded in real, property-specific sources only
 
-Locked as *inspiration*, not yet confirmed buildable: black window trim, black doors/garage
-door, SW 7008 Alabaster interior walls, SW 6258 Tricorn Black trim, SW 7005 Pure White
-exterior body, light stacked-stone veneer over brick, faux wood beam accents, light neutral
-carpet (Winhaven Utopia), brick paver pathway, drought-tolerant landscaping. **Per the SOP,
-none of this counts as a real spec until it's confirmed in-scope** — several of these items
-(exterior color, garage door, landscaping) may sit outside the current permit entirely.
+**Per direction from the team: design decisions are NOT based on generic inspiration/mood-
+board photos of other homes.** Everything below comes from real artifacts specific to this
+actual property — historical photos of the house itself, an already-produced color spec,
+and a real contractor landscaping pick list. This replaces the earlier inspiration-photo-
+based direction entirely.
+
+**Historical reference — Google Street View, March 2021:** the house's actual original
+look — dark charcoal/gray siding, black garage door, black window trim, manicured boxwood
+hedges, lush lawn. This is real evidence of what the house looked like before, not a
+generic style reference.
+
+**Exterior color spec (already produced, matches the historical photo):**
+| Element | Color | Hex |
+|---|---|---|
+| Main siding | SW 7069 Iron Ore (deep charcoal gray) | #3A3C3E |
+| Trim | SW 7008 Alabaster (soft warm white) | #F4F1E9 |
+| Black accents (windows, hardware, garage frame) | SW 6258 Tricorn Black | #1C1C1C |
+| Garage door | Match siding — Iron Ore or Tricorn Black | — |
+| Roof shingles | GAF or CertainTeed, charcoal or black architectural shingles | — |
+
+Sourcing: Sherwin-Williams and Home Depot paint counters in Fairfield, CA — codes SW 7069 /
+7008 / 6258, same-day tinting available. *(Note: Fairfield is a bit outside Petaluma —
+worth confirming this is the intended sourcing location, not a mix-up with another
+property.)*
+
+**This reverses the earlier white-body/black-trim assumption** — the real historical
+photo and the produced spec both point to a **dark charcoal body with white trim**, not a
+white body. Adopting this version going forward.
+
+**Landscaping — real contractor pick list (confirmed for 1464 Sunrise Pkwy):**
+Style: modern, low-maintenance, gravel-heavy, no irrigation.
+- Ground cover: light gray/tan crushed gravel or decomposed granite, ~800–1,200 sq ft
+- Edging: black/dark flexible bender board, ~150–200 linear ft
+- Plants: 6–8 agave, 10–15 succulents (Echeveria/Sedum), 8–12 lavender, 10–12 ornamental
+  grasses (Blue Fescue or Mexican Feather Grass), 6–8 small boxwood-style shrubs
+- Weed barrier fabric under gravel, dark mulch in tighter planting pockets
+- **Materials cost estimate: $1,800–$2,800** (Home Depot + local landscape supply)
+
+**Still pending:** whether garage door replacement, this exterior color scheme, and this
+landscaping plan are authorized under the permit (the structural/exterior conflict below) —
+likely resolved at Monday's inspection.
 
 ## Minor Unresolved (non-blocking)
 
