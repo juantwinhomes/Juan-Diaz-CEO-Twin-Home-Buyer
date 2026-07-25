@@ -206,7 +206,7 @@ materials until this is resolved. **This has been sitting unescalated — send t
 | Below the stairs | Wooden door | — | Storage room |
 | Left of stairs | — | — | Confirmed: storage room |
 | Kitchen → Garage | Wood | — | Dirty, needs repaint |
-| Garage door (exterior) | — | — | Needs replacement (Precision quote — pending permit conflict resolution) |
+| Garage door (exterior) | — | — | **APPROVED** — Precision quote, $2,273.75, white flush-panel Lincoln 3138 (color conflict with dark-exterior direction still to reconcile, but the order itself is approved) |
 | Bathroom (downstairs) | — | — | Good |
 | Yellow room | Wood, white paint | Round doorknob | — |
 | Orange room | Wood, white paint, with carvings | Lever-style | Good |
