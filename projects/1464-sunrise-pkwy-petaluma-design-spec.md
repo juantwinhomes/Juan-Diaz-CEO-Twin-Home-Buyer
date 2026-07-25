@@ -343,8 +343,19 @@ likely resolved at Monday's inspection.
 
 ## Garage — inventoried
 
-- **Garage door (exterior):** needs replacement, quote on file (Precision), pending permit
-  conflict resolution.
+- **Garage door (exterior):** needs replacement — **full spec from the actual signed
+  estimate (Precision Garage Door, Estimate #346209161, 7/21/2026):** Lincoln 3138
+  insulated steel door, 8'×7', **Flush Panel design, White**, no windows, white climate
+  seal, standard 3" bottom rubber, T-handle lock (no motor). Total **$2,273.75** (10%
+  deposit ≈ $227.38). Lead time 2–3 days, half-day install. Explicitly excludes
+  electrical/permits/painting/drywall repair. Garage must be cleared back 10–15 ft before
+  install (a $119 fee applies if not cleared in time). **Note:** billing docs list the
+  entity as "Equity Truck Inc" (vs. "Equity Track" elsewhere) and zip 94953 (vs. 94954
+  used elsewhere) — minor inconsistencies across documents, not confirmed which is correct.
+  **Color conflict stands:** flush-panel white is a fine style match for modern farmhouse
+  minimalism, but the color doesn't match the dark-charcoal/black exterior direction —
+  still pending permit-conflict resolution before deciding whether to special-order in a
+  different color or paint the white door after install.
 - **Ceiling:** exposed wood rafters/beams, no drywall finish. Electrical conduit/piping
   along it. 1 fluorescent tube light fixture. Circled wood blocking pieces = the "squares"
   needing removal for garage door clearance.
