@@ -337,7 +337,10 @@ likely resolved at Monday's inspection.
 **Juan's original find (not recommended):** Thesis Montclair Linear Alabaster Chandelier,
 32"–46" variants, Forged Bronze/Brushed Gold finish, $744.99–$789.99. Sculptural design
 Juan liked, but the metal finish conflicts with the house's black-hardware standard and
-the price is far outside the tier used everywhere else on this project.
+the price is far outside the tier used everywhere else on this project. Two specific
+variants on record:
+- 32" 8-Light, Forged Bronze — [Home Depot](https://www.homedepot.com/p/Thesis-Montclair-32-inch-8-Light-Forged-Bronze-and-Natural-Alabaster-Chandelier-207364A/340556895), $744.99–$789.99
+- 46" 6-Light, Brushed Gold — [Home Depot](https://www.homedepot.com/p/Thesis-Montclair-46-in-6-Light-Brushed-Gold-and-Natural-Alabaster-Linear-Chandelier-207359A/340556897), price unconfirmed (page not fetchable — check live listing)
 
 **Recommended:** YANSUN 25 in. 8-Light Matte Black Farmhouse Minimalist Hanging
 Candlestick Chandelier, $102.60 — [Home Depot](https://www.homedepot.com/p/YANSUN-25-in-8-Light-Matte-Black-Farmhouse-Minimalist-Hanging-Candlestick-Chandelier-H-DZ019/317571783).
