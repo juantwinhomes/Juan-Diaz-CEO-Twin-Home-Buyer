@@ -332,6 +332,32 @@ Style: modern, low-maintenance, gravel-heavy, no irrigation.
 landscaping plan are authorized under the permit (the structural/exterior conflict below) —
 likely resolved at Monday's inspection.
 
+## Phase 3 — Bathroom Vanity Chandelier (Final Output)
+
+**Juan's original find (not recommended):** Thesis Montclair Linear Alabaster Chandelier,
+32"–46" variants, Forged Bronze/Brushed Gold finish, $744.99–$789.99. Sculptural design
+Juan liked, but the metal finish conflicts with the house's black-hardware standard and
+the price is far outside the tier used everywhere else on this project.
+
+**Recommended:** YANSUN 25 in. 8-Light Matte Black Farmhouse Minimalist Hanging
+Candlestick Chandelier, $102.60 — [Home Depot](https://www.homedepot.com/p/YANSUN-25-in-8-Light-Matte-Black-Farmhouse-Minimalist-Hanging-Candlestick-Chandelier-H-DZ019/317571783).
+Same sculptural candlestick-arm look, correct black finish, ~13% of the original cost.
+
+**Alternate if a larger fixture is needed:** Parrot Uncle Radiant 42" 6-Light Black
+Farmhouse Linear Chandelier, $318.76 — [Home Depot](https://www.homedepot.com/p/Parrot-Uncle-Radiant-42-in-6-Light-Black-Farmhouse-Linear-Chandelier-Candlestick-Ding-Room-Pendant-Light-Fixture-RA106BK/334726067).
+
+**Decision needed from Juan:** confirm the YANSUN black chandelier replaces his original
+gold pick.
+
+## ⚠️ CORRECTION — kitchen appliance dimensions retracted
+
+Dimensions previously discussed in chat (gas range 30", range hood 30"×6", refrigerator
+36"×72" w/ zero-clearance hinges, dishwasher 24") were **confirmed NOT to be for this
+property**. None of these were written into this file's kitchen appliance record, so
+nothing here needed correcting — but any dishwasher research done using "24 in." as an
+assumption (a GE model was researched) is **unverified** until the real Petaluma
+dimensions are provided. Do not treat that research as final.
+
 ## Minor Unresolved (non-blocking)
 
 - Bathroom mirrors (both) — 2 present in each, which one stays: TBD.
