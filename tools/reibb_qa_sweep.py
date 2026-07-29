@@ -212,18 +212,30 @@ with sync_playwright() as pw:
     p = ctx.new_page()
     p.goto("https://my.reiblackbook.com/contacts", wait_until="domcontentloaded",
            timeout=60000)
-    p.wait_for_timeout(8000)
-    if "/contacts" not in p.url or p.locator('input[type="password"]').count():
+    if p.locator('input[type="password"]').count():
         print("NOT LOGGED IN — run reibb_login.py first", file=sys.stderr)
         sys.exit(4)
 
+    # The list renders async and can be slow — poll until record links appear
+    # instead of trusting a fixed sleep. Empty-after-timeout is an error, not
+    # an empty sweep.
     hrefs = []
-    for a in p.locator('a[href*="/contacts/"]').all():
-        h = a.get_attribute("href") or ""
-        if re.search(r"/contacts/\d+", h) and h not in hrefs:
-            hrefs.append(h)
-        if len(hrefs) >= N:
+    for _ in range(15):  # up to ~30s
+        p.wait_for_timeout(2000)
+        hrefs = []
+        for a in p.locator('a[href*="/contacts/"]').all():
+            h = a.get_attribute("href") or ""
+            if re.search(r"/contacts/\d+", h) and h not in hrefs:
+                hrefs.append(h)
+            if len(hrefs) >= N:
+                break
+        if hrefs:
             break
+    if not hrefs:
+        print("CONTACTS LIST DID NOT RENDER — no record links after 30s; "
+              "not a real empty sweep. Investigate before trusting results.",
+              file=sys.stderr)
+        sys.exit(5)
 
     results = []
     for h in hrefs:
