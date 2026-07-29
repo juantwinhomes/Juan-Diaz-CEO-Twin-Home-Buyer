@@ -7,9 +7,9 @@ Home Buyer's own history into decisions.
 
 Pulls together every data source the business already has — QuickBooks (the
 real money), REI BlackBook (all 6,296 leads and their call notes), the Direct
-Mail and PPC KPI sheets, Monday.com paid-lead boards, Google Sheets — and
-cross-checks them against each other so the numbers we act on are **verified,
-not remembered**.
+Mail, PPL, and PPC KPI sheets, Monday.com paid-lead boards, Google Sheets —
+and cross-checks them against each other so the numbers we act on are
+**verified, not remembered**.
 
 ## Why it exists
 
