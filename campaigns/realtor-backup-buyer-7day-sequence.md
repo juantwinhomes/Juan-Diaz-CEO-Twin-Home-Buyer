@@ -9,7 +9,8 @@ desperation, no bragging, one clean "I work through you" reassurance, not repeat
 
 ## Before launch — checklist
 - [x] CA GC (CSLB) license number #1066892 in all 7.
-- [ ] Replace `[Direct Phone]` and `[First Name]` (add city/brokerage token if the list has it).
+- [x] Direct phone (650) 844-3415 in all 7.
+- [ ] Replace `[First Name]` at send (add city/brokerage token if the list has it).
 - [ ] Confirm license is active and in Juan's name (CSLB advertising compliance).
 - [ ] Plain text only — no images, no links (cold-email deliverability).
 - [ ] Sequence stops on any reply. Positive/property-specific replies route to Juan/sales immediately.
@@ -30,7 +31,7 @@ Your client stays yours. I'm not here to replace a clean sale — I'm the call y
 
 Save my number for the deal that falls apart late.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · (650) 844-3415
 
 ---
 
@@ -48,7 +49,7 @@ Give me the situation and I'll hand you a real second option before you make tha
 
 Either way you walk into that conversation with an answer, not a guess.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · (650) 844-3415
 
 ---
 
@@ -66,7 +67,7 @@ I won't price it off a photo or step on your inspector. I'll help you separate t
 
 Keep me handy when the report raises more questions than it answers.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · (650) 844-3415
 
 ---
 
@@ -84,7 +85,7 @@ When it does, I can give you a private as-is option with you involved start to f
 
 Keep me in mind for the seller who wants a quiet close.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · (650) 844-3415
 
 ---
 
@@ -104,7 +105,7 @@ My value is helping you see the costs, risks, and options before you make the re
 
 Call me when the right answer isn't obvious.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · (650) 844-3415
 
 ---
 
@@ -122,7 +123,7 @@ With my contractor background (CA GC Lic. #1066892) I'll help you spot the real 
 
 One call up front saves weeks of confusion later.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · (650) 844-3415
 
 ---
 
@@ -138,4 +139,4 @@ If it fits, you get a clear offer and an honest timeline. If it doesn't fit, you
 
 I'm not asking to see every listing. Just keep my number for the deal where the biggest problem has become uncertainty.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · (650) 844-3415
