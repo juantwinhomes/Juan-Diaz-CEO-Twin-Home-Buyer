@@ -17,6 +17,9 @@
 
 - **Company: Twin Home Buyer** — the REI company: cash offers, wholesaling,
   investor networks, lead gen.
+- **Juan's CA General Contractor license (CSLB): #1066892.** Use in any copy
+  where he presents as a contractor (CSLB advertising compliance). Confirm it
+  stays active/in his name before it goes out in writing.
 
 ## CURRENT STATE (July 2026 — from Juan's 90-day reset docs)
 

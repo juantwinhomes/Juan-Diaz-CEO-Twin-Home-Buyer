@@ -8,7 +8,7 @@ reason to keep the number.
 desperation, no bragging, one clean "I work through you" reassurance, not repeated.
 
 ## Before launch — checklist
-- [ ] Replace `#[LICENSE #]` with the real CA GC (CSLB) license number in all 7.
+- [x] CA GC (CSLB) license number #1066892 in all 7.
 - [ ] Replace `[Direct Phone]` and `[First Name]` (add city/brokerage token if the list has it).
 - [ ] Confirm license is active and in Juan's name (CSLB advertising compliance).
 - [ ] Plain text only — no images, no links (cold-email deliverability).
@@ -20,7 +20,7 @@ desperation, no bragging, one clean "I work through you" reassurance, not repeat
 
 Hi [First Name],
 
-I'm Juan Diaz, founder of Twin Home Buyer. I've spent 25+ years in Bay Area real estate — as a direct buyer and a licensed California General Contractor (CA GC Lic. #[LICENSE #]). I buy on my own funds, work through the listing agent, and close when a retail sale can't get there.
+I'm Juan Diaz, founder of Twin Home Buyer. I've spent 25+ years in Bay Area real estate — as a direct buyer and a licensed California General Contractor (CA GC Lic. #1066892). I buy on my own funds, work through the listing agent, and close when a retail sale can't get there.
 
 So — appraisal comes in short, insurance falls through, lender won't accept the condition. Usually at the worst possible time, and now you're the one telling the seller.
 
@@ -30,7 +30,7 @@ Your client stays yours. I'm not here to replace a clean sale — I'm the call y
 
 Save my number for the deal that falls apart late.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #[LICENSE #] · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
 
 ---
 
@@ -48,7 +48,7 @@ Give me the situation and I'll hand you a real second option before you make tha
 
 Either way you walk into that conversation with an answer, not a guess.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #[LICENSE #] · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
 
 ---
 
@@ -56,7 +56,7 @@ Juan Diaz · Twin Home Buyer · CA GC Lic. #[LICENSE #] · [Direct Phone]
 
 Hi [First Name],
 
-Juan Diaz, Twin Home Buyer — a direct Bay Area buyer and a licensed California General Contractor (CSLB #[LICENSE #]).
+Juan Diaz, Twin Home Buyer — a direct Bay Area buyer and a licensed California General Contractor (CSLB #1066892).
 
 Foundation, sewer line, old electrical, drainage, dry rot — one report and the whole deal changes overnight.
 
@@ -66,7 +66,7 @@ I won't price it off a photo or step on your inspector. I'll help you separate t
 
 Keep me handy when the report raises more questions than it answers.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #[LICENSE #] · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
 
 ---
 
@@ -84,7 +84,7 @@ When it does, I can give you a private as-is option with you involved start to f
 
 Keep me in mind for the seller who wants a quiet close.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #[LICENSE #] · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
 
 ---
 
@@ -104,7 +104,7 @@ My value is helping you see the costs, risks, and options before you make the re
 
 Call me when the right answer isn't obvious.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #[LICENSE #] · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
 
 ---
 
@@ -118,11 +118,11 @@ Garage conversions, unpermitted additions, an old second unit, a half-finished r
 
 The seller sees added value. The appraiser, lender, and insurer see risk.
 
-With my contractor background (CA GC Lic. #[LICENSE #]) I'll help you spot the real construction questions before anyone makes promises about permits, value, or ADU upside. I can't speak for the city or guarantee an approval — but I'll show you where the landmines probably are, and whether it still pencils as an as-is buy.
+With my contractor background (CA GC Lic. #1066892) I'll help you spot the real construction questions before anyone makes promises about permits, value, or ADU upside. I can't speak for the city or guarantee an approval — but I'll show you where the landmines probably are, and whether it still pencils as an as-is buy.
 
 One call up front saves weeks of confusion later.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #[LICENSE #] · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
 
 ---
 
@@ -138,4 +138,4 @@ If it fits, you get a clear offer and an honest timeline. If it doesn't fit, you
 
 I'm not asking to see every listing. Just keep my number for the deal where the biggest problem has become uncertainty.
 
-Juan Diaz · Twin Home Buyer · CA GC Lic. #[LICENSE #] · [Direct Phone]
+Juan Diaz · Twin Home Buyer · CA GC Lic. #1066892 · [Direct Phone]
