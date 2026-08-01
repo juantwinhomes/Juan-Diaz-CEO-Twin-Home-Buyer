@@ -140,10 +140,10 @@
   <!-- HERO KPIS -->
   <div class="grid kpis">
     <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Direct-Mail Spend</div><div class="val">$124.0K</div><div class="note">QuickBooks · YTD 2026</div></div>
-    <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Direct-Mail Leads</div><div class="val">430</div><div class="note">live on Monday board · by stage below</div></div>
-    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Cost / Lead</div><div class="val">$288</div><div class="note">$123,994 ÷ 430 leads</div></div>
+    <div class="tile"><div class="bar" style="background:var(--rei)"></div><div class="cap">Direct-Mail Leads</div><div class="val">438</div><div class="note">live on Monday board · by stage below</div></div>
+    <div class="tile"><div class="bar" style="background:var(--qb)"></div><div class="cap">Cost / Lead</div><div class="val">$283</div><div class="note">$123,994 ÷ 438 leads</div></div>
     <div class="tile"><div class="bar" style="background:var(--s5)"></div><div class="cap">Postcards Mailed</div><div class="val">94,753</div><div class="note">47 batches (tracker)</div></div>
-    <div class="tile"><div class="bar" style="background:var(--s1)"></div><div class="cap">Active Pipeline</div><div class="val">82</div><div class="note">working+appt+UC+won (of 430)</div></div>
+    <div class="tile"><div class="bar" style="background:var(--s1)"></div><div class="cap">Active Pipeline</div><div class="val">90</div><div class="note">working+appt+UC+won (of 438)</div></div>
     <div class="tile"><div class="bar" style="background:var(--good)"></div><div class="cap">Revenue (REI)</div><div class="val">$35.9K</div><div class="note">1 of 2 wins reported · QB $0</div></div>
     <div class="tile"><div class="bar" style="background:var(--s3)"></div><div class="cap">Total ROA</div><div class="val">0.29x</div><div class="note">$35,918.75 rev ÷ $123,993.55 spend · net <b>−$88,074.80</b></div></div>
   </div>
@@ -312,10 +312,10 @@
   <div class="foot">
     <b>Scope.</b> Direct mail only — other channels (PPC, Property Leads, TV, etc.) and general revenue are excluded from this view.
     <b>Sources.</b> Direct-mail spend from the QuickBooks Online API (AM- Direct Mail, $124,330 YTD 2026; company-wide 2026 income $10.98M / net $5.01M, all channels). Direct-mail leads from the Monday board
-    (430 live, by stage: 70 new · 71 working · 8 appointment · 1 under contract · 1 cancelled contract · 2 won · 277 dead). Mail production from Monday.com "Equity Track Iriga – Operating System."
+    (438 live, by stage: 70 new · 79 working · 8 appointment · 1 under contract · 1 cancelled contract · 2 won · 277 dead). Mail production from Monday.com "Equity Track Iriga – Operating System."
     Sections 4–5 use Twin Home Buyer's own "KPI Postcard" Google Sheet, live scope Dec 3 2025 – Jul 21 2026 — the authoritative postcard tracker
     (94,753 mailed / 47 batches / Redstone $62,447.72 at $0.66 per piece, 175 leads, 0 closed). Revenue: REI Blackbook "Revenue" field — $35,918.75 on Dianne Andrews (checks deal); Denise Marks pending;
-    QuickBooks still shows $0 booked, so REI-reported revenue is the ROI source until reconciled. Generated 2026-08-01 (live REI ↔ Monday reconciliation: 430 = 430 exact match, 0 missing, 0 extra, 0 duplicates).
+    QuickBooks still shows $0 booked, so REI-reported revenue is the ROI source until reconciled. Generated 2026-08-01 (live REI ↔ Monday reconciliation: 438 = 438 exact match, 0 missing, 0 extra, 0 duplicates).
   </div>
   </div><!-- /tab-dash -->
 
@@ -400,13 +400,13 @@ hbars(document.getElementById('sheetresp'),[
 // 4c funnel
 (function(){
   const stages=[
-    {k:'Direct-mail leads',v:430,c:'var(--s1)'},
-    {k:'Working / contacted',v:71,c:'var(--s2)'},
+    {k:'Direct-mail leads',v:438,c:'var(--s1)'},
+    {k:'Working / contacted',v:79,c:'var(--s2)'},
     {k:'Appointment & offer',v:8,c:'var(--s1)'},
     {k:'Under contract',v:1,c:'var(--s3)'},
     {k:'Won / acquired',v:2,c:'var(--good)'}
   ];
-  const max=430;
+  const max=438;
   document.getElementById('funnel').innerHTML=stages.map(s=>{
     const w=Math.max(6,(s.v/max)*100);
     return `<div class="funnel-stage">
@@ -463,6 +463,7 @@ function showTab(which){
 // --- Activity & data log (newest first) ---
 const SRC = { qb:['QuickBooks','var(--qb)'], rei:['REI Blackbook','var(--rei)'], mon:['Monday.com','var(--mon)'], sheet:['Google Sheet','var(--s5)'], recon:['Reconcile','var(--s3)'], sys:['System','var(--ink-3)'] };
 const LOG = [
+  ['Aug 1','rei','<b>Hourly sync: 8 new postcard leads added — board now 438.</b> A batch import from the <b>Level 10 Properties</b> list appeared in REI (all stamped Jul 30 18:23), every one Oakland: Linda Lew, James Potts, James Fehr, Linda Hunt, Anthony Daquipa, David Escobedo, Gloria Calderon, Michael G &amp; Astrid Thanos. All are source <b>Direct Mail (Postcard)</b> with pipeline <b>2 Follow Up</b> and deal status <b>Unresponsive</b> — the documented rule keeps unresponsive leads on an active Follow-Up pipeline in Working, so all 8 went there (not Dead). Diff both directions after: <b>0 missing, 0 extra, 0 duplicates</b>. Cost/lead drops to <b>$283.09</b>; active pipeline 90. Revenue unchanged.'],
   ['Aug 1','sheet','<b>KPI Postcard sheet re-pulled — Redstone cost is up sharply.</b> The live dashboard block (scope now Dec 3 2025 – Jul 21 2026) shows <b>Redstone $62,447.72</b>, up from $50,620.32, across <b>47 batches</b> (was 42) — cost per postcard rose <b>$0.534 → $0.66</b>, avg $1,328.67 per batch. Volume is flat at 94,753 mailed, last drop Jul 13. Lead side caught up too: <b>175 leads</b> (was 92), 72 interested (<b>41.1%</b>, up from 32.6%), 207 inbound of 409 total calls, response rate 0.18%, <b>cost/lead $356.84</b>. Outcomes: 5 offers declined, 1 under contract, 0 closed, 50% cancelled-contract rate. Sections 4–5 and the postcard tiles updated.'],
   ['Aug 1','sheet','<b>Discrepancy inside the sheet, flagged not silently fixed.</b> Its \u201cTotal Spend\u201d cell still reads <b>$50,549.48</b> at $0.53/postcard, but that equals the <em>old</em> Redstone total ($37,674.72) plus Discover tracked spend ($12,805.32) — it never picked up the new $62,447.72. Recomputed all-in is <b>$75,253.04 ($0.79/postcard)</b>, which is what the dashboard now shows; breakeven moves from ~2 to ~3 deals at $25K profit. Worth fixing the formula in the sheet.'],
   ['Aug 1','recon','<b>Board resynced after a 10-day gap — now an exact match again at 430 leads.</b> The hourly REI scan had kept running, but the Monday write step was blocked, so the board sat frozen at 410 since Jul 22. This pass added the full <b>20-lead backlog</b> and applied <b>15 stage corrections</b>. New leads: Carlos Ignacio (48 Woodview Rd, Pittsburg — <b>appointment booked</b>, waiting 10 days), Cat (594 Willis Ave, San Jose) and Nelson Cross (9625 Allegheny Dr, Sacramento) to Working, one new postcard lead to New, and 16 dead/invalid to Dead. Corrections were all leads that picked up hard-dead tags (Dead Lead / Lost Deal / DNC / Invalid) while sitting in an active stage. Diff both directions: <b>0 missing, 0 extra</b>. Cost/lead now <b>$288.36</b> (was $303); revenue unchanged at $35,918.75.'],
