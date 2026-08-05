@@ -208,49 +208,63 @@ call.
 5. **Log the delivery** — date, what was sent, to whom, and Tabitha's written
    confirmation of receipt. The delivery record matters as much as the content.
 
-## Draft Email To Tabitha
+## Transmittal Email To Tabitha — Seth sending
 
-> Matches what the documents actually say. Do not send until items 2, 3, 4 and 6
-> under *Gaps and Flags* are resolved — the documents go first, the email
-> follows them.
+> **Seller mode.** This is a transmittal, not an argument. The attachments carry
+> the facts; the email routes them and asks what's missing. Send it **with the
+> files attached**, not ahead of them. Every line below is either a document
+> name, a date, or a dollar figure that appears in a document — no conclusions,
+> no characterizations.
 
-**Subject:** Additional disclosures — 1464 Sunrise Parkway, Petaluma
+**Subject:** 1464 Sunrise Parkway, Petaluma — additional disclosure documents
 
 Hi Tabitha,
 
-I'm sending over additional disclosures related to the property history so you
-have the full picture.
+Attached are additional documents on the property history so you have the
+complete file on your end.
 
-**Occupancy.** There were occupants living in the house when we acquired the
-property on June 27, 2026. The prior owner disclosed their presence to us and we
-purchased as-is with the occupants in place. No rent was ever paid to us, and
-the validity of the occupancy was disputed. The occupancy was resolved by a
-written Mutual Termination and Move-Out Agreement prepared by an attorney and
-signed by all parties on July 15, 2026, under which the occupants were paid
-$10,000 in relocation costs and vacated the property on July 16, 2026. The
-signed agreement is in the package.
+Attached:
 
-**City red tag.** The property was previously red-tagged by the City of
-Petaluma. That condition was disclosed to us by the prior owner at the time of
-our purchase, and their disclosure forms are included. We have since pulled
-permits and are continuing to work with the City to finalize the remaining
-permit items. [Insert current status — permit numbers, what's approved, what's
-open.]
+1. **Mutual Termination and Move-Out Agreement**, signed July 15, 2026, with
+   e-signature audit log. The occupants were paid $10,000 in relocation costs
+   and vacated the property on July 16, 2026. The agreement was prepared by an
+   attorney; the terms are in the document.
+2. **Real Estate Transfer Disclosure Statement** from the prior owner, dated
+   June 27, 2026 — prepared before our ownership.
+3. **Seller Property Questionnaire** from the prior owner, dated June 27, 2026 —
+   prepared before our ownership.
+4. **[City of Petaluma red tag notice]**
+5. **[Permit applications and approvals]**
+6. **[City correspondence]**
 
-**Prior owner's disclosures.** I've included the Real Estate Transfer Disclosure
-Statement and Seller Property Questionnaire the prior owner provided to us on
-June 27, 2026, since they were prepared before our ownership.
+There were occupants in the house when we acquired the property on June 27,
+2026. They vacated on July 16, 2026 under the attached agreement. The property
+was previously red-tagged by the City of Petaluma; we have since pulled permits
+and are working with the City to finalize the remaining items. **[Current status
+— permit numbers, what's approved, what's still open.]**
 
-Brian has already forwarded several related documents. Please confirm what you
-have received from him so we can identify anything still missing and get you the
-complete set right away.
+Brian has also sent documents on this property. Please confirm what you've
+received from him so I can identify anything still missing and get it to you
+right away.
 
-Once you have everything, let me know whether you'd like these as a single
-supplemental disclosure packet or as individual attachments referenced in the
-TDS and SPQ, and what else you need from our side.
+Once you have the complete set, let's decide together whether these go in as a
+single supplemental disclosure packet or as individual attachments referenced in
+the TDS and Seller Property Questionnaire.
 
-Thank you,
+Let me know what else you need from our side.
+
+Thanks,
 Seth
+
+**Before sending:** attach the actual files, fill or delete items 4–6 and the
+bracketed permit status, and confirm the missing occupancy agreement (*Gaps and
+Flags* item 2).
+
+**If Tabitha asks you to characterize the occupancy** — whether they were
+tenants, squatters, or something else — don't answer it in email. Point her to
+the agreement's recitals, which state the parties' own position, and route the
+question to the attorney who drafted it. That call has legal exposure and isn't
+Seth's to make.
 
 ## Open Questions
 
