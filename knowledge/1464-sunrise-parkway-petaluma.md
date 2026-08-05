@@ -10,8 +10,42 @@
 ## The Task In One Line
 
 Get every occupancy / cash-for-keys / red-tag / permit document into **one
-folder**, reconcile against what **Brian** sent, and hand **Tabitha** a
-complete, indexed supplemental disclosure packet. Documents first, email second.
+folder**, reconcile against what **Brian** sent, and hand **Tabitha** (our
+Transaction Coordinator) a complete, indexed supplemental disclosure packet.
+Documents first, email second.
+
+**Sale timing: this is a rehab-then-sell.** We are not in escrow. The
+disclosure file is being built ahead of the listing, not against a deadline —
+which is leverage, not pressure. See *Selling After Renovation*.
+
+## Selling After Renovation — what that changes
+
+No buyer, no deadline. That means we can fix the disclosure instead of just
+writing it.
+
+1. **Close CODE-2025-0270 before we list.** Disclosing *"there was a red tag,
+   here is the case, and here is the City's final sign-off closing it"* is a
+   completely different sale than disclosing an open case with accrued penalty
+   exposure and lien risk. This is the highest-value move on the property and
+   it should be scheduled, not hoped for.
+2. **Get the red-tag placard removed.** Under PMC 1.10.030(E) the code official
+   removes it once the defects are eliminated. Placard removal is the milestone
+   — track it like a lender deadline.
+3. **The renovation permits ARE the disclosure.** We bought 6/27/26, so any
+   sale before roughly December 2027 sits inside the 18-month window: SPQ 7F
+   requires a list of improvements, contractors paid over $1,000, **and copies
+   of the permits attached**, plus a statement identifying any improvement done
+   without one. Build that paper trail as the work happens — do not reconstruct
+   it at listing.
+4. **Everything gets permitted, no exceptions.** The NOV expressly ordered work
+   discontinued until permits issue, and plans are required. Unpermitted
+   renovation on a property with an open case and a red tag compounds the
+   original violation.
+5. **The electrician's safety report the NOV required** is both a compliance
+   item and a selling document. Same for the plumbing permit.
+6. **Send Tabitha the file now anyway.** It sits in the transaction folder and
+   gets updated as permits close. Assembling it at listing time is how things
+   get missed.
 
 ## Timeline
 
@@ -371,10 +405,28 @@ Seth
 otherwise — don't answer it in email. Point her to the agreement's recitals and
 the City's Determination Letter, and route the question to the attorney.
 
+## Delivery Log
+
+| Date | What went out | To | From | Notes |
+|---|---|---|---|---|
+| 8/5/26 | Disclosure transmittal email | Tabitha (TC) | Kristine Lomeda | Juan's original wording, sent under Kristine's signature. Two statements outrun the file — see below |
+
+⚠️ The sent version states **"we have the rental/occupancy agreement"** and
+**"we have since obtained permits."** Neither document is in the file today. If
+Tabitha asks for either one, we cannot produce it. Close both gaps rather than
+walk the email back: find the occupancy agreement, and pull the permits as the
+renovation starts.
+
+The sent version also dropped the line asking Tabitha to confirm what Brian
+sent — so **nobody is reconciling Brian's documents.** That chase still has to
+happen directly with Brian.
+
 ## Open Questions
 
-- **Who is Tabitha?** TC, listing agent, or escrow? Not yet in this repo.
 - **Which Brian?** Brian Anthony (tech partner) or someone else on this file?
-- Is there a buyer under contract, and what's the disclosure deadline?
 - Was the pool ever built, and does it still exist?
 - Where is Mark Arana, and who are the "un-named others"?
+- What's the renovation scope and start date — that sets the permit timeline?
+
+*Resolved: Tabitha is Twin Home Buyer's Transaction Coordinator. No buyer under
+contract — sale follows renovation.*
