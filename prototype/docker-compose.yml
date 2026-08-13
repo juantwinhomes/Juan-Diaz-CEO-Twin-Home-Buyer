@@ -1,0 +1,30 @@
+# Local database for the Plat prototype.
+#
+# The official Postgres image runs every .sql file it finds in
+# /docker-entrypoint-initdb.d once, in alphabetical order, the first time the
+# data volume is empty. Mounting the migrations there means 001 -> 002 -> 003
+# apply on first boot with no scripting.
+#
+# Because that only happens on first boot, editing a migration afterwards has
+# no effect until you run `make reset`.
+
+services:
+  db:
+    image: postgres:16
+    container_name: plat-db
+    environment:
+      POSTGRES_PASSWORD: plat
+      POSTGRES_DB: plat
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+      - plat-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d plat"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  plat-data:
