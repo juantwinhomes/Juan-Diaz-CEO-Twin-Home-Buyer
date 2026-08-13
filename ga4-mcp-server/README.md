@@ -1,23 +1,41 @@
-# GA4 MCP Server
+# GA4 Analytics Server
 
-Exposes the Google Analytics 4 Data API to Claude as a custom connector, so the
-SEO dashboard can read live analytics the same way it already reads Semrush.
+One service, two front doors onto the same Google Analytics 4 data:
 
-Read-only by design: every tool queries, none write.
+1. **A web dashboard** at `/` — a real password-protected website. Sessions,
+   users, channels, top pages, live visitor count. No Claude account needed.
+2. **An MCP endpoint** at `/mcp` — so Claude can read the same data as a custom
+   connector.
 
-## Why this exists
+Read-only by design: everything queries, nothing writes.
 
-Claude's connector directory has no Google Analytics entry, and a published
-Artifact page cannot call Google directly — its network access is blocked. A
-custom connector is the supported way in: this server holds the Google
-credentials, Claude calls this server, and the page calls Claude.
+## Why it is built this way
+
+The Google credentials have to live somewhere that is not a browser. Publishing
+a key into a web page would expose it to every visitor, and Claude Artifact
+pages additionally cannot make external network calls at all — so the
+credentials sit here, on the server, and both front doors ask this service.
 
 ```
-Artifact page  ──►  claude.ai connector  ──►  this server  ──►  GA4 Data API
-                    (viewer's session)        (service account)
+Browser ─────────────────────────────────►┐
+                                          ├─► this server ──► GA4 Data API
+Artifact ──► claude.ai connector ─────────┘    (service account)
 ```
 
-## Tools
+The dashboard is the simpler path: paste one credential, deploy, open the URL.
+The MCP endpoint is there when you want the same numbers inside Claude.
+
+## Routes
+
+| Route | Purpose |
+|---|---|
+| `/` | Web dashboard (password protected) |
+| `/login`, `/logout` | Dashboard session |
+| `/api/summary`, `/api/sources`, `/api/pages`, `/api/realtime`, `/api/properties` | JSON for the dashboard |
+| `/mcp` | MCP endpoint for Claude |
+| `/healthz` | Health check, no credentials needed |
+
+## MCP tools
 
 | Tool | What it answers |
 |---|---|
@@ -83,7 +101,15 @@ actually guards it. Note the secret you generated — you need it in step 4.
 `GOOGLE_SERVICE_ACCOUNT_JSON` to the whole key file contents, plus
 `GA4_PROPERTY_ID` and `MCP_SHARED_SECRET`. Then `npm ci && npm run build && npm start`.
 
-### 4. Add it to Claude
+### 4. Open the dashboard
+
+Visit the service URL and sign in with `DASHBOARD_PASSWORD`. `deploy.sh` prints
+both. That is the whole setup — no Claude account involved.
+
+If the dashboard loads but the numbers error out, step 2 is the cause nine times
+out of ten.
+
+### 5. Optional — also use it from Claude
 
 claude.ai → **Settings → Connectors → Add custom connector**, with the URL:
 
@@ -91,13 +117,12 @@ claude.ai → **Settings → Connectors → Add custom connector**, with the URL
 https://<your-service-url>/mcp/<your-shared-secret>
 ```
 
-The secret sits in the path because connector dialogs accept a URL and nothing
-else. A bearer token works too if your client can send headers.
+Name it exactly **GA4 Analytics** if you want the Claude SEO dashboard to find
+it. The secret sits in the path because connector dialogs accept a URL and
+nothing else; a bearer token works too if your client can send headers.
 
-### 5. Confirm
-
-Ask Claude to run `ga4_list_properties`. Your property should come back with its
-numeric ID. If the list is empty, step 2 did not take effect.
+Confirm by asking Claude to run `ga4_list_properties` — your property should
+come back with its numeric ID.
 
 ## Local development
 
@@ -131,7 +156,9 @@ curl -X POST localhost:8080/mcp/<secret> \
 | `Could not load the default credentials` | Running outside Cloud Run without `GOOGLE_SERVICE_ACCOUNT_JSON` |
 | `"G-XXXXXXX" is not a GA4 property ID` | That is the measurement ID; use the numeric property ID |
 | `ga4_list_properties` returns `[]` | Credentials are valid but no property has granted access yet |
-| `401 Unauthorized` | Shared secret in the URL does not match `MCP_SHARED_SECRET` |
+| `401 Unauthorized` on `/mcp` | Shared secret in the URL does not match `MCP_SHARED_SECRET` |
+| `503 Dashboard disabled` | `DASHBOARD_PASSWORD` is not set — by design, rather than serving analytics openly |
+| Dashboard loads, numbers error | Almost always step 2: the service account is not a Viewer on the property |
 
 ## Why the credentials cannot live in the dashboard instead
 

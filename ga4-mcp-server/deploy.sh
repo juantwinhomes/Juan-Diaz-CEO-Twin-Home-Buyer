@@ -68,7 +68,25 @@ else
   SECRET="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
 fi
 
-ENV_VARS="MCP_SHARED_SECRET=${SECRET}"
+# ------------------------------------------------------- dashboard password ---
+DASHBOARD_PASSWORD="${DASHBOARD_PASSWORD:-}"
+if [ -z "$DASHBOARD_PASSWORD" ]; then
+  echo
+  echo "Password for the web dashboard. Cloud Run URLs are public, so without"
+  echo "one the dashboard refuses to serve at all. Blank = generate a strong one."
+  read -r -p "Dashboard password: " DASHBOARD_PASSWORD
+fi
+GENERATED_PASSWORD=0
+if [ -z "$DASHBOARD_PASSWORD" ]; then
+  if command -v openssl >/dev/null 2>&1; then
+    DASHBOARD_PASSWORD="$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-16)"
+  else
+    DASHBOARD_PASSWORD="$(head -c 12 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+  fi
+  GENERATED_PASSWORD=1
+fi
+
+ENV_VARS="MCP_SHARED_SECRET=${SECRET},DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}"
 [ -n "$GA4_PROPERTY_ID" ] && ENV_VARS="GA4_PROPERTY_ID=${GA4_PROPERTY_ID},${ENV_VARS}"
 
 # ----------------------------------------------------------------- deploy ---
@@ -101,19 +119,38 @@ STEP 1 — Give this service account access to your GA4 property.
   In Google Analytics: Admin -> Property access management -> +
   Add that email with the Viewer role.
 
-STEP 2 — Add the connector in claude.ai.
+STEP 2 — Open your dashboard.
 
-  Settings -> Connectors -> Add custom connector
+    ${URL}
+EOF
+
+if [ "$GENERATED_PASSWORD" = "1" ]; then
+cat <<EOF
+
+  Password (generated — save it now, it is not shown again):
+
+    ${DASHBOARD_PASSWORD}
+EOF
+else
+cat <<EOF
+
+  Sign in with the password you chose.
+EOF
+fi
+
+cat <<EOF
+
+OPTIONAL — Also use it from Claude, via a custom connector:
+
+  claude.ai -> Settings -> Connectors -> Add custom connector
 
     Name:  GA4 Analytics
     URL:   ${URL}/mcp/${SECRET}
 
-  The name must match exactly — the dashboard looks it up by name.
+  The name must match exactly; the Claude dashboard looks it up by name.
 
-STEP 3 — Reload the dashboard. The Google Analytics page fills in.
-
-Keep that URL secret: it is the credential. Re-run this script to
-rotate it.
+Both URLs are credentials — anyone holding them reads your analytics.
+Re-run this script to rotate them.
 
 Health check (no credentials needed):
   curl ${URL}/healthz

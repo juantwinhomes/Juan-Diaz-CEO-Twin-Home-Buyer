@@ -11,6 +11,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
+COPY public ./public
 # Cloud Run injects PORT; 8080 is the default the server falls back to.
 EXPOSE 8080
 USER node

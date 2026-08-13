@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Analytics · Twin Home Buyer</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb;
+    --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6; --good: #0ca30c; --critical: #d03b3b;
+    --skel: #eceae4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19;
+      --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --accent: #3987e5; --good: #0ca30c; --critical: #e66767;
+      --skel: #26261f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 26px 20px 60px; }
+  header.top { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  h1 { font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 12.5px; margin: 0 0 20px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+  .live-dot { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--good); }
+  .live-dot i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); display: inline-block; }
+
+  select, button {
+    font: inherit; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 7px; padding: 6px 11px; cursor: pointer;
+  }
+  select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button:hover, select:hover { border-color: var(--accent); }
+
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+  .card { grid-column: span 12; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+  @media (min-width: 900px) { .c6 { grid-column: span 6; } }
+  .card h2 { font-size: 13px; font-weight: 700; margin: 0 0 12px; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 12px 30px; }
+  .stat .label { color: var(--ink-2); font-size: 12px; }
+  .stat .value { font-size: 26px; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .skel { display: inline-block; background: var(--skel); border-radius: 5px; height: 0.9em; min-width: 3.5ch; animation: p 1.4s ease-in-out infinite; }
+  @keyframes p { 0%,100%{opacity:1} 50%{opacity:.5} }
+  @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th { text-align: left; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 4px 8px 6px 0; border-bottom: 1px solid var(--grid); }
+  th.num, td.num { text-align: right; }
+  td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--grid); font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  .path { display: block; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+
+  .row { display: grid; grid-template-columns: 130px 1fr 60px; gap: 10px; align-items: center; padding: 5px 0; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .track { background: var(--page); border-radius: 4px; height: 10px; overflow: hidden; }
+  .fill { background: var(--accent); height: 100%; border-radius: 4px; min-width: 2px; }
+  .row .n { text-align: right; font-weight: 600; }
+
+  .msg { border: 1px solid var(--border); background: var(--page); border-radius: 8px; padding: 12px 14px; font-size: 12.5px; color: var(--ink-2); margin-top: 10px; }
+  .msg b { display: block; color: var(--ink); font-size: 13px; margin-bottom: 3px; }
+  .msg.err b { color: var(--critical); }
+  .hidden { display: none; }
+  svg.chart { width: 100%; height: auto; display: block; }
+  .axis { fill: var(--muted); font-size: 10.5px; }
+  footer { margin-top: 24px; color: var(--muted); font-size: 12px; display: flex; gap: 14px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Analytics</h1>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="range" aria-label="Date range">
+        <option value="7daysAgo">Last 7 days</option>
+        <option value="28daysAgo" selected>Last 28 days</option>
+        <option value="90daysAgo">Last 90 days</option>
+        <option value="365daysAgo">Last 12 months</option>
+      </select>
+      <button id="refresh" type="button">Refresh</button>
+    </div>
+  </header>
+  <p class="sub">
+    <span id="propLabel">Loading property…</span>
+    <span class="live-dot hidden" id="liveNow"><i></i><span id="liveCount"></span> active now</span>
+  </p>
+
+  <div id="globalErr"></div>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Traffic</h2>
+      <div class="stats" id="totals">
+        <div class="stat"><div class="label">Sessions</div><div class="value"><span class="skel"></span></div></div>
+        <div class="stat"><div class="label">Active users</div><div class="value"><span class="skel"></span></div></div>
+        <div class="stat"><div class="label">New users</div><div class="value"><span class="skel"></span></div></div>
+        <div class="stat"><div class="label">Engaged sessions</div><div class="value"><span class="skel"></span></div></div>
+        <div class="stat"><div class="label">Page views</div><div class="value"><span class="skel"></span></div></div>
+      </div>
+      <svg class="chart" id="chart" viewBox="0 0 640 200" style="margin-top:16px" role="img" aria-label="Sessions by day"></svg>
+      <div class="msg err hidden" id="summaryErr"></div>
+    </section>
+
+    <section class="card c6">
+      <h2>Channels</h2>
+      <div id="sources"></div>
+      <div class="msg err hidden" id="sourcesErr"></div>
+    </section>
+
+    <section class="card c6">
+      <h2>Top pages</h2>
+      <div class="scroll" id="pages"></div>
+      <div class="msg err hidden" id="pagesErr"></div>
+    </section>
+  </div>
+
+  <footer>
+    <span>Google Analytics 4 · live</span>
+    <a href="/logout">Sign out</a>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var NS = 'http://www.w3.org/2000/svg';
+  var fmt = function (n) { return Number(n || 0).toLocaleString('en-US'); };
+  var $ = function (id) { return document.getElementById(id); };
+
+  function showErr(el, title, body) {
+    el.innerHTML = '<b>' + title + '</b>' + body;
+    el.classList.remove('hidden');
+  }
+  function hide(el) { el.classList.add('hidden'); }
+
+  function get(path) {
+    return fetch(path, { credentials: 'same-origin' }).then(function (r) {
+      if (r.status === 401) { location.href = '/login'; throw new Error('signed out'); }
+      return r.json().then(function (body) {
+        if (!r.ok) throw new Error(body && body.error ? body.error : 'Request failed (' + r.status + ').');
+        return body;
+      });
+    });
+  }
+
+  /* ---------- chart ---------- */
+  function niceStep(raw) {
+    var mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1e-6))));
+    var n = raw / mag;
+    return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+  }
+  function draw(points) {
+    var svg = $('chart');
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    if (!points.length) return;
+    var W = 640, H = 200, m = { l: 44, r: 12, t: 12, b: 24 };
+    var iw = W - m.l - m.r, ih = H - m.t - m.b;
+    var vals = points.map(function (p) { return p.v; });
+    var hi = Math.max.apply(null, vals), lo = Math.min.apply(null, vals);
+    var span = (hi - lo) || Math.max(hi * 0.2, 1);
+    var step = niceStep(span / 2.2);
+    var min = Math.max(0, Math.floor((lo - span * 0.25) / step) * step);
+    var max = Math.ceil((hi + span * 0.25) / step) * step;
+    var X = function (i) { return points.length === 1 ? m.l + iw / 2 : m.l + (i / (points.length - 1)) * iw; };
+    var Y = function (v) { return m.t + ih - ((v - min) / (max - min || 1)) * ih; };
+
+    for (var t = min; t <= max + 1e-9; t += step) {
+      var ln = document.createElementNS(NS, 'line');
+      ln.setAttribute('x1', m.l); ln.setAttribute('x2', W - m.r);
+      ln.setAttribute('y1', Y(t)); ln.setAttribute('y2', Y(t));
+      ln.setAttribute('stroke', 'var(--grid)');
+      svg.appendChild(ln);
+      var tx = document.createElementNS(NS, 'text');
+      tx.setAttribute('x', m.l - 7); tx.setAttribute('y', Y(t) + 3.5);
+      tx.setAttribute('text-anchor', 'end'); tx.setAttribute('class', 'axis');
+      tx.textContent = fmt(Math.round(t));
+      svg.appendChild(tx);
+    }
+    var every = Math.max(1, Math.ceil(points.length / 6));
+    points.forEach(function (p, i) {
+      if (i % every !== 0 && i !== points.length - 1) return;
+      var tx = document.createElementNS(NS, 'text');
+      tx.setAttribute('x', X(i)); tx.setAttribute('y', H - 6);
+      tx.setAttribute('text-anchor', i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle');
+      tx.setAttribute('class', 'axis');
+      tx.textContent = p.label;
+      svg.appendChild(tx);
+    });
+
+    var pts = points.map(function (p, i) { return X(i) + ',' + Y(p.v); }).join(' ');
+    var area = document.createElementNS(NS, 'polygon');
+    area.setAttribute('points', m.l + ',' + (m.t + ih) + ' ' + pts + ' ' + (W - m.r) + ',' + (m.t + ih));
+    area.setAttribute('fill', 'var(--accent)'); area.setAttribute('opacity', '0.12');
+    svg.appendChild(area);
+    var line = document.createElementNS(NS, 'polyline');
+    line.setAttribute('points', pts); line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', 'var(--accent)'); line.setAttribute('stroke-width', '2');
+    line.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(line);
+    var end = document.createElementNS(NS, 'circle');
+    end.setAttribute('cx', X(points.length - 1)); end.setAttribute('cy', Y(points[points.length - 1].v));
+    end.setAttribute('r', '4'); end.setAttribute('fill', 'var(--accent)');
+    end.setAttribute('stroke', 'var(--surface)'); end.setAttribute('stroke-width', '2');
+    svg.appendChild(end);
+  }
+
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function label(ymd) {
+    var s = String(ymd);
+    return MON[Number(s.slice(4, 6)) - 1] + ' ' + Number(s.slice(6, 8));
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  /* ---------- loaders ---------- */
+  function loadSummary(start) {
+    hide($('summaryErr'));
+    return get('/api/summary?start=' + encodeURIComponent(start)).then(function (d) {
+      var t = d.totals || {};
+      $('totals').innerHTML = [
+        ['Sessions', t.sessions], ['Active users', t.activeUsers], ['New users', t.newUsers],
+        ['Engaged sessions', t.engagedSessions], ['Page views', t.screenPageViews],
+      ].map(function (c) {
+        return '<div class="stat"><div class="label">' + c[0] + '</div><div class="value">' + fmt(c[1]) + '</div></div>';
+      }).join('');
+      draw((d.rows || []).map(function (r) { return { v: Number(r.sessions) || 0, label: label(r.date) }; }));
+    }).catch(function (e) {
+      $('totals').innerHTML = '';
+      draw([]);
+      showErr($('summaryErr'), 'Could not load traffic', esc(e.message));
+    });
+  }
+
+  function loadSources(start) {
+    hide($('sourcesErr'));
+    return get('/api/sources?start=' + encodeURIComponent(start)).then(function (d) {
+      var rows = d.rows || [];
+      if (!rows.length) { $('sources').innerHTML = '<p style="color:var(--muted);font-size:12.5px;margin:0">No channel data for this range.</p>'; return; }
+      var max = Math.max.apply(null, rows.map(function (r) { return Number(r.sessions) || 0; })) || 1;
+      $('sources').innerHTML = rows.map(function (r) {
+        var v = Number(r.sessions) || 0;
+        return '<div class="row"><span>' + esc(r.sessionDefaultChannelGroup || r.sessionSourceMedium || '—') + '</span>' +
+          '<div class="track"><div class="fill" style="width:' + (v / max * 100) + '%"></div></div>' +
+          '<span class="n">' + fmt(v) + '</span></div>';
+      }).join('');
+    }).catch(function (e) {
+      $('sources').innerHTML = '';
+      showErr($('sourcesErr'), 'Could not load channels', esc(e.message));
+    });
+  }
+
+  function loadPages(start) {
+    hide($('pagesErr'));
+    return get('/api/pages?start=' + encodeURIComponent(start) + '&limit=15').then(function (d) {
+      var rows = d.rows || [];
+      if (!rows.length) { $('pages').innerHTML = '<p style="color:var(--muted);font-size:12.5px;margin:0">No page data for this range.</p>'; return; }
+      $('pages').innerHTML = '<table><thead><tr><th>Page</th><th class="num">Views</th><th class="num">Sessions</th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          return '<tr><td><span class="path" title="' + esc(r.pagePath) + '">' + esc(r.pagePath || '—') + '</span></td>' +
+            '<td class="num">' + fmt(r.screenPageViews) + '</td><td class="num">' + fmt(r.sessions) + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }).catch(function (e) {
+      $('pages').innerHTML = '';
+      showErr($('pagesErr'), 'Could not load pages', esc(e.message));
+    });
+  }
+
+  function loadRealtime() {
+    return get('/api/realtime').then(function (d) {
+      var n = d.rows && d.rows[0] ? Number(d.rows[0].activeUsers) || 0 : 0;
+      $('liveCount').textContent = fmt(n);
+      $('liveNow').classList.remove('hidden');
+    }).catch(function () { /* realtime is a nicety; stay quiet if it fails */ });
+  }
+
+  function loadAll() {
+    var start = $('range').value;
+    return Promise.all([loadSummary(start), loadSources(start), loadPages(start), loadRealtime()]);
+  }
+
+  get('/api/config').then(function (c) {
+    $('propLabel').textContent = c.propertyConfigured
+      ? 'GA4 property ' + c.propertyId
+      : 'No property configured — set GA4_PROPERTY_ID';
+    if (!c.propertyConfigured) {
+      showErr($('globalErr'),
+        'No GA4 property set',
+        'Set the GA4_PROPERTY_ID environment variable and redeploy. Visit <code>/api/properties</code> to see the numeric IDs this service can read.');
+      $('globalErr').className = 'msg err';
+    }
+  }).catch(function () { $('propLabel').textContent = 'Analytics'; });
+
+  $('range').addEventListener('change', loadAll);
+  $('refresh').addEventListener('click', function () {
+    var b = this; b.disabled = true; b.textContent = 'Refreshing…';
+    loadAll().then(function () { b.disabled = false; b.textContent = 'Refresh'; });
+  });
+
+  loadAll();
+  setInterval(loadRealtime, 60000);
+})();
+</script>
+</body>
+</html>
