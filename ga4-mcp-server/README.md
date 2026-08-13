@@ -51,7 +51,21 @@ This step is the one people miss. Without it every call fails with a 403.
 
 ### 3. Deploy
 
-**Cloud Run** (recommended — no key file ever exists):
+**The scripted path.** Open [Cloud Shell](https://shell.cloud.google.com) —
+`gcloud` is already installed and signed in, so nothing has to be set up on your
+own machine:
+
+```bash
+git clone https://github.com/juantwinhomes/Juan-Diaz-CEO-Twin-Home-Buyer.git
+cd Juan-Diaz-CEO-Twin-Home-Buyer/ga4-mcp-server
+./deploy.sh
+```
+
+It enables the APIs, creates the service account, mints a shared secret, deploys,
+and prints the exact connector URL plus the service-account email you need for
+step 2. Re-running it is safe and rotates the secret.
+
+**By hand**, if you prefer:
 
 ```bash
 gcloud run deploy ga4-mcp-server \
@@ -118,6 +132,22 @@ curl -X POST localhost:8080/mcp/<secret> \
 | `"G-XXXXXXX" is not a GA4 property ID` | That is the measurement ID; use the numeric property ID |
 | `ga4_list_properties` returns `[]` | Credentials are valid but no property has granted access yet |
 | `401 Unauthorized` | Shared secret in the URL does not match `MCP_SHARED_SECRET` |
+
+## Why the credentials cannot live in the dashboard instead
+
+A reasonable question is why the API key is not simply put into the artifact
+page. Two independent reasons:
+
+1. **Artifact pages cannot make network calls.** A strict content-security
+   policy blocks every external request, so a `fetch()` to Google from the page
+   never leaves the browser regardless of what credential it carries.
+2. **GA4 does not accept API keys.** The Data API authenticates with OAuth2
+   access tokens minted from a service account — there is no key string that
+   would work.
+
+And a page's source is readable by anyone who opens it, so a credential placed
+there would be public. Keeping the credential on this server is what makes the
+whole arrangement safe.
 
 ## Security notes
 
