@@ -39,6 +39,6 @@ plus a draft reply back to Juan.
 >
 > One thing to confirm: what exactly is Tabetha handling, so I know where to slot it against the inspections?
 >
-> Let me know if this order looks right and I'll get it all scheduled.
+> Team will be working on this and setting schedules for each of those milestones. Let me know if this order looks right and I'll get it all scheduled.
 >
 > John
