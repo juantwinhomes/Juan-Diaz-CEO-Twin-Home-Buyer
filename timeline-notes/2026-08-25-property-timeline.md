@@ -13,7 +13,7 @@ plus a draft reply back to Juan.
 
 | When | What | Notes |
 |---|---|---|
-| Tue, Aug 25, 2026 | Staging furniture delivery | Staging/furniture provider already notified and confirmed |
+| Tue, Aug 25, 2026 | Staging furniture delivery | Ayla Staging already notified and confirmed |
 | Wed, Aug 26, 2026 (afternoon) | Photoshoot | Happens after cleaning, with the house staged |
 | After photoshoot | House inspection + termite inspection | To be scheduled |
 | After inspections | Tabetha (listing agent) – listing agreement, disclosures, MLS setup | Tabetha is the listing agent on Twin Home Buyer / Equity Track deals; handles listing agreement, disclosures (needs inspection/termite results), and MLS listing setup |
@@ -38,7 +38,7 @@ disclosure links, listing agreements, and parcel/APN checks.
 >
 > Here's how I've got the timeline lined up:
 >
-> - **Tue 8/25** – Staging furniture delivery. Provider's already confirmed.
+> - **Tue 8/25** – Staging furniture delivery, scheduled with Ayla Staging.
 > - **Wed 8/26, afternoon** – Photoshoot, right after cleaning, with the house staged.
 > - **After the photoshoot** – House inspection and termite inspection, then Tabetha lines up the listing agreement, disclosures, and MLS setup once those results are in.
 > - **Home stretch** – Finish listing prep (photos, final touches) and put it on the market.
