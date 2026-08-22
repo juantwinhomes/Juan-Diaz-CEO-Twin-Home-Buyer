@@ -16,13 +16,19 @@ plus a draft reply back to Juan.
 | Tue, Aug 25, 2026 | Staging furniture delivery | Staging/furniture provider already notified and confirmed |
 | Wed, Aug 26, 2026 (afternoon) | Photoshoot | Happens after cleaning, with the house staged |
 | After photoshoot | House inspection + termite inspection | To be scheduled |
-| After photoshoot | Tabetha's task | Need to confirm exactly what Tabetha is handling (staging / cleaning / listing prep?) |
+| After inspections | Tabetha (listing agent) – listing agreement, disclosures, MLS setup | Tabetha is the listing agent on Twin Home Buyer / Equity Track deals; handles listing agreement, disclosures (needs inspection/termite results), and MLS listing setup |
 | Final stretch | Get to the finish line: finalize listing photos, list on the market, and wrap remaining prep | |
+
+## Background on Tabetha
+
+Listing-agent / real-estate contact on Twin Home Buyer / Equity Track deals.
+Prior work: 1574/1576 Jerrold Ave listing-agreement coordination, Antioch
+disclosure coordination, 1202 Via Lucas contract (with Mariaelena),
+disclosure links, listing agreements, and parcel/APN checks.
 
 ## Open questions for Juan
 
-1. What specifically is Tabetha responsible for, and where does it fit relative to the inspections?
-2. Any target date for hitting the market once inspections/termite clear?
+1. Any target date for hitting the market once inspections/termite clear?
 
 ## Draft reply to Juan
 
@@ -34,10 +40,8 @@ plus a draft reply back to Juan.
 >
 > - **Tue 8/25** – Staging furniture delivery. Provider's already confirmed.
 > - **Wed 8/26, afternoon** – Photoshoot, right after cleaning, with the house staged.
-> - **After the photoshoot** – Kick off the house inspection and termite inspection, and get Tabetha's piece moving.
+> - **After the photoshoot** – House inspection and termite inspection, then Tabetha lines up the listing agreement, disclosures, and MLS setup once those results are in.
 > - **Home stretch** – Finish listing prep (photos, final touches) and put it on the market.
->
-> One thing to confirm: what exactly is Tabetha handling, so I know where to slot it against the inspections?
 >
 > Team will be working on this and setting schedules for each of those milestones. Let me know if this order looks right and I'll get it all scheduled.
 >
