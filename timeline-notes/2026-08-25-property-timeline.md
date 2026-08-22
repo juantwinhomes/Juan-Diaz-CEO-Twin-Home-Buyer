@@ -38,15 +38,14 @@ disclosure links, listing agreements, and parcel/APN checks.
 >
 > 492 Umland Dr, Santa Rosa, 95401
 >
-> Got it — confirming the garage door first: no garage door going in, noted as the updated call on our end.
+> Confirmed: no garage door.
 >
-> Here's how I've got the timeline lined up:
+> Timeline:
+> - Tue 8/25 – Furniture, Ayla Staging.
+> - Wed 8/26 PM – Photoshoot, after cleaning.
+> - Then – Inspection + termite, then Tabetha handles listing agreement/disclosures/MLS.
+> - Then – Final photos, listing prep, market.
 >
-> - **Tue 8/25** – Furniture, schedule with Ayla Staging.
-> - **Wed 8/26, afternoon** – Photoshoot, right after cleaning, with the house staged.
-> - **After the photoshoot** – House inspection and termite inspection, then Tabetha lines up the listing agreement, disclosures, and MLS setup once those results are in.
-> - **Home stretch** – Finish listing prep (photos, final touches) and put it on the market.
->
-> Team will be working on this and setting schedules for each of those milestones. Let me know if this order looks right and I'll get it all scheduled.
+> Team's scheduling each step. Confirm and I'll lock it in.
 >
 > John
