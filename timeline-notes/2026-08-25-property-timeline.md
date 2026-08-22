@@ -1,5 +1,7 @@
 # Property Timeline — Juan's Voice Note (2026-08-22)
 
+**Property:** 492 Umland Dr, Santa Rosa, 95401
+
 Organized from Juan's voice message into a clear timeline and decision log,
 plus a draft reply back to Juan.
 
@@ -34,11 +36,13 @@ disclosure links, listing agreements, and parcel/APN checks.
 
 > Hey Juan,
 >
+> 492 Umland Dr, Santa Rosa, 95401
+>
 > Got it — confirming the garage door first: no garage door going in, noted as the updated call on our end.
 >
 > Here's how I've got the timeline lined up:
 >
-> - **Tue 8/25** – Staging furniture delivery, scheduled with Ayla Staging.
+> - **Tue 8/25** – Furniture, schedule with Ayla Staging.
 > - **Wed 8/26, afternoon** – Photoshoot, right after cleaning, with the house staged.
 > - **After the photoshoot** – House inspection and termite inspection, then Tabetha lines up the listing agreement, disclosures, and MLS setup once those results are in.
 > - **Home stretch** – Finish listing prep (photos, final touches) and put it on the market.
