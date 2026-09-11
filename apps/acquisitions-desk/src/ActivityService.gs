@@ -28,7 +28,8 @@ function activityDisplay_(a) {
     case 'STATUS_CHANGED': return 'Moved to ' + (STATUS_LABELS[a.new_value] || a.new_value) + (note ? ' — ' + note : '');
     case 'ASSIGNED': return (a.new_value ? 'Assigned to ' + userDisplayName_(a.new_value) : 'Unassigned') + (note ? ' — ' + note : '');
     case 'NEXT_ACTION_CHANGED': return 'Next action: ' + (a.new_value || '(cleared)');
-    case 'NEXT_ACTION_DONE': return 'Done: ' + toStr_(a.old_value);
+    case 'NEXT_ACTION_DONE': return 'Done: ' + toStr_(a.old_value) + (a.new_value ? ' (was due ' + a.new_value + ')' : '');
+    case 'OFFER_SENT': return 'Offer sent' + (a.new_value ? ' at $' + Number(a.new_value).toLocaleString() : '') + (note ? ' — ' + note : '');
     case 'DUE_DATE_CHANGED': return a.new_value ? 'Next action due ' + a.new_value : 'Due date cleared';
     case 'APPOINTMENT_SET': return 'Appointment set for ' + toStr_(a.new_value) + (note ? ' — ' + note : '');
     case 'APPOINTMENT_UPDATED': return note || ('Appointment updated: ' + a.field_changed + ' → ' + a.new_value);

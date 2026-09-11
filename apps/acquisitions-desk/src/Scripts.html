@@ -3,422 +3,356 @@
   'use strict';
   /* ================= server bridge ================= */
   var LOCAL = !(window.google && google.script && google.script.run);
-  function gs(fn){
-    var args=Array.prototype.slice.call(arguments,1);
-    if(LOCAL) return window.__localRun(fn,args); // test harness shim
-    return new Promise(function(res,rej){
-      var r=google.script.run.withSuccessHandler(res).withFailureHandler(function(e){rej(e)});
-      r[fn].apply(r,args);
-    });
-  }
-  /** Calls the server, normalizes {ok} responses, shows the status line. Rejects with {code,message,data}. */
-  function call(fn){
-    var args=Array.prototype.slice.call(arguments);
-    setNet('busy','Saving…');
-    return gs.apply(null,args).then(function(r){
-      if(!r||typeof r.ok!=='boolean'){setNet('err','Bad response');throw {code:'BAD_RESPONSE',message:'Unexpected server response.'}}
-      if(!r.ok){setNet('err',codeLabel(r.code));throw r}
-      setNet('ok',r.message||'Saved');return r;
-    },function(e){setNet('err','Could not reach the server');throw {code:'NETWORK',message:(e&&e.message)||'Could not reach the server. Check your connection and try again.'}});
-  }
-  function read(fn){ // reads do not flash "Saving"
-    var args=Array.prototype.slice.call(arguments);
-    return gs.apply(null,args).then(function(r){
-      if(!r||typeof r.ok!=='boolean')throw {code:'BAD_RESPONSE',message:'Unexpected server response.'};
-      if(!r.ok)throw r; return r;
-    },function(e){ if(e&&typeof e.ok==='boolean')throw e; throw {code:'NETWORK',message:(e&&e.message)||'Could not reach the server.'}});
-  }
+  function gs(fn){var args=Array.prototype.slice.call(arguments,1);
+    if(LOCAL) return window.__localRun(fn,args);
+    return new Promise(function(res,rej){var r=google.script.run.withSuccessHandler(res).withFailureHandler(rej);r[fn].apply(r,args)})}
+  function norm(p){return p.then(function(r){if(!r||typeof r.ok!=='boolean')throw {code:'BAD_RESPONSE',message:'Unexpected server response.'};if(!r.ok)throw r;return r},
+    function(e){if(e&&typeof e.ok==='boolean')throw e;throw {code:'NETWORK',message:(e&&e.message)||'Could not reach the server. Check your connection and try again.'}})}
+  function call(fn){var a=Array.prototype.slice.call(arguments);setNet('busy','Saving…');return norm(gs.apply(null,a)).then(function(r){setNet('ok',r.message||'Saved');return r},function(e){setNet('err',codeLabel(e.code));throw e})}
+  function read(fn){return norm(gs.apply(null,Array.prototype.slice.call(arguments)))}
   function codeLabel(c){return {CONFLICT_RECORD_CHANGED:'Changed by another user',ACCESS_DENIED:'Access denied',VALIDATION_ERROR:'Could not save',NETWORK:'Could not save',SERVER_ERROR:'Could not save',BUSY:'Desk busy, retry',DUPLICATE:'Duplicate'}[c]||'Could not save'}
-  var netTimer;
-  function setNet(kind,text){var el=$('netStatus');el.className='status '+kind;el.textContent=text;clearTimeout(netTimer);
-    if(kind==='ok')netTimer=setTimeout(function(){el.textContent='';el.className='status'},2500)}
-  var toastTimer;
-  function toast(msg,kind){var t=$('toast');t.textContent=msg;t.className=kind||'';t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.hidden=true},kind==='err'?6000:3000)}
-  function showError(e,fallback){var m=(e&&e.message)||fallback||'Something went wrong.';toast(m,'err');return m}
+  var netTimer; function setNet(kind,text){var el=$('netStatus');el.className='status '+kind;el.textContent=text;clearTimeout(netTimer);if(kind==='ok')netTimer=setTimeout(function(){el.textContent='';el.className='status'},2500)}
+  var toastTimer; function toast(msg,kind){var t=$('toast');t.textContent=msg;t.className='toast '+(kind||'');t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.hidden=true},kind==='err'?6000:3000)}
+  function showError(e,fb){var m=(e&&e.message)||fb||'Something went wrong.';toast(m,'err');return m}
 
   /* ================= state ================= */
-  var boot=null, me=null, C=null, S={}, users=[], usersById={}, today='', view='plan';
-  var todayData=null, numbers=null, board={items:[],page:1,has_more:false,tally:null,total:0}, toolsData=null, juan=null;
-  var refreshTimer=null, editing=false, editTimer=null, uiPrefs={};
-  try{uiPrefs=JSON.parse(localStorage.getItem('thb:ui')||'{}')}catch(e){uiPrefs={}}
-  function savePref(k,v){uiPrefs[k]=v;try{localStorage.setItem('thb:ui',JSON.stringify(uiPrefs))}catch(e){}}
+  var boot=null, me=null, C=null, S={}, users=[], usersById={}, today='', view='today', todayPane='queue', queueTab='overdue', dashPane='pace';
+  var todayData=null, juan=null, board={items:[],page:1,has_more:false,tally:null,total:0}, toolsData=null, dash=null, dashDrawn='';
+  var refreshTimer=null, editing=false, editTimer=null, prefs={}, current=null /* open lead */, currentTool=null;
+  try{prefs=JSON.parse(localStorage.getItem('thb:ui2')||'{}')}catch(e){prefs={}}
+  function pref(k,v){prefs[k]=v;try{localStorage.setItem('thb:ui2',JSON.stringify(prefs))}catch(e){}}
 
   /* ================= helpers ================= */
   function $(id){return document.getElementById(id)}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function attr(s){return esc(s)}
   function n(v){return Number(v)||0}
-  function money(v){return (v!=null&&isFinite(v))?'$'+Math.round(v).toLocaleString():'&mdash;'}
-  function pctS(v){return v==null?'&mdash;':v+'%'}
+  function money(v){return (v!=null&&isFinite(v))?'$'+Math.round(v).toLocaleString():'—'}
+  function pctS(v){return v==null?'—':v+'%'}
   function when(iso){if(!iso)return '';var d=new Date(iso);return isNaN(d)?'':d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})}
-  function dateOnly(iso){if(!iso)return '';var d=new Date(iso);return isNaN(d)?String(iso):d.toLocaleDateString()}
+  function timeOnly(iso){var d=new Date(iso);return isNaN(d)?'':d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})}
   function can(cap){return !!(me&&me.capabilities&&me.capabilities.indexOf(cap)>-1)}
   function safeUrl(u){return /^https?:\/\//i.test(u||'')?u:''}
   function label(st){return (C&&C.status_labels[st])||st}
-  function opt(list,sel,valueKey,labelKey){return list.map(function(o){var v=valueKey?o[valueKey]:o,l=labelKey?o[labelKey]:o;return '<option value="'+attr(v)+'"'+(String(v)===String(sel)?' selected':'')+'>'+esc(l)+'</option>'}).join('')}
+  function opt(list,sel,vk,lk){return list.map(function(o){var v=vk?o[vk]:o,l=lk?o[lk]:o;return '<option value="'+esc(v)+'"'+(String(v)===String(sel)?' selected':'')+'>'+esc(l)+'</option>'}).join('')}
   function markEditing(){editing=true;clearTimeout(editTimer);editTimer=setTimeout(function(){editing=false},4000)}
   document.addEventListener('focusin',function(e){if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))markEditing()});
   document.addEventListener('input',markEditing);
   function isTyping(){var a=document.activeElement;return editing||(a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&a.value!=='')}
+  function fact(v,l,cls){return '<div class="fact"><b'+(cls?' class="'+cls+'"':'')+'>'+v+'</b><span>'+l+'</span></div>'}
+  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ================= boot ================= */
   read('bootstrapApp').then(function(r){
-    boot=r.data; me=boot.user; C=boot.constants; S=boot.settings; today=boot.today;
-    users=boot.users; users.forEach(function(u){usersById[u.user_id]=u});
-    $('meName').textContent=me.name; $('meRole').textContent=me.role;
+    boot=r.data; me=boot.user; C=boot.constants; S=boot.settings; today=boot.today; users=boot.users; users.forEach(function(u){usersById[u.user_id]=u});
+    $('meName').textContent=me.name; $('meRole').textContent=me.role; $('meAvatar').textContent=(me.name||'?').charAt(0).toUpperCase(); $('meAvatar').title=me.name+' · '+me.role.toLowerCase()+' · '+me.email;
     $('footEnv').textContent=boot.env; $('footToday').textContent=today; $('footTz').textContent=boot.timezone;
-    if(boot.env!=='production'){var w=document.createElement('div');w.className='warn';w.textContent='DEVELOPMENT environment — not production data.';$('boot').parentNode.insertBefore(w,$('boot'))}
-    $('tabAdmin').hidden=!can('manage_users');
-    $('juanPanel').hidden=!can('view_team');
-    if(!can('create_leads'))$('addLeadsSheet').hidden=true;
-    if(!can('manage_tools'))$('addToolSheet').hidden=true;
-    if(!can('manage_targets')){$('t_deals').disabled=true;$('t_budget').disabled=true;$('saveTargets').disabled=true}
-    if(!can('enter_metrics')){$('saveDay').disabled=true}
+    if(boot.env!=='production'){var w=document.createElement('div');w.className='alertbox';w.innerHTML='<b>Development</b>Not production data.';$('boot').parentNode.insertBefore(w,$('boot'))}
+    $('tabAdmin').hidden=!can('manage_users'); $('juanPanelTab').hidden=!can('view_team'); $('juanPanel').hidden=true;
+    if(!can('create_leads'))$('openAdd').hidden=true; if(!can('manage_tools'))$('addToolSheet').hidden=true;
+    if(!can('manage_targets')){$('targetsBox').hidden=true} if(!can('enter_metrics'))$('saveDay').disabled=true;
     $('boot').hidden=true;
-    show(uiPrefs.tab||'plan');
-    if(uiPrefs.filter)$('filter').value=uiPrefs.filter; if(uiPrefs.sort)$('sort').value=uiPrefs.sort;
-    loadAll(); startAutoRefresh();
-  }).catch(function(e){
-    $('boot').hidden=true; var el=$('bootError'); el.hidden=false;
-    el.innerHTML='<b>'+esc(codeLabel(e.code)==='Could not save'?'Could not open the desk':codeLabel(e.code))+'</b><br>'+esc(e.message||'')+
-      (e.code==='IDENTITY_UNAVAILABLE'?'<br><span class="hint">Administrator: deploy the web app with access limited to the company Workspace domain, executing as the owner.</span>':'');
-  });
+    if(prefs.sort)$('sort').value=prefs.sort; if(prefs.filter)setFilter(prefs.filter,true); if(prefs.period)$('period').value=prefs.period;
+    show(prefs.tab||'today'); loadAll(); startAutoRefresh();
+  }).catch(function(e){$('boot').hidden=true;var el=$('bootError');el.hidden=false;el.innerHTML='<b>'+esc(codeLabel(e.code)==='Could not save'?'Could not open the desk':codeLabel(e.code))+'</b>'+esc(e.message||'')+(e.code==='IDENTITY_UNAVAILABLE'?'<p class="small muted">Administrator: deploy the web app with access limited to the company Workspace, executing as the owner.</p>':'')});
 
-  function show(v){
-    view=v; savePref('tab',v);
-    document.querySelectorAll('.tab').forEach(function(x){x.setAttribute('aria-selected',x.dataset.view===v)});
-    ['today','numbers','leads','tools','plan','admin'].forEach(function(k){$('view-'+k).hidden=(k!==v)});
-    if(v==='admin'&&can('manage_users'))loadAdmin();
-  }
-  document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){show(t.dataset.view);refreshCurrent()}});
+  var TITLES={today:['Today',function(){return 'business day '+today+' · '+(boot?boot.timezone:'')}],leads:['Board',function(){return board.tally?board.tally.live+' live · '+board.tally.archived+' archived':''}],dash:['Dashboards',function(){return 'reporting · one question per page'}],tools:['Tools',function(){return toolsData?toolsData.tools.length+' builds · '+toolsData.tools_today.required+' on the daily list':''}],plan:['The plan',function(){return '10 September 2026'}],admin:['Admin',function(){return 'users · settings · backups'}]};
+  function show(v){view=v;pref('tab',v);document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-current',b.dataset.view===v?'page':'false')});
+    ['today','leads','dash','tools','plan','admin'].forEach(function(k){$('view-'+k).hidden=(k!==v)});
+    $('viewTitle').textContent=TITLES[v][0];$('viewSub').textContent=TITLES[v][1]();
+    $('sub-today').hidden=v!=='today';$('sub-dash').hidden=v!=='dash';
+    if(v==='admin'&&can('manage_users'))loadAdmin(); if(v==='dash'){loadDash().then(function(){animateIn()})} window.scrollTo(0,0)}
+  document.querySelectorAll('[data-view]').forEach(function(b){b.onclick=function(){show(b.dataset.view);if(['today','leads','tools'].indexOf(b.dataset.view)>-1)refreshCurrent()}});
+  document.querySelectorAll('[data-goto]').forEach(function(b){b.onclick=function(){show(b.dataset.goto)}});
+  $('sub-today').querySelectorAll('button[data-p]').forEach(function(b){b.onclick=function(){setTodayPane(b.dataset.p)}});
+  function setTodayPane(p){todayPane=p;$('sub-today').querySelectorAll('button[data-p]').forEach(function(x){x.setAttribute('aria-selected',x.dataset.p===p?'true':'false')});document.querySelectorAll('.pane-today').forEach(function(s){s.hidden=s.dataset.p!==p});if(p==='team')$('juanPanel').hidden=!can('view_team')}
+  $('sub-dash').querySelectorAll('button[data-d]').forEach(function(b){b.onclick=function(){dashPane=b.dataset.d;$('sub-dash').querySelectorAll('button[data-d]').forEach(function(x){x.setAttribute('aria-selected',x.dataset.d===dashPane?'true':'false')});document.querySelectorAll('.dpane').forEach(function(p){p.hidden=p.id!=='d-'+dashPane;p.classList.remove('in')});setTimeout(animateIn,30);window.scrollTo(0,0)}});
+  $('period').onchange=function(){pref('period',this.value);dashDrawn='';loadDash().then(animateIn)};
 
-  function loadAll(){return Promise.all([loadToday(),loadNumbers(),loadBoard(1),loadTools()]).catch(function(e){showError(e)})}
-  function refreshCurrent(){
-    if(view==='today')return loadToday(); if(view==='numbers')return loadNumbers();
-    if(view==='leads')return loadBoard(1,true); if(view==='tools')return loadTools(); if(view==='admin')return loadAdmin();
-    return Promise.resolve();
-  }
-  $('refreshBtn').onclick=function(){setNet('busy','Refreshing…');(view==='plan'?loadAll():refreshCurrent()).then(function(){setNet('ok','Up to date')},function(e){showError(e)})};
-  function startAutoRefresh(){
-    clearInterval(refreshTimer); var secs=n(S.auto_refresh_seconds); if(!secs)return;
-    refreshTimer=setInterval(function(){ if(document.hidden||isTyping()||view==='plan')return; refreshCurrent().catch(function(){}) },Math.max(10,secs)*1000);
-  }
+  function loadAll(){return Promise.all([loadToday(),loadBoard(1),loadTools()]).catch(showError)}
+  function refreshCurrent(){if(view==='today')return loadToday();if(view==='leads')return loadBoard(1,true);if(view==='tools')return loadTools();if(view==='admin')return loadAdmin();if(view==='dash'){dashDrawn='';return loadDash()}return Promise.resolve()}
+  $('refreshBtn').onclick=function(){setNet('busy','Refreshing…');(view==='plan'?loadAll():refreshCurrent()).then(function(){setNet('ok','Up to date')},showError)};
+  function startAutoRefresh(){clearInterval(refreshTimer);var secs=n(S.auto_refresh_seconds);if(!secs)return;refreshTimer=setInterval(function(){if(document.hidden||isTyping()||view==='plan'||!$('drawer').hidden)return;refreshCurrent().catch(function(){})},Math.max(10,secs)*1000)}
 
   /* ================= TODAY ================= */
   var METRICS=['tv_spend','ppc_spend','ppl_spend','other_spend','new_leads','inbound_calls','missed_calls','sellers_reached','appointments_set','contracts_signed','contracts_fell_out','deals_closed','minutes_to_first_call'];
-  function loadToday(){
-    var p=[read('getTodayDashboard')]; if(can('view_team'))p.push(read('getJuanDashboard').catch(function(){return null}));
-    return Promise.all(p).then(function(r){todayData=r[0].data; juan=r[1]?r[1].data:null; today=todayData.today; renderToday()});
+  function loadToday(){var p=[read('getTodayDashboard')];if(can('view_team'))p.push(read('getJuanDashboard').catch(function(){return null}));
+    return Promise.all(p).then(function(r){todayData=r[0].data;juan=r[1]?r[1].data:null;today=todayData.today;renderToday()})}
+  function renderToday(){var t=todayData;if(!t)return;var q=t.work_queue,needs=q.counts.overdue+q.counts.no_next_action;
+    $('todayHero').innerHTML='<b>'+needs+'</b> '+(needs===1?'property':'properties')+'<small>'+q.counts.overdue+' overdue · '+q.counts.no_next_action+' with no next action'+(q.counts.no_due_date?' · '+q.counts.no_due_date+' with no due date':'')+'</small>';
+    $('todayHeroNote').textContent=needs?'Clear these and the board is clean. Everything else is moving.':'Nothing is stuck. Work the due list and log the day.';
+    var m=t.metrics; $('todayFacts').innerHTML=fact(t.waiting_on_juan.length,'waiting on Juan',t.waiting_on_juan.length?'alert':'')+fact(q.counts.due_today,'due today')+fact(m?'✓':'—','day logged'+(m?' · '+esc(m.updated_by_name||m.created_by_name):''),m?'ok':'alert');
+    $('c-queue').textContent=needs||''; $('c-queue').className='c'+(needs?' hot':''); $('c-juan').textContent=t.waiting_on_juan.length||''; $('c-juan').className='c'+(t.waiting_on_juan.length?' hot':'');
+    $('c-log').textContent=m?'logged':'not yet'; $('c-log').className='c'+(m?'':' hot'); $('c-tools').textContent=t.tools_today.required?t.tools_today.done+'/'+t.tools_today.required:''; $('c-tools').className='c'+(t.tools_today.required&&t.tools_today.done<t.tools_today.required?' hot':'');
+    var badge=needs+t.waiting_on_juan.length; ['todayBadge','todayBadgeM'].forEach(function(id){$(id).hidden=!badge;$(id).textContent=badge});
+    if(!isTyping())METRICS.forEach(function(f){$('d_'+f).value=(m&&m[f]!=null)?m[f]:''});
+    $('todayLabel').textContent=m?('logged '+timeOnly(m.updated_at)+' by '+(m.updated_by_name||m.created_by_name)):'not logged yet';
+    $('notLogged').innerHTML=m?'':'<div class="alertbox"><b>Day log</b>Today has not been logged. It takes about a minute. <button class="btn xs" data-goto-pane="log" style="margin-left:8px">Log it</button></div>';
+    $('toolsTodayLbl').textContent=t.tools_today.required?t.tools_today.done+' of '+t.tools_today.required+(t.tools_today.streak>1?' · streak '+t.tools_today.streak:''):'';
+    renderQueue(q); renderFlagged(t.waiting_on_juan); renderRunsToday(t.tools_today); renderAppts(t.upcoming_appointments); renderTeam(t.team); if(juan)renderJuan(juan);
+    setTodayPane(todayPane);
   }
-  function renderToday(){
-    var t=todayData; if(!t)return;
-    $('todayStamp').textContent='Business day '+t.today+' ('+t.timezone+') · updated '+new Date().toLocaleTimeString();
-    var m=t.metrics, typing=isTyping();
-    if(!typing)METRICS.forEach(function(f){$('d_'+f).value=(m&&m[f]!=null)?m[f]:''});
-    $('todayLabel').innerHTML=new Date(t.today+'T12:00:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})+
-      (m?' &mdash; logged by '+esc(m.created_by_name)+(m.updated_by!==m.created_by?', updated by '+esc(m.updated_by_name):'')+'. Saving again updates it.':' &mdash; not logged yet.');
-    $('notLogged').innerHTML=m?'':'<div class="warn">Today has not been logged. It takes about a minute.</div>';
-    renderRunsToday(t.tools_today); renderQueue(t.work_queue); renderFlagged(t.waiting_on_juan); renderAppts(t.upcoming_appointments); renderActivity(t.team);
-    var badge=t.work_queue.counts.overdue+t.waiting_on_juan.length; $('todayBadge').hidden=!badge; $('todayBadge').textContent=badge;
-    if(juan)renderJuan(juan);
-  }
-  $('saveDay').onclick=function(){
-    var data={}; METRICS.forEach(function(f){var v=$('d_'+f).value;data[f]=v===''?'':Number(v)});
-    $('saveMsg').textContent='Saving…';
-    call('saveDailyMetrics',today,data).then(function(r){$('saveMsg').textContent=r.message;editing=false;return Promise.all([loadToday(),loadNumbers()])})
-      .catch(function(e){$('saveMsg').textContent=showError(e,'Could not save. Check your connection and press Save today again.')});
-  };
-  function renderRunsToday(tt){
-    if(!tt||!tt.required){$('runsToday').innerHTML='<div class="empty">No tool is set to run daily yet. Set a cadence on the Tools tab.</div>';return}
-    $('runsToday').innerHTML='<div class="row" style="margin:0 0 8px"><span class="chip'+(tt.done===tt.required?' good':' stale')+'">'+tt.done+' of '+tt.required+' run today</span>'+
-      (tt.streak>1?'<span class="chip good">'+tt.streak+' days in a row</span>':'')+'</div>'+
-      tt.items.map(function(x){
-        return '<div class="queue"><div><b>'+esc(x.name)+'</b></div><div class="meta" style="font-size:13px">'+esc(x.operator||'no operator set')+(x.done?' &middot; done by '+esc(x.run_by_name)+' at '+esc(when(x.run_at)):'')+'</div>'+
-          '<div class="row"><button class="btn'+(x.done?' ghost':'')+' small" data-run="'+attr(x.tool_id)+'" data-done="'+(x.done?1:0)+'"'+(can('run_tools')?'':' disabled')+'>'+(x.done?'Undo':'Mark run')+'</button>'+
-          (x.expected_output?'<span class="hint" style="margin:0">Looks right when: '+esc(x.expected_output)+'</span>':'')+'</div></div>'}).join('');
-  }
-  function qItem(i,whenHtml){
-    return '<div class="queue">'+whenHtml+'<div><b>'+esc(i.address)+'</b> <span class="chip">'+esc(i.status_label)+'</span>'+(i.compliance_mailer_check?' <span class="chip hot">Mailer/check</span>':i.flag_juan?' <span class="chip hot">Needs Juan</span>':'')+'</div>'+
-      '<div class="meta" style="font-size:13px">'+(i.next_action?esc(i.next_action):'<span style="color:var(--stamp);font-weight:700">NO NEXT ACTION</span>')+(i.assigned_name?' &middot; '+esc(i.assigned_name):' &middot; unassigned')+(i.days_untouched>=n(S.stale_lead_days||7)?' &middot; '+i.days_untouched+' days untouched':'')+'</div>'+
-      '<div class="row">'+(i.next_action&&can('work_leads')?'<button class="btn small" data-qdone="'+attr(i.lead_id)+'" data-v="'+i.version+'">Mark done</button>':'')+
-      (can('work_leads')?'<button class="btn ghost small" data-qnext="'+attr(i.lead_id)+'" data-v="'+i.version+'">Set next action</button>':'')+
-      '<button class="btn ghost small" data-goto="'+attr(i.lead_id)+'">Open on board</button></div></div>';
-  }
-  function renderQueue(q){
-    var h='';
-    if(q.overdue.length)h+='<div class="qhead over">Overdue ('+q.overdue.length+')</div>'+q.overdue.map(function(i){return qItem(i,'<div class="when over">Overdue '+i.days_overdue+' day'+(i.days_overdue===1?'':'s')+' &middot; was due '+esc(i.due_date)+'</div>')}).join('');
-    if(q.due_today.length)h+='<div class="qhead">Due today ('+q.due_today.length+')</div>'+q.due_today.map(function(i){return qItem(i,'<div class="when">Due today</div>')}).join('');
-    if(q.upcoming.length)h+='<div class="qhead">Coming up, next 7 days ('+q.upcoming.length+')</div>'+q.upcoming.map(function(i){return qItem(i,'<div class="when">Due '+esc(i.due_date)+'</div>')}).join('');
-    if(q.no_due_date.length)h+='<div class="qhead warn">Has a next action but NO DUE DATE ('+q.no_due_date.length+')</div>'+q.no_due_date.map(function(i){return qItem(i,'<div class="when warn">NO DUE DATE</div>')}).join('');
-    if(q.no_next_action.length)h+='<div class="qhead over">NO NEXT ACTION ('+q.no_next_action.length+')</div>'+q.no_next_action.map(function(i){return qItem(i,'<div class="when over">NO NEXT ACTION &mdash; this lead will stall</div>')}).join('');
-    $('queue').innerHTML=h||'<div class="empty">Nothing live needs work. Add leads on the board.</div>';
-  }
-  function renderFlagged(f){
-    $('flagged').innerHTML=f.length?f.map(function(l){
-      return '<div class="queue"><div><b>'+esc(l.address)+'</b></div><div class="row" style="margin-top:4px">'+(l.compliance?'<span class="chip fill">Mailer or check mentioned</span>':'')+(l.flag?'<span class="chip hot">Flagged for Juan</span>':'')+
-        '<span class="chip">'+esc(l.status_label)+'</span><span class="chip">'+esc(l.assigned_name||'unassigned')+'</span>'+(l.flagged_at?'<span class="hint" style="margin:0">flagged '+esc(when(l.flagged_at))+'</span>':'')+'</div>'+
-        (l.last_note?'<div class="meta" style="font-size:13px;margin-top:6px">'+esc(l.last_note)+'</div>':'')+
-        '<div class="row"><button class="btn ghost small" data-goto="'+attr(l.lead_id)+'">Open on board</button></div></div>'}).join(''):'<div class="empty">Nothing waiting on Juan.</div>';
-  }
-  function renderAppts(a){
-    $('appts').innerHTML=a&&a.length?'<table><tr><th>Date</th><th class="l">Property</th><th>With</th><th>Status</th></tr>'+a.map(function(x){return '<tr><td>'+esc(x.appointment_date)+(x.appointment_time?' '+esc(x.appointment_time):'')+'</td><td class="l">'+esc(x.address)+'</td><td>'+esc(x.assigned_name)+'</td><td>'+esc(x.status)+'</td></tr>'}).join('')+'</table>':'<div class="empty">No appointments in the next seven days.</div>';
-  }
-  function renderActivity(team){
-    var worked=team.filter(function(r){return r.total_actions>0});
-    if(!worked.length&&!team.length){$('activity').innerHTML='<div class="empty" style="width:100%">Nobody has touched the board today.</div>';return}
-    $('activity').innerHTML='<tr><th class="l">Who</th><th>Leads touched</th><th>Attempts</th><th>Notes</th><th>Moves</th><th>Appts</th><th>Contracts</th><th>Closes</th><th>Assigned live</th><th>Overdue</th><th>Last activity</th></tr>'+
-      team.map(function(r){return '<tr'+(r.total_actions?'':' style="color:var(--graphite)"')+'><td class="l">'+esc(r.name)+'</td><td>'+r.leads_touched+'</td><td>'+r.attempts+'</td><td>'+r.notes+'</td><td>'+r.status_changes+'</td><td>'+r.appointments+'</td><td>'+r.contracts+'</td><td>'+r.closes+'</td><td>'+r.active_assigned+'</td><td'+(r.overdue_assigned?' style="color:var(--stamp);font-weight:700"':'')+'>'+r.overdue_assigned+'</td><td>'+(r.last_activity?esc(when(r.last_activity)):'<span style="color:var(--stamp)">nothing today</span>')+'</td></tr>'}).join('');
-  }
-  function renderJuan(j){
-    var t=j.totals_today;
-    $('juanTally').innerHTML=[[j.who_worked.filter(function(r){return r.total_actions>0}).length,'people worked today'],[t.leads_touched,'leads touched'],[t.attempts,'contact attempts'],[t.appointments_set,'appointments set'],[t.contracts_signed,'contracts signed'],[t.deals_closed,'deals closed'],
-      [j.overdue.length,'overdue'],[j.no_next_action.length,'no next action'],[j.needs_juan.length,'need Juan'],[j.pace.closed+'/'+(j.pace.target||'—'),'month pace']].map(function(x){return '<div><b>'+esc(x[0])+'</b><span>'+x[1]+'</span></div>'}).join('');
-    $('juanTeam').innerHTML='<tr><th class="l">Who</th><th>Touched</th><th>Attempts</th><th>Notes</th><th>Moves</th><th>Assigned</th><th>Overdue</th><th>No next action</th><th>Last seen</th></tr>'+j.who_worked.map(function(r){return '<tr><td class="l">'+esc(r.name)+' <span class="hint" style="margin:0">'+esc(r.role.toLowerCase())+'</span></td><td>'+r.leads_touched+'</td><td>'+r.attempts+'</td><td>'+r.notes+'</td><td>'+r.status_changes+'</td><td>'+r.active_assigned+'</td><td>'+r.overdue_assigned+'</td><td>'+r.no_next_action_assigned+'</td><td>'+(r.last_activity?esc(when(r.last_activity)):'&mdash;')+'</td></tr>'}).join('');
-    $('juanChanges').innerHTML=j.changes_today.length?j.changes_today.map(function(c){return '<div class="note"><b>'+esc(c.user_name)+'</b><em>'+esc(when(c.timestamp_utc))+'</em> &middot; '+esc(c.address)+'<br>'+esc(c.display)+'</div>'}).join(''):'<div class="empty">No changes yet today.</div>';
-  }
-  $('view-today').addEventListener('click',function(e){
-    var t=e.target.closest('button'); if(!t)return;
-    if(t.dataset.run){ var fn=t.dataset.done==='1'?'undoToolRun':'logToolRun'; t.disabled=true;
-      call(fn,t.dataset.run,'','').then(function(r){renderRunsToday(r.data.tools_today)}).catch(function(e){showError(e);t.disabled=false}) }
-    if(t.dataset.qdone){ markDone(t.dataset.qdone,t.dataset.v) }
-    if(t.dataset.qnext){ promptNext(t.dataset.qnext,t.dataset.v) }
-    if(t.dataset.goto){ gotoLead(t.dataset.goto) }
-  });
-  function markDone(id,v){
-    var next=window.prompt('Done. What is the NEXT action on this property? (leave blank only if there truly is none — it will be flagged)','');
-    if(next===null)return;
-    var due=''; if(next.trim()){due=window.prompt('When is it due? (yyyy-mm-dd)',today)||'';if(due&&!/^\d{4}-\d{2}-\d{2}$/.test(due)){toast('Use yyyy-mm-dd for the date','err');return}}
-    call('completeNextAction',id,next.trim(),due,Number(v)).then(function(r){toast(r.message,r.data.due_state==='NO_NEXT_ACTION'?'err':'ok');return Promise.all([loadToday(),loadBoard(1,true)])}).catch(function(e){handleConflict(e,id)});
-  }
-  function promptNext(id,v){
-    var next=window.prompt('Next action for this property:',''); if(next===null)return;
-    var due=window.prompt('Due date (yyyy-mm-dd):',today); if(due===null)return;
-    if(due&&!/^\d{4}-\d{2}-\d{2}$/.test(due)){toast('Use yyyy-mm-dd for the date','err');return}
-    call('setNextAction',id,next.trim(),due,Number(v)).then(function(){return Promise.all([loadToday(),loadBoard(1,true)])}).catch(function(e){handleConflict(e,id)});
-  }
-  function gotoLead(id){show('leads');$('filter').value='all';$('search').value=id;loadBoard(1).then(function(){var el=document.getElementById('lead-'+id);if(el)el.scrollIntoView({block:'center'})})}
+  $('view-today').addEventListener('click',function(e){var b=e.target.closest('[data-goto-pane]');if(b)setTodayPane(b.dataset.gotoPane)});
+  $('saveDay').onclick=function(){var data={};METRICS.forEach(function(f){var v=$('d_'+f).value;data[f]=v===''?'':Number(v)});$('saveMsg').textContent='Saving…';
+    call('saveDailyMetrics',today,data).then(function(r){$('saveMsg').textContent=r.message;editing=false;dashDrawn='';return loadToday()}).catch(function(e){$('saveMsg').textContent=showError(e)})};
+  function qItem(i){var alert=i.due_state==='OVERDUE'||i.due_state==='NO_NEXT_ACTION';var st=i.due_state==='OVERDUE'?'Overdue '+i.days_overdue+' day'+(i.days_overdue===1?'':'s')+'<small>was due '+esc(i.due_date)+'</small>':i.due_state==='DUE_TODAY'?'Due today':i.due_state==='UPCOMING'?'Due '+esc(i.due_date):i.due_state==='NO_DUE_DATE'?'No due date<small>has a next action</small>':'No next action<small>this lead will stall</small>';
+    return '<div class="row clickable" data-open="'+esc(i.lead_id)+'"><i class="sq'+(alert?' alert':i.compliance_mailer_check||i.flag_juan?' alert':'')+'"></i><div><div class="t">'+esc(i.address)+'</div><div class="m">'+(i.next_action?'<b>'+esc(i.next_action)+'</b> · ':'')+esc(i.assigned_name||'unassigned')+' · '+esc(i.status_label)+(i.compliance_mailer_check?' · mailer or check':i.flag_juan?' · flagged for Juan':'')+(i.days_untouched>=n(S.stale_lead_days||7)?' · untouched '+i.days_untouched+' days':'')+'</div></div><div class="state'+(alert?' alert':'')+'">'+st+'</div><div class="acts">'+(can('work_leads')?(i.next_action?'<button class="btn sm" data-qdone="'+esc(i.lead_id)+'">Mark done</button>':'<button class="btn ghost sm" data-qnext="'+esc(i.lead_id)+'">Set next action</button>'):'<button class="btn ghost sm" data-open="'+esc(i.lead_id)+'">Open</button>')+'</div></div>'}
+  function renderQueue(q){var keys={overdue:'overdue',due_today:'due_today',upcoming:'upcoming',no_next_action:'no_next_action',no_due_date:'no_due_date'};
+    $('queueTabs').querySelectorAll('button').forEach(function(b){var c=q.counts[b.dataset.q]||0;b.querySelector('.c').textContent=c||'';b.querySelector('.c').className='c'+((b.dataset.q==='overdue'||b.dataset.q==='no_next_action')&&c?' hot':'');b.setAttribute('aria-selected',b.dataset.q===queueTab?'true':'false')});
+    var list=q[keys[queueTab]]||[]; $('queueTotal').textContent=(q.counts.overdue+q.counts.due_today+q.counts.upcoming+q.counts.no_due_date+q.counts.no_next_action)+' live with something to do';
+    $('queue').innerHTML=list.length?list.map(qItem).join(''):'<div class="empty">'+({overdue:'Nothing overdue.',due_today:'Nothing due today.',upcoming:'Nothing due in the next 7 days.',no_next_action:'Every live property has a next action.',no_due_date:'Every next action has a date.'})[queueTab]+'</div>'}
+  $('queueTabs').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;queueTab=b.dataset.q;if(todayData)renderQueue(todayData.work_queue)});
+  function renderFlagged(f){$('flagged').innerHTML=f.length?f.map(function(l){return '<div class="row clickable" data-open="'+esc(l.lead_id)+'"><i class="sq alert"></i><div><div class="t">'+esc(l.address)+'</div><div class="m">'+(l.last_note?'<b>“'+esc(l.last_note)+'”</b> · ':'')+esc(l.assigned_name||'unassigned')+' · '+esc(l.status_label)+'</div></div><div class="state alert">'+(l.compliance?'Mailer or check':'Flagged for Juan')+(l.flagged_at?'<small>flagged '+esc(when(l.flagged_at))+'</small>':'')+'</div><div class="acts"><button class="btn sm" data-open="'+esc(l.lead_id)+'">Open</button></div></div>'}).join(''):'<div class="empty">Nothing waiting on Juan.</div>'}
+  function renderRunsToday(tt){if(!tt||!tt.required){$('runsToday').innerHTML='<div class="empty">No tool is set to run daily yet. Set a cadence on the Tools tab.</div>';return}
+    $('runsToday').innerHTML=tt.items.map(function(x){return '<div class="row two"><i class="chk'+(x.done?' on':'')+'">'+(x.done?'<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>':'')+'</i><div><div class="t">'+esc(x.name)+'</div><div class="m">'+esc(x.operator||'no operator set')+(x.expected_output?' · looks right when: '+esc(x.expected_output):'')+(x.done?' · done by '+esc(x.run_by_name)+' at '+esc(timeOnly(x.run_at)):'')+'</div></div><div class="state'+(x.done?'':' alert')+'">'+(x.done?'Run':'Not run')+'<small>'+esc(x.cadence.toLowerCase())+'</small></div><div class="acts"><button class="btn sm'+(x.done?' ghost':'')+'" data-run="'+esc(x.tool_id)+'" data-done="'+(x.done?1:0)+'"'+(can('run_tools')?'':' disabled')+'>'+(x.done?'Undo':'Mark run')+'</button></div></div>'}).join('')}
+  function renderAppts(a){$('appts').innerHTML=a&&a.length?a.slice(0,4).map(function(x){return '<p><b>'+esc(x.appointment_date)+(x.appointment_time?' '+esc(x.appointment_time):'')+'</b> '+esc(x.address)+' · '+esc(x.assigned_name)+'</p>'}).join(''):'<p class="muted">None in the next seven days.</p>'}
+  function renderTeam(team){var worked=team.filter(function(r){return r.total_actions>0});
+    if(!can('view_team')){return}
+    $('juanTally').textContent=worked.length+' worked · '+team.reduce(function(t,r){return t+r.leads_touched},0)+' leads touched · '+team.reduce(function(t,r){return t+r.attempts},0)+' attempts';
+    $('juanTeam').innerHTML='<tr><th>Who</th><th>Touched</th><th>Attempts</th><th>Notes</th><th>Moves</th><th>Appts</th><th>Assigned live</th><th>Overdue</th><th>No next action</th><th>Last seen</th></tr>'+team.map(function(r){var z=!r.total_actions;return '<tr><td class="name">'+esc(r.name)+'<small>'+esc(r.role.toLowerCase())+'</small></td><td'+(z?' class="alert"':'')+'>'+r.leads_touched+'</td><td'+(z?' class="alert"':'')+'>'+r.attempts+'</td><td>'+r.notes+'</td><td>'+r.status_changes+'</td><td>'+r.appointments+'</td><td>'+r.active_assigned+'</td><td'+(r.overdue_assigned?' class="alert"':'')+'>'+r.overdue_assigned+'</td><td'+(r.no_next_action_assigned?' class="alert"':'')+'>'+r.no_next_action_assigned+'</td><td'+(z?' class="alert"':'')+'>'+(r.last_activity?esc(when(r.last_activity)):'nothing today')+'</td></tr>'}).join('')}
+  function renderJuan(j){$('juanChanges').innerHTML=j.changes_today.length?'<div class="thread">'+j.changes_today.slice(0,40).map(function(c){return '<div class="entry"><span class="when">'+esc(timeOnly(c.timestamp_utc))+'</span><div><span class="who">'+esc(c.user_name)+'</span><span class="muted">'+esc(c.address)+'</span><br>'+esc(c.display)+'</div></div>'}).join('')+'</div>':'<div class="empty">No changes yet today.</div>';
+    $('quietPace').innerHTML='<p><b>'+j.pace.closed+' of '+(j.pace.target||'—')+'</b> closed · expected '+j.pace.expected_to_date+' by today</p><p><b>'+money(j.pace.spend_mtd)+'</b>'+(j.pace.budget?' of '+money(j.pace.budget):'')+' spent</p>'}
+  $('view-today').addEventListener('click',function(e){var t=e.target.closest('button,[data-open]');if(!t)return;
+    if(t.dataset.run){var fn=t.dataset.done==='1'?'undoToolRun':'logToolRun';t.disabled=true;call(fn,t.dataset.run,'','').then(function(r){renderRunsToday(r.data.tools_today);loadToday()}).catch(function(e){showError(e);t.disabled=false});return}
+    if(t.dataset.qdone){markDone(t.dataset.qdone);return} if(t.dataset.qnext){promptNext(t.dataset.qnext);return}
+    if(t.dataset.open){openLead(t.dataset.open)}});
+  function markDone(id){var next=window.prompt('Done. What is the NEXT action on this property? (leave blank only if there truly is none — it will be flagged)','');if(next===null)return;var due='';
+    if(next.trim()){due=window.prompt('When is it due? (yyyy-mm-dd)',today)||'';if(due&&!/^\d{4}-\d{2}-\d{2}$/.test(due)){toast('Use yyyy-mm-dd for the date','err');return}}
+    call('completeNextAction',id,next.trim(),due,null).then(function(r){toast(r.message,r.data.due_state==='NO_NEXT_ACTION'?'err':'ok');absorb(r.data);return Promise.all([loadToday(),loadBoard(1,true)])}).catch(showError)}
+  function promptNext(id){var next=window.prompt('Next action for this property:','');if(next===null)return;var due=window.prompt('Due date (yyyy-mm-dd):',today);if(due===null)return;if(due&&!/^\d{4}-\d{2}-\d{2}$/.test(due)){toast('Use yyyy-mm-dd for the date','err');return}
+    call('setNextAction',id,next.trim(),due,null).then(function(r){absorb(r.data);return Promise.all([loadToday(),loadBoard(1,true)])}).catch(showError)}
 
-  /* ================= NUMBERS ================= */
-  function loadNumbers(){return read('getNumbersDashboard',{days:30}).then(function(r){numbers=r.data;renderNumbers()})}
-  function renderNumbers(){
-    var d=numbers; if(!d)return; var p=d.pace,f=d.funnel;
-    $('paceNum').textContent=p.closed;
-    $('paceOf').innerHTML=p.target?('of '+p.target+' closed this month'):'closed this month';
-    var bar=$('paceBar'); bar.style.width=p.percent+'%'; bar.className=p.target?(p.on_pace?'ahead':'behind'):'';
-    $('paceMsg').innerHTML=p.target?('Pace for day '+p.day_of_month+' is '+p.expected_to_date+'. '+(p.on_pace?'On or ahead of pace.':'Behind pace by '+p.behind_by+' deals.')+' &middot; '+p.contracts_mtd+' contracts, '+p.appointments_mtd+' appointments, '+p.leads_mtd+' leads this month.'):'Set a monthly target to track pace.';
-    $('paceNote').innerHTML='Spent '+money(p.spend_mtd)+' this month'+(p.budget?' of a '+money(p.budget)+' budget':'');
-    if(!isTyping()){$('t_deals').value=S.monthly_deal_target||'';$('t_budget').value=S.monthly_marketing_budget||''}
-    $('rangeNote').textContent=f.days_logged?(f.days_logged+' days logged between '+f.from+' and '+f.to):'Nothing logged in the last 30 days.';
-    var steps=[['New leads',f.new_leads,'',null],['Inbound calls',f.inbound_calls,'thin',null],['Sellers reached',f.sellers_reached,'',f.conv_reached],['Appointments',f.appointments,'thin',f.conv_appt],['Contracts',f.contracts,'',f.conv_contract],['Closed',f.closed,'win',f.conv_close]];
-    var max=Math.max.apply(null,steps.map(function(s){return s[1]}).concat([1]));
-    $('funnel').innerHTML=steps.map(function(s){return '<div class="frow"><span class="fname">'+s[0]+'</span><div class="fbar '+s[2]+'" style="width:'+Math.max(2,Math.round(s[1]/max*100))+'%">'+s[1]+'</div></div>'+(s[3]!=null?'<div class="frow"><span></span><div class="fconv">'+s[3]+'% carried through</div></div>':'')}).join('');
-    var cells=[[money(f.cost_per_lead),'Cost per lead'],[money(f.cost_per_appointment),'Cost per appointment'],[money(f.cost_per_contract),'Cost per contract'],[money(f.cost_per_close),'Cost per closed deal'],[pctS(f.contract_to_close),'Contract to close'],[pctS(f.fallout_pct),'Fell out after contract'],[f.avg_speed_to_first_call!=null?f.avg_speed_to_first_call+' min':'&mdash;','Average speed to first call'],[pctS(f.missed_call_rate),'Inbound calls missed']];
-    $('costs').innerHTML=cells.map(function(c){return '<div class="cost"><b>'+c[0]+'</b><span>'+c[1]+'</span></div>'}).join('');
-    $('chanTable').innerHTML='<tr><th>Channel</th><th>Spend 30d</th><th>Leads</th><th>Per lead</th><th>Appts</th><th>Contracts</th><th>Closed</th><th>Per deal</th></tr>'+d.channels.map(function(c){return '<tr><td>'+esc(c.channel)+'</td><td>'+money(c.spend)+'</td><td>'+c.leads+'</td><td>'+money(c.cost_per_lead)+'</td><td>'+c.appointments+'</td><td>'+c.contracts+'</td><td>'+c.closed+'</td><td>'+money(c.cost_per_close)+'</td></tr>'}).join('');
-    var other=Object.keys(d.other_sources||{}); if(other.length)$('chanNote').textContent='Sources not matching TV/PPC/PPL/Other in the last 30 days: '+other.map(function(k){return k+' ('+d.other_sources[k]+')'}).join(', ')+'. Use the four channel names so spend lines up.';
-    var head=['Date','Spend','Leads','Calls','Missed','Reached','Appts','Contracts','Closed','By'];
-    var v=function(x){return x==null?'':x};
-    $('daysTable').innerHTML='<tr>'+head.map(function(h){return '<th>'+h+'</th>'}).join('')+'</tr>'+(d.days.length?d.days.map(function(x){return '<tr><td>'+esc(x.business_date.slice(5))+'</td><td>'+money(x.spend)+'</td><td>'+v(x.new_leads)+'</td><td>'+v(x.inbound_calls)+'</td><td>'+v(x.missed_calls)+'</td><td>'+v(x.sellers_reached)+'</td><td>'+v(x.appointments_set)+'</td><td>'+v(x.contracts_signed)+'</td><td>'+v(x.deals_closed)+'</td><td>'+esc(x.updated_by_name||x.created_by_name)+'</td></tr>'}).join(''):'<tr><td colspan="10" style="color:var(--graphite)">Log today and this fills in.</td></tr>');
-  }
-  $('saveTargets').onclick=function(){
-    $('targetMsg').textContent='Saving…';
-    call('saveSetting','monthly_deal_target',Number($('t_deals').value)||0).then(function(){return call('saveSetting','monthly_marketing_budget',Number($('t_budget').value)||0)})
-      .then(function(){S.monthly_deal_target=Number($('t_deals').value)||0;S.monthly_marketing_budget=Number($('t_budget').value)||0;$('targetMsg').textContent='Saved';editing=false;return loadNumbers()}).catch(function(e){$('targetMsg').textContent=showError(e)});
-  };
-
-  /* ================= LEAD BOARD ================= */
-  function boardParams(page){return {filter:$('filter').value,sort:$('sort').value,search:$('search').value.trim(),page:page||1,page_size:S.page_size||150}}
+  /* ================= BOARD ================= */
+  var filter='live';
+  function setFilter(f,silent){filter=f;pref('filter',f);$('filterTabs').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.filter===f?'true':'false')});if(!silent)loadBoard(1)}
+  $('filterTabs').addEventListener('click',function(e){var b=e.target.closest('button');if(b)setFilter(b.dataset.filter)});
+  $('sort').onchange=function(){pref('sort',this.value);loadBoard(1)};
+  var searchTimer; $('globalSearch').oninput=function(){clearTimeout(searchTimer);searchTimer=setTimeout(function(){if(view!=='leads'){show('leads')}loadBoard(1)},250)};
+  document.addEventListener('keydown',function(e){if(e.key==='/'&&!/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){e.preventDefault();$('globalSearch').focus()}if(e.key==='Escape')closeDrawers()});
+  function boardParams(page){return {filter:filter,sort:$('sort').value,search:$('globalSearch').value.trim(),page:page||1,page_size:S.page_size||150}}
   var boardReq=0;
-  function loadBoard(page,keepOpen){
-    var my=++boardReq, p=boardParams(page);
-    return read('listLeads',p).then(function(r){
-      if(my!==boardReq)return; var d=r.data;
-      if(page>1)board.items=board.items.concat(d.items); else board.items=d.items;
-      board.page=d.page;board.has_more=d.has_more;board.tally=d.tally;board.total=d.total;today=d.today||today;
-      renderLeads(keepOpen);
-    });
-  }
-  var searchTimer; $('search').oninput=function(){clearTimeout(searchTimer);searchTimer=setTimeout(function(){loadBoard(1)},250)};
-  $('filter').onchange=function(){savePref('filter',this.value);loadBoard(1)}; $('sort').onchange=function(){savePref('sort',this.value);loadBoard(1)};
+  function loadBoard(page,keep){var my=++boardReq,p=boardParams(page);return read('listLeads',p).then(function(r){if(my!==boardReq)return;var d=r.data;board.items=page>1?board.items.concat(d.items):d.items;board.page=d.page;board.has_more=d.has_more;board.tally=d.tally;board.total=d.total;today=d.today||today;renderBoard();if(view==='leads')$('viewSub').textContent=TITLES.leads[1]()})}
   $('loadMore').onclick=function(){loadBoard(board.page+1,true)};
-  function openDetails(){var o={};document.querySelectorAll('#leadList details[open]').forEach(function(d){o[d.closest('.lead').id]=true});return o}
-  function renderLeads(keepOpen){
-    var t=board.tally||{live:0,due:0,archived:0,flag:0,target:200,stale:0,no_next_action:0};
-    $('tally').innerHTML='<div><b>'+t.live+'</b><span>live list &middot; target '+t.target+'</span></div><div><b>'+t.due+'</b><span>due or overdue</span></div><div><b>'+t.no_next_action+'</b><span>no next action</span></div><div><b>'+t.stale+'</b><span>untouched '+(S.stale_lead_days||7)+'+ days</span></div><div><b>'+t.archived+'</b><span>archived</span></div><div><b>'+t.flag+'</b><span>waiting on Juan</span></div>';
-    $('morePager').hidden=!board.has_more; $('pageNote').textContent='Showing '+board.items.length+' of '+board.total;
-    var open=keepOpen?openDetails():{};
-    if(!board.items.length){$('leadList').innerHTML='<div class="empty">'+(board.total===0&&$('filter').value==='live'&&!$('search').value&&t.archived===0?'Paste your first batch above. Work 200, not 8,000.':'Nothing matches that filter.')+'</div>';return}
-    $('leadList').innerHTML=board.items.map(function(l){return leadCard(l,!!open['lead-'+l.lead_id])}).join('');
-  }
-  function leadCard(l,isOpen){
-    var hot=(l.flag_juan||l.compliance_mailer_check)&&l.is_live, stale=l.is_live&&l.days_untouched>=n(S.stale_lead_days||7), work=can('work_leads');
-    var canAssign=can('assign_leads'), assignOpts='<option value="">Unassigned</option>'+users.map(function(u){var dis=!canAssign&&!(u.user_id===me.user_id&&!l.assigned_to)&&u.user_id!==l.assigned_to;return '<option value="'+attr(u.user_id)+'"'+(u.user_id===l.assigned_to?' selected':'')+(dis?' disabled':'')+'>'+esc(u.name)+(u.active?'':' (no login yet)')+'</option>'}).join('');
-    var statusOpts=C.status_order.map(function(st){var archived=C.archived_statuses.indexOf(st)>-1, dis=(archived&&!can('archive_leads'))||(!l.is_live&&l.status!=='CLOSED'&&!archived&&!can('restore_leads'));return '<option value="'+st+'"'+(st===l.status?' selected':'')+(dis?' disabled':'')+'>'+esc(label(st))+'</option>'}).join('');
-    var thread=(l.recent_activity||[]).map(function(a){return '<div class="note"><b>'+esc(a.user_name)+'</b><em>'+esc(when(a.timestamp_utc))+'</em><br>'+esc(a.display)+'</div>'}).join('')||'<div class="note" style="color:var(--graphite);border:none">No notes yet.</div>';
-    var ro=work?'':' disabled';
-    return '<div class="lead s-'+attr(l.status)+(hot?' flag':'')+(l.compliance_mailer_check?' comply':'')+'" id="lead-'+attr(l.lead_id)+'" data-id="'+attr(l.lead_id)+'" data-v="'+l.version+'">'+
-      '<span class="saving" data-save></span>'+
-      '<div class="addr">'+esc(l.address)+'</div>'+
-      '<div class="meta">'+[esc(l.seller_name),esc(l.phone),esc(l.source),esc(l.equity_note)].filter(Boolean).join(' &middot; ')+(l.archive_reason&&!l.is_live?' &middot; archived: '+esc(l.archive_reason):'')+'</div>'+
-      '<div class="row"><span class="chip">'+esc(l.status_label)+'</span>'+
-        (l.compliance_mailer_check?'<span class="chip fill">Mailer or check &mdash; route to Juan</span>':'')+(l.flag_juan?'<span class="chip hot">Needs Juan</span>':'')+
-        (stale?'<span class="chip stale">'+l.days_untouched+' days untouched</span>':'')+(l.contact_attempts?'<span class="chip">'+l.contact_attempts+' attempts</span>':'')+
-        (l.is_live&&!l.next_action?'<span class="chip hot">No next action</span>':'')+(l.is_live&&l.next_action&&!l.due_date?'<span class="chip stale">No due date</span>':'')+
-        (l.due_state==='OVERDUE'?'<span class="chip hot">Overdue</span>':l.due_state==='DUE_TODAY'?'<span class="chip stale">Due today</span>':'')+
-        (l.offer_room!=null&&l.offer_room>0?'<span class="chip good">'+money(l.offer_room)+' room</span>':'')+
-        (l.assigned_name?'<span class="chip">'+esc(l.assigned_name)+'</span>':'')+'</div>'+
-      '<div class="row"><select data-set="status"'+ro+'>'+statusOpts+'</select><select data-set="assigned_to"'+(work?'':' disabled')+'>'+assignOpts+'</select></div>'+
-      '<div class="row"><input data-set="next_action" value="'+attr(l.next_action)+'" placeholder="Next action" style="flex:2"'+ro+'><input data-set="due_date" type="date" value="'+attr(l.due_date)+'"'+ro+'></div>'+
-      (work?'<div class="row"><button class="btn ghost small" data-attempt>Log attempt</button><button class="btn ghost small" data-flag="'+(l.flag_juan?0:1)+'">'+(l.flag_juan?'Clear flag':'Flag for Juan')+'</button>'+
-        '<button class="btn ghost small" data-comply="'+(l.compliance_mailer_check?0:1)+'">'+(l.compliance_mailer_check?'Clear mailer note':'Mailer or check mentioned')+'</button>'+
-        (!l.is_live&&can('restore_leads')?'<button class="btn small" data-restore>Restore to live</button>':'')+'</div>':'')+
-      '<div data-conflict></div>'+
-      '<details'+(isOpen?' open':'')+'><summary>Underwriting and appointment</summary><div class="grid g2" style="margin-top:8px">'+
-        '<div><label class="f">After repair value $</label><input data-set="arv" type="number" min="0" value="'+attr(l.arv)+'"'+(can('underwrite')?'':' disabled')+'></div>'+
-        '<div><label class="f">Repairs $</label><input data-set="repairs" type="number" min="0" value="'+attr(l.repairs)+'"'+(can('underwrite')?'':' disabled')+'></div>'+
-        '<div><label class="f">Seller asking $</label><input data-set="asking_price" type="number" min="0" value="'+attr(l.asking_price)+'"'+(can('underwrite')?'':' disabled')+'></div>'+
-        '<div><label class="f">Our offer $</label><input data-set="offer" type="number" min="0" value="'+attr(l.offer)+'"'+(can('underwrite')?'':' disabled')+'></div>'+
-        '<div><label class="f">Appointment date</label><input data-set="appointment_date" type="date" value="'+attr(l.appointment_date)+'"'+ro+'></div>'+
-        '<div><label class="f">Visit outcome</label><select data-set="appointment_outcome"'+ro+'>'+opt([''].concat(C.appointment_outcomes),l.appointment_outcome)+'</select></div></div>'+
-        (l.mao!=null?'<div class="mao">Max offer at '+esc(S.mao_percentage)+'% of value less repairs: <b>'+money(l.mao)+'</b>'+(l.offer_room!=null?'<br>Against a '+money(l.asking_price)+' ask, that is '+money(l.offer_room)+' of room.':'')+'</div>':'<p class="hint">Enter after repair value and repairs to get the max offer.</p>')+
-      '</details>'+
-      '<div class="thread">'+thread+(work?'<div class="row"><input data-note placeholder="What did you find?" style="flex:1"><button class="btn small" data-send>Post</button></div>':'')+'</div></div>';
-  }
-  function cardOf(el){return el.closest('.lead')}
-  function setCardStatus(card,kind,text){var s=card.querySelector('[data-save]');if(!s)return;s.className='saving '+kind;s.textContent=text;if(kind==='ok')setTimeout(function(){if(s.textContent===text)s.textContent=''},2000)}
-  /* Re-render a card with fresh server data. If the person is typing in a field on that card, the text they have
-     typed so far, the cursor and the focus are carried over to the new card, so a save never eats their input. */
-  function replaceLead(l){for(var i=0;i<board.items.length;i++)if(board.items[i].lead_id===l.lead_id){board.items[i]=l;break}
-    var old=document.getElementById('lead-'+l.lead_id); if(!old)return;
-    var a=document.activeElement, keep=null;
-    if(a&&old.contains(a)&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA')){
-      keep={sel:a.hasAttribute('data-note')?'[data-note]':(a.dataset.set?'[data-set="'+a.dataset.set+'"]':null),value:a.value};
-      try{keep.s=a.selectionStart;keep.e=a.selectionEnd}catch(e){}
-    }
-    var wasOpen=!!old.querySelector('details[open]'); var tmp=document.createElement('div'); tmp.innerHTML=leadCard(l,wasOpen);
-    var fresh=tmp.firstChild; old.replaceWith(fresh);
-    if(keep&&keep.sel){var f=fresh.querySelector(keep.sel); if(f){ if(keep.sel==='[data-note]'||f.value!==keep.value)f.value=keep.value; f.focus(); try{if(keep.s!=null)f.setSelectionRange(keep.s,keep.e)}catch(e){} }}
-  }
-  function handleConflict(e,id){
-    if(e&&e.code==='CONFLICT_RECORD_CHANGED'&&e.data){var l=e.data; l.recent_activity=l.recent_activity||(board.items.filter(function(x){return x.lead_id===id})[0]||{}).recent_activity||[]; replaceLead(l);
-      var card=document.getElementById('lead-'+id); if(card){card.querySelector('[data-conflict]').innerHTML='<div class="conflict"><b>This lead was updated by another team member.</b> Review the latest information (now shown) before saving your change.</div>'} toast('This lead was updated by another team member. Review the latest information before saving your change.','err'); loadToday(); return}
-    showError(e);
-  }
-  /* Actions on one lead run one at a time, each reading the version the previous one produced, so two quick edits
-     on the same card never race each other. A genuinely stale version (someone else saved) still conflicts. */
+  function renderBoard(){var t=board.tally||{live:0,due:0,archived:0,flag:0,target:200,stale:0,no_next_action:0};
+    $('boardHero').innerHTML='<b>'+t.live+'</b> live<small>target '+t.target+' · '+t.stale+' untouched '+(S.stale_lead_days||7)+'+ days · '+t.archived+' archived</small>';
+    $('tally').innerHTML=fact(t.due,'due or overdue',t.due?'alert':'')+fact(t.flag,'need Juan',t.flag?'alert':'')+fact(t.no_next_action,'no next action',t.no_next_action?'alert':'');
+    var counts={live:t.live,due:t.due,flag:t.flag,stale:t.stale,archived:t.archived};$('filterTabs').querySelectorAll('button').forEach(function(b){var c=b.querySelector('.c');if(!c)return;var v=counts[b.dataset.filter];c.textContent=v==null?'':v.toLocaleString();c.className='c'+((b.dataset.filter==='due'||b.dataset.filter==='flag')&&v?' hot':'')});
+    $('pageNote').textContent='showing '+board.items.length+' of '+board.total; $('morePager').hidden=!board.has_more; $('pageFoot').textContent='Showing '+board.items.length+' of '+board.total;
+    $('leadList').innerHTML=board.items.length?board.items.map(leadRow).join(''):'<div class="empty">'+(t.live===0&&t.archived===0&&filter==='live'&&!$('globalSearch').value?'Paste your first batch with “Add leads”. Work 200, not 8,000.':'Nothing matches that view.')+'</div>';
+    if(current){var fresh=board.items.filter(function(x){return x.lead_id===current.lead_id})[0];if(fresh){fresh.activity=current.activity;fresh.appointments=current.appointments;current=fresh;var f=document.querySelector('#leadList .row[aria-selected="true"]');if(!f){var r=$('lead-'+current.lead_id);if(r)r.setAttribute('aria-selected','true')}}}}
+  function stateOf(l){if(!l.is_live)return {t:esc(l.status_label),s:l.archive_reason?esc(l.archive_reason):'',a:false};
+    if(l.compliance_mailer_check)return {t:'Mailer or check',s:esc(l.status_label)+(l.next_action?' · '+esc(l.next_action):''),a:true};
+    if(l.due_state==='OVERDUE')return {t:'Overdue '+daysBetween(l.due_date,today)+'d',s:esc(l.status_label)+(l.next_action?' · '+esc(l.next_action):''),a:true};
+    if(l.due_state==='NO_NEXT_ACTION')return {t:'No next action',s:esc(l.status_label)+' · untouched '+l.days_untouched+' days',a:true};
+    if(l.flag_juan)return {t:'Flagged for Juan',s:esc(l.status_label)+(l.due_date?' · due '+esc(l.due_date):''),a:true};
+    if(l.due_state==='DUE_TODAY')return {t:'Due today',s:esc(l.status_label)+(l.next_action?' · '+esc(l.next_action):''),a:false};
+    return {t:esc(l.status_label),s:(l.next_action?esc(l.next_action):'')+(l.due_date?' · due '+esc(l.due_date):l.due_state==='NO_DUE_DATE'?' · no due date':''),a:false}}
+  function daysBetween(a,b){return Math.round((new Date(b+'T12:00:00Z')-new Date(a+'T12:00:00Z'))/86400000)}
+  function leadRow(l){var st=stateOf(l);var room=l.offer_room!=null?'<div class="state'+(l.offer_room<0?' alert':'')+'">'+(l.offer_room<0?'−':'')+money(Math.abs(l.offer_room))+'<small>offer room</small></div>':l.mao!=null?'<div class="state">'+money(l.mao)+'<small>max offer</small></div>':'<div class="state"><span class="muted">—</span><small>no ARV yet</small></div>';
+    return '<div class="row two clickable lead" id="lead-'+esc(l.lead_id)+'" data-id="'+esc(l.lead_id)+'" data-v="'+l.version+'" data-open="'+esc(l.lead_id)+'"'+(current&&current.lead_id===l.lead_id?' aria-selected="true"':'')+'><i class="sq'+(st.a?' alert':'')+'"></i><div><div class="t">'+esc(l.address)+'</div><div class="m">'+[esc(l.seller_name),esc(l.phone),esc(l.source),esc(l.equity_note),esc(l.assigned_name||'unassigned')].filter(Boolean).join(' · ')+(l.contact_attempts?' · '+l.contact_attempts+' attempts':'')+'</div></div><div class="state'+(st.a?' alert':'')+'">'+st.t+'<small>'+st.s+'</small></div>'+room+'</div>'}
+  $('leadList').addEventListener('click',function(e){var r=e.target.closest('[data-open]');if(r)openLead(r.dataset.open)});
+
+  /* ================= LEAD DRAWER ================= */
+  var dtab='work';
+  function openLead(id){var l=board.items.filter(function(x){return x.lead_id===id})[0];$('scrim').hidden=false;$('drawer').hidden=false;$('addDrawer').hidden=true;$('toolDrawer').hidden=true;
+    document.querySelectorAll('#leadList .row').forEach(function(r){r.setAttribute('aria-selected',r.dataset.id===id?'true':'false')});
+    if(l){current=l;renderDrawer()} else {current={lead_id:id,address:'Loading…',version:0,recent_activity:[]};renderDrawer()}
+    read('getLead',id).then(function(r){if(!current||current.lead_id!==id)return;var full=r.data;current=full;renderDrawer()}).catch(showError)}
+  function closeDrawers(){$('scrim').hidden=true;$('drawer').hidden=true;$('addDrawer').hidden=true;$('toolDrawer').hidden=true;current=null;currentTool=null;document.querySelectorAll('#leadList .row[aria-selected="true"]').forEach(function(r){r.setAttribute('aria-selected','false')})}
+  $('scrim').onclick=closeDrawers;$('drClose').onclick=closeDrawers;$('addClose').onclick=closeDrawers;$('tdClose').onclick=closeDrawers;
+  $('dtabs').querySelectorAll('button').forEach(function(b){b.onclick=function(){dtab=b.dataset.t;renderDrawer()}});
+  function kv(dt,dd){return '<div class="kv"><dt>'+dt+'</dt><dd>'+dd+'</dd></div>'}
+  function renderDrawer(){var l=current;if(!l)return;var d=$('drawer');d.dataset.id=l.lead_id;d.dataset.v=l.version;
+    var keep=null,a=document.activeElement;if(a&&d.contains(a)&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA')){keep={sel:a.hasAttribute('data-note')?'[data-note]':a.dataset.set?'[data-set="'+a.dataset.set+'"]':null,value:a.value};try{keep.s=a.selectionStart;keep.e=a.selectionEnd}catch(e){}}
+    $('drLbl').textContent='Property · '+l.lead_id+' · v'+l.version; $('drTitle').textContent=l.address||'';
+    $('drMeta').textContent=[l.seller_name,l.phone,l.source,l.equity_note,l.assigned_name?l.assigned_name+' is working it':'unassigned',l.contact_attempts?l.contact_attempts+' attempts':''].filter(Boolean).join(' · ');
+    $('dtabs').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.t===dtab?'true':'false');if(b.dataset.t==='hist')b.textContent='History'+(l.activity?' · '+l.activity.length:'')});
+    var work=can('work_leads'),ro=work?'':' disabled',uw=can('underwrite')?'':' disabled',html='';
+    if(dtab==='work'){
+      html+=(l.compliance_mailer_check?'<div class="alertbox"><b>Mailer or check mentioned</b>Conversation stopped, routed to Juan and counsel. Do not contact the seller until Juan clears it.</div>':l.flag_juan?'<div class="alertbox"><b>Flagged for Juan</b>Waiting on Juan\'s call.</div>':'')+'<div data-conflict></div>';
+      var canAssign=can('assign_leads');var assign='<option value="">Unassigned</option>'+users.map(function(u){var dis=!canAssign&&!(u.user_id===me.user_id&&!l.assigned_to)&&u.user_id!==l.assigned_to;return '<option value="'+esc(u.user_id)+'"'+(u.user_id===l.assigned_to?' selected':'')+(dis?' disabled':'')+'>'+esc(u.name)+(u.active?'':' (no login yet)')+'</option>'}).join('');
+      var status=C.status_order.map(function(st){var archived=C.archived_statuses.indexOf(st)>-1,dis=(archived&&!can('archive_leads'))||(!l.is_live&&l.status!=='CLOSED'&&!archived&&!can('restore_leads'));return '<option value="'+st+'"'+(st===l.status?' selected':'')+(dis?' disabled':'')+'>'+esc(label(st))+'</option>'}).join('');
+      html+='<div class="spec one"><dl>'+kv('Status','<select data-set="status"'+ro+'>'+status+'</select>')+kv('Working it','<select data-set="assigned_to"'+ro+'>'+assign+'</select>')+kv('Next action','<input class="wide" data-set="next_action" value="'+esc(l.next_action)+'" placeholder="What happens next"'+ro+'>')+kv('Due','<input type="date" data-set="due_date" value="'+esc(l.due_date)+'"'+ro+'>')+kv('Attempts',String(l.contact_attempts||0))+'</dl></div>';
+      if(work)html+='<div class="actions">'+(l.next_action?'<button class="btn sm" data-done>Mark done → set next</button>':'')+'<button class="btn ghost sm" data-attempt>Log attempt</button><button class="btn ghost sm" data-offer>Offer sent</button><button class="btn ghost sm" data-flag="'+(l.flag_juan?0:1)+'">'+(l.flag_juan?'Clear Juan flag':'Flag for Juan')+'</button><button class="btn ghost sm" data-comply="'+(l.compliance_mailer_check?0:1)+'">'+(l.compliance_mailer_check?'Clear mailer note':'Mailer or check mentioned')+'</button>'+(!l.is_live&&can('restore_leads')?'<button class="btn sm" data-restore>Restore to live</button>':'')+'</div>';
+      html+='<div class="lbl" style="margin-top:6px">Latest</div>'+thread((l.activity||l.recent_activity||[]).slice(-5),false);
+    } else if(dtab==='uw'){
+      var pct=S.mao_percentage;html+='<div class="lbl" style="margin-bottom:8px">Proposed offer</div><div class="bigmao"><div><b>'+(l.mao!=null?money(l.mao):'—')+'</b><span>max offer · '+esc(pct)+'% of ARV less repairs</span></div><div><b class="'+(l.offer_room==null?'':l.offer_room>=0?'ok':'alert')+'">'+(l.offer_room!=null?(l.offer_room<0?'−':'')+money(Math.abs(l.offer_room)):'—')+'</b><span>room against the ask</span></div></div>';
+      html+='<div class="spec one"><dl>'+kv('After repair value $','<input type="number" min="0" data-set="arv" value="'+esc(l.arv)+'"'+uw+'>')+kv('Repairs $','<input type="number" min="0" data-set="repairs" value="'+esc(l.repairs)+'"'+uw+'>')+kv('Seller asking $','<input type="number" min="0" data-set="asking_price" value="'+esc(l.asking_price)+'"'+uw+'>')+kv('Our offer $','<input type="number" min="0" data-set="offer" value="'+esc(l.offer)+'"'+uw+'>')+kv('Ask as % of ARV',(n(l.arv)&&n(l.asking_price)?Math.round(n(l.asking_price)/n(l.arv)*100)+'%':'<span class="dim muted">—</span>'))+'</dl></div><p class="small muted" style="margin:0">MAO % is a company setting (Admin → Settings). Enter ARV and repairs to price the property.</p>';
+    } else if(dtab==='appt'){
+      html+='<div class="spec one"><dl>'+kv('Appointment date','<input type="date" data-set="appointment_date" value="'+esc(l.appointment_date)+'"'+ro+'>')+kv('Visit outcome','<select data-set="appointment_outcome"'+ro+'>'+opt([''].concat(C.appointment_outcomes),l.appointment_outcome)+'</select>')+'</dl></div>';
+      html+='<p class="small muted" style="margin:0">Every appointment is kept in history. Changing the date reschedules the current one; an outcome completes it.</p>';
+      if(l.appointments&&l.appointments.length)html+='<div class="lbl" style="margin-top:6px">History</div><div class="thread">'+l.appointments.slice().reverse().map(function(a){return '<div class="entry"><span class="when">'+esc(a.appointment_date)+'</span><div>'+esc(a.status.toLowerCase())+(a.outcome?' · '+esc(a.outcome):'')+' <span class="muted">· '+esc(a.assigned_name)+'</span></div></div>'}).join('')+'</div>';
+    } else {html+=thread((l.activity||l.recent_activity||[]),true)}
+    html+=(work?'<div class="compose"><input data-note placeholder="What did you find? Enter to post"><button class="btn" data-send>Post</button></div>':'');
+    $('drBody').innerHTML=html;
+    if(keep&&keep.sel){var f=$('drBody').querySelector(keep.sel);if(f){if(keep.sel==='[data-note]'||f.value!==keep.value)f.value=keep.value;f.focus();try{if(keep.s!=null)f.setSelectionRange(keep.s,keep.e)}catch(e){}}}}
+  function thread(list,full){if(!list.length)return '<div class="empty" style="padding:14px 0;text-align:left">No notes yet.</div>';var items=list.slice().reverse();return '<div class="thread">'+items.map(function(a){var sys=a.action_type!=='NOTE_ADDED';return '<div class="entry"><span class="when">'+esc(full?when(a.timestamp_utc):timeOnly(a.timestamp_utc))+'</span><div><span class="who">'+esc(a.user_name)+'</span><span'+(sys?' class="sys"':'')+'>'+esc(a.display)+'</span></div></div>'}).join('')+'</div>'}
+  function setDrStatus(kind,text){var s=$('drStatus');s.className='status '+kind;s.textContent=text;if(kind==='ok')setTimeout(function(){if(s.textContent===text)s.textContent=''},2000)}
+  /* absorb a fresh lead from the server: board row, drawer, today counts */
+  function absorb(l){if(!l||!l.lead_id)return;var i;for(i=0;i<board.items.length;i++)if(board.items[i].lead_id===l.lead_id){board.items[i]=l;break}
+    var row=$('lead-'+l.lead_id);if(row){var tmp=document.createElement('div');tmp.innerHTML=leadRow(l);row.replaceWith(tmp.firstChild)}
+    if(current&&current.lead_id===l.lead_id){l.activity=(l.activity||current.activity);l.appointments=l.appointments||current.appointments;current=l;renderDrawer();if(dtab==='hist'||dtab==='appt')read('getLead',l.lead_id).then(function(r){if(current&&current.lead_id===l.lead_id){current=r.data;renderDrawer()}}).catch(function(){})}}
   var leadQueues={};
-  function leadAction(card,makeCall){
-    var id=card.dataset.id; setCardStatus(card,'','Saving…');
-    var prev=leadQueues[id]||Promise.resolve();
-    var run=prev.catch(function(){}).then(function(){
-      var fresh=document.getElementById('lead-'+id)||card, ver=Number(fresh.dataset.v);
-      return makeCall(ver).then(function(r){replaceLead(r.data);var f2=document.getElementById('lead-'+id);if(f2)setCardStatus(f2,'ok','Saved');
-          if(r.message&&/Routed|NO NEXT|Restored|Archived/.test(r.message))toast(r.message,/NO NEXT/.test(r.message)?'err':'ok');loadToday();if(/status|archive|restore/i.test(String(r.message)))loadNumbers()})
-        .catch(function(e){handleConflict(e,id);var f3=document.getElementById('lead-'+id);if(f3)setCardStatus(f3,'err',codeLabel(e.code))});
-    });
-    leadQueues[id]=run; return run;
+  function leadAction(id,makeCall){setDrStatus('busy','Saving…');var prev=leadQueues[id]||Promise.resolve();
+    var run=prev.catch(function(){}).then(function(){var ver=current&&current.lead_id===id?current.version:Number(($('lead-'+id)||{dataset:{}}).dataset.v);
+      return makeCall(ver).then(function(r){absorb(r.data);setDrStatus('ok','Saved');if(r.message&&/Routed|NO NEXT|Restored|Archived|Offer/.test(r.message))toast(r.message,/NO NEXT/.test(r.message)?'err':'ok');loadToday();dashDrawn='';if(/status|archive|restore/i.test(String(r.message)))loadBoard(1,true)})
+        .catch(function(e){if(e&&e.code==='CONFLICT_RECORD_CHANGED'&&e.data){absorb(e.data);var c=$('drBody').querySelector('[data-conflict]');if(c)c.innerHTML='<div class="conflict"><b>This lead was updated by another team member.</b> Review the latest information (now shown) before saving your change.</div>';toast('This lead was updated by another team member. Review the latest information before saving your change.','err');setDrStatus('err','Changed by another user');return}setDrStatus('err',codeLabel(e.code));showError(e)})});
+    leadQueues[id]=run;return run}
+  $('drawer').addEventListener('change',function(e){var t=e.target;if(!t.dataset.set||!current)return;var f=t.dataset.set,v=t.value,id=current.lead_id;
+    if(f==='assigned_to')return leadAction(id,function(ver){return call('assignLead',id,v,ver,'')});
+    if(f==='status'){var cur=current;if(C.archived_statuses.indexOf(v)>-1&&(cur.is_live||cur.status==='CLOSED')){var why=window.prompt('Archive reason (optional). It stays in the database and can be restored.','');if(why===null){t.value=cur.status;return}return leadAction(id,function(ver){return call('archiveLead',id,v,why,ver)})}
+      if(!cur.is_live&&cur.status!=='CLOSED'&&C.live_statuses.indexOf(v)>-1)return leadAction(id,function(ver){return call('restoreLead',id,v,ver)});return leadAction(id,function(ver){return call('updateLead',id,{status:v},ver)})}
+    if(f==='next_action'||f==='due_date'){var na=$('drBody').querySelector('[data-set=next_action]').value,dd=$('drBody').querySelector('[data-set=due_date]').value;return leadAction(id,function(ver){return call('setNextAction',id,na,dd,ver)})}
+    var patch={};patch[f]=v;leadAction(id,function(ver){return call('updateLead',id,patch,ver)})});
+  $('drawer').addEventListener('click',function(e){var t=e.target.closest('button');if(!t||!current)return;var id=current.lead_id;
+    if(t.hasAttribute('data-attempt'))return leadAction(id,function(){return call('logAttempt',id,'')});
+    if(t.hasAttribute('data-offer')){var amt=window.prompt('Offer amount presented to the seller ($). Leave as is to use the offer on file.',current.offer||'');if(amt===null)return;return leadAction(id,function(){return call('markOfferSent',id,amt===''?null:Number(amt),'')})}
+    if(t.dataset.flag!=null)return leadAction(id,function(){return call('setJuanFlag',id,t.dataset.flag==='1','')});
+    if(t.dataset.comply!=null){if(t.dataset.comply==='1'&&!window.confirm('Seller mentioned a mailer or check?\n\nThis stops the conversation and routes the property to Juan and counsel. Continue?'))return;return leadAction(id,function(){return call('setComplianceFlag',id,t.dataset.comply==='1','')})}
+    if(t.hasAttribute('data-restore'))return leadAction(id,function(ver){return call('restoreLead',id,'INVESTIGATING',ver)});
+    if(t.hasAttribute('data-done'))return markDone(id);
+    if(t.hasAttribute('data-send')){var box=$('drBody').querySelector('[data-note]');if(box&&box.value.trim()){var txt=box.value.trim();box.value='';leadAction(id,function(){return call('addLeadNote',id,txt)})}}});
+  $('drawer').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.hasAttribute('data-note')&&current){var txt=e.target.value.trim();if(txt){e.target.value='';leadAction(current.lead_id,function(){return call('addLeadNote',current.lead_id,txt)})}}});
+
+  /* add leads */
+  $('openAdd').onclick=function(){$('scrim').hidden=false;$('addDrawer').hidden=false;$('drawer').hidden=true;$('toolDrawer').hidden=true;$('bulk').focus()};
+  $('addBulk').onclick=function(){var txt=$('bulk').value.trim();if(!txt)return;$('addBulk').disabled=true;$('bulkMsg').textContent='Adding…';
+    call('addBulkLeads',txt).then(function(r){var s=r.data;$('bulkMsg').textContent=r.message;if(!s.failed&&!s.duplicates_skipped)$('bulk').value='';
+      $('importReport').innerHTML=(s.failures.length?'<div class="alertbox import"><b>Failed ('+s.failed+') — fix and paste again</b><ul>'+s.failures.map(function(f){return '<li>Line '+f.line+': '+esc(f.reason)+' — <code>'+esc(f.text)+'</code></li>'}).join('')+'</ul></div>':'')+(s.duplicates.length?'<div class="conflict import"><b>Duplicates skipped ('+s.duplicates_skipped+')</b><ul>'+s.duplicates.map(function(d){return '<li>Line '+d.line+': '+esc(d.reason)+' ('+esc(d.lead_id)+') — <code>'+esc(d.text)+'</code></li>'}).join('')+'</ul></div>':'');
+      dashDrawn='';return Promise.all([loadBoard(1),loadToday()])}).catch(function(e){$('bulkMsg').textContent=showError(e)}).then(function(){$('addBulk').disabled=false})};
+
+  /* ================= DASHBOARDS ================= */
+  var tip=$('tip');
+  document.addEventListener('mousemove',function(e){var t=e.target.closest('[data-tip]');if(t){tip.innerHTML=t.dataset.tip;tip.style.left=e.clientX+'px';tip.style.top=e.clientY+'px';tip.dataset.on='1'}else tip.dataset.on='0'});
+  document.addEventListener('mousemove',function(e){var c=e.target.closest('.c3d');document.querySelectorAll('.c3d.tilting').forEach(function(x){if(x!==c){x.style.transform='';x.classList.remove('tilting')}});if(!c||reduce)return;var r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.classList.add('tilting');c.style.transform='perspective(1100px) rotateX('+(-y*4)+'deg) rotateY('+(x*5)+'deg) translateZ(6px)'});
+  function animateIn(){var pane=document.querySelector('.dpane:not([hidden])');if(!pane)return;pane.classList.add('in');pane.querySelectorAll('[data-count]').forEach(countUp)}
+  function countUp(el){if(el.dataset.done)return;el.dataset.done='1';var to=+el.dataset.count,suf=el.dataset.suffix||'',pre=el.dataset.prefix||'',t0=performance.now(),dur=900;if(reduce||!isFinite(to)){el.textContent=pre+to.toLocaleString()+suf;return}
+    (function f(t){var p=Math.min(1,(t-t0)/dur);p=1-Math.pow(1-p,3);el.textContent=pre+Math.round(to*p).toLocaleString()+suf;if(p<1)requestAnimationFrame(f)})(t0)}
+  function cnt(v,pre,suf){return '<b data-count="'+(v==null?0:v)+'" data-prefix="'+(pre||'')+'" data-suffix="'+(suf||'')+'">0</b>'}
+  var svgNS='http://www.w3.org/2000/svg';function el(nm,a,txt){var e=document.createElementNS(svgNS,nm);for(var k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e}
+  function grid(svg,x0,x1,y0,y1,nn,max,fmt){var g=el('g',{class:'grid'});for(var i=0;i<=nn;i++){var y=y1-(y1-y0)*i/nn;g.appendChild(el('line',{x1:x0,x2:x1,y1:y,y2:y}));g.appendChild(el('text',{x:x0-8,y:y+4,'text-anchor':'end'},fmt?fmt(max*i/nn):Math.round(max*i/nn)))}svg.appendChild(g)}
+  function niceMax(v){if(v<=0)return 1;if(v<=8)return Math.ceil(v);var p=Math.pow(10,Math.floor(Math.log10(v)));var m=v/p;return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p}
+  function columns(svg,labels,series,o){o=o||{};svg.innerHTML='';var W=+svg.viewBox.baseVal.width,H=+svg.viewBox.baseVal.height,x0=48,x1=W-12,y0=16,y1=H-30,raw=Math.max.apply(null,[0].concat.apply([],series.map(function(s){return s.v}).concat([[o.target||0]]))),max=o.max||niceMax(raw*1.15)||1,ticks=o.ticks||((!o.fmt&&max<=8&&Number.isInteger(max))?max:3);
+    grid(svg,x0,x1,y0,y1,ticks,max,o.fmt);var N=labels.length,slot=(x1-x0)/N,bw=Math.min(22,slot/(series.length+1.2));
+    labels.forEach(function(l,i){svg.appendChild(el('text',{x:x0+slot*i+slot/2,y:H-10,'text-anchor':'middle',class:'axis'},l));series.forEach(function(s,k){var v=s.v[i]||0,h=(y1-y0)*v/max,x=x0+slot*i+slot/2-(series.length*bw+(series.length-1)*2)/2+k*(bw+2);var r=el('rect',{x:x,y:y1-h,width:bw,height:h,rx:h>4?3:0,class:'bar '+(s.cls||''),'data-tip':'<b>'+esc(l)+'</b> · '+esc(s.name)+': '+(o.tipfmt?o.tipfmt(v):v)});r.style.transitionDelay=(i*40)+'ms';svg.appendChild(r);if((o.labelAll||(o.label&&k===o.label-1))&&v)svg.appendChild(el('text',{x:x+bw/2,y:y1-h-5,'text-anchor':'middle',class:'val'},o.tipfmt?o.tipfmt(v):v))})});
+    if(o.target!=null&&o.target>0){var ty=y1-(y1-y0)*o.target/max;svg.appendChild(el('line',{x1:x0,x2:x1,y1:ty,y2:ty,class:'tgt'}));svg.appendChild(el('text',{x:x0+4,y:ty-5,class:'val',fill:'var(--alert-deep)'},o.targetLabel||''))}}
+  function lineChart(svg,labels,vals,o){o=o||{};svg.innerHTML='';var W=+svg.viewBox.baseVal.width,H=+svg.viewBox.baseVal.height,x0=48,x1=W-16,y0=16,y1=H-30,clean=vals.map(function(v){return v==null?0:v}),max=o.max||niceMax(Math.max.apply(null,clean.concat([o.target||0]))*1.2)||1,N=vals.length;
+    grid(svg,x0,x1,y0,y1,o.ticks||2,max,o.fmt);var pts=clean.map(function(v,i){return [x0+(x1-x0)*(N===1?.5:i/(N-1)),y1-(y1-y0)*v/max]});
+    var d=pts.map(function(p,i){return (i?'L':'M')+p[0]+','+p[1]}).join(' ');svg.appendChild(el('path',{d:d+' L'+pts[N-1][0]+','+y1+' L'+pts[0][0]+','+y1+'Z',class:'area'}));
+    if(o.target!=null){var ty=y1-(y1-y0)*o.target/max;svg.appendChild(el('line',{x1:x0,x2:x1,y1:ty,y2:ty,class:'tgt'}));svg.appendChild(el('text',{x:x0+4,y:ty-5,class:'val',fill:'var(--alert-deep)'},o.targetLabel||''))}
+    svg.appendChild(el('path',{d:d,class:'line '+(o.cls||'')}));
+    pts.forEach(function(p,i){svg.appendChild(el('text',{x:p[0],y:H-10,'text-anchor':'middle',class:'axis'},labels[i]));svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:i===N-1?5:4,class:'dot','data-tip':'<b>'+esc(labels[i])+'</b> · '+(vals[i]==null?'no data':(o.tipfmt?o.tipfmt(vals[i]):vals[i]))}))});
+    var last=vals[N-1];svg.appendChild(el('text',{x:pts[N-1][0],y:pts[N-1][1]-12,'text-anchor':'middle',class:'val'},last==null?'—':(o.tipfmt?o.tipfmt(last):last)))}
+  function hbars(svg,rows,o){o=o||{};svg.innerHTML='';var W=+svg.viewBox.baseVal.width,H=+svg.viewBox.baseVal.height,x0=118,x1=W-70,max=o.max||niceMax(Math.max.apply(null,rows.map(function(r){return r.v||0}).concat([o.target||0]))*1.15)||1,rh=(H-10)/Math.max(1,rows.length),bh=Math.min(20,rh*.6);
+    rows.forEach(function(r,i){var y=10+rh*i+(rh-bh)/2,w=(x1-x0)*(r.v||0)/max;svg.appendChild(el('text',{x:x0-10,y:y+bh/2+4,'text-anchor':'end',class:'axis'},r.l));var b=el('rect',{x:x0,y:y,width:Math.max(0,w),height:bh,rx:3,class:'bar h '+(r.cls||''),'data-tip':'<b>'+esc(r.l)+'</b> · '+(r.v==null?'—':(o.fmt?o.fmt(r.v):r.v))});b.style.transitionDelay=(i*60)+'ms';svg.appendChild(b);svg.appendChild(el('text',{x:x0+w+8,y:y+bh/2+4,class:'val'},r.v==null?'—':(o.fmt?o.fmt(r.v):r.v)))});
+    if(o.target!=null){var tx=x0+(x1-x0)*o.target/max;svg.appendChild(el('line',{x1:tx,x2:tx,y1:4,y2:H-4,class:'tgt'}));svg.appendChild(el('text',{x:tx+6,y:12,class:'val',fill:'var(--alert-deep)'},o.targetLabel||''))}}
+  function stacked(svg,segs,legend){svg.innerHTML='';var W=+svg.viewBox.baseVal.width,total=segs.reduce(function(t,s){return t+s.v},0),x=8,shades=['var(--accent-deep)','var(--accent)','var(--ink-2)','var(--mist)'],tx=['var(--panel)','var(--ink)','var(--on-ink)','var(--panel)'];
+    if(!total){svg.appendChild(el('text',{x:8,y:34,class:'axis'},'nothing archived in this period'));if(legend)legend.innerHTML='';return}
+    segs.forEach(function(s,i){var w=(W-16)*s.v/total-2;var r=el('rect',{x:x,y:14,width:Math.max(0,w),height:30,class:'bar h','data-tip':'<b>'+esc(s.l)+'</b> · '+s.v+' ('+Math.round(s.v/total*100)+'%)'});r.style.fill=shades[i%4];r.style.transitionDelay=(i*120)+'ms';svg.appendChild(r);if(w>34){var t=el('text',{x:x+w/2,y:34,'text-anchor':'middle',class:'val'},s.v);t.style.fill=tx[i%4];svg.appendChild(t)}x+=Math.max(0,w)+2});
+    if(legend)legend.innerHTML=segs.map(function(s,i){return '<span><i style="background:'+shades[i%4]+'"></i>'+esc(s.l)+' · '+s.v+'</span>'}).join('')}
+  function funnel(elm,stages){elm.innerHTML='';var max=Math.max(1,stages[0].v),shades=['s-ink','s-ink2','s-deep','s-deep','s-soft','s-soft'];
+    stages.forEach(function(s,i){var d=document.createElement('div');d.className='stage';var conv=i&&stages[i-1].v?Math.round(s.v/stages[i-1].v*100)+'%':(i?'—':'');d.innerHTML='<span class="name">'+esc(s.l)+'</span><div class="blk '+shades[i%6]+'" data-tip="<b>'+esc(s.l)+'</b> · '+s.v+'" style="width:'+Math.max(6,s.v/max*100)+'%;transition-delay:'+(i*90)+'ms">'+s.v+'</div><span class="conv">'+conv+(i?'<small>from '+esc(stages[i-1].l.toLowerCase())+'</small>':'<small>&nbsp;</small>')+'</span>';elm.appendChild(d)})}
+  function spark(svg,v){var W=200,H=34,vals=v.map(function(x){return x==null?0:x}),max=Math.max.apply(null,vals.concat([1]))*1.1,N=vals.length;svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.innerHTML='';if(N<2)return;var pts=vals.map(function(x,i){return [i/(N-1)*(W-6)+3,H-3-(H-8)*x/max]});var d=pts.map(function(p,i){return (i?'L':'M')+p[0]+','+p[1]}).join(' ');
+    svg.appendChild(el('path',{d:d+' L'+pts[N-1][0]+','+H+' L3,'+H+'Z',class:'a'}));svg.appendChild(el('path',{d:d,class:'l'}));svg.appendChild(el('circle',{cx:pts[N-1][0],cy:pts[N-1][1],r:4}))}
+  function loadDash(){var period=$('period').value;if(dash&&dashDrawn===period)return Promise.resolve();return read('getDashboards',{period:period}).then(function(r){dash=r.data;dashDrawn=period;drawDash();if(!isTyping()){$('t_deals').value=S.monthly_deal_target||'';$('t_budget').value=S.monthly_marketing_budget||''}}).catch(showError)}
+  function drawDash(){var d=dash;if(!d)return;var L=d.labels,P=d.pace,unit=d.period==='q'?'month':'week';
+    document.querySelectorAll('.dpane [data-count]').forEach(function(e){delete e.dataset.done});
+    /* pace */
+    $('paceHero').innerHTML=cnt(P.closed_mtd)+' / '+(P.target||'—'); $('paceLbl').textContent='closed · day '+P.day_of_month+' of '+P.days_in_month;
+    var tr=$('paceTrack');tr.querySelector('i').style.width=P.percent+'%';tr.querySelector('i').className=P.on_pace?'ahead':'';tr.querySelector('em').style.left=Math.min(100,Math.round(P.day_of_month/P.days_in_month*100))+'%';tr.hidden=!P.target;
+    $('paceNote').textContent=P.target?(P.on_pace?'On or ahead of pace. ':'Behind by '+P.behind_by+' deal'+(P.behind_by===1?'':'s')+'. ')+P.contracts_mtd+' contract'+(P.contracts_mtd===1?'':'s')+' this month · '+money(P.spend_mtd)+(P.budget?' of '+money(P.budget):'')+' spent.':'Set a monthly deals target (right) to track pace.';
+    $('paceFacts').innerHTML=fact(cnt(P.contracts_period),'contracts · period')+fact(cnt(P.fell_out_period),'fell out',P.fell_out_period?'alert':'')+fact(cnt(P.closed_period),'closed · period','ok');
+    $('paceChartHint').textContent='by '+unit+' · '+d.from+' to '+d.to;
+    columns($('ch-pace'),L,[{name:'Contracts',v:P.contracts_by_bucket,cls:'soft'},{name:'Closed',v:P.closed_by_bucket,cls:'ink'}],{target:P.weekly_target,targetLabel:P.weekly_target?P.weekly_target+' / '+unit:'',labelAll:true});
+    $('t-c2c').textContent=pctS(P.contract_to_close);$('t-c2c').className=P.contract_to_close!=null&&P.contract_to_close>=50?'ok':'';$('t-c2c-d').textContent=P.closed_period+' of '+P.contracts_period+' contracts closed in the period';
+    $('t-fall').textContent=pctS(P.fallout_pct);$('t-fall').className=P.fallout_pct>15?'alert':'';$('t-fall-d').textContent=P.fell_out_period+' of '+P.contracts_period+' fell out · target under 15%';
+    /* pipeline */
+    var pi=d.pipeline;$('pipeHero').innerHTML=cnt(pi.live)+' live<small>target '+pi.target+' · '+pi.stale_now+' untouched a week or more · '+pi.archived_period+' archived in the period</small>';
+    $('pipeFacts').innerHTML=fact(cnt(pi.avg_days_in_stage),'days · avg in stage')+fact(cnt(pi.offer_rate==null?0:pi.offer_rate,'','%'),'offer rate · reached')+fact(cnt(pi.no_next_action),'no next action',pi.no_next_action?'alert':'');
+    funnel($('funnel'),pi.stages.map(function(s){return {l:s.label,v:s.count}}));
+    hbars($('ch-days'),pi.days_in_stage.map(function(s){return {l:s.label,v:s.avg_days,cls:s.avg_days>=n(S.stale_lead_days||7)?'':''}}),{fmt:function(v){return v+' d'},target:n(S.stale_lead_days||7),targetLabel:(S.stale_lead_days||7)+' d stale'});
+    $('archHint').textContent=pi.archived_period+' properties · '+d.from+' to '+d.to;stacked($('ch-arch'),pi.archive_reasons.map(function(r){return {l:r.label,v:r.count}}),$('lg-arch'));
+    lineChart($('ch-stale'),L,pi.stale_by_bucket,{cls:'ice',tipfmt:function(v){return v+' stale'}});
+    /* marketing */
+    var mk=d.marketing;$('mktHero').innerHTML=cnt(mk.cost_per_lead==null?0:Math.round(mk.cost_per_lead),'$')+' per lead<small>'+money(mk.spend)+' across four channels · '+mk.leads+' leads logged · '+d.from+' to '+d.to+'</small>';
+    $('mktFacts').innerHTML=fact(money(mk.cost_per_appointment),'per appointment')+fact(money(mk.cost_per_contract),'per contract')+fact(money(mk.cost_per_close),'per closed deal');
+    $('chan-tiles').innerHTML=mk.channels.map(function(c,i){var cpl=c.cost_per_lead;return '<div class="card c3 c3d tile"><div class="ch"><h3>'+esc(c.channel)+'</h3><span class="right">'+money(c.spend)+'</span></div><b'+(cpl!=null&&cpl>mk.cpl_ceiling?' class="alert"':'')+'>'+money(cpl)+'</b><div class="d">per lead · <b>'+c.leads+'</b> leads · '+c.contracts+' contracts · '+c.closed+' closed</div><svg class="spark" id="sp-'+i+'"></svg></div>'}).join('');
+    mk.channels.forEach(function(c,i){spark($('sp-'+i),c.cpl_by_bucket)});
+    $('cplHint').textContent='orange line is the '+money(mk.cpl_ceiling)+' ceiling';hbars($('ch-cpl'),mk.channels.map(function(c){return {l:c.channel,v:c.cost_per_lead==null?null:Math.round(c.cost_per_lead),cls:c.cost_per_lead>mk.cpl_ceiling?'alert':''}}),{fmt:function(v){return '$'+v},target:mk.cpl_ceiling,targetLabel:money(mk.cpl_ceiling)+' ceiling'});
+    columns($('ch-spend'),L,[{name:'Spend',v:mk.spend_by_bucket.map(function(v){return Math.round(v)})}],{fmt:function(v){return '$'+(v>=1000?(v/1000).toFixed(v%1000?1:0)+'k':Math.round(v))},tipfmt:function(v){return money(v)},label:1});
+    $('chanTable').innerHTML='<tr><th>Channel</th><th>Spend</th><th>Leads</th><th>Per lead</th><th>Appts</th><th>Per appt</th><th>Contracts</th><th>Closed</th><th>Per deal</th></tr>'+mk.channels.map(function(c){return '<tr><td>'+esc(c.channel)+'</td><td>'+money(c.spend)+'</td><td>'+c.leads+'</td><td'+(c.cost_per_lead>mk.cpl_ceiling?' class="alert"':'')+'>'+money(c.cost_per_lead)+'</td><td>'+c.appointments+'</td><td class="'+(c.cost_per_appointment==null?'dim':'')+'">'+money(c.cost_per_appointment)+'</td><td>'+c.contracts+'</td><td>'+c.closed+'</td><td class="'+(c.cost_per_close==null?'dim':'')+'">'+money(c.cost_per_close)+'</td></tr>'}).join('');
+    /* team */
+    var tm=d.team;$('teamHero').innerHTML=cnt(tm.worked)+' of '+tm.total_reps+' worked<small>'+tm.leads_touched+' leads touched · '+tm.attempts+' attempts · '+tm.appointments+' appointments set · '+tm.offers+' offers sent</small>';
+    $('teamFacts').innerHTML=fact(cnt(tm.leads_touched),'leads touched')+fact(cnt(tm.attempts),'attempts')+fact(cnt(tm.appointments),'appointments set');
+    var top=tm.reps.slice(0,4),cls=['ink','','soft','dim'];columns($('ch-team'),tm.day_labels,top.map(function(r,i){return {name:r.name,v:r.attempts_by_day,cls:cls[i]}}),{});
+    var sw={ink:'var(--ink)','':'var(--accent-deep)',soft:'var(--accent)',dim:'var(--line)'};$('lg-team').innerHTML=top.map(function(r,i){return '<span><i style="background:'+sw[cls[i]]+'"></i>'+esc(r.name)+'</span>'}).join('');
+    $('teamHint').textContent=d.from+' to '+d.to;var maxT=Math.max(1,Math.max.apply(null,tm.reps.map(function(r){return r.leads_touched})));
+    $('tbl-team').innerHTML='<tr><th>Rep</th><th>Touched</th><th>Attempts</th><th>Appts</th><th>Offers</th><th>Overdue</th><th>No next</th></tr>'+tm.reps.map(function(r){var z=!r.total;return '<tr><td><i class="rbar" style="width:'+Math.round(r.leads_touched/maxT*90)+'px"></i>'+esc(r.name)+'</td><td'+(z?' class="alert"':'')+'>'+r.leads_touched+'</td><td'+(z?' class="alert"':'')+'>'+r.attempts+'</td><td>'+r.appointments+'</td><td>'+r.offers+'</td><td'+(r.overdue_assigned?' class="alert"':'')+'>'+r.overdue_assigned+'</td><td'+(r.no_next_action?' class="alert"':'')+'>'+r.no_next_action+'</td></tr>'}).join('');
+    /* discipline */
+    var di=d.discipline;$('discHero').innerHTML=cnt(di.logged_days)+' of '+di.elapsed_days+' days logged<small>'+(di.missed_dates.length?di.missed_dates.length+' gap'+(di.missed_dates.length===1?'':'s')+': '+di.missed_dates.map(function(x){return x.slice(5)}).join(', '):'no gaps')+' · tools streak '+di.streak+' · follow-ups on time '+pctS(di.followup_on_time_pct)+'</small>';
+    $('discFacts').innerHTML=fact(cnt(di.followup_on_time_pct==null?0:di.followup_on_time_pct,'','%'),'follow-ups on time',di.followup_on_time_pct!=null&&di.followup_on_time_pct<di.followup_target?'alert':'')+fact(cnt(di.speed_avg==null?0:di.speed_avg),'min to first call · avg',di.speed_avg>di.speed_target?'alert':'')+fact(cnt(di.tool_misses),'tool misses · 14 days',di.tool_misses?'alert':'');
+    $('cal').innerHTML=di.calendar.map(function(c,i){return '<i class="'+c.state+'" data-tip="<b>'+c.date+'</b> · '+(c.state==='future'?'not yet':c.state==='missed'?'nobody logged':'logged by '+esc(c.by))+'" style="transition-delay:'+(i*15)+'ms"></i>'}).join('');
+    $('heat').innerHTML=di.tools.length?di.tools.map(function(t){return '<span title="'+esc(t.name)+'">'+esc(t.name)+'</span>'+t.days.map(function(x){return '<i class="'+x.state+'" data-tip="<b>'+esc(t.name)+'</b> · '+x.date+' · '+({run:'run',missed:'missed',pending:'today, not yet',off:'not scheduled'})[x.state]+'"></i>'}).join('')}).join(''):'<span class="muted">No tool is on the daily list yet.</span>';
+    lineChart($('ch-fu'),L,di.followup_by_bucket,{max:100,fmt:function(v){return v+'%'},tipfmt:function(v){return v+'%'},target:di.followup_target,targetLabel:di.followup_target+'% target'});
+    lineChart($('ch-speed'),L,di.speed_by_bucket,{cls:'ice',fmt:function(v){return Math.round(v)+'m'},tipfmt:function(v){return v+' min'},target:di.speed_target,targetLabel:di.speed_target+' min target'});
+    /* appointments */
+    var ap=d.appointments;$('apHero').innerHTML=cnt(ap.set)+' set<small>'+ap.visited+' visited · '+ap.offered+' offers made · '+ap.signed+' signed · '+ap.no_show+' no-show · '+ap.upcoming_7d+' coming up in 7 days</small>';
+    $('apFacts').innerHTML=fact(pctS(ap.visited_pct),'visited')+fact(pctS(ap.offer_pct),'visited → offer')+fact(pctS(ap.no_show_pct),'no-show',ap.no_show?'alert':'');
+    funnel($('afunnel'),[{l:'Set',v:ap.set},{l:'Visited',v:ap.visited},{l:'Offer made',v:ap.offered},{l:'Signed',v:ap.signed}]);
+    var reps=ap.by_rep.slice(0,5);columns($('ch-arep'),reps.length?reps.map(function(r){return r.name}):['—'],[{name:'Set',v:reps.map(function(r){return r.set}),cls:'soft'},{name:'Visited',v:reps.map(function(r){return r.visited})},{name:'Signed',v:reps.map(function(r){return r.signed}),cls:'ink'}],{labelAll:true});
+    document.querySelectorAll('.dpane').forEach(function(p){p.hidden=p.id!=='d-'+dashPane});
   }
-  $('view-leads').addEventListener('change',function(e){
-    var t=e.target, card=cardOf(t); if(!card||!t.dataset.set)return;
-    var f=t.dataset.set, v=t.value, id=card.dataset.id;
-    if(f==='assigned_to')return leadAction(card,function(ver){return call('assignLead',id,v,ver,'')});
-    if(f==='status'){
-      var cur=board.items.filter(function(x){return x.lead_id===id})[0];
-      if(C.archived_statuses.indexOf(v)>-1&&(!cur||cur.is_live||cur.status==='CLOSED')){var why=window.prompt('Archive reason (optional). It stays in the database and can be restored.','');if(why===null){t.value=cur?cur.status:v;return}return leadAction(card,function(ver){return call('archiveLead',id,v,why,ver)})}
-      if(cur&&!cur.is_live&&cur.status!=='CLOSED'&&C.live_statuses.indexOf(v)>-1)return leadAction(card,function(ver){return call('restoreLead',id,v,ver)});
-      return leadAction(card,function(ver){return call('updateLead',id,{status:v},ver)});
-    }
-    if(f==='next_action'||f==='due_date'){var na=card.querySelector('[data-set=next_action]').value,dd=card.querySelector('[data-set=due_date]').value;return leadAction(card,function(ver){return call('setNextAction',id,na,dd,ver)})}
-    var patch={}; patch[f]=v; leadAction(card,function(ver){return call('updateLead',id,patch,ver)});
-  });
-  $('view-leads').addEventListener('click',function(e){
-    var t=e.target.closest('button'); if(!t)return; var card=cardOf(t); if(!card)return; var id=card.dataset.id;
-    if(t.hasAttribute('data-attempt'))return leadAction(card,function(ver){return call('logAttempt',id,'')});
-    if(t.dataset.flag!=null)return leadAction(card,function(ver){return call('setJuanFlag',id,t.dataset.flag==='1','')});
-    if(t.dataset.comply!=null){ if(t.dataset.comply==='1'&&!window.confirm('Seller mentioned a mailer or check?\n\nThis stops the conversation and routes the property to Juan and counsel. Continue?'))return; return leadAction(card,function(ver){return call('setComplianceFlag',id,t.dataset.comply==='1','')}) }
-    if(t.hasAttribute('data-restore'))return leadAction(card,function(ver){return call('restoreLead',id,'INVESTIGATING',ver)});
-    if(t.hasAttribute('data-send')){var box=card.querySelector('[data-note]');if(box&&box.value.trim()){var txt=box.value.trim();box.value='';leadAction(card,function(ver){return call('addLeadNote',id,txt)})}}
-  });
-  $('view-leads').addEventListener('keydown',function(e){
-    if(e.key==='Enter'&&e.target.hasAttribute('data-note')){var card=cardOf(e.target);if(e.target.value.trim()){var txt=e.target.value.trim();e.target.value='';leadAction(card,function(ver){return call('addLeadNote',card.dataset.id,txt)})}}
-  });
-  $('addBulk').onclick=function(){
-    var txt=$('bulk').value.trim(); if(!txt)return; $('addBulk').disabled=true; $('bulkMsg').textContent='Adding…';
-    call('addBulkLeads',txt).then(function(r){var s=r.data;$('bulkMsg').textContent=r.message; if(!s.failed&&!s.duplicates_skipped)$('bulk').value='';
-      $('importReport').innerHTML=(s.failures.length?'<div class="warn import"><b>Failed ('+s.failed+') — fix and paste again:</b><ul>'+s.failures.map(function(f){return '<li>Line '+f.line+': '+esc(f.reason)+' &mdash; <code>'+esc(f.text)+'</code></li>'}).join('')+'</ul></div>':'')+
-        (s.duplicates.length?'<div class="info import"><b>Duplicates skipped ('+s.duplicates_skipped+'):</b><ul>'+s.duplicates.map(function(d){return '<li>Line '+d.line+': '+esc(d.reason)+' ('+esc(d.lead_id)+') &mdash; <code>'+esc(d.text)+'</code></li>'}).join('')+'</ul></div>':'');
-      return Promise.all([loadBoard(1),loadToday(),loadNumbers()])}).catch(function(e){$('bulkMsg').textContent=showError(e)}).then(function(){$('addBulk').disabled=false});
-  };
+  $('saveTargets').onclick=function(){$('targetMsg').textContent='Saving…';call('saveSetting','monthly_deal_target',Number($('t_deals').value)||0).then(function(){return call('saveSetting','monthly_marketing_budget',Number($('t_budget').value)||0)}).then(function(){S.monthly_deal_target=Number($('t_deals').value)||0;S.monthly_marketing_budget=Number($('t_budget').value)||0;$('targetMsg').textContent='Saved';editing=false;dashDrawn='';return loadDash().then(animateIn)}).catch(function(e){$('targetMsg').textContent=showError(e)})};
 
   /* ================= TOOLS ================= */
-  function loadTools(){return read('getTools').then(function(r){toolsData=r.data;renderToolsAll()})}
-  function renderToolsAll(){renderTools();renderRollcall();renderVerdicts();renderPillars();if(todayData){todayData.tools_today=toolsData.tools_today;renderRunsToday(toolsData.tools_today)}}
-  function renderVerdicts(){var c={};toolsData.enums.verdict.forEach(function(v){c[v]=0});toolsData.tools.forEach(function(t){c[t.verdict||'Not handed over yet']=(c[t.verdict||'Not handed over yet']||0)+1});
-    $('verdicts').innerHTML='<div class="row" style="margin:0">'+toolsData.enums.verdict.map(function(v){var cls=v==='Works, in use'?' good':v==='Not handed over yet'?' hot':' stale';return '<span class="chip'+cls+'">'+c[v]+' '+esc(v.toLowerCase())+'</span>'}).join('')+'</div>'}
-  function renderRollcall(){
-    $('rollcall').innerHTML=toolsData.builders.map(function(b){var mine=toolsData.tools.filter(function(t){return (t.built_by||'').indexOf(b)>-1}),withLink=mine.filter(function(t){return t.link}).length,withSteps=mine.filter(function(t){return t.steps}).length;
-      return '<div class="queue"><div><b>'+esc(b)+'</b></div><div class="row" style="margin-top:4px"><span class="chip'+(mine.length?'':' hot')+'">'+mine.length+' logged</span><span class="chip'+(withLink===mine.length&&mine.length?' good':' hot')+'">'+withLink+' with a link</span><span class="chip'+(withSteps===mine.length&&mine.length?' good':' hot')+'">'+withSteps+' with steps</span></div>'+
-        '<div class="row"><button class="btn ghost small" data-showbuilder="'+attr(b)+'">See '+esc(b)+'\'s builds</button><input data-asked="'+attr(b)+'" value="'+attr(toolsData.asked[b]||'')+'" placeholder="date you asked them" style="max-width:170px"'+(can('manage_tools')?'':' disabled')+'></div></div>'}).join('');
-  }
-  function renderPillars(){$('pillars').innerHTML=toolsData.pillars.map(function(p){return '<div class="queue"><div><b>'+esc(p.name)+'</b></div><div class="meta" style="font-size:13px">'+esc(p.what)+'</div><div class="row"><select data-pillar="'+attr(p.id)+'"'+(can('manage_tools')?'':' disabled')+'>'+opt(toolsData.enums.pillar_states,p.state)+'</select></div></div>'}).join('')}
-  function renderTools(){
-    var tools=toolsData.tools, E=toolsData.enums;
-    var used=tools.filter(function(t){return t.status==='Live and used daily'}).length,dead=tools.filter(function(t){return t.status==='Live but nobody uses it'||t.status==='Built, never launched'}).length,nosteps=tools.filter(function(t){return !t.steps}).length,untrained=tools.filter(function(t){return !t.trained.length}).length,noop=tools.filter(function(t){return !t.operator}).length,undec=tools.filter(function(t){return (t.recommendation||'Decide')==='Decide'}).length;
-    $('toolTally').innerHTML='<div><b>'+tools.length+'</b><span>built for this team</span></div><div><b>'+used+'</b><span>used daily</span></div><div><b>'+dead+'</b><span>sitting unused</span></div><div><b>'+nosteps+'</b><span>no written steps</span></div><div><b>'+untrained+'</b><span>nobody trained</span></div><div><b>'+noop+'</b><span>no daily operator</span></div><div><b>'+undec+'</b><span>no call made yet</span></div>';
-    $('toolNote').textContent=noop?('A build with no operator is where every one of these died. '+noop+' have a builder but nobody running them.'):nosteps?('Steps are missing on '+nosteps+' of them. A tool without steps gets used once and abandoned.'):(untrained?'Every tool has steps. Now mark who is trained so it survives one person being out.':'Steps written and people trained on all of them.');
-    var builders={};tools.forEach(function(t){if(t.built_by)builders[t.built_by]=(builders[t.built_by]||0)+1});var bf=$('builderFilter'),keep=bf.value;
-    bf.innerHTML='<option value="">Everyone\'s builds ('+tools.length+')</option>'+Object.keys(builders).sort().map(function(b){return '<option value="'+attr(b)+'"'+(b===keep?' selected':'')+'>Built by '+esc(b)+' ('+builders[b]+')</option>'}).join('')+'<option value="__none"'+(keep==='__none'?' selected':'')+'>Builder not recorded ('+tools.filter(function(t){return !t.built_by}).length+')</option>';
-    var manage=can('manage_tools'), ro=manage?'':' disabled', open={}; document.querySelectorAll('#toolList details[open]').forEach(function(d){open[d.closest('.lead').dataset.tid]=true});
-    $('toolList').innerHTML=tools.filter(function(t){if(!keep)return true;if(keep==='__none')return !t.built_by;return t.built_by===keep}).map(function(t){
-      var cls=t.status==='Live and used daily'?'s-CLOSED':(t.status==='Live but nobody uses it'||t.status==='Built, never launched')?'flag':'', tr=t.trained, link=safeUrl(t.link);
-      return '<div class="lead '+cls+'" data-tid="'+attr(t.tool_id)+'"><span class="saving" data-save></span><div class="addr">'+esc(t.name)+'</div><div class="meta">'+esc(t.description||'')+'</div>'+
-        (link?'<div class="row"><a class="btn small" style="text-decoration:none" target="_blank" rel="noopener noreferrer" href="'+attr(link)+'">Open it</a></div>':'')+
-        '<div class="row">'+(link?'':'<span class="chip hot">No link saved</span>')+(t.built_by?'<span class="chip">Built by '+esc(t.built_by)+'</span>':'<span class="chip hot">Builder not recorded</span>')+'<span class="chip'+(t.steps?' good':' hot')+'">'+(t.steps?'Steps written':'No steps')+'</span><span class="chip'+(tr.length?'':' hot')+'">'+(tr.length?tr.length+' trained':'Nobody trained')+'</span>'+(t.is_daily?'<span class="chip">On the daily list</span>':'')+
-          (t.verdict==='Works, in use'?'<span class="chip good">Works</span>':t.verdict==='Broken, sent back'?'<span class="chip hot">Broken, back with '+esc(t.built_by||'builder')+'</span>':t.verdict==='Needs training first'?'<span class="chip stale">Needs training</span>':'<span class="chip hot">Not handed over</span>')+'</div>'+
-        '<div class="row"><select data-tool="status"'+ro+'>'+opt(E.status,t.status)+'</select><select data-tool="recommendation"'+ro+'>'+opt(E.recommendation,t.recommendation||'Decide')+'</select><select data-tool="cadence"'+ro+'>'+opt(E.cadence,t.cadence||'Not set')+'</select></div>'+
-        '<details'+(open[t.tool_id]?' open':'')+'><summary>How it works, who runs it</summary>'+
-          '<div style="margin-top:8px"><label class="f">Steps to run it</label><textarea data-tool="steps" rows="4" placeholder="1. Open ... 2. Run ... 3. Export ..."'+ro+'>'+esc(t.steps)+'</textarea></div>'+
-          '<div style="margin-top:8px"><label class="f">Link to open it</label><input data-tool="link" value="'+attr(t.link||'')+'" placeholder="https://..."'+ro+'></div>'+
-          '<div style="margin-top:8px"><label class="f">It worked when you see</label><input data-tool="expected_output" value="'+attr(t.expected_output)+'" placeholder="e.g. a fresh list in the export folder"'+ro+'></div>'+
-          '<div class="grid g2" style="margin-top:8px"><div><label class="f">Built it</label><input data-tool="built_by" value="'+attr(t.built_by)+'" placeholder="e.g. Seth"'+ro+'></div><div><label class="f">Runs it every day</label><input data-tool="operator" value="'+attr(t.operator)+'" placeholder="the operator, not the builder"'+ro+'></div><div><label class="f">Covers when they are out</label><input data-tool="backup_operator" value="'+attr(t.backup_operator)+'"'+ro+'></div><div><label class="f">Asked the builder for the steps?</label><input data-tool="asked_date" value="'+attr(t.asked_date||'')+'" placeholder="date asked"'+ro+'></div></div>'+
-          '<div style="margin-top:9px"><label class="f">Trained and able to run it alone</label><div class="row" style="margin:0">'+toolsData.people.map(function(p){var on=tr.some(function(x){return x.user_id===p.user_id});return '<button class="btn '+(on?'':'ghost ')+'small" data-trained="'+attr(p.user_id)+'" data-on="'+(on?1:0)+'"'+ro+'>'+esc(p.name)+'</button>'}).join('')+'</div></div>'+
-          '<div class="grid g2" style="margin-top:8px"><div><label class="f">Handed to the user on</label><input data-tool="handoff_date" value="'+attr(t.handoff_date||'')+'" placeholder="date"'+ro+'></div><div><label class="f">User verdict</label><select data-tool="verdict"'+ro+'>'+opt(E.verdict,t.verdict||'Not handed over yet')+'</select></div></div>'+
-          '<div style="margin-top:9px"><label class="f">What it produced last week</label><input data-tool="proof_last_week" value="'+attr(t.proof_last_week)+'" placeholder="e.g. 340 records cleared, 12 callbacks"'+ro+'></div>'+
-        '</details></div>'}).join('');
-  }
-  function toolPatch(el){var card=el.closest('.lead'),tid=card.dataset.tid,f=el.dataset.tool,cur=toolsData.tools.filter(function(t){return t.tool_id===tid})[0];if(cur&&String(cur[f]||'')===String(el.value))return;var p={};p[f]=el.value;setCardStatus(card,'','Saving…');
-    call('updateTool',tid,p).then(function(r){setCardStatus(card,'ok','Saved');if(cur)Object.keys(r.data).forEach(function(k){cur[k]=r.data[k]});cur.is_daily=['Every day','Every weekday'].indexOf(cur.cadence)>-1;if(f==='cadence'||f==='status')loadTools();else{renderRollcall();renderVerdicts()}}).catch(function(e){setCardStatus(card,'err',codeLabel(e.code));showError(e)})}
-  $('view-tools').addEventListener('change',function(e){var t=e.target;
-    if(t.dataset.tool)return toolPatch(t);
-    if(t.dataset.pillar)return call('saveSetting','pillar_'+t.dataset.pillar,t.value).then(loadTools).catch(showError);
-  });
-  $('view-tools').addEventListener('blur',function(e){var t=e.target;if(t.dataset.tool&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'))toolPatch(t);
-    if(t.dataset.asked!=null&&toolsData&&toolsData.asked[t.dataset.asked]!==t.value)call('saveSetting','asked_'+t.dataset.asked,t.value).then(loadTools).catch(showError)},true);
-  $('view-tools').addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;
-    if(t.dataset.trained){var card=t.closest('.lead');t.disabled=true;call('setToolTraining',card.dataset.tid,t.dataset.trained,t.dataset.on!=='1','').then(loadTools).catch(function(e){showError(e);t.disabled=false})}
-    if(t.dataset.showbuilder){var b=t.dataset.showbuilder,o=Array.prototype.filter.call($('builderFilter').options,function(x){return x.value===b})[0];$('builderFilter').value=o?o.value:'';renderTools();$('toolList').scrollIntoView({block:'start'})}
-  });
-  $('builderFilter').onchange=renderTools;
-  $('addTool').onclick=function(){var nm=$('newTool').value.trim();if(!nm)return;$('addToolMsg').textContent='Adding…';
-    call('createTool',{name:nm,built_by:$('newToolOwner').value,link:$('newToolLink').value.trim(),description:$('newToolJob').value.trim()}).then(function(r){$('newTool').value='';$('newToolLink').value='';$('newToolJob').value='';$('addToolMsg').textContent=r.message;return loadTools()}).catch(function(e){$('addToolMsg').textContent=showError(e)})};
+  var builder='';
+  function loadTools(){return read('getTools').then(function(r){toolsData=r.data;renderTools();if(todayData){todayData.tools_today=toolsData.tools_today;renderRunsToday(toolsData.tools_today)}if(view==='tools')$('viewSub').textContent=TITLES.tools[1]()})}
+  function renderTools(){var T=toolsData,tools=T.tools;
+    var used=tools.filter(function(t){return t.status==='Live and used daily'}).length,nosteps=tools.filter(function(t){return !t.steps}).length,untrained=tools.filter(function(t){return !t.trained.length}).length,noop=tools.filter(function(t){return !t.operator}).length,undec=tools.filter(function(t){return (t.recommendation||'Decide')==='Decide'}).length,handed=tools.filter(function(t){return t.verdict==='Works, in use'}).length;
+    $('toolsHero').innerHTML='<b>'+tools.length+'</b> builds<small>'+T.tools_today.required+' on the daily list · '+used+' used daily · '+handed+' handed over and working</small>';
+    $('toolNote').textContent=noop?('A build with no operator is where every one of these died. '+noop+' have a builder but nobody running them.'):nosteps?('Steps are missing on '+nosteps+' of them. A tool without steps gets used once and abandoned.'):untrained?'Every tool has steps. Now mark who is trained so it survives one person being out.':'Steps written and people trained on all of them.';
+    $('toolTally').innerHTML=fact(nosteps,'no written steps',nosteps?'alert':'')+fact(noop,'no operator',noop?'alert':'')+fact(undec,'no call made yet',undec?'alert':'');
+    var builders={};tools.forEach(function(t){if(t.built_by)builders[t.built_by]=(builders[t.built_by]||0)+1});
+    $('builderFilter').innerHTML='<button data-b=""'+(builder===''?' aria-selected="true"':'')+'>All <span class="c">'+tools.length+'</span></button>'+Object.keys(builders).sort().map(function(b){return '<button data-b="'+esc(b)+'"'+(builder===b?' aria-selected="true"':'')+'>'+esc(b)+' <span class="c">'+builders[b]+'</span></button>'}).join('')+'<button data-b="__none"'+(builder==='__none'?' aria-selected="true"':'')+'>Builder not recorded <span class="c hot">'+tools.filter(function(t){return !t.built_by}).length+'</span></button><button data-b="__daily"'+(builder==='__daily'?' aria-selected="true"':'')+'>Daily <span class="c">'+tools.filter(function(t){return t.is_daily}).length+'</span></button>';
+    var list=tools.filter(function(t){if(!builder)return true;if(builder==='__none')return !t.built_by;if(builder==='__daily')return t.is_daily;return t.built_by===builder});
+    $('toolList').innerHTML=list.length?list.map(function(t){var ok=t.verdict==='Works, in use',bad=!t.steps||!t.operator;var st=ok?'Works, in use':t.verdict==='Broken, sent back'?'Broken, sent back':!t.steps?'No steps':!t.operator?'No operator':t.verdict==='Needs training first'?'Needs training':'Not handed over';
+      return '<div class="row two clickable" id="tool-'+esc(t.tool_id)+'" data-tid="'+esc(t.tool_id)+'"><i class="sq'+(ok?' ok':bad?' alert':'')+'"></i><div><div class="t">'+esc(t.name)+'</div><div class="m">'+[t.built_by?'built by '+esc(t.built_by):'builder not recorded',t.operator?esc(t.operator)+' runs it':'no operator',t.is_daily?esc(t.cadence.toLowerCase()):'',esc(t.description)].filter(Boolean).join(' · ')+'</div></div><div class="state'+(ok?'':bad?' alert':'')+'">'+st+'<small>'+(t.trained.length?t.trained.length+' trained':'nobody trained')+(t.link?' · has a link':' · no link')+'</small></div><div class="state">'+esc(t.status)+'<small>status</small></div></div>'}).join(''):'<div class="empty">No tools in this view.</div>';
+    $('rollcall').innerHTML=T.builders.map(function(b){var mine=tools.filter(function(t){return (t.built_by||'').indexOf(b)>-1}),withLink=mine.filter(function(t){return t.link}).length,withSteps=mine.filter(function(t){return t.steps}).length;return '<p><b>'+esc(b)+'</b> '+mine.length+' logged · '+withLink+' with a link · '+withSteps+' with steps · <input data-asked="'+esc(b)+'" value="'+esc(T.asked[b]||'')+'" placeholder="date asked" style="width:110px;height:26px;border:1px solid var(--line);background:var(--panel);padding:0 6px;color:var(--text)"'+(can('manage_tools')?'':' disabled')+'></p>'}).join('');
+    $('pillars').innerHTML=T.pillars.map(function(p){return '<p><b>'+esc(p.name)+'</b> <span class="muted">'+esc(p.what)+'</span><br><select data-pillar="'+esc(p.id)+'" style="height:26px;border:1px solid var(--line);background:var(--panel);color:var(--text);margin-top:4px"'+(can('manage_tools')?'':' disabled')+'>'+opt(T.enums.pillar_states,p.state)+'</select></p>'}).join('');
+    if(currentTool){var fresh=tools.filter(function(t){return t.tool_id===currentTool.tool_id})[0];if(fresh){currentTool=fresh;renderToolDrawer()}}}
+  $('builderFilter').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;builder=b.dataset.b;renderTools()});
+  $('toolList').addEventListener('click',function(e){var r=e.target.closest('[data-tid]');if(r)openTool(r.dataset.tid)});
+  function openTool(id){currentTool=toolsData.tools.filter(function(t){return t.tool_id===id})[0];if(!currentTool)return;$('scrim').hidden=false;$('toolDrawer').hidden=false;$('drawer').hidden=true;$('addDrawer').hidden=true;renderToolDrawer()}
+  function renderToolDrawer(){var t=currentTool,E=toolsData.enums,ro=can('manage_tools')?'':' disabled';var d=$('toolDrawer');d.dataset.tid=t.tool_id;
+    var keep=null,a=document.activeElement;if(a&&d.contains(a)&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA')&&a.dataset.tool){keep={sel:'[data-tool="'+a.dataset.tool+'"]',value:a.value};try{keep.s=a.selectionStart;keep.e=a.selectionEnd}catch(e){}}
+    $('tdLbl').textContent='Tool · '+t.tool_id;$('tdTitle').textContent=t.name;$('tdMeta').textContent=[t.description,t.built_by?'built by '+t.built_by:'',t.operator?t.operator+' runs it':''].filter(Boolean).join(' · ');
+    var link=safeUrl(t.link);
+    $('tdBody').innerHTML=(link?'<a class="btn ghost sm" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none;align-self:flex-start">Open it ↗</a>':'<div class="alertbox"><b>No link saved</b>If it has no link here, nobody will find it.</div>')+
+      '<div class="spec one"><dl>'+kv('Status','<select data-tool="status"'+ro+'>'+opt(E.status,t.status)+'</select>')+kv('Recommendation','<select data-tool="recommendation"'+ro+'>'+opt(E.recommendation,t.recommendation||'Decide')+'</select>')+kv('Cadence','<select data-tool="cadence"'+ro+'>'+opt(E.cadence,t.cadence||'Not set')+'</select>')+kv('Built it','<input data-tool="built_by" value="'+esc(t.built_by)+'" placeholder="e.g. Seth"'+ro+'>')+kv('Runs it every day','<input data-tool="operator" value="'+esc(t.operator)+'" placeholder="the operator, not the builder"'+ro+'>')+kv('Covers when out','<input data-tool="backup_operator" value="'+esc(t.backup_operator)+'"'+ro+'>')+kv('Link','<input class="wide" data-tool="link" value="'+esc(t.link)+'" placeholder="https://..."'+ro+'>')+kv('Looks right when','<input class="wide" data-tool="expected_output" value="'+esc(t.expected_output)+'" placeholder="e.g. a fresh list in the export folder"'+ro+'>')+kv('Asked builder for steps','<input data-tool="asked_date" value="'+esc(t.asked_date)+'" placeholder="date asked"'+ro+'>')+kv('Handed to the user on','<input data-tool="handoff_date" value="'+esc(t.handoff_date)+'" placeholder="date"'+ro+'>')+kv('User verdict','<select data-tool="verdict"'+ro+'>'+opt(E.verdict,t.verdict||'Not handed over yet')+'</select>')+kv('Produced last week','<input class="wide" data-tool="proof_last_week" value="'+esc(t.proof_last_week)+'" placeholder="e.g. 340 records cleared, 12 callbacks"'+ro+'>')+'</dl></div>'+
+      '<div class="field"><label>Steps to run it</label><textarea data-tool="steps" rows="5" placeholder="1. Open ... 2. Run ... 3. Export ..."'+ro+'>'+esc(t.steps)+'</textarea></div>'+
+      '<div><div class="lbl" style="margin-bottom:8px">Trained and able to run it alone</div><div class="actions">'+toolsData.people.map(function(p){var on=t.trained.some(function(x){return x.user_id===p.user_id});return '<button class="btn sm'+(on?'':' ghost')+'" data-trained="'+esc(p.user_id)+'" data-on="'+(on?1:0)+'"'+ro+'>'+esc(p.name)+'</button>'}).join('')+'</div></div>';
+    if(keep){var f=$('tdBody').querySelector(keep.sel);if(f){f.value=keep.value;f.focus();try{if(keep.s!=null)f.setSelectionRange(keep.s,keep.e)}catch(e){}}}}
+  function setTdStatus(kind,text){var s=$('tdStatus');s.className='status '+kind;s.textContent=text;if(kind==='ok')setTimeout(function(){if(s.textContent===text)s.textContent=''},2000)}
+  function toolPatch(elm){if(!currentTool)return;var f=elm.dataset.tool;if(String(currentTool[f]||'')===String(elm.value))return;var p={};p[f]=elm.value;setTdStatus('busy','Saving…');
+    call('updateTool',currentTool.tool_id,p).then(function(r){setTdStatus('ok','Saved');Object.keys(r.data).forEach(function(k){currentTool[k]=r.data[k]});currentTool.is_daily=['Every day','Every weekday'].indexOf(currentTool.cadence)>-1;return loadTools()}).catch(function(e){setTdStatus('err',codeLabel(e.code));showError(e)})}
+  $('toolDrawer').addEventListener('change',function(e){if(e.target.dataset.tool)toolPatch(e.target)});
+  $('toolDrawer').addEventListener('blur',function(e){if(e.target.dataset.tool&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))toolPatch(e.target)},true);
+  $('toolDrawer').addEventListener('click',function(e){var b=e.target.closest('button[data-trained]');if(!b||!currentTool)return;b.disabled=true;call('setToolTraining',currentTool.tool_id,b.dataset.trained,b.dataset.on!=='1','').then(loadTools).catch(function(e){showError(e);b.disabled=false})});
+  $('view-tools').addEventListener('change',function(e){var t=e.target;if(t.dataset.pillar)call('saveSetting','pillar_'+t.dataset.pillar,t.value).then(loadTools).catch(showError)});
+  $('view-tools').addEventListener('blur',function(e){var t=e.target;if(t.dataset.asked!=null&&toolsData&&toolsData.asked[t.dataset.asked]!==t.value)call('saveSetting','asked_'+t.dataset.asked,t.value).then(loadTools).catch(showError)},true);
+  $('addTool').onclick=function(){var nm=$('newTool').value.trim();if(!nm)return;$('addToolMsg').textContent='Adding…';call('createTool',{name:nm,built_by:$('newToolOwner').value,link:$('newToolLink').value.trim(),description:$('newToolJob').value.trim()}).then(function(r){$('newTool').value='';$('newToolLink').value='';$('newToolJob').value='';$('addToolMsg').textContent=r.message;return loadTools()}).catch(function(e){$('addToolMsg').textContent=showError(e)})};
 
   /* ================= ADMIN ================= */
-  var SETTING_FIELDS=[['mao_percentage','MAO % of ARV'],['stale_lead_days','Stale after (days)'],['auto_refresh_seconds','Auto refresh (seconds, 0 = off)'],['business_timezone','Business timezone'],['live_list_target','Live list target'],['page_size','Records per page (10-200)'],['monthly_deal_target','Deals target per month'],['monthly_marketing_budget','Marketing budget per month $']];
-  function loadAdmin(){ if(!can('manage_users'))return Promise.resolve();
-    return Promise.all([read('getUsers'),read('getSettings'),read('getBackupLog',20),read('getAuditLog',100)]).then(function(r){renderUsers(r[0].data);renderSettings(r[1].data);renderBackups(r[2].data);renderAudit(r[3].data)}).catch(showError)}
-  function renderUsers(list){
-    $('usersTable').innerHTML='<tr><th class="l">Name</th><th class="l">Google email</th><th class="l">Team</th><th>Role</th><th>Access</th><th></th></tr>'+list.map(function(u){return '<tr data-uid="'+attr(u.user_id)+'"><td class="l"><input data-u="name" value="'+attr(u.name)+'"></td><td class="l"><input data-u="email" value="'+attr(u.email)+'" placeholder="needs email"></td><td class="l"><input data-u="team" value="'+attr(u.team)+'"></td><td><select data-u="role">'+opt(C.roles,u.role)+'</select></td>'+
-      '<td>'+(u.needs_email?'<span class="badge off">needs email</span>':u.active?'<span class="badge on">active</span>':'<span class="badge off">inactive</span>')+'</td><td>'+(u.needs_email?'':'<button class="btn ghost small" data-toggle="'+(u.active?0:1)+'">'+(u.active?'Deactivate':'Activate')+'</button>')+'</td></tr>'}).join('');
-  }
+  var SETTING_FIELDS=[['mao_percentage','MAO % of ARV'],['stale_lead_days','Stale after (days)'],['cpl_ceiling','Cost per lead ceiling $'],['speed_target_minutes','Speed to first call target (min)'],['auto_refresh_seconds','Auto refresh (seconds, 0 = off)'],['business_timezone','Business timezone'],['live_list_target','Live list target'],['page_size','Records per page (10-200)'],['monthly_deal_target','Deals target per month'],['monthly_marketing_budget','Marketing budget per month $']];
+  function loadAdmin(){if(!can('manage_users'))return Promise.resolve();return Promise.all([read('getUsers'),read('getSettings'),read('getBackupLog',20),read('getAuditLog',100)]).then(function(r){renderUsers(r[0].data);renderSettings(r[1].data);renderBackups(r[2].data);renderAudit(r[3].data)}).catch(showError)}
+  function renderUsers(list){$('usersTable').innerHTML='<tr><th>Name</th><th>Google email</th><th>Team</th><th>Role</th><th>Access</th><th></th></tr>'+list.map(function(u){return '<tr data-uid="'+esc(u.user_id)+'"><td class="l"><input data-u="name" value="'+esc(u.name)+'"></td><td class="l"><input data-u="email" value="'+esc(u.email)+'" placeholder="needs email"></td><td class="l"><input data-u="team" value="'+esc(u.team)+'"></td><td><select data-u="role">'+opt(C.roles,u.role)+'</select></td><td>'+(u.needs_email?'<span class="badge off">needs email</span>':u.active?'<span class="badge on">active</span>':'<span class="badge off">inactive</span>')+'</td><td>'+(u.needs_email?'':'<button class="btn ghost xs" data-toggle="'+(u.active?0:1)+'">'+(u.active?'Deactivate':'Activate')+'</button>')+'</td></tr>'}).join('')}
   $('usersTable').addEventListener('change',function(e){var t=e.target;if(!t.dataset.u)return;var uid=t.closest('tr').dataset.uid,p={};p[t.dataset.u]=t.value;call('updateUser',uid,p).then(loadAdmin).catch(function(e){showError(e);loadAdmin()})});
   $('usersTable').addEventListener('click',function(e){var t=e.target.closest('button');if(!t||t.dataset.toggle==null)return;var uid=t.closest('tr').dataset.uid;call('updateUser',uid,{active:t.dataset.toggle==='1'}).then(loadAdmin).catch(showError)});
   $('addUser').onclick=function(){$('userMsg').textContent='Adding…';call('createUser',{name:$('u_name').value,email:$('u_email').value,team:$('u_team').value,role:$('u_role').value}).then(function(r){$('userMsg').textContent=r.message;$('u_name').value='';$('u_email').value='';$('u_team').value='';return Promise.all([loadAdmin(),read('bootstrapApp').then(function(b){users=b.data.users;usersById={};users.forEach(function(u){usersById[u.user_id]=u})})])}).catch(function(e){$('userMsg').textContent=showError(e)})};
-  function renderSettings(s){$('settingsForm').innerHTML=SETTING_FIELDS.map(function(f){return '<div><label class="f" for="s_'+f[0]+'">'+f[1]+'</label><input id="s_'+f[0]+'" data-skey="'+f[0]+'" value="'+attr(s[f[0]]==null?'':s[f[0]])+'"></div>'}).join('')+'<div><label class="f">App version</label><input value="'+attr(s.app_version)+'" disabled></div>';S=Object.assign(S,s)}
-  $('saveSettings').onclick=function(){var inputs=Array.prototype.slice.call(document.querySelectorAll('#settingsForm [data-skey]')),changed=inputs.filter(function(i){return String(S[i.dataset.skey]==null?'':S[i.dataset.skey])!==i.value});
-    if(!changed.length){$('settingsMsg').textContent='Nothing changed';return}$('settingsMsg').textContent='Saving…';
-    changed.reduce(function(p,i){return p.then(function(){return call('saveSetting',i.dataset.skey,i.value)})},Promise.resolve()).then(function(){$('settingsMsg').textContent='Saved';return read('getSettings')}).then(function(r){S=Object.assign(S,r.data);startAutoRefresh();return Promise.all([loadAdmin(),loadBoard(1,true),loadNumbers()])}).catch(function(e){$('settingsMsg').textContent=showError(e);loadAdmin()})};
+  function renderSettings(s){var form=$('settingsForm');var dirty=Array.prototype.some.call(form.querySelectorAll('[data-skey]'),function(i){return String(S[i.dataset.skey]==null?'':S[i.dataset.skey])!==i.value})||form.contains(document.activeElement);if(dirty){return}$('settingsForm').innerHTML=SETTING_FIELDS.map(function(f){return kv(f[1],'<input id="s_'+f[0]+'" data-skey="'+f[0]+'" value="'+esc(s[f[0]]==null?'':s[f[0]])+'">')}).join('')+kv('App version','<span class="muted">'+esc(s.app_version)+'</span>');S=Object.assign(S,s)}
+  $('saveSettings').onclick=function(){var inputs=Array.prototype.slice.call(document.querySelectorAll('#settingsForm [data-skey]')),changed=inputs.filter(function(i){return String(S[i.dataset.skey]==null?'':S[i.dataset.skey])!==i.value});if(!changed.length){$('settingsMsg').textContent='Nothing changed';return}$('settingsMsg').textContent='Saving…';
+    changed.reduce(function(p,i){return p.then(function(){return call('saveSetting',i.dataset.skey,i.value)})},Promise.resolve()).then(function(){$('settingsMsg').textContent='Saved';return read('getSettings')}).then(function(r){S=Object.assign(S,r.data);startAutoRefresh();dashDrawn='';return Promise.all([loadAdmin(),loadBoard(1,true)])}).catch(function(e){$('settingsMsg').textContent=showError(e);loadAdmin()})};
   $('backupNow').onclick=function(){$('backupMsg').textContent='Backing up…';call('createDatabaseBackup').then(function(r){$('backupMsg').textContent='Backup created: '+r.data.name;return loadAdmin()}).catch(function(e){$('backupMsg').textContent=showError(e)})};
-  function renderBackups(b){$('backupTable').innerHTML='<tr><th class="l">When</th><th class="l">Name</th><th>Status</th></tr>'+(b.length?b.map(function(x){return '<tr><td class="l">'+esc(when(x.timestamp))+'</td><td class="l">'+esc(x.backup_name)+'</td><td>'+esc(x.status)+(x.error?' &mdash; '+esc(x.error):'')+'</td></tr>'}).join(''):'<tr><td colspan="3" style="color:var(--graphite)">No backups yet. Install the daily trigger (see DEPLOY.md) or run one now.</td></tr>')}
-  function renderAudit(a){$('auditTable').innerHTML='<tr><th class="l">When</th><th class="l">Who</th><th class="l">Action</th><th class="l">Entity</th><th class="l">Details</th></tr>'+a.map(function(x){return '<tr><td class="l">'+esc(when(x.timestamp_utc))+'</td><td class="l">'+esc(x.user_email||x.user_id)+'</td><td class="l">'+esc(x.action)+'</td><td class="l">'+esc(x.entity_type+' '+x.entity_id)+'</td><td class="l" style="max-width:320px;overflow:hidden;text-overflow:ellipsis">'+esc(x.details)+'</td></tr>'}).join('')}
+  function renderBackups(b){$('backupTable').innerHTML='<tr><th>When</th><th>Name</th><th>Status</th></tr>'+(b.length?b.map(function(x){return '<tr><td>'+esc(when(x.timestamp))+'</td><td style="text-align:left;font-weight:400">'+esc(x.backup_name)+'</td><td>'+esc(x.status)+(x.error?' — '+esc(x.error):'')+'</td></tr>'}).join(''):'<tr><td colspan="3" class="dim">No backups yet. Install the daily trigger (DEPLOY.md) or run one now.</td></tr>')}
+  function renderAudit(a){$('auditTable').innerHTML='<tr><th>When</th><th>Who</th><th>Action</th><th>Entity</th></tr>'+a.map(function(x){return '<tr><td>'+esc(when(x.timestamp_utc))+'</td><td style="text-align:left;font-weight:400">'+esc(x.user_email||x.user_id)+'</td><td style="text-align:left;font-weight:400">'+esc(x.action)+'</td><td style="text-align:left;font-weight:400">'+esc(x.entity_type+' '+x.entity_id)+'</td></tr>'}).join('')}
 })();
 </script>

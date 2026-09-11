@@ -5,7 +5,7 @@
  */
 
 var APP_NAME = 'THB Acquisitions Desk';
-var APP_VERSION = '1.0.1';
+var APP_VERSION = '1.1.0';
 var DB_NAME = 'THB Acquisitions Desk — Production Database';
 var BACKUP_FOLDER_NAME = 'THB Acquisitions Desk Backups';
 
@@ -110,7 +110,7 @@ var ACTION = {
   NEXT_ACTION_DONE: 'NEXT_ACTION_DONE', DUE_DATE_CHANGED: 'DUE_DATE_CHANGED', APPOINTMENT_SET: 'APPOINTMENT_SET',
   APPOINTMENT_UPDATED: 'APPOINTMENT_UPDATED', UNDERWRITING_CHANGED: 'UNDERWRITING_CHANGED', OFFER_CHANGED: 'OFFER_CHANGED',
   FLAGGED_FOR_JUAN: 'FLAGGED_FOR_JUAN', JUAN_FLAG_CLEARED: 'JUAN_FLAG_CLEARED', COMPLIANCE_FLAGGED: 'COMPLIANCE_FLAGGED',
-  COMPLIANCE_CLEARED: 'COMPLIANCE_CLEARED', ARCHIVED: 'ARCHIVED', RESTORED: 'RESTORED', FIELD_CHANGED: 'FIELD_CHANGED'
+  COMPLIANCE_CLEARED: 'COMPLIANCE_CLEARED', ARCHIVED: 'ARCHIVED', RESTORED: 'RESTORED', FIELD_CHANGED: 'FIELD_CHANGED', OFFER_SENT: 'OFFER_SENT'
 };
 
 // Fields a REP may patch through updateLead. Everything else needs a dedicated function or a higher role.
@@ -154,7 +154,9 @@ var DEFAULT_SETTINGS = {
   auto_refresh_seconds: '30',
   app_version: APP_VERSION,
   live_list_target: '200',
-  page_size: '150'
+  page_size: '150',
+  cpl_ceiling: '100',
+  speed_target_minutes: '10'
 };
 
 var PAGE_SIZE_DEFAULT = 150;

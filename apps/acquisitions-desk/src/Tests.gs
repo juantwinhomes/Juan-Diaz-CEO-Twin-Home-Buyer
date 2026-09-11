@@ -215,6 +215,25 @@ function testSuite_() {
     var j = assertOk_(getJuanDashboard());
     assert_(j.totals_today.attempts >= 1 && j.changes_today.some(function (c) { return c.lead_id === l.lead_id; }) && j.pace && j.channels.length === 4, 'Juan dashboard populated');
   };
+  T['dashboards: one call, six sections, figures agree with the source tables'] = function () {
+    var l = assertOk_(createLead({ address: addr('1400 Report Rd'), source: 'PPC' })); var la = assertOk_(logAttempt(l.lead_id, ''));
+    assertOk_(updateLead(l.lead_id, { offer: 250000 }, la.version)); var o = assertOk_(markOfferSent(l.lead_id, null, 'verbal offer'));
+    assert_(o.recent_activity.some(function (a) { return a.action_type === 'OFFER_SENT' && a.display.indexOf('$250,000') > -1; }), 'offer sent recorded with amount');
+    ['8w', '30d', 'q'].forEach(function (p) {
+      var d = assertOk_(getDashboards({ period: p }));
+      ['pace', 'pipeline', 'marketing', 'team', 'discipline', 'appointments'].forEach(function (k) { assert_(d[k], k + ' present for ' + p); });
+      assert_(d.labels.length === d.pace.contracts_by_bucket.length && d.labels.length === (p === 'q' ? 3 : p === '30d' ? 5 : 8), 'bucket count for ' + p);
+      var mo = readTable_(SHEETS.DAILY_METRICS).rows.filter(function (r) { return toStr_(r.business_date) >= d.from && toStr_(r.business_date) <= d.to; });
+      assert_(d.pace.contracts_period === sumField_(mo, 'contracts_signed') && d.pace.closed_period === sumField_(mo, 'deals_closed'), 'pace totals match DAILY_METRICS for ' + p);
+      assert_(d.pace.contracts_by_bucket.reduce(function (t, v) { return t + v; }, 0) === d.pace.contracts_period, 'buckets sum to period total');
+      assert_(d.pipeline.live === readTable_(SHEETS.LEADS).rows.filter(function (r) { return LIVE_STATUSES.indexOf(toStr_(r.status)) > -1; }).length, 'live count');
+      assert_(d.marketing.channels.length === 4 && d.marketing.channels.some(function (c) { return c.channel === 'PPC' && c.leads >= 1; }), 'PPC lead counted in marketing');
+      assert_(d.pipeline.offers_sent >= 1, 'offer sent counted');
+      var me = getCurrentUser_(); var rep = d.team.reps.filter(function (r) { return r.user_id === me.user_id; })[0]; assert_(rep && rep.attempts >= 1 && rep.offers >= 1 && rep.attempts_by_day.length === 7, 'team row for me');
+      assert_(d.discipline.calendar.length === daysInMonthOf_(todayBusinessDate_()) && d.discipline.tool_days.length === 14, 'discipline calendar + heat');
+      assert_(typeof d.appointments.set === 'number' && Array.isArray(d.appointments.by_rep), 'appointments shape');
+    });
+  };
   T['xss: html in seller data is stored raw and escaped client-side (server returns strings)'] = function () {
     var l = assertOk_(createLead({ address: addr('1300 <script>alert(1)</script> St'), seller_name: '"><img src=x onerror=alert(1)>' }));
     var g = assertOk_(getLead(l.lead_id)); assert_(g.seller_name.indexOf('<img') > -1, 'server stores text verbatim; UI escapes');

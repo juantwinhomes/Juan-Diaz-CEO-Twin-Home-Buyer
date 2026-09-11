@@ -53,6 +53,7 @@ function refreshView(view, params) {
     case 'leads': return listLeads(params);
     case 'tools': return getTools();
     case 'juan': return getJuanDashboard();
+    case 'dash': return getDashboards(params);
     default: return fail_('VALIDATION_ERROR', 'Unknown view');
   }
 }

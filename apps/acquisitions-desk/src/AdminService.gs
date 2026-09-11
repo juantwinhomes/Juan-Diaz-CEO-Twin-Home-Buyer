@@ -61,7 +61,7 @@ function disableUser(userId) { return updateUser(userId, { active: false }); }
 
 function publicSettings_(s) {
   var out = {}; Object.keys(s).forEach(function (k) { out[k] = s[k]; });
-  ['monthly_deal_target', 'monthly_marketing_budget', 'mao_percentage', 'stale_lead_days', 'auto_refresh_seconds', 'live_list_target', 'page_size'].forEach(function (k) { out[k] = toNum_(out[k]); });
+  ['monthly_deal_target', 'monthly_marketing_budget', 'mao_percentage', 'stale_lead_days', 'auto_refresh_seconds', 'live_list_target', 'page_size', 'cpl_ceiling', 'speed_target_minutes'].forEach(function (k) { out[k] = toNum_(out[k]); });
   return out;
 }
 function getSettings() { return guarded_('getSettings', function (user) { return ok_(publicSettings_(getSettingsMap_())); }, { capability: 'view_leads' }); }
@@ -77,7 +77,7 @@ function saveSetting(key, value) {
     else throw validationError_('Unknown setting: ' + key);
     var v = trimStr_(value);
     if (isPillar && PILLAR_STATES.indexOf(v) < 0) throw validationError_('Unknown pillar state.');
-    if (['monthly_deal_target', 'monthly_marketing_budget', 'mao_percentage', 'stale_lead_days', 'auto_refresh_seconds', 'live_list_target', 'page_size'].indexOf(key) > -1) {
+    if (['monthly_deal_target', 'monthly_marketing_budget', 'mao_percentage', 'stale_lead_days', 'auto_refresh_seconds', 'live_list_target', 'page_size', 'cpl_ceiling', 'speed_target_minutes'].indexOf(key) > -1) {
       var n = toNum_(v); if (n == null || n < 0) throw validationError_(key.replace(/_/g, ' ') + ' must be a number.');
       if (key === 'mao_percentage' && (n < 30 || n > 100)) throw validationError_('MAO percentage must be between 30 and 100.');
       if (key === 'auto_refresh_seconds' && n && n < 10) throw validationError_('Auto refresh must be at least 10 seconds (or 0 to disable).');

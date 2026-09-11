@@ -9,7 +9,7 @@ const SRC = path.join(__dirname, '..', 'src');
 const PUBLIC = [
   'doGet','include','bootstrapApp','refreshView','whoAmI',
   'getLead','listLeads','createLead','addBulkLeads','updateLead','assignLead','logAttempt','addLeadNote','setNextAction',
-  'completeNextAction','setJuanFlag','setComplianceFlag','archiveLead','restoreLead',
+  'completeNextAction','markOfferSent','getDashboards','setJuanFlag','setComplianceFlag','archiveLead','restoreLead',
   'createAppointment','updateAppointment','listAppointments',
   'getTodayDashboard','getJuanDashboard','getRepSnapshot','getWorkQueue',
   'getDailyMetrics','saveDailyMetrics','getNumbersDashboard',

@@ -111,6 +111,26 @@ USERS was seeded with the people named in the build spec. Only emails known from
 Open the app → **Admin** tab → type each person's company Google email → they become active. (Or edit USERS
 column C directly as owner.) No email is ever invented by the system.
 
+## Updating production to v1.1.0 (the redesigned desk)
+
+v1.1.0 is a frontend redesign plus a new Dashboards tab and an "Offer sent" action. The database schema is unchanged;
+no setup function needs to run again. From `apps/acquisitions-desk` on your computer:
+
+```powershell
+git pull
+npx.cmd @google/clasp@3 push --force
+```
+
+Then in the Apps Script editor: **Deploy → Manage deployments → pencil icon on the live deployment → Version: New
+version → description `v1.1.0` → Deploy.** The `/exec` URL stays the same; everyone gets the new desk on their next
+load. (Creating a *new* deployment instead would mint a second URL — avoid that.)
+
+Optional: run `runAllTests` once more (Tests.gs) — it now includes a dashboards check — and expect `"failed": 0`.
+
+What changed for the team: the five tabs became a left rail (Today, Board, Dashboards, Tools, Plan, plus Admin for
+admins); Numbers moved into Dashboards → Pace and Marketing; each property opens in a side drawer instead of an
+inline card; the work queue is one list with tabs; identity, permissions, data and URL are all unchanged.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

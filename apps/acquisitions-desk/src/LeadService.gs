@@ -319,7 +319,7 @@ function completeNextAction(leadId, newNextAction, newDueDate, expectedVersion, 
   return guarded_('completeNextAction', function (user) {
     var ctx = leadContext_(), na = trimStr_(newNextAction), dd = normalizeDate_(newDueDate, ctx.tz);
     var out = mutateLead_(user, leadId, expectedVersion, function (lead, acts) {
-      acts.push(buildActivity_(user, leadId, ACTION.NEXT_ACTION_DONE, 'next_action', lead.next_action || '(none)', '', trimStr_(note)));
+      acts.push(buildActivity_(user, leadId, ACTION.NEXT_ACTION_DONE, 'next_action', lead.next_action || '(none)', toStr_(lead.due_date), trimStr_(note)));
       if (na || toStr_(lead.next_action) !== na) acts.push(buildActivity_(user, leadId, ACTION.NEXT_ACTION_CHANGED, 'next_action', lead.next_action, na, ''));
       if (dd || toStr_(lead.due_date) !== dd) acts.push(buildActivity_(user, leadId, ACTION.DUE_DATE_CHANGED, 'due_date', lead.due_date, dd, ''));
       lead.next_action = na; lead.due_date = dd; return true;
@@ -384,4 +384,18 @@ function restoreLead(leadId, toStatus, expectedVersion) {
     audit_(user, 'LEAD', leadId, 'RESTORED', { status: st });
     return ok_(out, 'Restored');
   }, { capability: 'restore_leads', entityType: 'LEAD', entityId: leadId });
+}
+
+/** Records that an offer was presented to the seller (uses the offer amount on the lead, or the one passed). */
+function markOfferSent(leadId, amount, note) {
+  return guarded_('markOfferSent', function (user) {
+    assertLen_(note, MAX_LEN.note, 'Note');
+    var out = mutateLead_(user, leadId, null, function (lead, acts) {
+      var amt = toNum_(amount); if (amt != null && amt < 0) throw validationError_('Offer must be a positive number.');
+      if (amt != null) { if (toNum_(lead.offer) !== amt) { acts.push(buildActivity_(user, leadId, ACTION.OFFER_CHANGED, 'offer', lead.offer, amt, '')); lead.offer = amt; } }
+      acts.push(buildActivity_(user, leadId, ACTION.OFFER_SENT, 'offer', '', toNum_(lead.offer) == null ? '' : toNum_(lead.offer), trimStr_(note)));
+      return true;
+    });
+    return ok_(out, 'Offer sent recorded');
+  }, { capability: 'work_leads', entityType: 'LEAD', entityId: leadId });
 }

@@ -109,6 +109,14 @@ test('date coercion: yyyy-MM-dd written to a non-plain cell round-trips as the s
   const raw = sh.getRange(ctx.findRowNumberById_('LEADS', l.lead_id), ctx.colIndex_('LEADS', 'due_date')).getValue(); assert(raw instanceof Date, 'cell was coerced to Date by the sheet');
   assert(ok(ctx.getLead(l.lead_id)).due_date === '2026-12-31', 'read back as string');
 });
+test('dashboards: follow-up on-time uses the due date stored at completion; role gate', () => {
+  as(OWNER); const today = ctx.todayBusinessDate_(); const before = ok(ctx.getDashboards({ period: '8w' })).discipline.followups_done; const l = ok(ctx.createLead({ address: 'TEST - 7 Followup Way' }));
+  ok(ctx.setNextAction(l.lead_id, 'Call', ctx.shiftDateString_(today, -2), l.version)); ok(ctx.completeNextAction(l.lead_id, 'Next', today, null)); // late
+  ok(ctx.completeNextAction(l.lead_id, '', '', null)); // on time (due today)
+  const d = ok(ctx.getDashboards({ period: '8w' })); assert(d.discipline.followups_done === before + 2 && d.discipline.followup_on_time_pct < 100, 'late + on-time counted: ' + JSON.stringify([d.discipline.followups_done, d.discipline.followup_on_time_pct]));
+  as('tech.test@example.com'); ok(ctx.getDashboards({})); bad(ctx.markOfferSent(l.lead_id), 'ACCESS_DENIED');
+  as('stranger@gmail.com'); bad(ctx.getDashboards({}), 'ACCESS_DENIED');
+});
 test('date coercion on an ID column: a Date cell in DAILY_METRICS.business_date is still found and updated in place', () => {
   const ss = state.spreadsheets[state.props.THB_DB_SPREADSHEET_ID]; const sh = ss.getSheetByName('DAILY_METRICS'); sh._fmt.clear(); sh._plainCols.clear();
   as(OWNER); const today = ctx.todayBusinessDate_(); const before = sh.getLastRow();
