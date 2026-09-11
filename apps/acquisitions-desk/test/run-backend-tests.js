@@ -41,6 +41,12 @@ test('API surface: every global function is public-listed or private (ends with 
   const missing = PUBLIC.filter(p => typeof ctx[p] !== 'function'); assert(!missing.length, 'missing: ' + missing);
   assert(typeof ctx.writeRowObject_ === 'function' && typeof ctx.writeRowObject === 'undefined', 'generic writes are private');
 });
+test('profile photo: directory photo returned for the signed-in account, cached, default silhouette → blank', () => {
+  as(OWNER); ctx.__state.photos[OWNER] = 'https://lh3.googleusercontent.com/a/seth=s100'; ctx.__state.cache = {}; ctx.__state.peopleCalls = 0;
+  const b1 = ok(ctx.bootstrapApp()); assert(b1.user.photo_url === 'https://lh3.googleusercontent.com/a/seth=s100', 'photo on bootstrap: ' + b1.user.photo_url);
+  ok(ctx.bootstrapApp()); assert(ctx.__state.peopleCalls === 1, 'second bootstrap served from cache');
+  assert(ctx.profilePhotoUrl_('cherry@twinhomebuyer.com') === '' && ctx.profilePhotoUrl_('') === '', 'default silhouette and blank email → no photo');
+});
 test('identity: owner (Seth, ADMIN) bootstraps; LOGIN audited', () => { const b = ok(ctx.bootstrapApp()); assert(b.user.email === OWNER && b.user.role === 'ADMIN' && b.settings.mao_percentage === 70 && b.users.length >= 10 && b.today, 'bootstrap'); assert(ctx.readTable_('AUDIT_LOG').rows.some(r => r.action === 'LOGIN' && r.user_email === OWNER), 'login audited'); });
 test('identity: unknown Google account → ACCESS_DENIED, audited, doGet shows no data', () => {
   as('stranger@gmail.com'); bad(ctx.bootstrapApp(), 'ACCESS_DENIED'); bad(ctx.listLeads({}), 'ACCESS_DENIED');

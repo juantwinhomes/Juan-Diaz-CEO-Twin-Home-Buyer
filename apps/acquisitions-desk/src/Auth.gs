@@ -43,6 +43,33 @@ function requireRole_(user, roles) {
 }
 
 /** Client-callable diagnostic used by the deployment identity test. Returns no company data. */
+/**
+ * Google profile photo for a Workspace account, looked up in the domain directory (People API, runs as the
+ * deploying account). Best effort: any failure or a default silhouette yields '' and the UI shows the initial.
+ * Cached per email for 6 hours so the lookup does not run on every refresh.
+ */
+function profilePhotoUrl_(email) {
+  email = toStr_(email).toLowerCase(); if (!email) return '';
+  var cache = CacheService.getScriptCache(), key = 'photo:' + email, hit = cache.get(key);
+  if (hit !== null) return hit === '-' ? '' : hit;
+  var url = '';
+  try {
+    if (typeof People !== 'undefined') {
+      var res = People.People.searchDirectoryPeople({ query: email, readMask: 'photos,emailAddresses', pageSize: 5,
+        sources: ['DIRECTORY_SOURCE_TYPE_DOMAIN_PROFILE', 'DIRECTORY_SOURCE_TYPE_DOMAIN_CONTACT'] });
+      var people = (res && res.people) || [];
+      for (var i = 0; i < people.length && !url; i++) {
+        var p = people[i], emails = (p.emailAddresses || []).map(function (e) { return toStr_(e.value).toLowerCase(); });
+        if (emails.length && emails.indexOf(email) < 0) continue;
+        var photos = (p.photos || []).filter(function (ph) { return ph.url && !ph['default']; });
+        if (photos.length) url = toStr_(photos[0].url);
+      }
+    }
+  } catch (e) { try { logError_('profilePhotoUrl_', null, e, 'USER', email); } catch (ignored) {} }
+  cache.put(key, url || '-', 21600);
+  return url;
+}
+
 function whoAmI() {
   var email = getActiveEmail_();
   var out = { active_email: email, effective_email: '', resolved: false, message: '' };

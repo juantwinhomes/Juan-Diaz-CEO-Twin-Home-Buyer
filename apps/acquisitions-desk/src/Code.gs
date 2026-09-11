@@ -35,6 +35,7 @@ function bootstrapApp() {
     var s = getSettingsMap_();
     var users = getUsersTable_().rows.map(function (u) { return { user_id: toStr_(u.user_id), name: toStr_(u.name), role: toStr_(u.role), active: toBool_(u.active), team: toStr_(u.team) }; });
     audit_(user, 'SESSION', user.user_id, 'LOGIN', { role: user.role });
+    user.photo_url = profilePhotoUrl_(user.email);
     return ok_({
       user: user, settings: publicSettings_(s), today: businessDateOf_(new Date(), s.business_timezone), timezone: s.business_timezone,
       app_version: APP_VERSION, env: PropertiesService.getScriptProperties().getProperty(PROP_ENV) || 'production',

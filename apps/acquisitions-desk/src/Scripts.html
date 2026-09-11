@@ -44,7 +44,7 @@
   /* ================= boot ================= */
   read('bootstrapApp').then(function(r){
     boot=r.data; me=boot.user; C=boot.constants; S=boot.settings; today=boot.today; users=boot.users; users.forEach(function(u){usersById[u.user_id]=u});
-    $('meName').textContent=me.name; $('meRole').textContent=me.role; $('meAvatar').textContent=(me.name||'?').charAt(0).toUpperCase(); $('meAvatar').title=me.name+' · '+me.role.toLowerCase()+' · '+me.email;
+    $('meName').textContent=me.name; $('meRole').textContent=me.role; var av=$('meAvatar');av.textContent=(me.name||'?').charAt(0).toUpperCase();if(me.photo_url){var im=new Image();im.alt='';im.referrerPolicy='no-referrer';im.onload=function(){av.textContent='';av.appendChild(im)};im.src=me.photo_url} $('meAvatar').title=me.name+' · '+me.role.toLowerCase()+' · '+me.email;
     $('footEnv').textContent=boot.env; $('footToday').textContent=today; $('footTz').textContent=boot.timezone;
     if(boot.env!=='production'){var w=document.createElement('div');w.className='alertbox';w.innerHTML='<b>Development</b>Not production data.';$('boot').parentNode.insertBefore(w,$('boot'))}
     $('tabAdmin').hidden=!can('manage_users'); $('juanPanelTab').hidden=!can('view_team'); $('juanPanel').hidden=true;

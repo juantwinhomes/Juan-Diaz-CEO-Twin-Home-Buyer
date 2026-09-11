@@ -10,6 +10,7 @@ function start(port, owner) {
   owner = owner || 'seth@twinhomebuyer.com';
   const { ctx, state } = createMocks({ active: owner, effective: owner, htmlDir: SRC });
   loadBackend(ctx, SRC); ctx.setupDatabase();
+  state.photos[owner] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
   const freshRequest = (email) => { state.identity.active = email; state.identity.effective = owner; ctx._dbCache = { ss: ctx._dbCache.ss, sheets: {}, headers: {}, tables: {} }; };
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');

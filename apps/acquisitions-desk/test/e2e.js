@@ -25,7 +25,7 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
   await test('authorized user boots; identity comes from the account, no dropdown', async () => {
     A = await open(SETH); await booted(A);
     assert((await A.textContent('#meName')).trim() === 'Seth' && (await A.textContent('#meRole')).trim() === 'ADMIN', 'badge');
-    assert(await A.$('#me') === null, 'no identity dropdown'); assert(!(await A.isHidden('#tabAdmin')), 'admin tab for ADMIN');
+    await A.waitForSelector('#meAvatar img', { timeout: 5000 }); assert(await A.$('#me') === null, 'no identity dropdown'); assert(!(await A.isHidden('#tabAdmin')), 'admin tab for ADMIN');
     assert((await A.textContent('#footTz')).trim() === 'America/Los_Angeles', 'business tz in footer');
     assert(!(await A.isHidden('#view-today')), 'Today opens first');
   });

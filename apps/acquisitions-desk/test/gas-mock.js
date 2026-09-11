@@ -60,7 +60,7 @@ class Spreadsheet {
 }
 
 function createMocks(opts = {}) {
-  const state = { identity: { active: opts.active || '', effective: opts.effective || opts.active || '' }, props: {}, cache: {}, spreadsheets: {}, drive: { folders: [], files: {} }, triggers: [], locks: 0, lockHeld: false, htmlDir: opts.htmlDir };
+  const state = { identity: { active: opts.active || '', effective: opts.effective || opts.active || '' }, props: {}, cache: {}, photos: opts.photos || {}, peopleCalls: 0, spreadsheets: {}, drive: { folders: [], files: {} }, triggers: [], locks: 0, lockHeld: false, htmlDir: opts.htmlDir };
   let idc = 0; const nid = p => p + '_' + (++idc).toString(36) + Math.random().toString(36).slice(2, 8);
   const SpreadsheetApp = {
     create(name) { const ss = new Spreadsheet(nid('ss'), name); state.spreadsheets[ss.id] = ss; state.drive.files[ss.id] = { id: ss.id, name, created: new Date(), trashed: false }; return ss; },
@@ -86,8 +86,9 @@ function createMocks(opts = {}) {
   };
   const ScriptApp = { newTrigger: fn => ({ timeBased() { return this; }, everyDays() { return this; }, atHour() { return this; }, create() { const t = { fn, id: nid('trig') }; state.triggers.push(t); return t; } }),
     getProjectTriggers: () => state.triggers.map(t => ({ getHandlerFunction: () => t.fn, getUniqueId: () => t.id, _t: t })), deleteTrigger(t) { state.triggers = state.triggers.filter(x => x !== t._t); } };
+  const People = { People: { searchDirectoryPeople(o) { state.peopleCalls++; const u = state.photos[String(o.query).toLowerCase()]; return { people: u ? [{ emailAddresses: [{ value: o.query }], photos: [{ url: u }] }] : [{ emailAddresses: [{ value: o.query }], photos: [{ url: 'https://lh3.googleusercontent.com/default', default: true }] }] }; } } };
   const Logger = { log: (...a) => { if (process.env.GAS_LOG) console.log(...a); } };
-  const ctx = vm.createContext({ SpreadsheetApp, LockService, Session, PropertiesService, CacheService, Utilities, DriveApp, HtmlService, ScriptApp, Logger, console, Date, Math, JSON, Object, Array, String, Number, Boolean, RegExp, Error, isFinite, isNaN, parseInt, parseFloat, encodeURIComponent, decodeURIComponent });
+  const ctx = vm.createContext({ People, SpreadsheetApp, LockService, Session, PropertiesService, CacheService, Utilities, DriveApp, HtmlService, ScriptApp, Logger, console, Date, Math, JSON, Object, Array, String, Number, Boolean, RegExp, Error, isFinite, isNaN, parseInt, parseFloat, encodeURIComponent, decodeURIComponent });
   ctx.__state = state;
   return { ctx, state };
 }

@@ -156,7 +156,12 @@ for the rest. Skip this and the desk shows "Sheet LEADS is missing column exit_s
 
 Then **Deploy → Manage deployments → pencil → New version `v1.2.0` → Deploy.** Same `/exec` URL.
 
+The push also adds one Google permission (read the Workspace directory) so the desk can show each person's Google
+profile photo in the rail. The first time you run `setupDatabase` after the push, Google asks you to authorize again;
+accept it. People without a profile photo, or accounts outside the Workspace directory, keep their initial.
+
 What changed for the team:
+- **Profile photo** from your Google account in the bottom-left of the rail.
 - **Source** is now a fixed list: PPC, TV, SEO, Motivated Leads, DM Postcard, DM Letters, DM Checks, Realtor, Other.
   REI BlackBook spellings ("PPC LEAD", "TV Commercial", "MLS Lead", "PPL") are recognized on paste and on edit.
 - Each source rolls up into one of six **spend channels** on the day log: TV, PPC, SEO, Motivated Leads, Direct mail
