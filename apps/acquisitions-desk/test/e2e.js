@@ -110,7 +110,7 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
   });
   await test('auto refresh: Cherry\'s change appears on Seth\'s board within the refresh window, no click', async () => {
     await tab(A, 'leads'); await setFilter(A, 'live'); await boardHas(A, '1420 Ashby'); await A.evaluate(() => document.activeElement && document.activeElement.blur());
-    await B.click('#dtabs [data-t=work]'); await B.fill('#drawer [data-set=next_action]', 'auto refresh check'); await B.press('#drawer [data-set=next_action]', 'Tab'); await drSaved(B);
+    await openLead(B, leadId, 'work'); /* reopen: Cherry's old copy is stale after Seth's edits */ await B.fill('#drawer [data-set=next_action]', 'auto refresh check'); await B.press('#drawer [data-set=next_action]', 'Tab'); await drSaved(B);
     await A.waitForFunction(id => document.getElementById('lead-' + id).textContent.includes('auto refresh check'), leadId, { timeout: 25000 });
   });
   await test('Juan management view + team table populated from activity', async () => {
