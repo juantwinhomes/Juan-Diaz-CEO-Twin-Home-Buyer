@@ -26,9 +26,13 @@ function testSuite_() {
   var T = {};
   var stamp = randomToken_(4);
   var addr = function (s) { return 'TEST - ' + s + ' ' + stamp; };
+  // Phone numbers unique per run: duplicate detection also looks at archived leads (on purpose), so a previous run's
+  // archived TEST leads must not collide with this one.
+  var base = 2000 + Math.floor(Math.random() * 7000);
+  var phone = function (i) { return '510-555-' + String(base + i); };
 
   T['persistence: create lead, reload, still there'] = function () {
-    var l = assertOk_(createLead({ address: addr('100 Main Street'), seller_name: 'R. Nunez', phone: '510-555-0134', source: 'PPC', equity_note: 'owned free and clear' }));
+    var l = assertOk_(createLead({ address: addr('100 Main Street'), seller_name: 'R. Nunez', phone: phone(0), source: 'PPC', equity_note: 'owned free and clear' }));
     assert_(/^LEAD-\d{8}-[A-Z0-9]{5}$/.test(l.lead_id), 'permanent id format ' + l.lead_id);
     _dbCache.tables = {}; // simulate a fresh request
     var again = assertOk_(getLead(l.lead_id));
@@ -36,7 +40,7 @@ function testSuite_() {
     assert_(again.activity.length === 1 && again.activity[0].action_type === 'LEAD_CREATED', 'LEAD_CREATED activity written');
   };
   T['bulk import: added / duplicates / failed summary'] = function () {
-    var text = [addr('200 Oak Ave') + ', A. Seller, 510-555-0200, TV, probate', addr('200 Oak Ave') + ', dup, 510-555-0200, TV', ', no address, 555', addr('201 Oak Avenue') + ', B, 510-555-0201, PPL'].join('\n');
+    var text = [addr('200 Oak Ave') + ', A. Seller, ' + phone(1) + ', TV, probate', addr('200 Oak Ave') + ', dup, ' + phone(1) + ', TV', ', no address, 555', addr('201 Oak Avenue') + ', B, ' + phone(2) + ', PPL'].join('\n');
     var s = assertOk_(addBulkLeads(text));
     assert_(s.added === 2, 'added 2 got ' + s.added); assert_(s.duplicates_skipped === 1, 'dup skipped 1'); assert_(s.failed === 1 && s.failures[0].line === 3, 'failed row reported with line number');
     var s2 = assertOk_(addBulkLeads(addr('200 oak avenue') + ', same house normalized'));
