@@ -166,9 +166,9 @@
     $('drLbl').textContent='Property · '+l.lead_id+' · v'+l.version; $('drTitle').textContent=l.address||'';
     $('drMeta').textContent=[l.seller_name,l.phone,l.source,l.equity_note,l.assigned_name?l.assigned_name+' is working it':'unassigned',l.contact_attempts?l.contact_attempts+' attempts':''].filter(Boolean).join(' · ');
     $('dtabs').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.t===dtab?'true':'false');if(b.dataset.t==='hist')b.textContent='History'+(l.activity?' · '+l.activity.length:'')});
-    var work=can('work_leads'),ro=work?'':' disabled',uw=can('underwrite')?'':' disabled',html='';
+    var work=can('work_leads'),ro=work?'':' disabled',uw=can('underwrite')?'':' disabled',html=conflictNote[l.lead_id]?'<div class="conflict"><b>This lead was updated by another team member.</b> The latest information is now shown. Review it, then make your change again.</div>':'';
     if(dtab==='work'){
-      html+=(l.compliance_mailer_check?'<div class="alertbox"><b>Mailer or check mentioned</b>Conversation stopped, routed to Juan and counsel. Do not contact the seller until Juan clears it.</div>':l.flag_juan?'<div class="alertbox"><b>Flagged for Juan</b>Waiting on Juan\'s call.</div>':'')+'<div data-conflict></div>';
+      html+=(l.compliance_mailer_check?'<div class="alertbox"><b>Mailer or check mentioned</b>Conversation stopped, routed to Juan and counsel. Do not contact the seller until Juan clears it.</div>':l.flag_juan?'<div class="alertbox"><b>Flagged for Juan</b>Waiting on Juan\'s call.</div>':'')+'';
       var canAssign=can('assign_leads');var assign='<option value="">Unassigned</option>'+users.map(function(u){var dis=!canAssign&&!(u.user_id===me.user_id&&!l.assigned_to)&&u.user_id!==l.assigned_to;return '<option value="'+esc(u.user_id)+'"'+(u.user_id===l.assigned_to?' selected':'')+(dis?' disabled':'')+'>'+esc(u.name)+(u.active?'':' (no login yet)')+'</option>'}).join('');
       var status=C.status_order.map(function(st){var archived=C.archived_statuses.indexOf(st)>-1,dis=(archived&&!can('archive_leads'))||(!l.is_live&&l.status!=='CLOSED'&&!archived&&!can('restore_leads'));return '<option value="'+st+'"'+(st===l.status?' selected':'')+(dis?' disabled':'')+'>'+esc(label(st))+'</option>'}).join('');
       html+='<div class="spec one"><dl>'+kv('Status','<select data-set="status"'+ro+'>'+status+'</select>')+kv('Working it','<select data-set="assigned_to"'+ro+'>'+assign+'</select>')+kv('Next action','<input class="wide" data-set="next_action" value="'+esc(l.next_action)+'" placeholder="What happens next"'+ro+'>')+kv('Due','<input type="date" data-set="due_date" value="'+esc(l.due_date)+'"'+ro+'>')+kv('Attempts',String(l.contact_attempts||0))+'</dl></div>';
@@ -191,13 +191,18 @@
   function absorb(l){if(!l||!l.lead_id)return;var i;for(i=0;i<board.items.length;i++)if(board.items[i].lead_id===l.lead_id){board.items[i]=l;break}
     var row=$('lead-'+l.lead_id);if(row){var tmp=document.createElement('div');tmp.innerHTML=leadRow(l);row.replaceWith(tmp.firstChild)}
     if(current&&current.lead_id===l.lead_id){l.activity=(l.activity||current.activity);l.appointments=l.appointments||current.appointments;current=l;renderDrawer();if(dtab==='hist'||dtab==='appt')read('getLead',l.lead_id).then(function(r){if(current&&current.lead_id===l.lead_id){current=r.data;renderDrawer()}}).catch(function(){})}}
-  var leadQueues={};
-  function leadAction(id,makeCall){setDrStatus('busy','Saving…');var prev=leadQueues[id]||Promise.resolve();
-    var run=prev.catch(function(){}).then(function(){var ver=current&&current.lead_id===id?current.version:Number(($('lead-'+id)||{dataset:{}}).dataset.v);
-      return makeCall(ver).then(function(r){absorb(r.data);setDrStatus('ok','Saved');if(r.message&&/Routed|NO NEXT|Restored|Archived|Offer/.test(r.message))toast(r.message,/NO NEXT/.test(r.message)?'err':'ok');loadToday();dashDrawn='';if(/status|archive|restore/i.test(String(r.message)))loadBoard(1,true)})
-        .catch(function(e){if(e&&e.code==='CONFLICT_RECORD_CHANGED'&&e.data){absorb(e.data);var c=$('drBody').querySelector('[data-conflict]');if(c)c.innerHTML='<div class="conflict"><b>This lead was updated by another team member.</b> Review the latest information (now shown) before saving your change.</div>';toast('This lead was updated by another team member. Review the latest information before saving your change.','err');setDrStatus('err','Changed by another user');return}setDrStatus('err',codeLabel(e.code));showError(e)})});
+  var leadQueues={},leadGen={},conflictNote={};
+  function leadAction(id,makeCall){setDrStatus('busy','Saving…');var prev=leadQueues[id]||Promise.resolve(),gen=leadGen[id]||0;
+    var run=prev.catch(function(){}).then(function(){if((leadGen[id]||0)!==gen){setDrStatus('err','Review the latest, then save again');return}
+      var ver=current&&current.lead_id===id?current.version:Number(($('lead-'+id)||{dataset:{}}).dataset.v);
+      return makeCall(ver).then(function(r){clearInFlight(id);delete conflictNote[id];absorb(r.data);setDrStatus('ok','Saved');if(r.message&&/Routed|NO NEXT|Restored|Archived|Offer/.test(r.message))toast(r.message,/NO NEXT/.test(r.message)?'err':'ok');loadToday();dashDrawn='';if(/status|archive|restore/i.test(String(r.message)))loadBoard(1,true)})
+        .catch(function(e){clearInFlight(id);if(e&&e.code==='CONFLICT_RECORD_CHANGED'&&e.data){leadGen[id]=(leadGen[id]||0)+1;conflictNote[id]=true;absorb(e.data);toast('This lead was updated by another team member. Review the latest information before saving your change.','err');setDrStatus('err','Changed by another user');return}setDrStatus('err',codeLabel(e.code));showError(e)})});
     leadQueues[id]=run;return run}
+  /* Browsers fire a second native change on blur after a scripted one; the same field+value in flight is sent once. */
+  var inFlight={};
+  function clearInFlight(id){setTimeout(function(){Object.keys(inFlight).forEach(function(k){if(k.indexOf(id+'|')===0)delete inFlight[k]})},500)} /* grace: the browser's own change on blur lands right after a re-render */
   $('drawer').addEventListener('change',function(e){var t=e.target;if(!t.dataset.set||!current)return;var f=t.dataset.set,v=t.value,id=current.lead_id;
+    var key=id+'|'+f;if(inFlight[key]===v)return;inFlight[key]=v;
     if(f==='assigned_to')return leadAction(id,function(ver){return call('assignLead',id,v,ver,'')});
     if(f==='status'){var cur=current;if(C.archived_statuses.indexOf(v)>-1&&(cur.is_live||cur.status==='CLOSED')){var why=window.prompt('Archive reason (optional). It stays in the database and can be restored.','');if(why===null){t.value=cur.status;return}return leadAction(id,function(ver){return call('archiveLead',id,v,why,ver)})}
       if(!cur.is_live&&cur.status!=='CLOSED'&&C.live_statuses.indexOf(v)>-1)return leadAction(id,function(ver){return call('restoreLead',id,v,ver)});return leadAction(id,function(ver){return call('updateLead',id,{status:v},ver)})}

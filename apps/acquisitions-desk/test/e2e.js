@@ -53,18 +53,18 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     B = await open(CHERRY); await booted(B); assert((await B.textContent('#meRole')).trim() === 'MANAGER', 'Cherry manager'); assert(await B.isHidden('#tabAdmin'), 'no admin tab for manager');
     await tab(B, 'leads'); await boardHas(B, '1420 Ashby'); await openLead(B, leadId); assert((await B.textContent('#drBody')).includes('Spoke to seller, motivated'), 'Cherry sees the note');
     const today = (await B.textContent('#footToday')).trim();
-    await B.fill('#drawer [data-set=next_action]', 'Send offer'); await B.fill('#drawer [data-set=due_date]', today); await B.dispatchEvent('#drawer [data-set=due_date]', 'change'); await drSaved(B);
+    await B.fill('#drawer [data-set=next_action]', 'Send offer'); await B.fill('#drawer [data-set=due_date]', today); await drSaved(B);
     await A.keyboard.press('Escape'); await A.click('#refreshBtn'); await A.waitForFunction(id => document.getElementById('lead-' + id).textContent.includes('Send offer'), leadId);
     await tab(A, 'today'); await A.click('#queueTabs [data-q=due_today]'); await A.waitForFunction(() => document.getElementById('queue').textContent.includes('1420 Ashby') && document.getElementById('queue').textContent.includes('Due today'));
   });
   await test('TEST B in the browser: stale save gets the conflict notice, nothing silently overwritten', async () => {
     await tab(A, 'leads'); await openLead(A, leadId, 'uw'); await openLead(B, leadId, 'uw');
     await A.fill('#drawer [data-set=repairs]', '10000'); // Seth is typing; his drawer is open so nothing refreshes under him
-    await B.fill('#drawer [data-set=arv]', '500000'); await B.dispatchEvent('#drawer [data-set=arv]', 'change'); await drSaved(B);
-    await A.dispatchEvent('#drawer [data-set=repairs]', 'change');
+    await B.fill('#drawer [data-set=arv]', '500000'); await drSaved(B);
+   
     await A.waitForFunction(() => document.getElementById('drBody').textContent.includes('updated by another team member') || document.getElementById('drStatus').textContent.includes('Changed by another user'));
     assert(await A.inputValue('#drawer [data-set=arv]') === '500000', 'latest copy (Cherry\'s ARV) now shown to Seth');
-    await A.fill('#drawer [data-set=repairs]', '10000'); await A.dispatchEvent('#drawer [data-set=repairs]', 'change'); await drSaved(A);
+    await A.fill('#drawer [data-set=repairs]', '10000'); await drSaved(A);
     const mao = 500000 * 0.7 - 10000; assert((await A.textContent('#drBody')).replace(/,/g, '').includes('$' + mao), 'MAO = ' + mao);
   });
   await test('compliance: mailer/check → both flags, visible warning, Waiting on Juan, lead kept', async () => {
@@ -76,7 +76,7 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
   });
   await test('work queue: overdue / no next action + Mark done without follow-up flags NO NEXT ACTION', async () => {
     const today = (await A.textContent('#footToday')).trim(); const d = new Date(today + 'T12:00:00'); d.setDate(d.getDate() - 3); const past = d.toISOString().slice(0, 10);
-    await openLead(A, lead2Id); await A.fill('#drawer [data-set=next_action]', 'Call county on liens'); await A.fill('#drawer [data-set=due_date]', past); await A.dispatchEvent('#drawer [data-set=due_date]', 'change'); await drSaved(A); await A.keyboard.press('Escape');
+    await openLead(A, lead2Id); await A.fill('#drawer [data-set=next_action]', 'Call county on liens'); await A.fill('#drawer [data-set=due_date]', past); await drSaved(A); await A.keyboard.press('Escape');
     await tab(A, 'today'); await pane(A, 'queue'); await A.click('#queueTabs [data-q=overdue]'); await A.waitForFunction(() => /Overdue 3 days/.test(document.getElementById('queue').textContent) && document.getElementById('queue').textContent.includes('820 28th St'));
     A.dialogs.push(''); await A.click(`#queue [data-qdone="${lead2Id}"]`);
     await A.waitForFunction(id => !document.querySelector(`#queue [data-qdone="${id}"]`), lead2Id);
@@ -109,7 +109,7 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
   });
   await test('auto refresh: Cherry\'s change appears on Seth\'s board within the refresh window, no click', async () => {
     await tab(A, 'leads'); await setFilter(A, 'live'); await boardHas(A, '1420 Ashby'); await A.evaluate(() => document.activeElement && document.activeElement.blur());
-    await B.click('#dtabs [data-t=work]'); await B.fill('#drawer [data-set=next_action]', 'auto refresh check'); await B.dispatchEvent('#drawer [data-set=next_action]', 'change'); await drSaved(B);
+    await B.click('#dtabs [data-t=work]'); await B.fill('#drawer [data-set=next_action]', 'auto refresh check'); await drSaved(B);
     await A.waitForFunction(id => document.getElementById('lead-' + id).textContent.includes('auto refresh check'), leadId, { timeout: 25000 });
   });
   await test('Juan management view + team table populated from activity', async () => {
