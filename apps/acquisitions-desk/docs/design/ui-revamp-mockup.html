@@ -1,0 +1,640 @@
+<title>Acquisitions Desk Revamp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --ink:#17223B; --ink-2:#2C3A57; --graphite:#5B6879; --mist:#8B97A8;
+    --linen:#EDF0F3; --sheet:#FFFFFF; --sheet-2:#F6F8FA; --rule:#CBD3DC; --rule-2:#E2E7EC;
+    --stamp:#B3301F; --stamp-bg:#FBEDEA; --field:#1F6F4A; --field-bg:#E9F3EE; --amber:#B4770A; --amber-bg:#FBF3E4;
+    --text:var(--ink); --muted:var(--graphite); --accent:var(--ink); --on-accent:#fff; --focus:#17223B;
+    --r:4px; --rail:220px; --shadow:0 8px 28px rgba(23,34,59,.14);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#E8ECF2; --ink-2:#C8D0DC; --graphite:#9AA6B6; --mist:#6F7C8E;
+      --linen:#0F1622; --sheet:#171F2D; --sheet-2:#1D2636; --rule:#2C3748; --rule-2:#25303F;
+      --stamp:#E26A5A; --stamp-bg:#3A1F1C; --field:#4FB483; --field-bg:#16352A; --amber:#E0A93B; --amber-bg:#3A2D12;
+      --text:#E8ECF2; --muted:#9AA6B6; --accent:#E8ECF2; --on-accent:#0F1622; --focus:#E8ECF2; --shadow:0 8px 28px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#E8ECF2; --ink-2:#C8D0DC; --graphite:#9AA6B6; --mist:#6F7C8E;
+    --linen:#0F1622; --sheet:#171F2D; --sheet-2:#1D2636; --rule:#2C3748; --rule-2:#25303F;
+    --stamp:#E26A5A; --stamp-bg:#3A1F1C; --field:#4FB483; --field-bg:#16352A; --amber:#E0A93B; --amber-bg:#3A2D12;
+    --text:#E8ECF2; --muted:#9AA6B6; --accent:#E8ECF2; --on-accent:#0F1622; --focus:#E8ECF2; --shadow:0 8px 28px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--linen);color:var(--text);font-family:"IBM Plex Sans",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums}
+  h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+  button,input,select,textarea{font:inherit;color:inherit}
+  a{color:inherit}
+  :focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+  /* ---------- mockup banner ---------- */
+  .mock{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:60;background:var(--ink);color:var(--on-accent);font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;box-shadow:var(--shadow);letter-spacing:.02em}
+  .mock b{color:var(--amber)}
+
+  /* ---------- shell ---------- */
+  .shell{display:grid;grid-template-columns:var(--rail) 1fr;min-height:100vh}
+  .rail{position:sticky;top:0;height:100vh;background:var(--sheet);border-right:1px solid var(--rule);display:flex;flex-direction:column;padding:14px 10px}
+  .brand{padding:6px 10px 14px;border-bottom:1px solid var(--rule-2);margin-bottom:8px}
+  .brand h1{font-size:15px}
+  .brand span{display:block;font-size:11px;color:var(--muted);margin-top:2px;letter-spacing:.02em}
+  .nav{display:flex;flex-direction:column;gap:2px}
+  .nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;border-radius:var(--r);padding:9px 10px;color:var(--muted);font-weight:500;cursor:pointer}
+  .nav button:hover{background:var(--sheet-2);color:var(--text)}
+  .nav button[aria-current="page"]{background:var(--linen);color:var(--text);font-weight:600;box-shadow:inset 3px 0 0 var(--stamp)}
+  .nav svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .nav .cnt{margin-left:auto;font-size:11px;font-weight:700;min-width:20px;text-align:center;border-radius:999px;padding:1px 6px;background:var(--rule-2);color:var(--muted)}
+  .nav .cnt.hot{background:var(--stamp);color:#fff}
+  .rail .me{margin-top:auto;padding:10px;border-top:1px solid var(--rule-2);display:flex;align-items:center;gap:10px}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--on-accent);display:grid;place-items:center;font-weight:700;font-size:13px}
+  .me div{line-height:1.25;min-width:0}
+  .me b{display:block;font-size:13px}
+  .me small{color:var(--muted);font-size:11px;text-transform:lowercase}
+  .me .ver{margin-left:auto;font-size:10px;color:var(--mist)}
+
+  .main{min-width:0;display:flex;flex-direction:column}
+  .cmd{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:10px 20px;background:color-mix(in srgb,var(--linen) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule-2)}
+  .cmd h2{font-size:17px;margin-right:6px}
+  .cmd .sub{font-size:12px;color:var(--muted)}
+  .cmd .grow{flex:1}
+  .search{display:flex;align-items:center;gap:8px;background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:0 10px;height:34px;width:min(360px,100%);color:var(--muted)}
+  .search input{border:none;background:none;flex:1;min-width:0;height:100%;color:var(--text)}
+  .search input::placeholder{color:var(--mist)}
+  .search kbd{font:600 10px/1 inherit;border:1px solid var(--rule);border-radius:3px;padding:2px 5px;color:var(--mist)}
+  .status{font-size:12px;color:var(--field);font-weight:600;display:flex;align-items:center;gap:6px}
+  .status i{width:7px;height:7px;border-radius:50%;background:var(--field);display:inline-block}
+  .content{padding:16px 20px 60px;display:flex;flex-direction:column;gap:14px}
+  .content[hidden]{display:none}
+
+  /* ---------- primitives ---------- */
+  .btn{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:var(--on-accent);border:1px solid transparent;border-radius:var(--r);padding:0 12px;height:32px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .btn.ghost{background:var(--sheet);color:var(--text);border-color:var(--rule)}
+  .btn.ghost:hover{background:var(--sheet-2)}
+  .btn.sm{height:26px;padding:0 9px;font-size:12px}
+  .btn.danger{background:var(--stamp);color:#fff}
+  .btn.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+  .btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;background:var(--rule-2);color:var(--muted);white-space:nowrap}
+  .pill.red{background:var(--stamp-bg);color:var(--stamp)} .pill.green{background:var(--field-bg);color:var(--field)} .pill.amber{background:var(--amber-bg);color:var(--amber)}
+  .pill.solid{background:var(--stamp);color:#fff}
+  .pill.st{background:transparent;border:1px solid var(--rule);color:var(--muted)}
+  .pill.st.appt{border-color:var(--amber);color:var(--amber)} .pill.st.contract,.pill.st.closed{border-color:var(--field);color:var(--field)}
+  .panel{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);min-width:0}
+  .panel > .ph{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--rule-2);flex-wrap:wrap}
+  .panel > .ph .right.wide{flex-basis:100%;margin-left:0}
+  .panel > .ph h3{font-size:13.5px}
+  .panel > .ph .hint{font-size:12px;color:var(--muted)}
+  .panel > .ph .right{margin-left:auto;display:flex;gap:6px;align-items:center}
+  .panel > .pb{padding:12px 14px}
+  .panel.tight > .pb{padding:0}
+  .muted{color:var(--muted)} .small{font-size:12px}
+  .cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;align-items:start}
+  .stack{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px;letter-spacing:.02em}
+  .field input,.field select,.field textarea{width:100%;background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:6px 8px;height:32px}
+  .field textarea{height:auto}
+  .field input:focus,.field select:focus{border-color:var(--ink-2)}
+  details.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px;font-weight:600;font-size:13.5px;flex-wrap:wrap}
+  details.fold>summary::-webkit-details-marker{display:none}
+  details.fold>summary::before{content:"";width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;margin:0 4px}
+  details.fold[open]>summary::before{transform:rotate(45deg)}
+  details.fold>summary .hint{margin-left:auto;font-weight:500;font-size:12px;color:var(--muted)}
+
+  /* ---------- KPI strip ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+  .kpi{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:10px 12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;position:relative}
+  .kpi:hover{border-color:var(--ink-2)}
+  .kpi b{font-size:24px;line-height:1.1;font-weight:600}
+  .kpi span{font-size:11.5px;color:var(--muted)}
+  .kpi.red{box-shadow:inset 0 3px 0 var(--stamp)} .kpi.amber{box-shadow:inset 0 3px 0 var(--amber)} .kpi.green{box-shadow:inset 0 3px 0 var(--field)}
+  .kpi .delta{position:absolute;right:10px;top:10px;font-size:11px;font-weight:600;color:var(--muted)}
+
+  /* ---------- management strip ---------- */
+  .mgmt{background:var(--sheet);border:1px solid var(--rule);border-left:4px solid var(--stamp);border-radius:var(--r)}
+  .mgmt table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .mgmt th,.mgmt td{padding:6px 10px;text-align:right;border-top:1px solid var(--rule-2);white-space:nowrap}
+  .mgmt th{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.02em;border-top:none}
+  .mgmt th:first-child,.mgmt td:first-child{text-align:left}
+  .mgmt td.zero{color:var(--stamp);font-weight:600}
+  .who{display:flex;align-items:center;gap:8px}
+  .who .avatar{width:22px;height:22px;font-size:10px}
+  .who small{color:var(--muted);font-weight:400}
+
+  /* ---------- tabs (segmented) ---------- */
+  .seg{display:flex;gap:2px;background:var(--linen);border:1px solid var(--rule-2);border-radius:var(--r);padding:2px;overflow-x:auto}
+  .seg button{background:none;border:none;border-radius:3px;padding:5px 10px;font-size:12.5px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
+  .seg button[aria-selected="true"]{background:var(--sheet);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .seg .cnt{font-size:11px;font-weight:700;color:var(--muted);background:var(--rule-2);border-radius:999px;padding:0 6px}
+  .seg .cnt.hot{background:var(--stamp);color:#fff}
+  .seg .cnt.warn{background:var(--amber);color:#fff}
+
+  /* ---------- queue rows ---------- */
+  .qrow{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:0 12px;padding:10px 14px;border-top:1px solid var(--rule-2);align-items:center}
+  .qrow:first-child{border-top:none}
+  .qrow .bar{width:4px;height:36px;border-radius:2px;background:var(--rule)}
+  .qrow.over .bar{background:var(--stamp)} .qrow.today .bar{background:var(--amber)} .qrow.none .bar{background:var(--stamp);background-image:repeating-linear-gradient(45deg,transparent 0 3px,var(--sheet) 3px 5px)}
+  .qrow .t{font-weight:600;font-size:13.5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}
+  .qrow .t .addr{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qrow .m{font-size:12px;color:var(--muted);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap}
+  .qrow .m b{color:var(--text);font-weight:500}
+  .qrow .m .when{font-weight:600} .qrow.over .m .when{color:var(--stamp)} .qrow.today .m .when{color:var(--amber)} .qrow.none .m .when{color:var(--stamp)}
+  .qrow .acts{display:flex;gap:6px}
+  .qrow:hover{background:var(--sheet-2)}
+
+  /* ---------- compact lists ---------- */
+  .list{display:flex;flex-direction:column}
+  .li{display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid var(--rule-2)}
+  .li:first-child{border-top:none}
+  .li .grow{flex:1;min-width:0}
+  .li .t{font-weight:600;font-size:13px}
+  .li .m{font-size:12px;color:var(--muted)}
+  .check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--rule);display:grid;place-items:center;flex:none;background:var(--sheet)}
+  .check.done{background:var(--field);border-color:var(--field);color:#fff}
+  .check svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5}
+  .streak{display:inline-flex;gap:3px;align-items:center}
+  .streak i{width:8px;height:14px;border-radius:2px;background:var(--rule)} .streak i.on{background:var(--field)}
+
+  /* ---------- today's log compact ---------- */
+  .loggrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .loggrid .field input{height:30px;font-size:13px}
+  .logsum{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+  .logsum b{color:var(--text);font-size:15px;margin-right:3px}
+
+  /* ---------- lead board ---------- */
+  .toolbar{position:sticky;top:54px;z-index:10;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0}
+  .toolbar .grow{flex:1}
+  .lrow{display:grid;grid-template-columns:minmax(0,2.2fr) 130px 110px minmax(0,1.6fr) 90px 70px;gap:12px;align-items:center;padding:9px 14px;border-top:1px solid var(--rule-2);cursor:pointer;position:relative}
+  .lrow:hover{background:var(--sheet-2)}
+  .lrow[aria-selected="true"]{background:var(--sheet-2);box-shadow:inset 3px 0 0 var(--ink)}
+  .lrow.flagged{box-shadow:inset 3px 0 0 var(--stamp)}
+  .lhead{display:grid;grid-template-columns:minmax(0,2.2fr) 130px 110px minmax(0,1.6fr) 90px 70px;gap:12px;padding:6px 14px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.02em;border-bottom:1px solid var(--rule-2);background:var(--sheet-2)}
+  .lrow .addr{font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lrow .sub{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:6px;align-items:center}
+  .lrow .next{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lrow .next small{display:block;font-size:11.5px;color:var(--muted)}
+  .lrow .next small.over{color:var(--stamp);font-weight:600} .lrow .next small.today{color:var(--amber);font-weight:600} .lrow .next .none{color:var(--stamp);font-weight:600}
+  .lrow .num{text-align:right;font-size:12.5px}
+  .lrow .num.good{color:var(--field);font-weight:600}
+  .lrow .tiny{font-size:11px;color:var(--muted);text-align:right}
+  .lrow .flags{display:flex;gap:4px;margin-top:2px;flex-wrap:wrap}
+  .pager{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--rule-2);font-size:12px;color:var(--muted)}
+
+  /* ---------- drawer ---------- */
+  .drawer{position:fixed;top:0;right:0;height:100vh;width:min(520px,100vw);background:var(--sheet);border-left:1px solid var(--rule);box-shadow:var(--shadow);z-index:40;display:flex;flex-direction:column;transform:translateX(0);transition:transform .2s}
+  .drawer[hidden]{display:none}
+  .drawer .dh{padding:14px 18px 10px;border-bottom:1px solid var(--rule-2);display:flex;gap:10px;align-items:flex-start}
+  .drawer .dh h3{font-size:16px} .drawer .dh .m{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .drawer .dh .x{margin-left:auto;background:none;border:1px solid var(--rule);border-radius:var(--r);width:30px;height:30px;cursor:pointer;color:var(--muted)}
+  .drawer .dtabs{display:flex;gap:2px;padding:8px 18px 0;border-bottom:1px solid var(--rule-2)}
+  .drawer .dtabs button{background:none;border:none;border-bottom:2px solid transparent;padding:8px 10px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer}
+  .drawer .dtabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--stamp);font-weight:600}
+  .drawer .db{padding:14px 18px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:14px}
+  .drawer .df{padding:10px 18px;border-top:1px solid var(--rule-2);display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .quick{display:flex;gap:6px;flex-wrap:wrap}
+  .mao{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule-2);border:1px solid var(--rule-2);border-radius:var(--r);overflow:hidden}
+  .mao div{background:var(--sheet-2);padding:10px 12px}
+  .mao b{display:block;font-size:20px;line-height:1.1} .mao span{font-size:11.5px;color:var(--muted)}
+  .mao .good b{color:var(--field)}
+  .thread{display:flex;flex-direction:column;gap:0}
+  .note{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--rule-2);font-size:13px}
+  .note:first-child{border-top:none}
+  .note .avatar{width:22px;height:22px;font-size:10px;margin-top:2px}
+  .note .by{font-size:12px;color:var(--muted)} .note .by b{color:var(--text);font-weight:600}
+  .note .sys{color:var(--muted);font-style:italic}
+  .compose{display:flex;gap:8px;position:sticky;bottom:0;background:var(--sheet);padding-top:8px}
+  .compose input{flex:1;height:34px;border:1px solid var(--rule);border-radius:var(--r);padding:0 10px;background:var(--sheet)}
+  .comply{background:var(--stamp-bg);border:1px solid var(--stamp);color:var(--stamp);padding:10px 12px;border-radius:var(--r);font-size:12.5px;display:flex;gap:10px;align-items:center}
+  .comply b{font-weight:700}
+  .scrim{position:fixed;inset:0;background:rgba(10,16,28,.25);z-index:30}
+  .scrim[hidden]{display:none}
+
+  /* ---------- numbers ---------- */
+  .funnel{display:flex;flex-direction:column;gap:6px}
+  .frow{display:grid;grid-template-columns:110px 1fr 48px;align-items:center;gap:10px;font-size:12.5px}
+  .frow .bar{height:22px;background:var(--ink);border-radius:2px;color:var(--on-accent);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-weight:600;font-size:12px;min-width:26px}
+  .frow .bar.thin{background:var(--ink-2)} .frow .bar.win{background:var(--field);color:#fff}
+  .frow .conv{font-size:11.5px;color:var(--muted);text-align:right}
+  .pace{display:flex;align-items:baseline;gap:8px}
+  .pace b{font-size:34px;line-height:1;font-weight:600}
+  .track{height:8px;background:var(--linen);border:1px solid var(--rule-2);border-radius:99px;overflow:hidden;margin:10px 0 6px;position:relative}
+  .track>i{display:block;height:100%;background:var(--stamp)} .track>i.ahead{background:var(--field)}
+  .track>em{position:absolute;top:-3px;width:2px;height:14px;background:var(--text);left:36%}
+  table.data{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.data th,table.data td{padding:7px 10px;text-align:right;border-top:1px solid var(--rule-2);white-space:nowrap}
+  table.data th{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.02em;border-top:none;background:var(--sheet-2)}
+  table.data th:first-child,table.data td:first-child{text-align:left}
+  .scroll{overflow-x:auto}
+
+  /* ---------- tools ---------- */
+  .trow{display:grid;grid-template-columns:minmax(0,2fr) 120px 120px 130px 110px;gap:12px;align-items:center;padding:9px 14px;border-top:1px solid var(--rule-2)}
+  .trow:hover{background:var(--sheet-2)}
+  .thead{display:grid;grid-template-columns:minmax(0,2fr) 120px 120px 130px 110px;gap:12px;padding:6px 14px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.02em;border-bottom:1px solid var(--rule-2);background:var(--sheet-2)}
+  .trow .t{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .trow .m{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dots{display:flex;gap:4px} .dots i{width:8px;height:8px;border-radius:50%;background:var(--rule)} .dots i.on{background:var(--field)} .dots i.bad{background:var(--stamp)}
+  .health{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+
+  /* ---------- plan ---------- */
+  .prose{max-width:68ch;font-size:15px;line-height:1.6}
+  .prose h3{font-size:14px;margin:18px 0 6px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+  .prose li{margin-bottom:6px}
+  .pull{margin:18px 0;padding:2px 0 2px 14px;border-left:4px solid var(--stamp);font-size:19px;line-height:1.3;font-weight:600;letter-spacing:-.015em;max-width:34ch}
+  .pull small{display:block;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0;margin-top:5px}
+
+  /* ---------- design notes ---------- */
+  .notes{border:1px dashed var(--amber);background:var(--amber-bg);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--text)}
+  .notes b{color:var(--amber)}
+  .notes ul{margin:6px 0 0;padding-left:18px} .notes li{margin:3px 0}
+
+  /* ---------- mobile ---------- */
+  .tabbar{display:none}
+  @media (max-width:980px){
+    .cols{grid-template-columns:1fr}
+    .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .lrow,.lhead{grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) 80px} .lrow>.c4,.lrow>.c5,.lhead>.c4,.lhead>.c5{display:none}
+    .trow,.thead{grid-template-columns:minmax(0,2fr) 120px 110px} .trow>.c4,.trow>.c5,.thead>.c4,.thead>.c5{display:none}
+  }
+  @media (max-width:720px){
+    .shell{grid-template-columns:1fr}
+    .rail{display:none}
+    .content{padding:12px 12px 90px}
+    .cmd{padding:8px 12px} .cmd h2{font-size:15px} .cmd .sub{display:none}
+    .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .health{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .loggrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .qrow{grid-template-columns:8px minmax(0,1fr)} .qrow .acts{grid-column:2;margin-top:6px}
+    .tabbar{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--sheet);border-top:1px solid var(--rule);z-index:20;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+    .tabbar button{flex:1;background:none;border:none;color:var(--muted);font-size:10.5px;font-weight:600;display:flex;flex-direction:column;gap:3px;align-items:center;padding:4px 0;position:relative}
+    .tabbar button[aria-current="page"]{color:var(--text)}
+    .tabbar svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .tabbar .cnt{position:absolute;top:0;right:22%;background:var(--stamp);color:#fff;font-size:9px;border-radius:999px;padding:0 5px}
+    .mock{bottom:70px}
+  }
+</style>
+
+<div class="shell">
+  <!-- ===== LEFT RAIL ===== -->
+  <aside class="rail">
+    <div class="brand"><h1>Acquisitions desk</h1><span>Twin Home Buyer · Equity Track PH</span></div>
+    <nav class="nav" id="nav">
+      <button data-view="today" aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Today<span class="cnt hot">4</span></button>
+      <button data-view="leads"><svg viewBox="0 0 24 24"><path d="M3 5h18M3 12h18M3 19h12"/></svg>Lead board<span class="cnt">214</span></button>
+      <button data-view="numbers"><svg viewBox="0 0 24 24"><path d="M4 19V10M10 19V5M16 19v-7M22 19H2"/></svg>Numbers</button>
+      <button data-view="tools"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0 5 5l-9.4 9.4a2 2 0 0 1-2.8-2.8L16.9 8.5"/><path d="M3 21l3-3"/></svg>Tools we own<span class="cnt">0/2</span></button>
+      <button data-view="plan"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z"/><path d="M9 12h6M9 16h6"/></svg>The plan</button>
+      <button data-view="admin"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Admin</button>
+    </nav>
+    <div class="me"><div class="avatar">S</div><div><b>Seth</b><small>admin · seth@twinhomebuyer.com</small></div><span class="ver">v1.1.0</span></div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main">
+    <header class="cmd">
+      <h2 id="viewTitle">Today</h2><span class="sub" id="viewSub">Fri Sep 11 · business day America/Los_Angeles</span>
+      <span class="grow"></span>
+      <label class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="globalSearch" placeholder="Jump to a property, seller or phone"><kbd>/</kbd></label>
+      <span class="status"><i></i>Saved · 2:31 PM</span>
+      <button class="btn ghost sm" id="refreshBtn"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>Refresh</button>
+    </header>
+
+    <!-- ================= TODAY ================= -->
+    <section class="content" id="view-today">
+      <div class="kpis">
+        <button class="kpi red"><b>2</b><span>overdue</span><em class="delta">oldest 3 days</em></button>
+        <button class="kpi amber"><b>3</b><span>due today</span></button>
+        <button class="kpi red"><b>4</b><span>no next action</span><em class="delta">will stall</em></button>
+        <button class="kpi red"><b>1</b><span>waiting on Juan</span><em class="delta">mailer / check</em></button>
+        <button class="kpi amber"><b>0<span style="font-size:14px;font-weight:500">/2</span></b><span>tools run today</span><em class="delta">streak 6</em></button>
+        <button class="kpi green"><b>✓</b><span>day logged · Seth 9:12 AM</span></button>
+      </div>
+
+      <details class="mgmt fold" open>
+        <summary>Management view <span class="pill red">Juan &amp; managers only</span><span class="hint">3 people worked · 11 leads touched · 6 attempts · 1 appointment set · 0 contracts · pace 1 of 3</span></summary>
+        <div class="scroll"><table>
+          <tr><th>Who</th><th>Touched</th><th>Attempts</th><th>Notes</th><th>Moves</th><th>Appts</th><th>Assigned live</th><th>Overdue</th><th>No next action</th><th>Last seen</th></tr>
+          <tr><td><span class="who"><span class="avatar">C</span>Cherry <small>manager</small></span></td><td>6</td><td>4</td><td>5</td><td>2</td><td>1</td><td>38</td><td>1</td><td>0</td><td>2:29 PM</td></tr>
+          <tr><td><span class="who"><span class="avatar">T</span>Thea <small>rep</small></span></td><td>4</td><td>2</td><td>3</td><td>1</td><td>0</td><td>22</td><td>1</td><td>2</td><td>1:50 PM</td></tr>
+          <tr><td><span class="who"><span class="avatar">S</span>Seth <small>admin</small></span></td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>9:12 AM</td></tr>
+          <tr><td><span class="who"><span class="avatar">D</span>David <small>rep</small></span></td><td class="zero">0</td><td class="zero">0</td><td class="zero">0</td><td>0</td><td>0</td><td>17</td><td class="zero">0</td><td class="zero">2</td><td class="zero">nothing today</td></tr>
+        </table></div>
+      </details>
+
+      <div class="cols">
+        <div class="stack">
+          <div class="panel tight">
+            <div class="ph"><h3>Work queue</h3><span class="hint">every live property, most urgent first</span>
+              <div class="right wide"><div class="seg" role="tablist">
+                <button aria-selected="true">Overdue <span class="cnt hot">2</span></button><button>Due today <span class="cnt warn">3</span></button><button>Next 7 days <span class="cnt">9</span></button><button>No due date <span class="cnt warn">1</span></button><button>No next action <span class="cnt hot">4</span></button>
+              </div></div></div>
+            <div class="pb">
+              <div class="qrow over"><i class="bar"></i><div><div class="t"><span class="addr">820 28th St, Oakland</span><span class="pill st">Investigating</span><span class="pill">Cherry</span></div><div class="m"><span class="when">Overdue 3 days</span>· <b>Call county on liens</b> · was due Sep 8 · 2 attempts</div></div><div class="acts"><button class="btn sm">Mark done</button><button class="btn ghost sm" onclick="openDrawer()">Open</button></div></div>
+              <div class="qrow over"><i class="bar"></i><div><div class="t"><span class="addr">3117 Market St, Oakland</span><span class="pill st contract">Under contract</span><span class="pill">Thea</span></div><div class="m"><span class="when">Overdue 1 day</span>· <b>Send escrow instructions to seller</b> · was due Sep 10</div></div><div class="acts"><button class="btn sm">Mark done</button><button class="btn ghost sm" onclick="openDrawer()">Open</button></div></div>
+              <div class="qrow today"><i class="bar"></i><div><div class="t"><span class="addr">1420 Ashby Ave, Oakland</span><span class="pill st">Contact made</span><span class="pill">Cherry</span><span class="pill solid">Mailer or check</span></div><div class="m"><span class="when">Due today</span>· <b>Wait for Juan</b> · routed to Juan and counsel</div></div><div class="acts"><button class="btn ghost sm" onclick="openDrawer()">Open</button></div></div>
+              <div class="qrow today"><i class="bar"></i><div><div class="t"><span class="addr">5512 Fleming Ave, Oakland</span><span class="pill st appt">Appointment set</span><span class="pill">Thea</span></div><div class="m"><span class="when">Due today</span>· <b>Visit at 3:30, bring comps</b> · appt Sep 11</div></div><div class="acts"><button class="btn sm">Mark done</button><button class="btn ghost sm" onclick="openDrawer()">Open</button></div></div>
+              <div class="qrow none"><i class="bar"></i><div><div class="t"><span class="addr">2210 E 21st St, Oakland</span><span class="pill st">New</span><span class="pill">unassigned</span></div><div class="m"><span class="when">NO NEXT ACTION</span>· untouched 9 days · imported from PPC</div></div><div class="acts"><button class="btn warn sm">Set next action</button><button class="btn ghost sm" onclick="openDrawer()">Open</button></div></div>
+              <div class="pager">Showing 5 of 19 · <a href="#">show all</a></div>
+            </div>
+          </div>
+
+          <div class="panel tight">
+            <div class="ph"><h3>Waiting on Juan</h3><span class="hint">flagged properties and anything a seller raised about a mailer or check</span></div>
+            <div class="pb">
+              <div class="qrow over"><i class="bar"></i><div><div class="t"><span class="addr">1420 Ashby Ave, Oakland</span><span class="pill solid">Mailer or check mentioned</span><span class="pill st">Contact made</span><span class="pill">Cherry</span></div><div class="m">flagged today 11:02 AM · <b>“Seller asked why we sent a check for $500 — conversation stopped.”</b></div></div><div class="acts"><button class="btn ghost sm" onclick="openDrawer()">Open</button></div></div>
+              <div class="qrow"><i class="bar"></i><div><div class="t"><span class="addr">947 55th St, Oakland</span><span class="pill red">Flagged for Juan</span><span class="pill st">Investigating</span><span class="pill">Thea</span></div><div class="m">flagged Sep 10 4:40 PM · <b>“Seller wants creative finance, 2 liens, needs Juan’s call on terms.”</b></div></div><div class="acts"><button class="btn ghost sm" onclick="openDrawer()">Open</button></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <details class="panel fold" open>
+            <summary>Today's log <span class="pill green">logged by Seth</span><span class="hint">edit any number, saving updates the day</span></summary>
+            <div class="pb">
+              <div class="logsum" style="margin-bottom:10px"><span><b>$2,000</b>spend</span><span><b>25</b>leads</span><span><b>10</b>reached</span><span><b>4</b>appts</span><span><b>2</b>contracts</span><span><b>1</b>closed</span></div>
+              <div class="loggrid">
+                <div class="field"><label>TV $</label><input value="1000"></div><div class="field"><label>PPC $</label><input value="500"></div><div class="field"><label>PPL $</label><input value="300"></div>
+                <div class="field"><label>Other $</label><input value="200"></div><div class="field"><label>New leads</label><input value="25"></div><div class="field"><label>Inbound calls</label><input value="30"></div>
+                <div class="field"><label>Missed</label><input value="10"></div><div class="field"><label>Reached</label><input value="10"></div><div class="field"><label>Appts set</label><input value="4"></div>
+                <div class="field"><label>Contracts</label><input value="2"></div><div class="field"><label>Fell out</label><input value="1"></div><div class="field"><label>Closed</label><input value="1"></div>
+                <div class="field"><label>Min to 1st call</label><input value="12"></div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:10px"><button class="btn sm">Save today</button><span class="small muted">Saved 9:12 AM by Seth</span></div>
+            </div>
+          </details>
+
+          <div class="panel tight">
+            <div class="ph"><h3>Tools that run today</h3><div class="right"><span class="streak" title="last 7 days"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="pill amber">0 of 2</span></div></div>
+            <div class="pb list">
+              <div class="li"><button class="check" aria-label="Mark run"></button><div class="grow"><div class="t">PropertyLeads bid monitoring</div><div class="m">Seth · looks right when: top bid checked morning, lunch, end of day</div></div><button class="btn sm">Mark run</button></div>
+              <div class="li"><button class="check" aria-label="Mark run"></button><div class="grow"><div class="t">PropertyLeads dispute filing</div><div class="m">Seth · disputes filed in Monday</div></div><button class="btn sm">Mark run</button></div>
+            </div>
+          </div>
+
+          <div class="panel tight">
+            <div class="ph"><h3>Appointments · next 7 days</h3><span class="pill">3</span></div>
+            <div class="pb list">
+              <div class="li"><div class="grow"><div class="t">Today 3:30 PM · 5512 Fleming Ave</div><div class="m">Thea · scheduled</div></div><button class="btn ghost sm" onclick="openDrawer()">Open</button></div>
+              <div class="li"><div class="grow"><div class="t">Sat Sep 12 11:00 AM · 947 55th St</div><div class="m">Thea · scheduled</div></div><button class="btn ghost sm" onclick="openDrawer()">Open</button></div>
+              <div class="li"><div class="grow"><div class="t">Tue Sep 15 · 3117 Market St</div><div class="m">Cherry · walkthrough before close</div></div><button class="btn ghost sm" onclick="openDrawer()">Open</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes"><b>Design notes · Today</b>
+        <ul>
+          <li>Six clickable tiles answer "what is stuck" in one glance and jump to the matching list. Red = act now, amber = today, green = done.</li>
+          <li>The management strip sits directly under the tiles for Juan and managers, collapsible, with zeros in red so "who did not work" is as visible as who did.</li>
+          <li>Work queue becomes one segmented list instead of five stacked sections; the left stripe encodes urgency (solid red = overdue, amber = today, hatched red = no next action).</li>
+          <li>Today's log collapses to a one-line summary once logged; the form only opens when someone needs to edit it.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= LEAD BOARD ================= -->
+    <section class="content" id="view-leads" hidden>
+      <div class="toolbar">
+        <div class="seg" role="tablist">
+          <button aria-selected="true">Live <span class="cnt">214</span></button><button>Due or overdue <span class="cnt hot">5</span></button><button>Needs Juan <span class="cnt hot">2</span></button><button>Untouched 7+ <span class="cnt warn">31</span></button><button>Appointments <span class="cnt">6</span></button><button>Archived <span class="cnt">7,786</span></button><button>Everything</button>
+        </div>
+        <span class="grow"></span>
+        <select class="btn ghost sm" style="height:28px"><option>Sort: next action</option><option>Sort: last touched</option><option>Sort: offer room</option></select>
+        <button class="btn sm" onclick="openAdd()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add leads</button>
+      </div>
+      <div class="panel tight">
+        <div class="lhead"><span>Property</span><span>Status</span><span>Working it</span><span class="c4">Next action</span><span class="c5" style="text-align:right">Offer room</span><span style="text-align:right">Touched</span></div>
+        <div class="lrow flagged" aria-selected="true" onclick="openDrawer()"><div><div class="addr">1420 Ashby Ave, Oakland</div><div class="sub">R. Nunez · 510-555-0134 · PPC · owned free and clear</div><div class="flags"><span class="pill solid">Mailer or check</span><span class="pill red">Needs Juan</span></div></div><span class="pill st">Contact made</span><span class="sub">Cherry</span><div class="next c4">Wait for Juan<small class="today">Due today</small></div><div class="num good c5">$40,000</div><div class="tiny">2h ago</div></div>
+        <div class="lrow" onclick="openDrawer()"><div><div class="addr">820 28th St, Oakland</div><div class="sub">J. Owner · 510-555-0820 · TV · problem deal, liens</div></div><span class="pill st">Investigating</span><span class="sub">Cherry</span><div class="next c4">Call county on liens<small class="over">Overdue 3 days</small></div><div class="num c5 muted">—</div><div class="tiny">1d ago</div></div>
+        <div class="lrow" onclick="openDrawer()"><div><div class="addr">3117 Market St, Oakland</div><div class="sub">M. Alvarez · 510-555-0311 · PPL</div></div><span class="pill st contract">Under contract</span><span class="sub">Thea</span><div class="next c4">Send escrow instructions<small class="over">Overdue 1 day</small></div><div class="num good c5">$62,500</div><div class="tiny">3h ago</div></div>
+        <div class="lrow" onclick="openDrawer()"><div><div class="addr">5512 Fleming Ave, Oakland</div><div class="sub">D. Park · 510-555-0551 · TV</div></div><span class="pill st appt">Appointment set</span><span class="sub">Thea</span><div class="next c4">Visit at 3:30, bring comps<small class="today">Due today · appt today</small></div><div class="num good c5">$18,000</div><div class="tiny">20m ago</div></div>
+        <div class="lrow" onclick="openDrawer()"><div><div class="addr">947 55th St, Oakland</div><div class="sub">L. Brooks · 510-555-0947 · PPC · 2 liens</div><div class="flags"><span class="pill red">Needs Juan</span></div></div><span class="pill st">Investigating</span><span class="sub">Thea</span><div class="next c4">Juan to call on terms<small>Due Sep 14</small></div><div class="num c5" style="color:var(--stamp)">−$12,000</div><div class="tiny">1d ago</div></div>
+        <div class="lrow" onclick="openDrawer()"><div><div class="addr">2210 E 21st St, Oakland</div><div class="sub">unknown · PPC</div></div><span class="pill st">New</span><span class="sub muted">unassigned</span><div class="next c4"><span class="none">No next action</span><small>untouched 9 days</small></div><div class="num c5 muted">—</div><div class="tiny">9d ago</div></div>
+        <div class="lrow" onclick="openDrawer()"><div><div class="addr">1680 Macarthur Blvd, Oakland</div><div class="sub">P. Singh · 510-555-1680 · Other · probate</div></div><span class="pill st">New</span><span class="sub">David</span><div class="next c4">First call<small>Due Sep 12</small></div><div class="num c5 muted">—</div><div class="tiny">2d ago</div></div>
+        <div class="pager">Showing 7 of 214 · <button class="btn ghost sm">Load 150 more</button> · sorted by next action</div>
+      </div>
+      <div class="notes"><b>Design notes · Lead board</b>
+        <ul>
+          <li>Each lead is one scannable row (property, status, who, next action, room, last touched). Editing moves into a side drawer with four tabs, so 200 leads no longer means 2,400 inputs on screen.</li>
+          <li>Filters are visible chips with live counts. You can see there are 31 stale leads without clicking through a dropdown.</li>
+          <li>Offer room shows negative numbers in red; MAO is one glance away in the drawer.</li>
+          <li>"Add leads" becomes a slide-over so the paste box is not permanently occupying the top of the board.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= NUMBERS ================= -->
+    <section class="content" id="view-numbers" hidden>
+      <div class="kpis">
+        <div class="kpi red"><b>1<span style="font-size:14px;font-weight:500"> / 3</span></b><span>closed this month · behind 0.1</span></div>
+        <div class="kpi"><b>$14,200</b><span>spent this month · of $25,000</span></div>
+        <div class="kpi"><b>$80</b><span>cost per lead · 30d</span></div>
+        <div class="kpi"><b>$500</b><span>cost per appointment · 30d</span></div>
+        <div class="kpi green"><b>50%</b><span>contract to close · 30d</span></div>
+        <div class="kpi amber"><b>25%</b><span>inbound calls missed · 30d</span></div>
+      </div>
+      <div class="cols">
+        <div class="stack">
+          <div class="panel"><div class="ph"><h3>Pace this month</h3><span class="hint">day 11 of 30 · expected 1.1 by today</span><div class="right"><span class="pill">target 3</span></div></div>
+            <div class="pb"><div class="pace"><b>1</b><span class="muted">of 3 closed</span></div><div class="track"><i style="width:33%"></i><em title="expected today"></em></div><div class="small muted">Black tick = where you should be today. Bar turns green when ahead.</div></div></div>
+          <div class="panel"><div class="ph"><h3>Funnel · last 30 days</h3><span class="hint">11 days logged</span></div>
+            <div class="pb funnel">
+              <div class="frow"><span>New leads</span><div class="bar" style="width:100%">25</div><span class="conv"></span></div>
+              <div class="frow"><span>Inbound calls</span><div class="bar thin" style="width:100%">30</div><span class="conv"></span></div>
+              <div class="frow"><span>Sellers reached</span><div class="bar" style="width:40%">10</div><span class="conv">40%</span></div>
+              <div class="frow"><span>Appointments</span><div class="bar thin" style="width:16%">4</div><span class="conv">40%</span></div>
+              <div class="frow"><span>Contracts</span><div class="bar" style="width:8%">2</div><span class="conv">50%</span></div>
+              <div class="frow"><span>Closed</span><div class="bar win" style="width:4%">1</div><span class="conv">50%</span></div>
+            </div></div>
+        </div>
+        <div class="stack">
+          <div class="panel tight"><div class="ph"><h3>Where the money went</h3><span class="hint">30d spend vs leads created in the same 30d</span></div>
+            <div class="scroll"><table class="data"><tr><th>Channel</th><th>Spend</th><th>Leads</th><th>Per lead</th><th>Appts</th><th>Contracts</th><th>Closed</th><th>Per deal</th></tr>
+              <tr><td>TV</td><td>$1,000</td><td>9</td><td>$111</td><td>2</td><td>1</td><td>0</td><td>—</td></tr>
+              <tr><td>PPC</td><td>$500</td><td>11</td><td>$45</td><td>1</td><td>0</td><td>0</td><td>—</td></tr>
+              <tr><td>PPL</td><td>$300</td><td>3</td><td>$100</td><td>1</td><td>1</td><td>1</td><td>$300</td></tr>
+              <tr><td>Other</td><td>$200</td><td>2</td><td>$100</td><td>0</td><td>0</td><td>0</td><td>—</td></tr></table></div></div>
+          <div class="panel"><div class="ph"><h3>More costs</h3></div><div class="pb mao">
+            <div><b>$1,000</b><span>cost per contract</span></div><div><b>$2,000</b><span>cost per closed deal</span></div><div><b>50%</b><span>fell out after contract</span></div><div><b>12 min</b><span>avg speed to first call</span></div></div></div>
+          <details class="panel fold"><summary>Targets <span class="hint">managers only</span></summary><div class="pb g2"><div class="field"><label>Deals target per month</label><input value="3"></div><div class="field"><label>Marketing budget per month $</label><input value="25000"></div></div></details>
+        </div>
+      </div>
+      <details class="panel fold tight"><summary>Day by day <span class="hint">last 20 logged days</span></summary>
+        <div class="scroll"><table class="data"><tr><th>Date</th><th>Spend</th><th>Leads</th><th>Calls</th><th>Missed</th><th>Reached</th><th>Appts</th><th>Contracts</th><th>Closed</th><th>By</th></tr>
+          <tr><td>09-11</td><td>$2,000</td><td>25</td><td>30</td><td>10</td><td>10</td><td>4</td><td>2</td><td>1</td><td>Seth</td></tr>
+          <tr><td>09-10</td><td>$1,650</td><td>18</td><td>22</td><td>4</td><td>8</td><td>2</td><td>0</td><td>0</td><td>Cherry</td></tr>
+          <tr><td>09-09</td><td>$1,200</td><td>14</td><td>19</td><td>6</td><td>5</td><td>1</td><td>1</td><td>0</td><td>Cherry</td></tr></table></div></details>
+      <div class="notes"><b>Design notes · Numbers</b><ul><li>Results first, settings last: the six figures Juan asks about are the first thing on the page; targets fold away.</li><li>Pace shows the "expected today" tick so behind/ahead is spatial, not a sentence.</li><li>Funnel and money side by side on desktop, one under the other on a phone.</li></ul></div>
+    </section>
+
+    <!-- ================= TOOLS ================= -->
+    <section class="content" id="view-tools" hidden>
+      <div class="health">
+        <div class="kpi"><b>22</b><span>built for this team</span></div>
+        <div class="kpi red"><b>19</b><span>no written steps</span></div>
+        <div class="kpi red"><b>14</b><span>no daily operator</span></div>
+        <div class="kpi amber"><b>22</b><span>no call made yet</span></div>
+      </div>
+      <div class="toolbar">
+        <div class="seg"><button aria-selected="true">All <span class="cnt">22</span></button><button>Seth's builds <span class="cnt">7</span></button><button>Jonathan <span class="cnt">1</span></button><button>Bryan <span class="cnt">0</span></button><button>Builder not recorded <span class="cnt hot">14</span></button><button>On the daily list <span class="cnt">2</span></button></div>
+        <span class="grow"></span><button class="btn sm"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Log a build</button>
+      </div>
+      <div class="cols">
+        <div class="panel tight"><div class="thead"><span>Tool</span><span>Status</span><span>Runs it</span><span class="c4">Readiness</span><span class="c5">Verdict</span></div>
+          <div class="trow"><div><div class="t">PropertyLeads bid monitoring</div><div class="m">Seth · every day · check the top bid morning, lunch and end of day</div></div><span class="pill st">Unconfirmed</span><span class="m">Seth</span><span class="dots c4" title="link · steps · trained · output"><i class="bad"></i><i class="bad"></i><i class="on"></i><i class="bad"></i></span><span class="pill red c5">Not handed over</span></div>
+          <div class="trow"><div><div class="t">PropertyLeads dispute filing</div><div class="m">Seth · every day · file disputes in Monday or we pay for junk</div></div><span class="pill st">Unconfirmed</span><span class="m">Seth</span><span class="dots c4"><i class="bad"></i><i class="bad"></i><i></i><i class="bad"></i></span><span class="pill red c5">Not handed over</span></div>
+          <div class="trow"><div><div class="t">Retell conversation flow and intent routing</div><div class="m">Seth · how the AI speaks; new seller / existing / other</div></div><span class="pill st">Unconfirmed</span><span class="m muted">no operator</span><span class="dots c4"><i class="bad"></i><i class="bad"></i><i></i><i class="bad"></i></span><span class="pill red c5">Not handed over</span></div>
+          <div class="trow"><div><div class="t">Webhook receiver (main.py)</div><div class="m">builder not recorded · pushes Retell calls into Monday</div></div><span class="pill st">Unconfirmed</span><span class="m">Bryan</span><span class="dots c4"><i class="bad"></i><i class="bad"></i><i></i><i class="bad"></i></span><span class="pill red c5">Not handed over</span></div>
+          <div class="trow"><div><div class="t">Seller rebuttal library</div><div class="m">21 rebuttals, never-say list, consent and DNC rules</div></div><span class="pill green">Live and used daily</span><span class="m">Cherry</span><span class="dots c4"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="pill green c5">Works, in use</span></div>
+          <div class="pager">Showing 5 of 22</div></div>
+        <div class="stack">
+          <div class="panel tight"><div class="ph"><h3>Who hands over what</h3></div><div class="pb list">
+            <div class="li"><div class="avatar">S</div><div class="grow"><div class="t">Seth</div><div class="m">7 logged · 0 with a link · 0 with steps</div></div><span class="pill red">asked Sep 9</span></div>
+            <div class="li"><div class="avatar">J</div><div class="grow"><div class="t">Jonathan</div><div class="m">1 logged · 0 with a link · 0 with steps</div></div><span class="pill">not asked</span></div>
+            <div class="li"><div class="avatar">B</div><div class="grow"><div class="t">Bryan</div><div class="m">0 logged · 14 unclaimed builds parked here</div></div><span class="pill">not asked</span></div></div></div>
+          <div class="panel tight"><div class="ph"><h3>What AI was supposed to take over</h3></div><div class="pb list">
+            <div class="li"><div class="grow"><div class="t">Lead scoring</div><div class="m">winners surface on value, repairs, profit</div></div><span class="pill">Not started</span></div>
+            <div class="li"><div class="grow"><div class="t">Seller outreach</div><div class="m">first-touch texts and calls without typing</div></div><span class="pill amber">Built, not in use</span></div>
+            <div class="li"><div class="grow"><div class="t">Follow-up</div><div class="m">nothing in the 8,000 goes cold</div></div><span class="pill">Not started</span></div>
+            <div class="li"><div class="grow"><div class="t">Contract generation</div><div class="m">offers filled from our own data</div></div><span class="pill">Not started</span></div>
+            <div class="li"><div class="grow"><div class="t">Reporting</div><div class="m">this desk, assembled without a person</div></div><span class="pill green">Running every day</span></div></div></div>
+        </div>
+      </div>
+      <div class="notes"><b>Design notes · Tools</b><ul><li>The four health numbers replace seven; the four dots per row (link · steps · trained · output) show readiness without opening anything.</li><li>Rows open the same kind of drawer as leads for steps, links, training and verdicts.</li></ul></div>
+    </section>
+
+    <!-- ================= PLAN ================= -->
+    <section class="content" id="view-plan" hidden>
+      <div class="panel"><div class="pb prose">
+        <h2 style="font-size:20px">How this desk works</h2><p class="muted small">10 September 2026</p>
+        <p>Sales has been rebuilt around one job per seat. Cherry has been pioneering acquisitions for the last couple of months without anyone standing over her, and that stays true. What changes is that she is not also expected to run a floor, and the numbers stop living in someone's head.</p>
+        <p class="pull">Work 200, not 8,000.<small>Clarity beats volume every single time</small></p>
+        <h3>Cherry — database and closings</h3>
+        <ul><li>Take the roughly 8,000 records down to a live list near 200 that are genuinely workable.</li><li>Archive the dead ones with a reason: sold, no equity, not interested, bad data.</li><li>Run the text and call automations already built and report what they produced, not that they ran.</li><li>Keep closing. Commission is unchanged.</li></ul>
+        <h3>The daily rhythm</h3>
+        <ul><li>Numbers go in daily. Five minutes, not a weekly report.</li><li>Juan reads them each morning and asks about them. That is the discipline, not the software.</li><li>Move a property, leave a note. Set a next action or it falls off the earth.</li><li>If it needs Juan, flag it and he sees it on Today.</li></ul>
+        <p class="pull">A tool nobody runs is not a tool. It is a receipt.<small>We already own what we need. Use it</small></p>
+        <p>If a seller mentions a mailer or a check, mark the compliance box on that property and stop the conversation there. It routes to Juan and counsel. No exceptions, no explaining, no apologising.</p>
+      </div></div>
+      <div class="notes"><b>Design notes · Plan</b><ul><li>Content unchanged; set at a 68-character measure so it reads like a memo instead of a wall.</li></ul></div>
+    </section>
+
+    <!-- ================= ADMIN ================= -->
+    <section class="content" id="view-admin" hidden>
+      <div class="cols">
+        <div class="panel tight"><div class="ph"><h3>Team access</h3><span class="hint">identity comes from the Google account</span><div class="right"><button class="btn sm">Add a person</button></div></div>
+          <div class="scroll"><table class="data"><tr><th>Name</th><th>Google email</th><th>Team</th><th>Role</th><th>Access</th><th></th></tr>
+            <tr><td>Juan Diaz</td><td style="text-align:left">juan@twinhomebuyer.com</td><td>Leadership</td><td>ADMIN</td><td><span class="pill green">active</span></td><td></td></tr>
+            <tr><td>Cherry</td><td style="text-align:left">cherry@twinhomebuyer.com</td><td>Acquisitions PH</td><td>MANAGER</td><td><span class="pill green">active</span></td><td><button class="btn ghost sm">Deactivate</button></td></tr>
+            <tr><td>Thea</td><td style="text-align:left" class="muted">needs email</td><td>Acquisitions PH</td><td>REP</td><td><span class="pill red">needs email</span></td><td></td></tr>
+            <tr><td>David</td><td style="text-align:left" class="muted">needs email</td><td>Acquisitions</td><td>REP</td><td><span class="pill red">needs email</span></td><td></td></tr></table></div></div>
+        <div class="stack">
+          <div class="panel"><div class="ph"><h3>Settings</h3></div><div class="pb g2">
+            <div class="field"><label>MAO % of ARV</label><input value="70"></div><div class="field"><label>Stale after (days)</label><input value="7"></div>
+            <div class="field"><label>Auto refresh (seconds)</label><input value="30"></div><div class="field"><label>Business timezone</label><input value="America/Los_Angeles"></div>
+            <div class="field"><label>Live list target</label><input value="200"></div><div class="field"><label>Records per page</label><input value="150"></div></div>
+            <div class="pb" style="padding-top:0"><button class="btn sm">Save settings</button></div></div>
+          <div class="panel tight"><div class="ph"><h3>Backups</h3><div class="right"><button class="btn ghost sm">Back up now</button></div></div><div class="pb list">
+            <div class="li"><div class="grow"><div class="t">Backup · 2026-09-11 14:13</div><div class="m">manual · Seth</div></div><span class="pill green">success</span></div>
+            <div class="li"><div class="grow"><div class="t">Backup · 2026-09-11 13:47</div><div class="m">test run</div></div><span class="pill green">success</span></div></div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ===== MOBILE TAB BAR ===== -->
+<nav class="tabbar" id="tabbar">
+  <button data-view="today" aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Today<span class="cnt">4</span></button>
+  <button data-view="leads"><svg viewBox="0 0 24 24"><path d="M3 5h18M3 12h18M3 19h12"/></svg>Board</button>
+  <button data-view="numbers"><svg viewBox="0 0 24 24"><path d="M4 19V10M10 19V5M16 19v-7M22 19H2"/></svg>Numbers</button>
+  <button data-view="tools"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0 5 5l-9.4 9.4a2 2 0 0 1-2.8-2.8L16.9 8.5"/></svg>Tools</button>
+  <button data-view="plan"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z"/><path d="M9 12h6M9 16h6"/></svg>Plan</button>
+</nav>
+
+<!-- ===== LEAD DRAWER ===== -->
+<div class="scrim" id="scrim" hidden onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer" hidden aria-label="Lead detail">
+  <div class="dh"><div><h3>1420 Ashby Ave, Oakland</h3><div class="m">R. Nunez · 510-555-0134 · PPC · owned free and clear · LEAD-20260911-A82KD · v7</div><div class="quick" style="margin-top:8px"><span class="pill st">Contact made</span><span class="pill">Cherry</span><span class="pill solid">Mailer or check</span><span class="pill red">Needs Juan</span><span class="pill">3 attempts</span></div></div><button class="x" onclick="closeDrawer()" aria-label="Close">✕</button></div>
+  <div class="dtabs" role="tablist" id="dtabs"><button aria-selected="true" data-t="work">Work</button><button data-t="uw">Underwriting</button><button data-t="appt">Appointment</button><button data-t="hist">History <span class="pill" style="margin-left:4px">12</span></button></div>
+  <div class="db">
+    <div data-tab="work">
+      <div class="comply"><b>Mailer or check mentioned.</b> Conversation stopped, routed to Juan and counsel. Do not contact the seller until Juan clears it.</div>
+      <div class="g2" style="margin-top:14px">
+        <div class="field"><label>Status</label><select><option>New</option><option>Investigating</option><option selected>Contact made</option><option>Appointment set</option><option>Under contract</option><option>Closed</option><option disabled>──────</option><option>Archived: sold</option><option>Archived: no equity</option><option>Archived: not interested</option><option>Archived: bad data</option></select></div>
+        <div class="field"><label>Working it</label><select><option>Unassigned</option><option selected>Cherry</option><option>Thea</option><option>David</option><option>Diego</option></select></div>
+        <div class="field" style="grid-column:1/-1"><label>Next action</label><input value="Wait for Juan"></div>
+        <div class="field"><label>Due</label><input type="date" value="2026-09-11"></div>
+        <div class="field" style="align-self:end"><button class="btn ghost" style="width:100%">Mark done → set next</button></div>
+      </div>
+      <div class="quick" style="margin-top:14px"><button class="btn ghost sm">Log attempt</button><button class="btn ghost sm">Clear Juan flag</button><button class="btn ghost sm">Clear mailer note</button><button class="btn ghost sm">Archive…</button></div>
+      <h4 style="margin:18px 0 6px;font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase">Latest</h4>
+      <div class="thread">
+        <div class="note"><span class="avatar">C</span><div><div class="by"><b>Cherry</b> · 11:02 AM</div>Seller asked why we sent a check for $500 — conversation stopped.</div></div>
+        <div class="note"><span class="avatar">C</span><div><div class="by"><b>Cherry</b> · 11:02 AM</div><span class="sys">Mailer or check mentioned. Routed to Juan.</span></div></div>
+        <div class="note"><span class="avatar">C</span><div><div class="by"><b>Cherry</b> · 10:48 AM</div><span class="sys">Contact attempt 3</span></div></div>
+      </div>
+    </div>
+    <div data-tab="uw" hidden>
+      <div class="g2">
+        <div class="field"><label>After repair value $</label><input value="500000"></div><div class="field"><label>Repairs $</label><input value="40000"></div>
+        <div class="field"><label>Seller asking $</label><input value="310000"></div><div class="field"><label>Our offer $</label><input value="295000"></div>
+      </div>
+      <div class="mao" style="margin-top:12px"><div><b>$310,000</b><span>max offer · 70% of ARV less repairs</span></div><div class="good"><b>$40,000</b><span>offer room against the ask</span></div><div><b>$15,000</b><span>room left under our current offer</span></div><div><b>62%</b><span>ask as % of ARV</span></div></div>
+      <p class="small muted" style="margin:10px 0 0">MAO % is a company setting (Admin → Settings). Change it once and every card re-prices.</p>
+    </div>
+    <div data-tab="appt" hidden>
+      <div class="g2"><div class="field"><label>Appointment date</label><input type="date" value=""></div><div class="field"><label>Time</label><input placeholder="2:30 pm"></div><div class="field" style="grid-column:1/-1"><label>Visit outcome</label><select><option></option><option>Not visited yet</option><option>Offer made</option><option>Thinking about it</option><option>Too high on price</option><option>No deal</option><option>Signed</option></select></div></div>
+      <p class="small muted" style="margin:10px 0 0">Every appointment is kept in history. Changing the date reschedules the current one; an outcome completes it.</p>
+    </div>
+    <div data-tab="hist" hidden>
+      <div class="thread">
+        <div class="note"><span class="avatar">C</span><div><div class="by"><b>Cherry</b> · Sep 11 11:02 AM</div>Seller asked why we sent a check for $500 — conversation stopped.</div></div>
+        <div class="note"><span class="avatar">C</span><div><div class="by"><b>Cherry</b> · Sep 11 11:02 AM</div><span class="sys">Mailer or check mentioned. Routed to Juan. Flag for Juan set automatically.</span></div></div>
+        <div class="note"><span class="avatar">C</span><div><div class="by"><b>Cherry</b> · Sep 11 10:48 AM</div><span class="sys">Contact attempt 3</span></div></div>
+        <div class="note"><span class="avatar">C</span><div><div class="by"><b>Cherry</b> · Sep 10 4:12 PM</div>Left VM, sent text. Seller texted back "call tomorrow AM".</div></div>
+        <div class="note"><span class="avatar">C</span><div><div class="by"><b>Cherry</b> · Sep 10 4:11 PM</div><span class="sys">Next action: Call back AM · due Sep 11</span></div></div>
+        <div class="note"><span class="avatar">T</span><div><div class="by"><b>Thea</b> · Sep 9 2:30 PM</div><span class="sys">ARV set to $500,000 · repairs set to $40,000</span></div></div>
+        <div class="note"><span class="avatar">S</span><div><div class="by"><b>Seth</b> · Sep 9 9:05 AM</div><span class="sys">Imported · bulk paste line 1</span></div></div>
+      </div>
+    </div>
+    <div class="compose"><input placeholder="What did you find? Enter to post"><button class="btn">Post</button></div>
+  </div>
+  <div class="df"><span class="status"><i></i>Saved</span><span class="grow"></span><span>Changes save as you make them · another person's save shows a yellow "review latest" bar here</span></div>
+</aside>
+
+<!-- ===== ADD LEADS SLIDE-OVER ===== -->
+<aside class="drawer" id="addDrawer" hidden aria-label="Add leads">
+  <div class="dh"><div><h3>Add leads</h3><div class="m">One per line: address, seller, phone, source, equity note. Up to 500 lines.</div></div><button class="x" onclick="closeAdd()" aria-label="Close">✕</button></div>
+  <div class="db">
+    <div class="field"><label>Paste from REI BlackBook export or type</label><textarea rows="9" placeholder="1420 Ashby Ave Oakland, R. Nunez, 510-555-0134, PPC, owned free and clear"></textarea></div>
+    <div class="quick"><span class="pill">source: TV · PPC · PPL · Other</span><span class="pill">duplicates by address or phone are skipped and listed</span></div>
+    <div class="panel" style="border-style:dashed"><div class="pb small"><b>Last import · 2 added · 1 duplicate skipped · 1 failed</b><div class="muted" style="margin-top:4px">Line 3 failed: address is required — <code>, missing address, 555</code></div><div class="muted">Line 2 duplicate: same address as LEAD-20260911-A82KD</div></div></div>
+  </div>
+  <div class="df"><button class="btn">Add to board</button><span class="grow"></span><span>Added leads land at the top of Live, status New, no assignee</span></div>
+</aside>
+
+<div class="mock">DESIGN MOCKUP · <b>sample data</b> · click around: rail, tiles, rows, drawer</div>
+
+<script>
+(function(){
+  var titles={today:['Today','Fri Sep 11 · business day America/Los_Angeles'],leads:['Lead board','214 live · target 200 · 7,786 archived'],numbers:['Numbers','last 30 days · month to date'],tools:['Tools we own','22 builds · 2 on the daily list'],plan:['The plan','10 September 2026'],admin:['Admin','users · settings · backups']};
+  function show(v){document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-current',b.dataset.view===v?'page':'false')});
+    ['today','leads','numbers','tools','plan','admin'].forEach(function(k){document.getElementById('view-'+k).hidden=(k!==v)});
+    document.getElementById('viewTitle').textContent=titles[v][0];document.getElementById('viewSub').textContent=titles[v][1];window.scrollTo(0,0)}
+  document.querySelectorAll('[data-view]').forEach(function(b){b.onclick=function(){show(b.dataset.view)}});
+  document.querySelectorAll('.seg').forEach(function(seg){seg.querySelectorAll('button').forEach(function(b){b.onclick=function(){seg.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-selected','false')});b.setAttribute('aria-selected','true')}})});
+  document.querySelectorAll('.kpi').forEach(function(k,i){k.onclick=function(){if(k.closest('#view-today'))show('leads')}});
+  window.openDrawer=function(){document.getElementById('drawer').hidden=false;document.getElementById('scrim').hidden=false};
+  window.closeDrawer=function(){document.getElementById('drawer').hidden=true;document.getElementById('addDrawer').hidden=true;document.getElementById('scrim').hidden=true};
+  window.openAdd=function(){document.getElementById('addDrawer').hidden=false;document.getElementById('scrim').hidden=false};
+  window.closeAdd=closeDrawer;
+  document.getElementById('dtabs').querySelectorAll('button').forEach(function(b){b.onclick=function(){document.getElementById('dtabs').querySelectorAll('button').forEach(function(x){x.setAttribute('aria-selected','false')});b.setAttribute('aria-selected','true');
+    document.querySelectorAll('#drawer [data-tab]').forEach(function(p){p.hidden=p.dataset.tab!==b.dataset.t})}});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDrawer();if(e.key==='/'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();document.getElementById('globalSearch').focus()}});
+  document.querySelectorAll('.check').forEach(function(c){c.onclick=function(){c.classList.toggle('done');c.innerHTML=c.classList.contains('done')?'<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>':'';var b=c.parentNode.querySelector('.btn');b.textContent=c.classList.contains('done')?'Undo':'Mark run';b.className='btn sm'+(c.classList.contains('done')?' ghost':'')}});
+})();
+</script>
