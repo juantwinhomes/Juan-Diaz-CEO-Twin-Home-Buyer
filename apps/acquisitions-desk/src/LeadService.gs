@@ -91,7 +91,7 @@ function listLeads(filters) {
 function parseLeadInput_(data) {
   var d = {
     address: trimStr_(data.address), seller_name: trimStr_(data.seller_name), phone: trimStr_(data.phone),
-    source: trimStr_(data.source), equity_note: trimStr_(data.equity_note), team: trimStr_(data.team)
+    source: normalizeSource_(data.source), equity_note: trimStr_(data.equity_note), team: trimStr_(data.team)
   };
   if (!d.address) throw validationError_('Address is required.');
   assertLen_(d.address, MAX_LEN.address, 'Address'); assertLen_(d.seller_name, MAX_LEN.short, 'Seller name');
@@ -106,6 +106,7 @@ function newLeadRecord_(user, d, existsFn) {
     equity_note: d.equity_note, status: LEAD_STATUS.NEW, assigned_to: d.assigned_to || '', team: d.team || '',
     flag_juan: false, compliance_mailer_check: false, contact_attempts: 0, next_action: d.next_action || '', due_date: d.due_date || '',
     arv: '', repairs: '', asking_price: '', offer: '', appointment_date: '', appointment_outcome: '', archive_reason: '',
+    exit_strategy: '', disposition: '',
     created_by: user.user_id, created_at: ts, updated_by: user.user_id, updated_at: ts, last_touched_at: ts, version: 1
   };
 }
@@ -215,6 +216,9 @@ function normalizeLeadField_(field, value, ctx) {
   if (LEAD_DATE.indexOf(field) > -1) return normalizeDate_(value, ctx.tz);
   if (field === 'status') { var st = toStr_(value).toUpperCase(); if (!LEAD_STATUS[st]) throw validationError_('Unknown status: ' + value); return st; }
   if (field === 'appointment_outcome') { var v = trimStr_(value); if (v && APPOINTMENT_OUTCOMES.indexOf(v) < 0) throw validationError_('Unknown visit outcome: ' + v); return v; }
+  if (field === 'exit_strategy') { var ex = trimStr_(value); if (ex && EXIT_STRATEGIES.indexOf(ex) < 0) throw validationError_('Unknown exit strategy: ' + ex); return ex; }
+  if (field === 'disposition') { var dp = trimStr_(value); if (dp && DISPOSITIONS.indexOf(dp) < 0) throw validationError_('Unknown disposition status: ' + dp); return dp; }
+  if (field === 'source') { var src = normalizeSource_(value); assertLen_(src, 60, 'Source'); return src; }
   var s = trimStr_(value);
   assertLen_(s, field === 'address' ? MAX_LEN.address : field === 'next_action' ? 500 : field === 'equity_note' ? 1000 : MAX_LEN.short, field.replace(/_/g, ' '));
   if (field === 'address' && !s) throw validationError_('Address cannot be blank.');

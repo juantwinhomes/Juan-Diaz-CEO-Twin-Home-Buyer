@@ -102,6 +102,20 @@ function normalizeAddress_(a) {
     .replace(/\b(place)\b/g, 'pl').replace(/\b(apartment|apt|unit)\b/g, '')
     .replace(/\s+/g, ' ').trim();
 }
+/** Canonical source label for any spelling we know; unknown non-empty text is kept as typed. */
+function normalizeSource_(s) {
+  var t = trimStr_(s); if (!t) return '';
+  var k = t.toLowerCase().replace(/\s+/g, ' ');
+  for (var i = 0; i < LEAD_SOURCES.length; i++) if (LEAD_SOURCES[i][0].toLowerCase() === k) return LEAD_SOURCES[i][0];
+  if (SOURCE_ALIASES[k]) return SOURCE_ALIASES[k];
+  return t;
+}
+/** Spend channel key a source rolls up into ('other' for unknown or blank). */
+function channelOfSource_(s) {
+  var c = normalizeSource_(s);
+  for (var i = 0; i < LEAD_SOURCES.length; i++) if (LEAD_SOURCES[i][0] === c) return LEAD_SOURCES[i][1];
+  return 'other';
+}
 function normalizePhone_(p) { var d = toStr_(p).replace(/\D/g, ''); if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1); return d; }
 function isValidUrl_(u) { return /^https?:\/\/[^\s<>"']+$/i.test(String(u || '')); }
 function assertLen_(v, max, field) { if (toStr_(v).length > max) throw validationError_(field + ' is too long (max ' + max + ' characters).'); }

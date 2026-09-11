@@ -140,6 +140,32 @@ What changed: **Add leads** has an "Add them as" picker. Leave it on New for fre
 a fake status-change trail. Closed properties get their own **Closed** tab on the board; Archived is now only the
 dead leads. Prices (ARV, repairs, asking, offer) are filled in on each property afterwards.
 
+## Updating to v1.2.0 (sources, exit strategy, disposition, six spend channels)
+
+This release adds columns, so there is one extra step. From `apps/acquisitions-desk`:
+
+```powershell
+git pull
+npx.cmd @google/clasp@3 push --force
+```
+
+Then in the Apps Script editor pick **`setupDatabase`** in the function dropdown and **Run** it once. It only appends
+the four new columns to the existing sheets (`LEADS`: `exit_strategy`, `disposition`; `DAILY_METRICS`: `seo_spend`,
+`mail_spend`). Nothing is moved, re-seeded or deleted; the log says `added columns: …` for those two tabs and `ok`
+for the rest. Skip this and the desk shows "Sheet LEADS is missing column exit_strategy" until you run it.
+
+Then **Deploy → Manage deployments → pencil → New version `v1.2.0` → Deploy.** Same `/exec` URL.
+
+What changed for the team:
+- **Source** is now a fixed list: PPC, TV, SEO, Motivated Leads, DM Postcard, DM Letters, DM Checks, Realtor, Other.
+  REI BlackBook spellings ("PPC LEAD", "TV Commercial", "MLS Lead", "PPL") are recognized on paste and on edit.
+- Each source rolls up into one of six **spend channels** on the day log: TV, PPC, SEO, Motivated Leads, Direct mail
+  (postcards + letters + checks), Other. Cost per lead is computed per channel; Dashboards → Marketing also lists
+  leads by source.
+- Every property has an **Exit strategy** (Wholesale, Wholetail, Fix & Flip, Wholetail / Flip, Hold) and, once
+  acquired, a **Disposition** (Under construction, Listed, Listed - pending, Sold, Wholesaled). Both live in the
+  property drawer under Underwriting → Deal. Disposition shows on the Closed tab in place of offer room.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

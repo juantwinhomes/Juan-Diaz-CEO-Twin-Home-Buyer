@@ -90,7 +90,7 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     await A.click('#dtabs [data-t=work]'); await A.click('#drawer [data-restore]'); await drSaved(A); await A.keyboard.press('Escape'); await setFilter(A, 'live'); await boardHas(A, '820 28th St');
   });
   await test('day log saves once per business date; dashboards show the numbers', async () => {
-    await tab(A, 'today'); await pane(A, 'log'); const v = { d_tv_spend: 1000, d_ppc_spend: 500, d_ppl_spend: 300, d_other_spend: 200, d_new_leads: 20, d_inbound_calls: 30, d_missed_calls: 10, d_sellers_reached: 10, d_appointments_set: 4, d_contracts_signed: 2, d_contracts_fell_out: 1, d_deals_closed: 1, d_minutes_to_first_call: 12 };
+    await tab(A, 'today'); await pane(A, 'log'); const v = { d_tv_spend: 1000, d_ppc_spend: 500, d_seo_spend: 0, d_ppl_spend: 300, d_mail_spend: 0, d_other_spend: 200, d_new_leads: 20, d_inbound_calls: 30, d_missed_calls: 10, d_sellers_reached: 10, d_appointments_set: 4, d_contracts_signed: 2, d_contracts_fell_out: 1, d_deals_closed: 1, d_minutes_to_first_call: 12 };
     for (const k in v) await A.fill('#' + k, String(v[k])); await A.click('#saveDay'); await A.waitForFunction(() => document.getElementById('saveMsg').textContent.includes('Saved by Seth'));
     await A.fill('#d_new_leads', '25'); await A.click('#saveDay'); await A.waitForFunction(() => document.getElementById('todayLabel').textContent.includes('by Seth'));
     await tab(A, 'dash'); await A.waitForFunction(() => document.getElementById('t-c2c').textContent === '50%', null, { timeout: 15000 });
@@ -98,6 +98,7 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     const facts = (await A.textContent('#mktFacts')).replace(/,/g, ''); assert(facts.includes('$500') && facts.includes('$1000') && facts.includes('$2000'), 'CPA/CPC/CPD: ' + facts);
     assert((await A.textContent('#chanTable')).replace(/,/g, '').includes('PPC$500'), 'channel table'); assert((await A.locator('#ch-pace rect.bar').count()) === 16, '8 weeks × 2 series bars');
     await A.selectOption('#period', '30d'); await A.waitForFunction(() => document.querySelectorAll('#ch-pace rect.bar').length === 10, null, { timeout: 15000 });
+    assert((await A.locator('#chan-tiles .tile').count()) === 6, 'six spend channels'); assert((await A.locator('#ch-src rect.bar').count()) >= 9, 'leads by source bars');
     await A.click('#sub-dash [data-d=pipeline]'); assert((await A.locator('#funnel .stage').count()) === 6, 'six funnel stages');
     await A.click('#sub-dash [data-d=discipline]'); await A.waitForFunction(() => document.querySelectorAll('#cal i.logged').length >= 1, 'today logged in calendar');
   });

@@ -72,7 +72,9 @@
         <div class="body"><div class="spec"><dl>
             <div class="kv"><dt>TV spend $</dt><dd><input id="d_tv_spend" type="number" min="0"></dd></div>
             <div class="kv"><dt>PPC spend $</dt><dd><input id="d_ppc_spend" type="number" min="0"></dd></div>
-            <div class="kv"><dt>PPL spend $</dt><dd><input id="d_ppl_spend" type="number" min="0"></dd></div>
+            <div class="kv"><dt>SEO spend $</dt><dd><input id="d_seo_spend" type="number" min="0"></dd></div>
+            <div class="kv"><dt>Motivated Leads spend $</dt><dd><input id="d_ppl_spend" type="number" min="0"></dd></div>
+            <div class="kv"><dt>Direct mail spend $ <small class="muted">postcards, letters, checks</small></dt><dd><input id="d_mail_spend" type="number" min="0"></dd></div>
             <div class="kv"><dt>Other spend $</dt><dd><input id="d_other_spend" type="number" min="0"></dd></div>
             <div class="kv"><dt>New leads in</dt><dd><input id="d_new_leads" type="number" min="0"></dd></div>
             <div class="kv"><dt>Inbound calls</dt><dd><input id="d_inbound_calls" type="number" min="0"></dd></div>
@@ -137,6 +139,7 @@
         <div class="dgrid">
           <div class="card c6 c3d"><div class="ch"><h3>Cost per lead by channel</h3><span class="hint" id="cplHint"></span></div><svg class="chart mid" id="ch-cpl" viewBox="0 0 520 190"></svg></div>
           <div class="card c6 c3d"><div class="ch"><h3>Spend by period</h3><span class="hint">all channels</span></div><svg class="chart mid" id="ch-spend" viewBox="0 0 520 190"></svg></div>
+          <div class="card c3d"><div class="ch"><h3>Leads by source</h3><span class="hint">properties created in the period · every source rolls up into one spend channel for cost per lead</span></div><svg class="chart mid" id="ch-src" viewBox="0 0 900 250"></svg></div>
           <div class="card c3d"><div class="ch"><h3>Channel table</h3><span class="hint">spend against leads created in the same window</span></div><div class="scroll"><table class="rep" id="chanTable"></table></div></div>
         </div>
       </div>
@@ -238,7 +241,7 @@
 <!-- add leads drawer -->
 <aside class="drawer" id="addDrawer" hidden aria-label="Add leads">
   <div class="dh"><div class="lbl">Board</div><h2>Add leads</h2><div class="m">One per line: address, seller, phone, source, equity note. Up to 500 lines. Duplicates by address or phone are skipped and listed.</div><button class="x" id="addClose" aria-label="Close">✕</button></div>
-  <div class="db"><div class="field"><label for="bulk">Paste from REI BlackBook or type</label><textarea id="bulk" rows="10" placeholder="1420 Ashby Ave Oakland, R. Nunez, 510-555-0134, PPC, owned free and clear"></textarea></div><div class="field" style="margin-top:10px"><label for="bulkStatus">Add them as</label><select id="bulkStatus"><option value="NEW">New (fresh leads — the default)</option><option value="INVESTIGATING">Investigating</option><option value="CONTACT_MADE">Contact made</option><option value="APPOINTMENT_SET">Appointment set</option><option value="UNDER_CONTRACT">Under contract (deals already signed)</option><option value="CLOSED">Closed (properties already acquired)</option></select></div><p class="small muted" style="margin:0">Sources: TV · PPC · PPL · Other. New leads land at the top of Live, unassigned. Under contract and Closed are for loading deals that already exist; prices are filled in on the property afterwards.</p><div id="importReport"></div></div>
+  <div class="db"><div class="field"><label for="bulk">Paste from REI BlackBook or type</label><textarea id="bulk" rows="10" placeholder="1420 Ashby Ave Oakland, R. Nunez, 510-555-0134, PPC, owned free and clear"></textarea></div><div class="field" style="margin-top:10px"><label for="bulkStatus">Add them as</label><select id="bulkStatus"><option value="NEW">New (fresh leads — the default)</option><option value="INVESTIGATING">Investigating</option><option value="CONTACT_MADE">Contact made</option><option value="APPOINTMENT_SET">Appointment set</option><option value="UNDER_CONTRACT">Under contract (deals already signed)</option><option value="CLOSED">Closed (properties already acquired)</option></select></div><p class="small muted" style="margin:0">Sources: PPC · TV · SEO · Motivated Leads · DM Postcard · DM Letters · DM Checks · Realtor · Other (REI BlackBook spellings like "PPC LEAD", "TV Commercial", "MLS Lead" are recognized). New leads land at the top of Live, unassigned. Under contract and Closed are for loading deals that already exist; prices are filled in on the property afterwards.</p><div id="importReport"></div></div>
   <div class="df"><button class="btn" id="addBulk">Add to board</button><span class="small muted" id="bulkMsg"></span></div>
 </aside>
 

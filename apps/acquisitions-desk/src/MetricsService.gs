@@ -42,7 +42,7 @@ function saveDailyMetrics(date, data) {
 }
 
 function sumField_(rows, f) { return rows.reduce(function (t, r) { return t + (toNum_(r[f]) || 0); }, 0); }
-function spendOf_(r) { return (toNum_(r.tv_spend) || 0) + (toNum_(r.ppc_spend) || 0) + (toNum_(r.ppl_spend) || 0) + (toNum_(r.other_spend) || 0); }
+function spendOf_(r) { return CHANNELS.reduce(function (t, c) { return t + (toNum_(r[c[0] + '_spend']) || 0); }, 0); }
 function safeDiv_(a, b) { return b > 0 ? a / b : null; }
 function pctOf_(a, b) { return b > 0 ? Math.round(a / b * 100) : null; }
 
@@ -76,14 +76,13 @@ function computeNumbers_(ctx, leads, rangeDays) {
   var inRange = leads.filter(function (l) { var d = toStr_(l.created_at).slice(0, 10); return d >= cut && d <= ctx.today; });
   var channels = CHANNELS.map(function (c) {
     var key = c[0], label = c[1], chSpend = sumField_(r, key + '_spend');
-    var ls = inRange.filter(function (l) { return toStr_(l.source).toLowerCase() === label.toLowerCase(); });
+    var ls = inRange.filter(function (l) { return channelOfSource_(l.source) === key; });
     var la = ls.filter(function (l) { return ['APPOINTMENT_SET', 'UNDER_CONTRACT', 'CLOSED'].indexOf(l.status) > -1 || l.appointment_date; }).length;
     var lc = ls.filter(function (l) { return ['UNDER_CONTRACT', 'CLOSED'].indexOf(l.status) > -1; }).length;
     var lz = ls.filter(function (l) { return l.status === 'CLOSED'; }).length;
     return { channel: label, spend: chSpend, leads: ls.length, cost_per_lead: safeDiv_(chSpend, ls.length), appointments: la, contracts: lc, closed: lz, cost_per_close: safeDiv_(chSpend, lz) };
   });
-  var other = inRange.filter(function (l) { var s = toStr_(l.source).toLowerCase(); return s && !CHANNELS.some(function (c) { return c[1].toLowerCase() === s; }); });
-  var bySrc = {}; other.forEach(function (l) { bySrc[l.source] = (bySrc[l.source] || 0) + 1; });
+  var bySrc = {}; inRange.forEach(function (l) { var s = normalizeSource_(l.source) || '(no source)'; bySrc[s] = (bySrc[s] || 0) + 1; });
   var days_table = days.slice(0, 20).map(function (d) { var p = publicMetrics_(d); p.spend = spendOf_(d); return p; });
   return { today: ctx.today, pace: pace, funnel: funnel, channels: channels, other_sources: bySrc, days: days_table, mao_percentage: ctx.maoPct };
 }

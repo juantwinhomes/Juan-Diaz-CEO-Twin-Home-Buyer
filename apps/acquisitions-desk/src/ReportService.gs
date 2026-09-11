@@ -62,13 +62,15 @@ function getDashboards(params) {
     /* ---- MARKETING ---- */
     var chan = CHANNELS.map(function (c) {
       var key = c[0], label = c[1], spend = sumField_(mIn, key + '_spend');
-      var ls = leads.filter(function (l) { var d = toStr_(l.created_at).slice(0, 10); return inRange(d) && toStr_(l.source).toLowerCase() === label.toLowerCase(); });
+      var ls = leads.filter(function (l) { var d = toStr_(l.created_at).slice(0, 10); return inRange(d) && channelOfSource_(l.source) === key; });
       var ap = ls.filter(function (l) { return ['APPOINTMENT_SET', 'UNDER_CONTRACT', 'CLOSED'].indexOf(l.status) > -1 || l.appointment_date; }).length;
       var lc = ls.filter(function (l) { return ['UNDER_CONTRACT', 'CLOSED'].indexOf(l.status) > -1; }).length, lz = ls.filter(function (l) { return l.status === 'CLOSED'; }).length;
       var spendW2 = zeros_(N), leadsW = zeros_(N); mIn.forEach(function (m) { var i = bucketIndex_(spec, toStr_(m.business_date)); if (i >= 0) spendW2[i] += toNum_(m[key + '_spend']) || 0; }); ls.forEach(function (l) { var i = bucketIndex_(spec, toStr_(l.created_at).slice(0, 10)); if (i >= 0) leadsW[i]++; });
       var cplW = spendW2.map(function (sp, i) { return leadsW[i] ? Math.round(sp / leadsW[i]) : null; });
       return { channel: label, spend: spend, leads: ls.length, cost_per_lead: safeDiv_(spend, ls.length), appointments: ap, cost_per_appointment: safeDiv_(spend, ap), contracts: lc, closed: lz, cost_per_close: safeDiv_(spend, lz), spend_by_bucket: spendW2, leads_by_bucket: leadsW, cpl_by_bucket: cplW };
     });
+    var srcMap = {}; leads.forEach(function (l) { var d = toStr_(l.created_at).slice(0, 10); if (!inRange(d)) return; var s = normalizeSource_(l.source) || '(no source)'; var e = srcMap[s] = srcMap[s] || { source: s, leads: 0, appointments: 0, contracts: 0, closed: 0 }; e.leads++; if (['APPOINTMENT_SET', 'UNDER_CONTRACT', 'CLOSED'].indexOf(l.status) > -1 || l.appointment_date) e.appointments++; if (['UNDER_CONTRACT', 'CLOSED'].indexOf(l.status) > -1) e.contracts++; if (l.status === 'CLOSED') e.closed++; });
+    var sources = LEAD_SOURCES.map(function (s) { return srcMap[s[0]] || { source: s[0], leads: 0, appointments: 0, contracts: 0, closed: 0 }; }).concat(Object.keys(srcMap).filter(function (k) { return !LEAD_SOURCES.some(function (s) { return s[0] === k; }); }).map(function (k) { return srcMap[k]; }));
     var totalSpend = mIn.reduce(function (t, m) { return t + spendOf_(m); }, 0), totalLeads = sumField_(mIn, 'new_leads'), totalAppts = sumField_(mIn, 'appointments_set');
 
     /* ---- TEAM ---- */
@@ -119,7 +121,7 @@ function getDashboards(params) {
       pipeline: { live: live.length, target: toNum_(ctx.settings.live_list_target) || 200, stages: stages, days_in_stage: daysInStage, avg_days_in_stage: avgStage, archived_period: archivedInRange.length,
         archive_reasons: ARCHIVED_STATUSES.map(function (s) { return { key: s, label: STATUS_LABELS[s].replace('Archived: ', ''), count: archReasons[s] }; }), stale_by_bucket: staleW, stale_now: live.filter(function (l) { return l.days_untouched >= ctx.staleDays; }).length,
         no_next_action: noNextToday, appointments_set: stageCounts.APPOINTMENT_SET, offers_sent: offersSent, offer_rate: pctOf_(offersSent, reached), reached_period: reached },
-      marketing: { spend: totalSpend, leads: totalLeads, cost_per_lead: safeDiv_(totalSpend, totalLeads), cost_per_appointment: safeDiv_(totalSpend, totalAppts), cost_per_contract: safeDiv_(totalSpend, ct), cost_per_close: safeDiv_(totalSpend, cl), channels: chan, spend_by_bucket: spendW, cpl_ceiling: toNum_(ctx.settings.cpl_ceiling) || 100 },
+      marketing: { sources: sources, spend: totalSpend, leads: totalLeads, cost_per_lead: safeDiv_(totalSpend, totalLeads), cost_per_appointment: safeDiv_(totalSpend, totalAppts), cost_per_contract: safeDiv_(totalSpend, ct), cost_per_close: safeDiv_(totalSpend, cl), channels: chan, spend_by_bucket: spendW, cpl_ceiling: toNum_(ctx.settings.cpl_ceiling) || 100 },
       team: { worked: worked, total_reps: reps.length, leads_touched: reps.reduce(function (t, r) { return t + r.leads_touched; }, 0), attempts: reps.reduce(function (t, r) { return t + r.attempts; }, 0), appointments: reps.reduce(function (t, r) { return t + r.appointments; }, 0), offers: reps.reduce(function (t, r) { return t + r.offers; }, 0), day_labels: dayLabels, day_keys: dayKeys, reps: reps },
       discipline: { logged_days: loggedCount, elapsed_days: elapsed, calendar: calendar, missed_dates: calendar.filter(function (c) { return c.state === 'missed'; }).map(function (c) { return c.date; }), tools: toolHeat, tool_days: heatDays, tool_misses: toolMisses, streak: streak,
         followup_on_time_pct: pctOf_(fuOn, fuTotal), followup_by_bucket: fuW, followups_done: fuTotal, followup_target: 90, speed_avg: speedAvg, speed_by_bucket: speedW, speed_target: toNum_(ctx.settings.speed_target_minutes) || 10, no_next_action: noNextToday },
