@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# THB Acquisitions Desk (apps/acquisitions-desk)
+apps/acquisitions-desk/.clasp.json
+apps/acquisitions-desk/.clasprc.json
+apps/acquisitions-desk/test/screenshots/
+apps/acquisitions-desk/node_modules/

@@ -40,6 +40,7 @@ Go to https://claude.ai/code, connect the GitHub repo
 | `knowledge/juan-chatgpt-history-report.md` | ChatGPT-era patterns & conversation log |
 | `.claude/agents/designer.md` | The AI Designer agent |
 | `tools/analyze_grok_export.py` | Parser for Grok exports |
+| `apps/acquisitions-desk/` | **THB Acquisitions Desk** — the team's shared lead board (Apps Script + Google Sheets). See its `DEPLOY.md` |
 
 ## Rules the brain always follows
 

@@ -1,0 +1,413 @@
+<script>
+(function(){
+  'use strict';
+  /* ================= server bridge ================= */
+  var LOCAL = !(window.google && google.script && google.script.run);
+  function gs(fn){
+    var args=Array.prototype.slice.call(arguments,1);
+    if(LOCAL) return window.__localRun(fn,args); // test harness shim
+    return new Promise(function(res,rej){
+      var r=google.script.run.withSuccessHandler(res).withFailureHandler(function(e){rej(e)});
+      r[fn].apply(r,args);
+    });
+  }
+  /** Calls the server, normalizes {ok} responses, shows the status line. Rejects with {code,message,data}. */
+  function call(fn){
+    var args=Array.prototype.slice.call(arguments);
+    setNet('busy','Saving…');
+    return gs.apply(null,args).then(function(r){
+      if(!r||typeof r.ok!=='boolean'){setNet('err','Bad response');throw {code:'BAD_RESPONSE',message:'Unexpected server response.'}}
+      if(!r.ok){setNet('err',codeLabel(r.code));throw r}
+      setNet('ok',r.message||'Saved');return r;
+    },function(e){setNet('err','Could not reach the server');throw {code:'NETWORK',message:(e&&e.message)||'Could not reach the server. Check your connection and try again.'}});
+  }
+  function read(fn){ // reads do not flash "Saving"
+    var args=Array.prototype.slice.call(arguments);
+    return gs.apply(null,args).then(function(r){
+      if(!r||typeof r.ok!=='boolean')throw {code:'BAD_RESPONSE',message:'Unexpected server response.'};
+      if(!r.ok)throw r; return r;
+    },function(e){ if(e&&typeof e.ok==='boolean')throw e; throw {code:'NETWORK',message:(e&&e.message)||'Could not reach the server.'}});
+  }
+  function codeLabel(c){return {CONFLICT_RECORD_CHANGED:'Changed by another user',ACCESS_DENIED:'Access denied',VALIDATION_ERROR:'Could not save',NETWORK:'Could not save',SERVER_ERROR:'Could not save',BUSY:'Desk busy, retry',DUPLICATE:'Duplicate'}[c]||'Could not save'}
+  var netTimer;
+  function setNet(kind,text){var el=$('netStatus');el.className='status '+kind;el.textContent=text;clearTimeout(netTimer);
+    if(kind==='ok')netTimer=setTimeout(function(){el.textContent='';el.className='status'},2500)}
+  var toastTimer;
+  function toast(msg,kind){var t=$('toast');t.textContent=msg;t.className=kind||'';t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.hidden=true},kind==='err'?6000:3000)}
+  function showError(e,fallback){var m=(e&&e.message)||fallback||'Something went wrong.';toast(m,'err');return m}
+
+  /* ================= state ================= */
+  var boot=null, me=null, C=null, S={}, users=[], usersById={}, today='', view='plan';
+  var todayData=null, numbers=null, board={items:[],page:1,has_more:false,tally:null,total:0}, toolsData=null, juan=null;
+  var refreshTimer=null, editing=false, editTimer=null, uiPrefs={};
+  try{uiPrefs=JSON.parse(localStorage.getItem('thb:ui')||'{}')}catch(e){uiPrefs={}}
+  function savePref(k,v){uiPrefs[k]=v;try{localStorage.setItem('thb:ui',JSON.stringify(uiPrefs))}catch(e){}}
+
+  /* ================= helpers ================= */
+  function $(id){return document.getElementById(id)}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function attr(s){return esc(s)}
+  function n(v){return Number(v)||0}
+  function money(v){return (v!=null&&isFinite(v))?'$'+Math.round(v).toLocaleString():'&mdash;'}
+  function pctS(v){return v==null?'&mdash;':v+'%'}
+  function when(iso){if(!iso)return '';var d=new Date(iso);return isNaN(d)?'':d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})}
+  function dateOnly(iso){if(!iso)return '';var d=new Date(iso);return isNaN(d)?String(iso):d.toLocaleDateString()}
+  function can(cap){return !!(me&&me.capabilities&&me.capabilities.indexOf(cap)>-1)}
+  function safeUrl(u){return /^https?:\/\//i.test(u||'')?u:''}
+  function label(st){return (C&&C.status_labels[st])||st}
+  function opt(list,sel,valueKey,labelKey){return list.map(function(o){var v=valueKey?o[valueKey]:o,l=labelKey?o[labelKey]:o;return '<option value="'+attr(v)+'"'+(String(v)===String(sel)?' selected':'')+'>'+esc(l)+'</option>'}).join('')}
+  function markEditing(){editing=true;clearTimeout(editTimer);editTimer=setTimeout(function(){editing=false},4000)}
+  document.addEventListener('focusin',function(e){if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))markEditing()});
+  document.addEventListener('input',markEditing);
+  function isTyping(){var a=document.activeElement;return editing||(a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&a.value!=='')}
+
+  /* ================= boot ================= */
+  read('bootstrapApp').then(function(r){
+    boot=r.data; me=boot.user; C=boot.constants; S=boot.settings; today=boot.today;
+    users=boot.users; users.forEach(function(u){usersById[u.user_id]=u});
+    $('meName').textContent=me.name; $('meRole').textContent=me.role;
+    $('footEnv').textContent=boot.env; $('footToday').textContent=today; $('footTz').textContent=boot.timezone;
+    if(boot.env!=='production'){var w=document.createElement('div');w.className='warn';w.textContent='DEVELOPMENT environment — not production data.';$('boot').parentNode.insertBefore(w,$('boot'))}
+    $('tabAdmin').hidden=!can('manage_users');
+    $('juanPanel').hidden=!can('view_team');
+    if(!can('create_leads'))$('addLeadsSheet').hidden=true;
+    if(!can('manage_tools'))$('addToolSheet').hidden=true;
+    if(!can('manage_targets')){$('t_deals').disabled=true;$('t_budget').disabled=true;$('saveTargets').disabled=true}
+    if(!can('enter_metrics')){$('saveDay').disabled=true}
+    $('boot').hidden=true;
+    show(uiPrefs.tab||'plan');
+    if(uiPrefs.filter)$('filter').value=uiPrefs.filter; if(uiPrefs.sort)$('sort').value=uiPrefs.sort;
+    loadAll(); startAutoRefresh();
+  }).catch(function(e){
+    $('boot').hidden=true; var el=$('bootError'); el.hidden=false;
+    el.innerHTML='<b>'+esc(codeLabel(e.code)==='Could not save'?'Could not open the desk':codeLabel(e.code))+'</b><br>'+esc(e.message||'')+
+      (e.code==='IDENTITY_UNAVAILABLE'?'<br><span class="hint">Administrator: deploy the web app with access limited to the company Workspace domain, executing as the owner.</span>':'');
+  });
+
+  function show(v){
+    view=v; savePref('tab',v);
+    document.querySelectorAll('.tab').forEach(function(x){x.setAttribute('aria-selected',x.dataset.view===v)});
+    ['today','numbers','leads','tools','plan','admin'].forEach(function(k){$('view-'+k).hidden=(k!==v)});
+    if(v==='admin'&&can('manage_users'))loadAdmin();
+  }
+  document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){show(t.dataset.view);refreshCurrent()}});
+
+  function loadAll(){return Promise.all([loadToday(),loadNumbers(),loadBoard(1),loadTools()]).catch(function(e){showError(e)})}
+  function refreshCurrent(){
+    if(view==='today')return loadToday(); if(view==='numbers')return loadNumbers();
+    if(view==='leads')return loadBoard(1,true); if(view==='tools')return loadTools(); if(view==='admin')return loadAdmin();
+    return Promise.resolve();
+  }
+  $('refreshBtn').onclick=function(){setNet('busy','Refreshing…');(view==='plan'?loadAll():refreshCurrent()).then(function(){setNet('ok','Up to date')},function(e){showError(e)})};
+  function startAutoRefresh(){
+    clearInterval(refreshTimer); var secs=n(S.auto_refresh_seconds); if(!secs)return;
+    refreshTimer=setInterval(function(){ if(document.hidden||isTyping()||view==='plan')return; refreshCurrent().catch(function(){}) },Math.max(10,secs)*1000);
+  }
+
+  /* ================= TODAY ================= */
+  var METRICS=['tv_spend','ppc_spend','ppl_spend','other_spend','new_leads','inbound_calls','missed_calls','sellers_reached','appointments_set','contracts_signed','contracts_fell_out','deals_closed','minutes_to_first_call'];
+  function loadToday(){
+    var p=[read('getTodayDashboard')]; if(can('view_team'))p.push(read('getJuanDashboard').catch(function(){return null}));
+    return Promise.all(p).then(function(r){todayData=r[0].data; juan=r[1]?r[1].data:null; today=todayData.today; renderToday()});
+  }
+  function renderToday(){
+    var t=todayData; if(!t)return;
+    $('todayStamp').textContent='Business day '+t.today+' ('+t.timezone+') · updated '+new Date().toLocaleTimeString();
+    var m=t.metrics, typing=isTyping();
+    if(!typing)METRICS.forEach(function(f){$('d_'+f).value=(m&&m[f]!=null)?m[f]:''});
+    $('todayLabel').innerHTML=new Date(t.today+'T12:00:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})+
+      (m?' &mdash; logged by '+esc(m.created_by_name)+(m.updated_by!==m.created_by?', updated by '+esc(m.updated_by_name):'')+'. Saving again updates it.':' &mdash; not logged yet.');
+    $('notLogged').innerHTML=m?'':'<div class="warn">Today has not been logged. It takes about a minute.</div>';
+    renderRunsToday(t.tools_today); renderQueue(t.work_queue); renderFlagged(t.waiting_on_juan); renderAppts(t.upcoming_appointments); renderActivity(t.team);
+    var badge=t.work_queue.counts.overdue+t.waiting_on_juan.length; $('todayBadge').hidden=!badge; $('todayBadge').textContent=badge;
+    if(juan)renderJuan(juan);
+  }
+  $('saveDay').onclick=function(){
+    var data={}; METRICS.forEach(function(f){var v=$('d_'+f).value;data[f]=v===''?'':Number(v)});
+    $('saveMsg').textContent='Saving…';
+    call('saveDailyMetrics',today,data).then(function(r){$('saveMsg').textContent=r.message;editing=false;return Promise.all([loadToday(),loadNumbers()])})
+      .catch(function(e){$('saveMsg').textContent=showError(e,'Could not save. Check your connection and press Save today again.')});
+  };
+  function renderRunsToday(tt){
+    if(!tt||!tt.required){$('runsToday').innerHTML='<div class="empty">No tool is set to run daily yet. Set a cadence on the Tools tab.</div>';return}
+    $('runsToday').innerHTML='<div class="row" style="margin:0 0 8px"><span class="chip'+(tt.done===tt.required?' good':' stale')+'">'+tt.done+' of '+tt.required+' run today</span>'+
+      (tt.streak>1?'<span class="chip good">'+tt.streak+' days in a row</span>':'')+'</div>'+
+      tt.items.map(function(x){
+        return '<div class="queue"><div><b>'+esc(x.name)+'</b></div><div class="meta" style="font-size:13px">'+esc(x.operator||'no operator set')+(x.done?' &middot; done by '+esc(x.run_by_name)+' at '+esc(when(x.run_at)):'')+'</div>'+
+          '<div class="row"><button class="btn'+(x.done?' ghost':'')+' small" data-run="'+attr(x.tool_id)+'" data-done="'+(x.done?1:0)+'"'+(can('run_tools')?'':' disabled')+'>'+(x.done?'Undo':'Mark run')+'</button>'+
+          (x.expected_output?'<span class="hint" style="margin:0">Looks right when: '+esc(x.expected_output)+'</span>':'')+'</div></div>'}).join('');
+  }
+  function qItem(i,whenHtml){
+    return '<div class="queue">'+whenHtml+'<div><b>'+esc(i.address)+'</b> <span class="chip">'+esc(i.status_label)+'</span>'+(i.compliance_mailer_check?' <span class="chip hot">Mailer/check</span>':i.flag_juan?' <span class="chip hot">Needs Juan</span>':'')+'</div>'+
+      '<div class="meta" style="font-size:13px">'+(i.next_action?esc(i.next_action):'<span style="color:var(--stamp);font-weight:700">NO NEXT ACTION</span>')+(i.assigned_name?' &middot; '+esc(i.assigned_name):' &middot; unassigned')+(i.days_untouched>=n(S.stale_lead_days||7)?' &middot; '+i.days_untouched+' days untouched':'')+'</div>'+
+      '<div class="row">'+(i.next_action&&can('work_leads')?'<button class="btn small" data-qdone="'+attr(i.lead_id)+'" data-v="'+i.version+'">Mark done</button>':'')+
+      (can('work_leads')?'<button class="btn ghost small" data-qnext="'+attr(i.lead_id)+'" data-v="'+i.version+'">Set next action</button>':'')+
+      '<button class="btn ghost small" data-goto="'+attr(i.lead_id)+'">Open on board</button></div></div>';
+  }
+  function renderQueue(q){
+    var h='';
+    if(q.overdue.length)h+='<div class="qhead over">Overdue ('+q.overdue.length+')</div>'+q.overdue.map(function(i){return qItem(i,'<div class="when over">Overdue '+i.days_overdue+' day'+(i.days_overdue===1?'':'s')+' &middot; was due '+esc(i.due_date)+'</div>')}).join('');
+    if(q.due_today.length)h+='<div class="qhead">Due today ('+q.due_today.length+')</div>'+q.due_today.map(function(i){return qItem(i,'<div class="when">Due today</div>')}).join('');
+    if(q.upcoming.length)h+='<div class="qhead">Coming up, next 7 days ('+q.upcoming.length+')</div>'+q.upcoming.map(function(i){return qItem(i,'<div class="when">Due '+esc(i.due_date)+'</div>')}).join('');
+    if(q.no_due_date.length)h+='<div class="qhead warn">Has a next action but NO DUE DATE ('+q.no_due_date.length+')</div>'+q.no_due_date.map(function(i){return qItem(i,'<div class="when warn">NO DUE DATE</div>')}).join('');
+    if(q.no_next_action.length)h+='<div class="qhead over">NO NEXT ACTION ('+q.no_next_action.length+')</div>'+q.no_next_action.map(function(i){return qItem(i,'<div class="when over">NO NEXT ACTION &mdash; this lead will stall</div>')}).join('');
+    $('queue').innerHTML=h||'<div class="empty">Nothing live needs work. Add leads on the board.</div>';
+  }
+  function renderFlagged(f){
+    $('flagged').innerHTML=f.length?f.map(function(l){
+      return '<div class="queue"><div><b>'+esc(l.address)+'</b></div><div class="row" style="margin-top:4px">'+(l.compliance?'<span class="chip fill">Mailer or check mentioned</span>':'')+(l.flag?'<span class="chip hot">Flagged for Juan</span>':'')+
+        '<span class="chip">'+esc(l.status_label)+'</span><span class="chip">'+esc(l.assigned_name||'unassigned')+'</span>'+(l.flagged_at?'<span class="hint" style="margin:0">flagged '+esc(when(l.flagged_at))+'</span>':'')+'</div>'+
+        (l.last_note?'<div class="meta" style="font-size:13px;margin-top:6px">'+esc(l.last_note)+'</div>':'')+
+        '<div class="row"><button class="btn ghost small" data-goto="'+attr(l.lead_id)+'">Open on board</button></div></div>'}).join(''):'<div class="empty">Nothing waiting on Juan.</div>';
+  }
+  function renderAppts(a){
+    $('appts').innerHTML=a&&a.length?'<table><tr><th>Date</th><th class="l">Property</th><th>With</th><th>Status</th></tr>'+a.map(function(x){return '<tr><td>'+esc(x.appointment_date)+(x.appointment_time?' '+esc(x.appointment_time):'')+'</td><td class="l">'+esc(x.address)+'</td><td>'+esc(x.assigned_name)+'</td><td>'+esc(x.status)+'</td></tr>'}).join('')+'</table>':'<div class="empty">No appointments in the next seven days.</div>';
+  }
+  function renderActivity(team){
+    var worked=team.filter(function(r){return r.total_actions>0});
+    if(!worked.length&&!team.length){$('activity').innerHTML='<div class="empty" style="width:100%">Nobody has touched the board today.</div>';return}
+    $('activity').innerHTML='<tr><th class="l">Who</th><th>Leads touched</th><th>Attempts</th><th>Notes</th><th>Moves</th><th>Appts</th><th>Contracts</th><th>Closes</th><th>Assigned live</th><th>Overdue</th><th>Last activity</th></tr>'+
+      team.map(function(r){return '<tr'+(r.total_actions?'':' style="color:var(--graphite)"')+'><td class="l">'+esc(r.name)+'</td><td>'+r.leads_touched+'</td><td>'+r.attempts+'</td><td>'+r.notes+'</td><td>'+r.status_changes+'</td><td>'+r.appointments+'</td><td>'+r.contracts+'</td><td>'+r.closes+'</td><td>'+r.active_assigned+'</td><td'+(r.overdue_assigned?' style="color:var(--stamp);font-weight:700"':'')+'>'+r.overdue_assigned+'</td><td>'+(r.last_activity?esc(when(r.last_activity)):'<span style="color:var(--stamp)">nothing today</span>')+'</td></tr>'}).join('');
+  }
+  function renderJuan(j){
+    var t=j.totals_today;
+    $('juanTally').innerHTML=[[j.who_worked.filter(function(r){return r.total_actions>0}).length,'people worked today'],[t.leads_touched,'leads touched'],[t.attempts,'contact attempts'],[t.appointments_set,'appointments set'],[t.contracts_signed,'contracts signed'],[t.deals_closed,'deals closed'],
+      [j.overdue.length,'overdue'],[j.no_next_action.length,'no next action'],[j.needs_juan.length,'need Juan'],[j.pace.closed+'/'+(j.pace.target||'—'),'month pace']].map(function(x){return '<div><b>'+esc(x[0])+'</b><span>'+x[1]+'</span></div>'}).join('');
+    $('juanTeam').innerHTML='<tr><th class="l">Who</th><th>Touched</th><th>Attempts</th><th>Notes</th><th>Moves</th><th>Assigned</th><th>Overdue</th><th>No next action</th><th>Last seen</th></tr>'+j.who_worked.map(function(r){return '<tr><td class="l">'+esc(r.name)+' <span class="hint" style="margin:0">'+esc(r.role.toLowerCase())+'</span></td><td>'+r.leads_touched+'</td><td>'+r.attempts+'</td><td>'+r.notes+'</td><td>'+r.status_changes+'</td><td>'+r.active_assigned+'</td><td>'+r.overdue_assigned+'</td><td>'+r.no_next_action_assigned+'</td><td>'+(r.last_activity?esc(when(r.last_activity)):'&mdash;')+'</td></tr>'}).join('');
+    $('juanChanges').innerHTML=j.changes_today.length?j.changes_today.map(function(c){return '<div class="note"><b>'+esc(c.user_name)+'</b><em>'+esc(when(c.timestamp_utc))+'</em> &middot; '+esc(c.address)+'<br>'+esc(c.display)+'</div>'}).join(''):'<div class="empty">No changes yet today.</div>';
+  }
+  $('view-today').addEventListener('click',function(e){
+    var t=e.target.closest('button'); if(!t)return;
+    if(t.dataset.run){ var fn=t.dataset.done==='1'?'undoToolRun':'logToolRun'; t.disabled=true;
+      call(fn,t.dataset.run,'','').then(function(r){renderRunsToday(r.data.tools_today)}).catch(function(e){showError(e);t.disabled=false}) }
+    if(t.dataset.qdone){ markDone(t.dataset.qdone,t.dataset.v) }
+    if(t.dataset.qnext){ promptNext(t.dataset.qnext,t.dataset.v) }
+    if(t.dataset.goto){ gotoLead(t.dataset.goto) }
+  });
+  function markDone(id,v){
+    var next=window.prompt('Done. What is the NEXT action on this property? (leave blank only if there truly is none — it will be flagged)','');
+    if(next===null)return;
+    var due=''; if(next.trim()){due=window.prompt('When is it due? (yyyy-mm-dd)',today)||'';if(due&&!/^\d{4}-\d{2}-\d{2}$/.test(due)){toast('Use yyyy-mm-dd for the date','err');return}}
+    call('completeNextAction',id,next.trim(),due,Number(v)).then(function(r){toast(r.message,r.data.due_state==='NO_NEXT_ACTION'?'err':'ok');return Promise.all([loadToday(),loadBoard(1,true)])}).catch(function(e){handleConflict(e,id)});
+  }
+  function promptNext(id,v){
+    var next=window.prompt('Next action for this property:',''); if(next===null)return;
+    var due=window.prompt('Due date (yyyy-mm-dd):',today); if(due===null)return;
+    if(due&&!/^\d{4}-\d{2}-\d{2}$/.test(due)){toast('Use yyyy-mm-dd for the date','err');return}
+    call('setNextAction',id,next.trim(),due,Number(v)).then(function(){return Promise.all([loadToday(),loadBoard(1,true)])}).catch(function(e){handleConflict(e,id)});
+  }
+  function gotoLead(id){show('leads');$('filter').value='all';$('search').value=id;loadBoard(1).then(function(){var el=document.getElementById('lead-'+id);if(el)el.scrollIntoView({block:'center'})})}
+
+  /* ================= NUMBERS ================= */
+  function loadNumbers(){return read('getNumbersDashboard',{days:30}).then(function(r){numbers=r.data;renderNumbers()})}
+  function renderNumbers(){
+    var d=numbers; if(!d)return; var p=d.pace,f=d.funnel;
+    $('paceNum').textContent=p.closed;
+    $('paceOf').innerHTML=p.target?('of '+p.target+' closed this month'):'closed this month';
+    var bar=$('paceBar'); bar.style.width=p.percent+'%'; bar.className=p.target?(p.on_pace?'ahead':'behind'):'';
+    $('paceMsg').innerHTML=p.target?('Pace for day '+p.day_of_month+' is '+p.expected_to_date+'. '+(p.on_pace?'On or ahead of pace.':'Behind pace by '+p.behind_by+' deals.')+' &middot; '+p.contracts_mtd+' contracts, '+p.appointments_mtd+' appointments, '+p.leads_mtd+' leads this month.'):'Set a monthly target to track pace.';
+    $('paceNote').innerHTML='Spent '+money(p.spend_mtd)+' this month'+(p.budget?' of a '+money(p.budget)+' budget':'');
+    if(!isTyping()){$('t_deals').value=S.monthly_deal_target||'';$('t_budget').value=S.monthly_marketing_budget||''}
+    $('rangeNote').textContent=f.days_logged?(f.days_logged+' days logged between '+f.from+' and '+f.to):'Nothing logged in the last 30 days.';
+    var steps=[['New leads',f.new_leads,'',null],['Inbound calls',f.inbound_calls,'thin',null],['Sellers reached',f.sellers_reached,'',f.conv_reached],['Appointments',f.appointments,'thin',f.conv_appt],['Contracts',f.contracts,'',f.conv_contract],['Closed',f.closed,'win',f.conv_close]];
+    var max=Math.max.apply(null,steps.map(function(s){return s[1]}).concat([1]));
+    $('funnel').innerHTML=steps.map(function(s){return '<div class="frow"><span class="fname">'+s[0]+'</span><div class="fbar '+s[2]+'" style="width:'+Math.max(2,Math.round(s[1]/max*100))+'%">'+s[1]+'</div></div>'+(s[3]!=null?'<div class="frow"><span></span><div class="fconv">'+s[3]+'% carried through</div></div>':'')}).join('');
+    var cells=[[money(f.cost_per_lead),'Cost per lead'],[money(f.cost_per_appointment),'Cost per appointment'],[money(f.cost_per_contract),'Cost per contract'],[money(f.cost_per_close),'Cost per closed deal'],[pctS(f.contract_to_close),'Contract to close'],[pctS(f.fallout_pct),'Fell out after contract'],[f.avg_speed_to_first_call!=null?f.avg_speed_to_first_call+' min':'&mdash;','Average speed to first call'],[pctS(f.missed_call_rate),'Inbound calls missed']];
+    $('costs').innerHTML=cells.map(function(c){return '<div class="cost"><b>'+c[0]+'</b><span>'+c[1]+'</span></div>'}).join('');
+    $('chanTable').innerHTML='<tr><th>Channel</th><th>Spend 30d</th><th>Leads</th><th>Per lead</th><th>Appts</th><th>Contracts</th><th>Closed</th><th>Per deal</th></tr>'+d.channels.map(function(c){return '<tr><td>'+esc(c.channel)+'</td><td>'+money(c.spend)+'</td><td>'+c.leads+'</td><td>'+money(c.cost_per_lead)+'</td><td>'+c.appointments+'</td><td>'+c.contracts+'</td><td>'+c.closed+'</td><td>'+money(c.cost_per_close)+'</td></tr>'}).join('');
+    var other=Object.keys(d.other_sources||{}); if(other.length)$('chanNote').textContent='Sources not matching TV/PPC/PPL/Other in the last 30 days: '+other.map(function(k){return k+' ('+d.other_sources[k]+')'}).join(', ')+'. Use the four channel names so spend lines up.';
+    var head=['Date','Spend','Leads','Calls','Missed','Reached','Appts','Contracts','Closed','By'];
+    var v=function(x){return x==null?'':x};
+    $('daysTable').innerHTML='<tr>'+head.map(function(h){return '<th>'+h+'</th>'}).join('')+'</tr>'+(d.days.length?d.days.map(function(x){return '<tr><td>'+esc(x.business_date.slice(5))+'</td><td>'+money(x.spend)+'</td><td>'+v(x.new_leads)+'</td><td>'+v(x.inbound_calls)+'</td><td>'+v(x.missed_calls)+'</td><td>'+v(x.sellers_reached)+'</td><td>'+v(x.appointments_set)+'</td><td>'+v(x.contracts_signed)+'</td><td>'+v(x.deals_closed)+'</td><td>'+esc(x.updated_by_name||x.created_by_name)+'</td></tr>'}).join(''):'<tr><td colspan="10" style="color:var(--graphite)">Log today and this fills in.</td></tr>');
+  }
+  $('saveTargets').onclick=function(){
+    $('targetMsg').textContent='Saving…';
+    call('saveSetting','monthly_deal_target',Number($('t_deals').value)||0).then(function(){return call('saveSetting','monthly_marketing_budget',Number($('t_budget').value)||0)})
+      .then(function(){S.monthly_deal_target=Number($('t_deals').value)||0;S.monthly_marketing_budget=Number($('t_budget').value)||0;$('targetMsg').textContent='Saved';editing=false;return loadNumbers()}).catch(function(e){$('targetMsg').textContent=showError(e)});
+  };
+
+  /* ================= LEAD BOARD ================= */
+  function boardParams(page){return {filter:$('filter').value,sort:$('sort').value,search:$('search').value.trim(),page:page||1,page_size:S.page_size||150}}
+  var boardReq=0;
+  function loadBoard(page,keepOpen){
+    var my=++boardReq, p=boardParams(page);
+    return read('listLeads',p).then(function(r){
+      if(my!==boardReq)return; var d=r.data;
+      if(page>1)board.items=board.items.concat(d.items); else board.items=d.items;
+      board.page=d.page;board.has_more=d.has_more;board.tally=d.tally;board.total=d.total;today=d.today||today;
+      renderLeads(keepOpen);
+    });
+  }
+  var searchTimer; $('search').oninput=function(){clearTimeout(searchTimer);searchTimer=setTimeout(function(){loadBoard(1)},250)};
+  $('filter').onchange=function(){savePref('filter',this.value);loadBoard(1)}; $('sort').onchange=function(){savePref('sort',this.value);loadBoard(1)};
+  $('loadMore').onclick=function(){loadBoard(board.page+1,true)};
+  function openDetails(){var o={};document.querySelectorAll('#leadList details[open]').forEach(function(d){o[d.closest('.lead').id]=true});return o}
+  function renderLeads(keepOpen){
+    var t=board.tally||{live:0,due:0,archived:0,flag:0,target:200,stale:0,no_next_action:0};
+    $('tally').innerHTML='<div><b>'+t.live+'</b><span>live list &middot; target '+t.target+'</span></div><div><b>'+t.due+'</b><span>due or overdue</span></div><div><b>'+t.no_next_action+'</b><span>no next action</span></div><div><b>'+t.stale+'</b><span>untouched '+(S.stale_lead_days||7)+'+ days</span></div><div><b>'+t.archived+'</b><span>archived</span></div><div><b>'+t.flag+'</b><span>waiting on Juan</span></div>';
+    $('morePager').hidden=!board.has_more; $('pageNote').textContent='Showing '+board.items.length+' of '+board.total;
+    var open=keepOpen?openDetails():{};
+    if(!board.items.length){$('leadList').innerHTML='<div class="empty">'+(board.total===0&&$('filter').value==='live'&&!$('search').value&&t.archived===0?'Paste your first batch above. Work 200, not 8,000.':'Nothing matches that filter.')+'</div>';return}
+    $('leadList').innerHTML=board.items.map(function(l){return leadCard(l,!!open['lead-'+l.lead_id])}).join('');
+  }
+  function leadCard(l,isOpen){
+    var hot=(l.flag_juan||l.compliance_mailer_check)&&l.is_live, stale=l.is_live&&l.days_untouched>=n(S.stale_lead_days||7), work=can('work_leads');
+    var canAssign=can('assign_leads'), assignOpts='<option value="">Unassigned</option>'+users.map(function(u){var dis=!canAssign&&!(u.user_id===me.user_id&&!l.assigned_to)&&u.user_id!==l.assigned_to;return '<option value="'+attr(u.user_id)+'"'+(u.user_id===l.assigned_to?' selected':'')+(dis?' disabled':'')+'>'+esc(u.name)+(u.active?'':' (no login yet)')+'</option>'}).join('');
+    var statusOpts=C.status_order.map(function(st){var archived=C.archived_statuses.indexOf(st)>-1, dis=(archived&&!can('archive_leads'))||(!l.is_live&&l.status!=='CLOSED'&&!archived&&!can('restore_leads'));return '<option value="'+st+'"'+(st===l.status?' selected':'')+(dis?' disabled':'')+'>'+esc(label(st))+'</option>'}).join('');
+    var thread=(l.recent_activity||[]).map(function(a){return '<div class="note"><b>'+esc(a.user_name)+'</b><em>'+esc(when(a.timestamp_utc))+'</em><br>'+esc(a.display)+'</div>'}).join('')||'<div class="note" style="color:var(--graphite);border:none">No notes yet.</div>';
+    var ro=work?'':' disabled';
+    return '<div class="lead s-'+attr(l.status)+(hot?' flag':'')+(l.compliance_mailer_check?' comply':'')+'" id="lead-'+attr(l.lead_id)+'" data-id="'+attr(l.lead_id)+'" data-v="'+l.version+'">'+
+      '<span class="saving" data-save></span>'+
+      '<div class="addr">'+esc(l.address)+'</div>'+
+      '<div class="meta">'+[esc(l.seller_name),esc(l.phone),esc(l.source),esc(l.equity_note)].filter(Boolean).join(' &middot; ')+(l.archive_reason&&!l.is_live?' &middot; archived: '+esc(l.archive_reason):'')+'</div>'+
+      '<div class="row"><span class="chip">'+esc(l.status_label)+'</span>'+
+        (l.compliance_mailer_check?'<span class="chip fill">Mailer or check &mdash; route to Juan</span>':'')+(l.flag_juan?'<span class="chip hot">Needs Juan</span>':'')+
+        (stale?'<span class="chip stale">'+l.days_untouched+' days untouched</span>':'')+(l.contact_attempts?'<span class="chip">'+l.contact_attempts+' attempts</span>':'')+
+        (l.is_live&&!l.next_action?'<span class="chip hot">No next action</span>':'')+(l.is_live&&l.next_action&&!l.due_date?'<span class="chip stale">No due date</span>':'')+
+        (l.due_state==='OVERDUE'?'<span class="chip hot">Overdue</span>':l.due_state==='DUE_TODAY'?'<span class="chip stale">Due today</span>':'')+
+        (l.offer_room!=null&&l.offer_room>0?'<span class="chip good">'+money(l.offer_room)+' room</span>':'')+
+        (l.assigned_name?'<span class="chip">'+esc(l.assigned_name)+'</span>':'')+'</div>'+
+      '<div class="row"><select data-set="status"'+ro+'>'+statusOpts+'</select><select data-set="assigned_to"'+(work?'':' disabled')+'>'+assignOpts+'</select></div>'+
+      '<div class="row"><input data-set="next_action" value="'+attr(l.next_action)+'" placeholder="Next action" style="flex:2"'+ro+'><input data-set="due_date" type="date" value="'+attr(l.due_date)+'"'+ro+'></div>'+
+      (work?'<div class="row"><button class="btn ghost small" data-attempt>Log attempt</button><button class="btn ghost small" data-flag="'+(l.flag_juan?0:1)+'">'+(l.flag_juan?'Clear flag':'Flag for Juan')+'</button>'+
+        '<button class="btn ghost small" data-comply="'+(l.compliance_mailer_check?0:1)+'">'+(l.compliance_mailer_check?'Clear mailer note':'Mailer or check mentioned')+'</button>'+
+        (!l.is_live&&can('restore_leads')?'<button class="btn small" data-restore>Restore to live</button>':'')+'</div>':'')+
+      '<div data-conflict></div>'+
+      '<details'+(isOpen?' open':'')+'><summary>Underwriting and appointment</summary><div class="grid g2" style="margin-top:8px">'+
+        '<div><label class="f">After repair value $</label><input data-set="arv" type="number" min="0" value="'+attr(l.arv)+'"'+(can('underwrite')?'':' disabled')+'></div>'+
+        '<div><label class="f">Repairs $</label><input data-set="repairs" type="number" min="0" value="'+attr(l.repairs)+'"'+(can('underwrite')?'':' disabled')+'></div>'+
+        '<div><label class="f">Seller asking $</label><input data-set="asking_price" type="number" min="0" value="'+attr(l.asking_price)+'"'+(can('underwrite')?'':' disabled')+'></div>'+
+        '<div><label class="f">Our offer $</label><input data-set="offer" type="number" min="0" value="'+attr(l.offer)+'"'+(can('underwrite')?'':' disabled')+'></div>'+
+        '<div><label class="f">Appointment date</label><input data-set="appointment_date" type="date" value="'+attr(l.appointment_date)+'"'+ro+'></div>'+
+        '<div><label class="f">Visit outcome</label><select data-set="appointment_outcome"'+ro+'>'+opt([''].concat(C.appointment_outcomes),l.appointment_outcome)+'</select></div></div>'+
+        (l.mao!=null?'<div class="mao">Max offer at '+esc(S.mao_percentage)+'% of value less repairs: <b>'+money(l.mao)+'</b>'+(l.offer_room!=null?'<br>Against a '+money(l.asking_price)+' ask, that is '+money(l.offer_room)+' of room.':'')+'</div>':'<p class="hint">Enter after repair value and repairs to get the max offer.</p>')+
+      '</details>'+
+      '<div class="thread">'+thread+(work?'<div class="row"><input data-note placeholder="What did you find?" style="flex:1"><button class="btn small" data-send>Post</button></div>':'')+'</div></div>';
+  }
+  function cardOf(el){return el.closest('.lead')}
+  function setCardStatus(card,kind,text){var s=card.querySelector('[data-save]');if(!s)return;s.className='saving '+kind;s.textContent=text;if(kind==='ok')setTimeout(function(){if(s.textContent===text)s.textContent=''},2000)}
+  function replaceLead(l){for(var i=0;i<board.items.length;i++)if(board.items[i].lead_id===l.lead_id){board.items[i]=l;break}
+    var old=document.getElementById('lead-'+l.lead_id); if(!old)return; var wasOpen=!!old.querySelector('details[open]'); var tmp=document.createElement('div'); tmp.innerHTML=leadCard(l,wasOpen); old.replaceWith(tmp.firstChild)}
+  function handleConflict(e,id){
+    if(e&&e.code==='CONFLICT_RECORD_CHANGED'&&e.data){var l=e.data; l.recent_activity=l.recent_activity||(board.items.filter(function(x){return x.lead_id===id})[0]||{}).recent_activity||[]; replaceLead(l);
+      var card=document.getElementById('lead-'+id); if(card){card.querySelector('[data-conflict]').innerHTML='<div class="conflict"><b>This lead was updated by another team member.</b> Review the latest information (now shown) before saving your change.</div>'} toast('This lead was updated by another team member. Review the latest information before saving your change.','err'); loadToday(); return}
+    showError(e);
+  }
+  /* Actions on one lead run one at a time, each reading the version the previous one produced, so two quick edits
+     on the same card never race each other. A genuinely stale version (someone else saved) still conflicts. */
+  var leadQueues={};
+  function leadAction(card,makeCall){
+    var id=card.dataset.id; setCardStatus(card,'','Saving…');
+    var prev=leadQueues[id]||Promise.resolve();
+    var run=prev.catch(function(){}).then(function(){
+      var fresh=document.getElementById('lead-'+id)||card, ver=Number(fresh.dataset.v);
+      return makeCall(ver).then(function(r){replaceLead(r.data);var f2=document.getElementById('lead-'+id);if(f2)setCardStatus(f2,'ok','Saved');
+          if(r.message&&/Routed|NO NEXT|Restored|Archived/.test(r.message))toast(r.message,/NO NEXT/.test(r.message)?'err':'ok');loadToday();if(/status|archive|restore/i.test(String(r.message)))loadNumbers()})
+        .catch(function(e){handleConflict(e,id);var f3=document.getElementById('lead-'+id);if(f3)setCardStatus(f3,'err',codeLabel(e.code))});
+    });
+    leadQueues[id]=run; return run;
+  }
+  $('view-leads').addEventListener('change',function(e){
+    var t=e.target, card=cardOf(t); if(!card||!t.dataset.set)return;
+    var f=t.dataset.set, v=t.value, id=card.dataset.id;
+    if(f==='assigned_to')return leadAction(card,function(ver){return call('assignLead',id,v,ver,'')});
+    if(f==='status'){
+      var cur=board.items.filter(function(x){return x.lead_id===id})[0];
+      if(C.archived_statuses.indexOf(v)>-1&&(!cur||cur.is_live||cur.status==='CLOSED')){var why=window.prompt('Archive reason (optional). It stays in the database and can be restored.','');if(why===null){t.value=cur?cur.status:v;return}return leadAction(card,function(ver){return call('archiveLead',id,v,why,ver)})}
+      if(cur&&!cur.is_live&&cur.status!=='CLOSED'&&C.live_statuses.indexOf(v)>-1)return leadAction(card,function(ver){return call('restoreLead',id,v,ver)});
+      return leadAction(card,function(ver){return call('updateLead',id,{status:v},ver)});
+    }
+    if(f==='next_action'||f==='due_date'){var na=card.querySelector('[data-set=next_action]').value,dd=card.querySelector('[data-set=due_date]').value;return leadAction(card,function(ver){return call('setNextAction',id,na,dd,ver)})}
+    var patch={}; patch[f]=v; leadAction(card,function(ver){return call('updateLead',id,patch,ver)});
+  });
+  $('view-leads').addEventListener('click',function(e){
+    var t=e.target.closest('button'); if(!t)return; var card=cardOf(t); if(!card)return; var id=card.dataset.id;
+    if(t.hasAttribute('data-attempt'))return leadAction(card,function(ver){return call('logAttempt',id,'')});
+    if(t.dataset.flag!=null)return leadAction(card,function(ver){return call('setJuanFlag',id,t.dataset.flag==='1','')});
+    if(t.dataset.comply!=null){ if(t.dataset.comply==='1'&&!window.confirm('Seller mentioned a mailer or check?\n\nThis stops the conversation and routes the property to Juan and counsel. Continue?'))return; return leadAction(card,function(ver){return call('setComplianceFlag',id,t.dataset.comply==='1','')}) }
+    if(t.hasAttribute('data-restore'))return leadAction(card,function(ver){return call('restoreLead',id,'INVESTIGATING',ver)});
+    if(t.hasAttribute('data-send')){var box=card.querySelector('[data-note]');if(box&&box.value.trim()){var txt=box.value.trim();box.value='';leadAction(card,function(ver){return call('addLeadNote',id,txt)})}}
+  });
+  $('view-leads').addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&e.target.hasAttribute('data-note')){var card=cardOf(e.target);if(e.target.value.trim()){var txt=e.target.value.trim();e.target.value='';leadAction(card,function(ver){return call('addLeadNote',card.dataset.id,txt)})}}
+  });
+  $('addBulk').onclick=function(){
+    var txt=$('bulk').value.trim(); if(!txt)return; $('addBulk').disabled=true; $('bulkMsg').textContent='Adding…';
+    call('addBulkLeads',txt).then(function(r){var s=r.data;$('bulkMsg').textContent=r.message; if(!s.failed&&!s.duplicates_skipped)$('bulk').value='';
+      $('importReport').innerHTML=(s.failures.length?'<div class="warn import"><b>Failed ('+s.failed+') — fix and paste again:</b><ul>'+s.failures.map(function(f){return '<li>Line '+f.line+': '+esc(f.reason)+' &mdash; <code>'+esc(f.text)+'</code></li>'}).join('')+'</ul></div>':'')+
+        (s.duplicates.length?'<div class="info import"><b>Duplicates skipped ('+s.duplicates_skipped+'):</b><ul>'+s.duplicates.map(function(d){return '<li>Line '+d.line+': '+esc(d.reason)+' ('+esc(d.lead_id)+') &mdash; <code>'+esc(d.text)+'</code></li>'}).join('')+'</ul></div>':'');
+      return Promise.all([loadBoard(1),loadToday(),loadNumbers()])}).catch(function(e){$('bulkMsg').textContent=showError(e)}).then(function(){$('addBulk').disabled=false});
+  };
+
+  /* ================= TOOLS ================= */
+  function loadTools(){return read('getTools').then(function(r){toolsData=r.data;renderToolsAll()})}
+  function renderToolsAll(){renderTools();renderRollcall();renderVerdicts();renderPillars();if(todayData){todayData.tools_today=toolsData.tools_today;renderRunsToday(toolsData.tools_today)}}
+  function renderVerdicts(){var c={};toolsData.enums.verdict.forEach(function(v){c[v]=0});toolsData.tools.forEach(function(t){c[t.verdict||'Not handed over yet']=(c[t.verdict||'Not handed over yet']||0)+1});
+    $('verdicts').innerHTML='<div class="row" style="margin:0">'+toolsData.enums.verdict.map(function(v){var cls=v==='Works, in use'?' good':v==='Not handed over yet'?' hot':' stale';return '<span class="chip'+cls+'">'+c[v]+' '+esc(v.toLowerCase())+'</span>'}).join('')+'</div>'}
+  function renderRollcall(){
+    $('rollcall').innerHTML=toolsData.builders.map(function(b){var mine=toolsData.tools.filter(function(t){return (t.built_by||'').indexOf(b)>-1}),withLink=mine.filter(function(t){return t.link}).length,withSteps=mine.filter(function(t){return t.steps}).length;
+      return '<div class="queue"><div><b>'+esc(b)+'</b></div><div class="row" style="margin-top:4px"><span class="chip'+(mine.length?'':' hot')+'">'+mine.length+' logged</span><span class="chip'+(withLink===mine.length&&mine.length?' good':' hot')+'">'+withLink+' with a link</span><span class="chip'+(withSteps===mine.length&&mine.length?' good':' hot')+'">'+withSteps+' with steps</span></div>'+
+        '<div class="row"><button class="btn ghost small" data-showbuilder="'+attr(b)+'">See '+esc(b)+'\'s builds</button><input data-asked="'+attr(b)+'" value="'+attr(toolsData.asked[b]||'')+'" placeholder="date you asked them" style="max-width:170px"'+(can('manage_tools')?'':' disabled')+'></div></div>'}).join('');
+  }
+  function renderPillars(){$('pillars').innerHTML=toolsData.pillars.map(function(p){return '<div class="queue"><div><b>'+esc(p.name)+'</b></div><div class="meta" style="font-size:13px">'+esc(p.what)+'</div><div class="row"><select data-pillar="'+attr(p.id)+'"'+(can('manage_tools')?'':' disabled')+'>'+opt(toolsData.enums.pillar_states,p.state)+'</select></div></div>'}).join('')}
+  function renderTools(){
+    var tools=toolsData.tools, E=toolsData.enums;
+    var used=tools.filter(function(t){return t.status==='Live and used daily'}).length,dead=tools.filter(function(t){return t.status==='Live but nobody uses it'||t.status==='Built, never launched'}).length,nosteps=tools.filter(function(t){return !t.steps}).length,untrained=tools.filter(function(t){return !t.trained.length}).length,noop=tools.filter(function(t){return !t.operator}).length,undec=tools.filter(function(t){return (t.recommendation||'Decide')==='Decide'}).length;
+    $('toolTally').innerHTML='<div><b>'+tools.length+'</b><span>built for this team</span></div><div><b>'+used+'</b><span>used daily</span></div><div><b>'+dead+'</b><span>sitting unused</span></div><div><b>'+nosteps+'</b><span>no written steps</span></div><div><b>'+untrained+'</b><span>nobody trained</span></div><div><b>'+noop+'</b><span>no daily operator</span></div><div><b>'+undec+'</b><span>no call made yet</span></div>';
+    $('toolNote').textContent=noop?('A build with no operator is where every one of these died. '+noop+' have a builder but nobody running them.'):nosteps?('Steps are missing on '+nosteps+' of them. A tool without steps gets used once and abandoned.'):(untrained?'Every tool has steps. Now mark who is trained so it survives one person being out.':'Steps written and people trained on all of them.');
+    var builders={};tools.forEach(function(t){if(t.built_by)builders[t.built_by]=(builders[t.built_by]||0)+1});var bf=$('builderFilter'),keep=bf.value;
+    bf.innerHTML='<option value="">Everyone\'s builds ('+tools.length+')</option>'+Object.keys(builders).sort().map(function(b){return '<option value="'+attr(b)+'"'+(b===keep?' selected':'')+'>Built by '+esc(b)+' ('+builders[b]+')</option>'}).join('')+'<option value="__none"'+(keep==='__none'?' selected':'')+'>Builder not recorded ('+tools.filter(function(t){return !t.built_by}).length+')</option>';
+    var manage=can('manage_tools'), ro=manage?'':' disabled', open={}; document.querySelectorAll('#toolList details[open]').forEach(function(d){open[d.closest('.lead').dataset.tid]=true});
+    $('toolList').innerHTML=tools.filter(function(t){if(!keep)return true;if(keep==='__none')return !t.built_by;return t.built_by===keep}).map(function(t){
+      var cls=t.status==='Live and used daily'?'s-CLOSED':(t.status==='Live but nobody uses it'||t.status==='Built, never launched')?'flag':'', tr=t.trained, link=safeUrl(t.link);
+      return '<div class="lead '+cls+'" data-tid="'+attr(t.tool_id)+'"><span class="saving" data-save></span><div class="addr">'+esc(t.name)+'</div><div class="meta">'+esc(t.description||'')+'</div>'+
+        (link?'<div class="row"><a class="btn small" style="text-decoration:none" target="_blank" rel="noopener noreferrer" href="'+attr(link)+'">Open it</a></div>':'')+
+        '<div class="row">'+(link?'':'<span class="chip hot">No link saved</span>')+(t.built_by?'<span class="chip">Built by '+esc(t.built_by)+'</span>':'<span class="chip hot">Builder not recorded</span>')+'<span class="chip'+(t.steps?' good':' hot')+'">'+(t.steps?'Steps written':'No steps')+'</span><span class="chip'+(tr.length?'':' hot')+'">'+(tr.length?tr.length+' trained':'Nobody trained')+'</span>'+(t.is_daily?'<span class="chip">On the daily list</span>':'')+
+          (t.verdict==='Works, in use'?'<span class="chip good">Works</span>':t.verdict==='Broken, sent back'?'<span class="chip hot">Broken, back with '+esc(t.built_by||'builder')+'</span>':t.verdict==='Needs training first'?'<span class="chip stale">Needs training</span>':'<span class="chip hot">Not handed over</span>')+'</div>'+
+        '<div class="row"><select data-tool="status"'+ro+'>'+opt(E.status,t.status)+'</select><select data-tool="recommendation"'+ro+'>'+opt(E.recommendation,t.recommendation||'Decide')+'</select><select data-tool="cadence"'+ro+'>'+opt(E.cadence,t.cadence||'Not set')+'</select></div>'+
+        '<details'+(open[t.tool_id]?' open':'')+'><summary>How it works, who runs it</summary>'+
+          '<div style="margin-top:8px"><label class="f">Steps to run it</label><textarea data-tool="steps" rows="4" placeholder="1. Open ... 2. Run ... 3. Export ..."'+ro+'>'+esc(t.steps)+'</textarea></div>'+
+          '<div style="margin-top:8px"><label class="f">Link to open it</label><input data-tool="link" value="'+attr(t.link||'')+'" placeholder="https://..."'+ro+'></div>'+
+          '<div style="margin-top:8px"><label class="f">It worked when you see</label><input data-tool="expected_output" value="'+attr(t.expected_output)+'" placeholder="e.g. a fresh list in the export folder"'+ro+'></div>'+
+          '<div class="grid g2" style="margin-top:8px"><div><label class="f">Built it</label><input data-tool="built_by" value="'+attr(t.built_by)+'" placeholder="e.g. Seth"'+ro+'></div><div><label class="f">Runs it every day</label><input data-tool="operator" value="'+attr(t.operator)+'" placeholder="the operator, not the builder"'+ro+'></div><div><label class="f">Covers when they are out</label><input data-tool="backup_operator" value="'+attr(t.backup_operator)+'"'+ro+'></div><div><label class="f">Asked the builder for the steps?</label><input data-tool="asked_date" value="'+attr(t.asked_date||'')+'" placeholder="date asked"'+ro+'></div></div>'+
+          '<div style="margin-top:9px"><label class="f">Trained and able to run it alone</label><div class="row" style="margin:0">'+toolsData.people.map(function(p){var on=tr.some(function(x){return x.user_id===p.user_id});return '<button class="btn '+(on?'':'ghost ')+'small" data-trained="'+attr(p.user_id)+'" data-on="'+(on?1:0)+'"'+ro+'>'+esc(p.name)+'</button>'}).join('')+'</div></div>'+
+          '<div class="grid g2" style="margin-top:8px"><div><label class="f">Handed to the user on</label><input data-tool="handoff_date" value="'+attr(t.handoff_date||'')+'" placeholder="date"'+ro+'></div><div><label class="f">User verdict</label><select data-tool="verdict"'+ro+'>'+opt(E.verdict,t.verdict||'Not handed over yet')+'</select></div></div>'+
+          '<div style="margin-top:9px"><label class="f">What it produced last week</label><input data-tool="proof_last_week" value="'+attr(t.proof_last_week)+'" placeholder="e.g. 340 records cleared, 12 callbacks"'+ro+'></div>'+
+        '</details></div>'}).join('');
+  }
+  function toolPatch(el){var card=el.closest('.lead'),tid=card.dataset.tid,f=el.dataset.tool,cur=toolsData.tools.filter(function(t){return t.tool_id===tid})[0];if(cur&&String(cur[f]||'')===String(el.value))return;var p={};p[f]=el.value;setCardStatus(card,'','Saving…');
+    call('updateTool',tid,p).then(function(r){setCardStatus(card,'ok','Saved');if(cur)Object.keys(r.data).forEach(function(k){cur[k]=r.data[k]});cur.is_daily=['Every day','Every weekday'].indexOf(cur.cadence)>-1;if(f==='cadence'||f==='status')loadTools();else{renderRollcall();renderVerdicts()}}).catch(function(e){setCardStatus(card,'err',codeLabel(e.code));showError(e)})}
+  $('view-tools').addEventListener('change',function(e){var t=e.target;
+    if(t.dataset.tool)return toolPatch(t);
+    if(t.dataset.pillar)return call('saveSetting','pillar_'+t.dataset.pillar,t.value).then(loadTools).catch(showError);
+  });
+  $('view-tools').addEventListener('blur',function(e){var t=e.target;if(t.dataset.tool&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'))toolPatch(t);
+    if(t.dataset.asked!=null&&toolsData&&toolsData.asked[t.dataset.asked]!==t.value)call('saveSetting','asked_'+t.dataset.asked,t.value).then(loadTools).catch(showError)},true);
+  $('view-tools').addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;
+    if(t.dataset.trained){var card=t.closest('.lead');t.disabled=true;call('setToolTraining',card.dataset.tid,t.dataset.trained,t.dataset.on!=='1','').then(loadTools).catch(function(e){showError(e);t.disabled=false})}
+    if(t.dataset.showbuilder){var b=t.dataset.showbuilder,o=Array.prototype.filter.call($('builderFilter').options,function(x){return x.value===b})[0];$('builderFilter').value=o?o.value:'';renderTools();$('toolList').scrollIntoView({block:'start'})}
+  });
+  $('builderFilter').onchange=renderTools;
+  $('addTool').onclick=function(){var nm=$('newTool').value.trim();if(!nm)return;$('addToolMsg').textContent='Adding…';
+    call('createTool',{name:nm,built_by:$('newToolOwner').value,link:$('newToolLink').value.trim(),description:$('newToolJob').value.trim()}).then(function(r){$('newTool').value='';$('newToolLink').value='';$('newToolJob').value='';$('addToolMsg').textContent=r.message;return loadTools()}).catch(function(e){$('addToolMsg').textContent=showError(e)})};
+
+  /* ================= ADMIN ================= */
+  var SETTING_FIELDS=[['mao_percentage','MAO % of ARV'],['stale_lead_days','Stale after (days)'],['auto_refresh_seconds','Auto refresh (seconds, 0 = off)'],['business_timezone','Business timezone'],['live_list_target','Live list target'],['page_size','Records per page (10-200)'],['monthly_deal_target','Deals target per month'],['monthly_marketing_budget','Marketing budget per month $']];
+  function loadAdmin(){ if(!can('manage_users'))return Promise.resolve();
+    return Promise.all([read('getUsers'),read('getSettings'),read('getBackupLog',20),read('getAuditLog',100)]).then(function(r){renderUsers(r[0].data);renderSettings(r[1].data);renderBackups(r[2].data);renderAudit(r[3].data)}).catch(showError)}
+  function renderUsers(list){
+    $('usersTable').innerHTML='<tr><th class="l">Name</th><th class="l">Google email</th><th class="l">Team</th><th>Role</th><th>Access</th><th></th></tr>'+list.map(function(u){return '<tr data-uid="'+attr(u.user_id)+'"><td class="l"><input data-u="name" value="'+attr(u.name)+'"></td><td class="l"><input data-u="email" value="'+attr(u.email)+'" placeholder="needs email"></td><td class="l"><input data-u="team" value="'+attr(u.team)+'"></td><td><select data-u="role">'+opt(C.roles,u.role)+'</select></td>'+
+      '<td>'+(u.needs_email?'<span class="badge off">needs email</span>':u.active?'<span class="badge on">active</span>':'<span class="badge off">inactive</span>')+'</td><td>'+(u.needs_email?'':'<button class="btn ghost small" data-toggle="'+(u.active?0:1)+'">'+(u.active?'Deactivate':'Activate')+'</button>')+'</td></tr>'}).join('');
+  }
+  $('usersTable').addEventListener('change',function(e){var t=e.target;if(!t.dataset.u)return;var uid=t.closest('tr').dataset.uid,p={};p[t.dataset.u]=t.value;call('updateUser',uid,p).then(loadAdmin).catch(function(e){showError(e);loadAdmin()})});
+  $('usersTable').addEventListener('click',function(e){var t=e.target.closest('button');if(!t||t.dataset.toggle==null)return;var uid=t.closest('tr').dataset.uid;call('updateUser',uid,{active:t.dataset.toggle==='1'}).then(loadAdmin).catch(showError)});
+  $('addUser').onclick=function(){$('userMsg').textContent='Adding…';call('createUser',{name:$('u_name').value,email:$('u_email').value,team:$('u_team').value,role:$('u_role').value}).then(function(r){$('userMsg').textContent=r.message;$('u_name').value='';$('u_email').value='';$('u_team').value='';return Promise.all([loadAdmin(),read('bootstrapApp').then(function(b){users=b.data.users;usersById={};users.forEach(function(u){usersById[u.user_id]=u})})])}).catch(function(e){$('userMsg').textContent=showError(e)})};
+  function renderSettings(s){$('settingsForm').innerHTML=SETTING_FIELDS.map(function(f){return '<div><label class="f" for="s_'+f[0]+'">'+f[1]+'</label><input id="s_'+f[0]+'" data-skey="'+f[0]+'" value="'+attr(s[f[0]]==null?'':s[f[0]])+'"></div>'}).join('')+'<div><label class="f">App version</label><input value="'+attr(s.app_version)+'" disabled></div>';S=Object.assign(S,s)}
+  $('saveSettings').onclick=function(){var inputs=Array.prototype.slice.call(document.querySelectorAll('#settingsForm [data-skey]')),changed=inputs.filter(function(i){return String(S[i.dataset.skey]==null?'':S[i.dataset.skey])!==i.value});
+    if(!changed.length){$('settingsMsg').textContent='Nothing changed';return}$('settingsMsg').textContent='Saving…';
+    changed.reduce(function(p,i){return p.then(function(){return call('saveSetting',i.dataset.skey,i.value)})},Promise.resolve()).then(function(){$('settingsMsg').textContent='Saved';return read('getSettings')}).then(function(r){S=Object.assign(S,r.data);startAutoRefresh();return Promise.all([loadAdmin(),loadBoard(1,true),loadNumbers()])}).catch(function(e){$('settingsMsg').textContent=showError(e);loadAdmin()})};
+  $('backupNow').onclick=function(){$('backupMsg').textContent='Backing up…';call('createDatabaseBackup').then(function(r){$('backupMsg').textContent='Backup created: '+r.data.name;return loadAdmin()}).catch(function(e){$('backupMsg').textContent=showError(e)})};
+  function renderBackups(b){$('backupTable').innerHTML='<tr><th class="l">When</th><th class="l">Name</th><th>Status</th></tr>'+(b.length?b.map(function(x){return '<tr><td class="l">'+esc(when(x.timestamp))+'</td><td class="l">'+esc(x.backup_name)+'</td><td>'+esc(x.status)+(x.error?' &mdash; '+esc(x.error):'')+'</td></tr>'}).join(''):'<tr><td colspan="3" style="color:var(--graphite)">No backups yet. Install the daily trigger (see DEPLOY.md) or run one now.</td></tr>')}
+  function renderAudit(a){$('auditTable').innerHTML='<tr><th class="l">When</th><th class="l">Who</th><th class="l">Action</th><th class="l">Entity</th><th class="l">Details</th></tr>'+a.map(function(x){return '<tr><td class="l">'+esc(when(x.timestamp_utc))+'</td><td class="l">'+esc(x.user_email||x.user_id)+'</td><td class="l">'+esc(x.action)+'</td><td class="l">'+esc(x.entity_type+' '+x.entity_id)+'</td><td class="l" style="max-width:320px;overflow:hidden;text-overflow:ellipsis">'+esc(x.details)+'</td></tr>'}).join('')}
+})();
+</script>

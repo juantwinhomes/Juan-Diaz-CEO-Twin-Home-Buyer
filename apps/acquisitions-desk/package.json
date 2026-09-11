@@ -1,0 +1,16 @@
+{
+  "name": "thb-acquisitions-desk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "THB Acquisitions Desk — Apps Script web app + Google Sheets database (Twin Home Buyer)",
+  "scripts": {
+    "privatize": "node scripts/privatize.js",
+    "test": "node test/run-backend-tests.js",
+    "test:e2e": "NODE_PATH=$(npm root -g) node test/e2e.js",
+    "test:all": "npm run privatize && npm test && npm run test:e2e",
+    "dev": "node test/e2e-server.js",
+    "template": "python3 scripts/build_xlsx_template.py",
+    "push": "npx @google/clasp push --force",
+    "deploy": "bash scripts/deploy.sh"
+  }
+}

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acquisitions desk</title>
+  <?!= include('Styles') ?>
+</head>
+<body>
+<div class="desk">
+  <div class="masthead">
+    <h1>Acquisitions desk</h1>
+    <span class="sub" style="margin:0">Twin Home Buyer &middot; Equity Track PH</span>
+    <div class="who">
+      <span>On the desk</span>
+      <span class="me" id="meName"><?= userName ?></span>
+      <span class="role" id="meRole"></span>
+      <button class="btn ghost small" id="refreshBtn" title="Pull the latest from the shared database">Refresh</button>
+      <span class="status" id="netStatus"></span>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-view="plan">The plan</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="today">Today<span class="n" id="todayBadge" hidden></span></button>
+    <button class="tab" role="tab" aria-selected="false" data-view="numbers">Numbers</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="leads">Lead board</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="tools">Tools we own</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="admin" id="tabAdmin" hidden>Admin</button>
+  </div>
+
+  <div id="boot" class="loading">Opening the desk&hellip;</div>
+  <div id="bootError" class="warn" hidden></div>
+
+  <!-- TODAY -->
+  <div id="view-today" hidden>
+    <div class="refreshbar"><span id="todayStamp"></span></div>
+    <div id="notLogged"></div>
+
+    <div class="sheet juan" id="juanPanel" hidden>
+      <h2>Management view</h2>
+      <p class="sub">Who worked, what changed, what is stuck. Straight from the activity log, nobody compiles it.</p>
+      <div class="tally" id="juanTally"></div>
+      <div class="scroll"><table id="juanTeam"></table></div>
+      <details><summary>What changed today</summary><div id="juanChanges" style="margin-top:8px"></div></details>
+    </div>
+
+    <div class="sheet">
+      <h2>Today's log</h2>
+      <p class="sub" id="todayLabel"></p>
+      <div class="grid g4">
+        <div><label class="f" for="d_tv_spend">TV spend $</label><input id="d_tv_spend" type="number" min="0"></div>
+        <div><label class="f" for="d_ppc_spend">PPC spend $</label><input id="d_ppc_spend" type="number" min="0"></div>
+        <div><label class="f" for="d_ppl_spend">PPL spend $</label><input id="d_ppl_spend" type="number" min="0"></div>
+        <div><label class="f" for="d_other_spend">Other spend $</label><input id="d_other_spend" type="number" min="0"></div>
+      </div>
+      <div class="grid g3" style="margin-top:8px">
+        <div><label class="f" for="d_new_leads">New leads in</label><input id="d_new_leads" type="number" min="0"></div>
+        <div><label class="f" for="d_inbound_calls">Inbound calls</label><input id="d_inbound_calls" type="number" min="0"></div>
+        <div><label class="f" for="d_missed_calls">Calls missed</label><input id="d_missed_calls" type="number" min="0"></div>
+        <div><label class="f" for="d_sellers_reached">Sellers reached</label><input id="d_sellers_reached" type="number" min="0"></div>
+        <div><label class="f" for="d_appointments_set">Appointments set</label><input id="d_appointments_set" type="number" min="0"></div>
+        <div><label class="f" for="d_contracts_signed">Contracts signed</label><input id="d_contracts_signed" type="number" min="0"></div>
+        <div><label class="f" for="d_contracts_fell_out">Contracts fell out</label><input id="d_contracts_fell_out" type="number" min="0"></div>
+        <div><label class="f" for="d_deals_closed">Deals closed</label><input id="d_deals_closed" type="number" min="0"></div>
+        <div><label class="f" for="d_minutes_to_first_call">Minutes to first call</label><input id="d_minutes_to_first_call" type="number" min="0"></div>
+      </div>
+      <div class="row">
+        <button class="btn" id="saveDay">Save today</button>
+        <span class="hint" id="saveMsg" style="margin:0"></span>
+      </div>
+    </div>
+
+    <div class="sheet">
+      <h2>Tools that have to run today</h2>
+      <p class="sub">Tick it when it is actually done. The streak breaks if a day is skipped.</p>
+      <div id="runsToday"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Work queue</h2>
+      <p class="sub">Every live property, in the order it needs attention. Overdue sits on top. A lead with no next action does not disappear, it shows up here until someone gives it one.</p>
+      <div id="queue"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Waiting on Juan</h2>
+      <p class="sub">Flagged properties and anything a seller raised about a mailer or check.</p>
+      <div id="flagged"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Appointments coming up</h2>
+      <p class="sub">Next seven days, from the appointment history.</p>
+      <div id="appts"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Who worked the board today</h2>
+      <p class="sub">Counted automatically from what each person did on this desk. Nobody writes a report.</p>
+      <div class="scroll"><table id="activity"></table></div>
+    </div>
+  </div>
+
+  <!-- NUMBERS -->
+  <div id="view-numbers" hidden>
+    <div class="sheet">
+      <h2>Pace this month</h2>
+      <p class="sub" id="paceNote"></p>
+      <div class="pace"><b id="paceNum">0</b><span class="of" id="paceOf"></span></div>
+      <div class="track"><i id="paceBar" style="width:0"></i></div>
+      <p class="hint" id="paceMsg"></p>
+      <div class="grid g2" style="margin-top:10px">
+        <div><label class="f" for="t_deals">Deals target per month</label><input id="t_deals" type="number" min="0"></div>
+        <div><label class="f" for="t_budget">Marketing budget per month $</label><input id="t_budget" type="number" min="0"></div>
+      </div>
+      <div class="row"><button class="btn ghost small" id="saveTargets">Save targets</button><span class="hint" id="targetMsg" style="margin:0"></span></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Last 30 days</h2>
+      <p class="sub" id="rangeNote"></p>
+      <div class="funnel" id="funnel"></div>
+      <div class="costs" id="costs" style="margin-top:14px"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Where the money went</h2>
+      <p class="sub">Spend by channel over 30 days against what each channel put on the board in the same 30 days.</p>
+      <div class="scroll"><table id="chanTable"></table></div>
+      <p class="hint" id="chanNote">Channel results come from the source on each property, so set the source (TV, PPC, PPL, Other) when you add leads.</p>
+    </div>
+
+    <div class="sheet">
+      <h2>Day by day</h2>
+      <p class="sub">One row per day someone logged. Gaps are days nobody reported.</p>
+      <div class="scroll"><table id="daysTable"></table></div>
+    </div>
+  </div>
+
+  <!-- LEADS -->
+  <div id="view-leads" hidden>
+    <div class="sheet">
+      <h2>Live list</h2>
+      <p class="sub">Cut the database to what is worth energy. Archiving hides it here, it never deletes it.</p>
+      <div class="tally" id="tally"></div>
+      <div class="row">
+        <select id="filter">
+          <option value="live">Live list</option>
+          <option value="due">Due or overdue</option>
+          <option value="flag">Needs Juan</option>
+          <option value="stale">Untouched 7+ days</option>
+          <option value="appt">Appointments set</option>
+          <option value="archived">Archived</option>
+          <option value="all">Everything</option>
+        </select>
+        <select id="sort">
+          <option value="due">Sort by next action</option>
+          <option value="touched">Sort by last touched</option>
+          <option value="room">Sort by offer room</option>
+        </select>
+      </div>
+      <div class="row"><input id="search" placeholder="Search address, seller, phone or assignee" style="flex:1"></div>
+    </div>
+
+    <div class="sheet" id="addLeadsSheet">
+      <h2>Add leads</h2>
+      <p class="sub">One per line: address, seller, phone, source, equity note. Duplicates by address or phone are skipped and reported.</p>
+      <textarea id="bulk" rows="3" placeholder="1420 Ashby Ave Oakland, R. Nunez, 510-555-0134, PPC, owned free and clear"></textarea>
+      <div class="row"><button class="btn" id="addBulk">Add to board</button><span class="hint" id="bulkMsg" style="margin:0"></span></div>
+      <div id="importReport"></div>
+    </div>
+
+    <div id="leadList"></div>
+    <div class="row" id="morePager" hidden><button class="btn ghost" id="loadMore">Load more</button><span class="hint" id="pageNote" style="margin:0"></span></div>
+  </div>
+
+  <!-- TOOLS -->
+  <div id="view-tools" hidden>
+    <div class="sheet">
+      <h2>What we already paid for</h2>
+      <p class="sub">Every build sitting on the shelf. A tool nobody runs is not a tool, it is a receipt.</p>
+      <div class="tally" id="toolTally"></div>
+      <div class="row"><select id="builderFilter"><option value="">Everyone's builds</option></select></div>
+      <p class="hint" id="toolNote"></p>
+    </div>
+    <div class="sheet">
+      <h2>Three things every tool needs</h2>
+      <p class="sub">Set these once per tool and the daily list builds itself.</p>
+      <ol style="margin:0;padding-left:20px;font-size:14px">
+        <li>Steps to run it, written plainly enough that a new hire can follow them.</li>
+        <li>How often it runs, and what the output should look like when it worked.</li>
+        <li>Who is trained on it, and who covers when that person is out.</li>
+      </ol>
+      <p class="hint">Seth writes the steps. Cherry marks who is trained. Nobody guesses.</p>
+    </div>
+    <div class="sheet">
+      <h2>Who hands over what</h2>
+      <p class="sub">Seth, Jonathan and Bryan built these, so they list them and hand them over. Cherry uses them, tells them what breaks, and they fix it. She does not inventory anyone else's work.</p>
+      <div id="rollcall"></div>
+      <p class="hint">Each build needs five things: name, link, what it does for the person using it, whether it still works, and who can run it.</p>
+      <p class="hint">Anything that came in under a name nobody here recognises goes to Bryan until someone claims it.</p>
+      <div id="verdicts" style="margin-top:10px"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>What AI was supposed to take over</h2>
+      <p class="sub">The five pillars, in the order they were meant to ship. Mark where each one actually stands.</p>
+      <div id="pillars"></div>
+    </div>
+    <div id="toolList"></div>
+    <div class="sheet" id="addToolSheet">
+      <h2>Log a build that is not listed</h2>
+      <p class="sub">Anything built in Claude or anywhere else. If it has no link here, nobody will find it.</p>
+      <div class="grid g2">
+        <div><label class="f" for="newTool">What it is called</label><input id="newTool"></div>
+        <div><label class="f" for="newToolOwner">Who built it</label><select id="newToolOwner"><option>Cherry</option><option>Seth</option><option>Bryan</option><option>Jonathan</option><option>Someone else</option></select></div>
+        <div><label class="f" for="newToolLink">Link</label><input id="newToolLink" placeholder="paste the URL (https://...)"></div>
+        <div><label class="f" for="newToolJob">What it does for the person using it</label><input id="newToolJob"></div>
+      </div>
+      <div class="row"><button class="btn" id="addTool">Add to the list</button>
+      <span class="hint" id="addToolMsg" style="margin:0"></span></div>
+      <p class="hint">Send this page to Seth and have him paste one line per build. Ten minutes, and the shelf is visible.</p>
+    </div>
+  </div>
+
+  <!-- ADMIN (ADMIN role only) -->
+  <div id="view-admin" hidden>
+    <div class="sheet admin">
+      <h2>Team access</h2>
+      <p class="sub">Identity comes from the Google account that opens the desk. A person can only get in if their company email is here and they are active. Nobody is deleted, only deactivated.</p>
+      <div class="scroll"><table id="usersTable"></table></div>
+      <h3 style="font-size:14px;margin:14px 0 6px">Add a team member</h3>
+      <div class="grid g4">
+        <div><label class="f" for="u_name">Name</label><input id="u_name"></div>
+        <div><label class="f" for="u_email">Company Google email</label><input id="u_email" placeholder="name@twinhomebuyer.com"></div>
+        <div><label class="f" for="u_team">Team</label><input id="u_team"></div>
+        <div><label class="f" for="u_role">Role</label><select id="u_role"><option>REP</option><option>MANAGER</option><option>TECHNICAL</option><option>ADMIN</option></select></div>
+      </div>
+      <div class="row"><button class="btn" id="addUser">Add</button><span class="hint" id="userMsg" style="margin:0"></span></div>
+    </div>
+    <div class="sheet admin">
+      <h2>Settings</h2>
+      <p class="sub">Company-wide. Changing MAO % changes every max offer on the board.</p>
+      <div class="grid g3" id="settingsForm"></div>
+      <div class="row"><button class="btn" id="saveSettings">Save settings</button><span class="hint" id="settingsMsg" style="margin:0"></span></div>
+    </div>
+    <div class="sheet admin">
+      <h2>Backups and logs</h2>
+      <div class="row" style="margin-top:0"><button class="btn ghost small" id="backupNow">Back up the database now</button><span class="hint" id="backupMsg" style="margin:0"></span></div>
+      <details><summary>Recent backups</summary><div class="scroll"><table id="backupTable"></table></div></details>
+      <details><summary>Audit log (last 100)</summary><div class="scroll"><table id="auditTable"></table></div></details>
+    </div>
+  </div>
+
+  <!-- PLAN -->
+  <div id="view-plan" hidden>
+    <div class="sheet plan">
+      <h2>How this desk works</h2>
+      <p class="sub">10 September 2026</p>
+      <p>Sales has been rebuilt around one job per seat. Cherry has been pioneering acquisitions for the last couple of months without anyone standing over her, and that stays true. What changes is that she is not also expected to run a floor, and the numbers stop living in someone's head.</p>
+
+      <p class="pull">Work 200, not 8,000.<small>Clarity beats volume every single time</small></p>
+
+      <h3>Cherry &mdash; database and closings</h3>
+      <ul>
+        <li>Take the roughly 8,000 records down to a live list near 200 that are genuinely workable.</li>
+        <li>Archive the dead ones with a reason: sold, no equity, not interested, bad data. Nothing gets re-worked by accident.</li>
+        <li>Run the text and call automations already built and report what they produced, not that they ran.</li>
+        <li>Keep closing. Commission is unchanged.</li>
+        <li>Jonathan is the technical resource for tracking and automation.</li>
+        <li>Thea trains to full underwriting: comps, repairs, offer number, unassisted.</li>
+        <li>The other two work the live list as investigators, on this board, daily.</li>
+      </ul>
+
+      <p class="pull">Train for days, not weeks. Get people in the game.<small>You learn on live calls, not in a classroom</small></p>
+
+      <h3>Sales manager &mdash; the floor</h3>
+      <ul>
+        <li>Based in Guadalajara. Owns the Mexico team, after-hours coverage and lead distribution.</li>
+        <li>Owns ramping new reps, marketing spend review, and every number on this desk.</li>
+        <li>Paid on what the team produces, not on his own closings.</li>
+        <li>Last line on a missed inbound call. That stops with him.</li>
+      </ul>
+
+      <p class="pull">Discipline, not motivation. Show up for the boring part.<small>The boring part is where the deals are</small></p>
+
+      <h3>The daily rhythm</h3>
+      <ul>
+        <li>Numbers go in daily. Five minutes, not a weekly report.</li>
+        <li>Juan reads them each morning and asks about them. That is the discipline, not the software.</li>
+        <li>Move a property, leave a note. Set a next action or it falls off the earth.</li>
+        <li>If it needs Juan, flag it and he sees it on the Today tab.</li>
+      </ul>
+
+      <p class="pull">A tool nobody runs is not a tool. It is a receipt.<small>We already own what we need. Use it</small></p>
+
+      <h3>Two standing rules</h3>
+      <p class="pull">The list belongs to the company.<small>Nobody owns leads, everyone works them</small></p>
+      <p>Leads are a company asset that people work, not territory anyone owns. Everyone is fed from the same board because the company needs more than one closer.</p>
+      <p>If a seller mentions a mailer or a check, mark the compliance box on that property and stop the conversation there. It routes to Juan and counsel. No exceptions, no explaining, no apologising.</p>
+      <p><span class="stamp">Not up for debate</span> Boring, consistent, daily. No new tools until this one is being used.</p>
+      <p class="hint">Everyone with this page sees the same board, the same numbers and the same notes. It all lives in one company database.</p>
+    </div>
+  </div>
+
+  <p class="foot">THB Acquisitions Desk v<?= appVersion ?> &middot; <span id="footEnv"></span> &middot; business day <span id="footToday"></span> (<span id="footTz"></span>)</p>
+</div>
+<div id="toast" hidden></div>
+<?!= include('Scripts') ?>
+</body>
+</html>

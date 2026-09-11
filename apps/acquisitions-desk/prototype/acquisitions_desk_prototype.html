@@ -1,0 +1,978 @@
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --ink:#17223B; --ink-2:#2C3A57; --graphite:#5B6879; --linen:#EDF0F3;
+    --sheet:#FFFFFF; --rule:#CBD3DC; --stamp:#B3301F; --field:#1F6F4A; --amber:#B4770A; --r:3px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0}
+  .desk{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    background:var(--linen);color:var(--ink);font-size:15px;line-height:1.45;
+    padding:14px 12px 44px;font-variant-numeric:tabular-nums}
+  .desk h1,.desk h2,.desk h3{margin:0;font-weight:700;letter-spacing:-.01em}
+  .masthead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+    border-bottom:2px solid var(--ink);padding-bottom:8px;margin-bottom:12px}
+  .masthead h1{font-size:19px}
+  .masthead .who{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--graphite)}
+  select,input,textarea,button{font-family:inherit;font-size:14px;color:var(--ink)}
+  select,input,textarea{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:7px 8px;width:100%}
+  :focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+  .tabs{display:flex;margin-bottom:14px;border-bottom:1px solid var(--rule);overflow-x:auto}
+  .tab{background:none;border:none;border-bottom:3px solid transparent;padding:9px 12px;
+    font-size:14px;font-weight:600;color:var(--graphite);cursor:pointer;white-space:nowrap}
+  .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--stamp)}
+  .sheet{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:14px;margin-bottom:12px}
+  .sheet > h2{font-size:15px}
+  .sub{color:var(--graphite);font-size:13px;margin:3px 0 12px}
+  .btn{background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:9px 13px;font-weight:600;cursor:pointer;width:auto}
+  .btn:active{background:var(--ink-2)}
+  .btn.ghost{background:none;color:var(--ink);border:1px solid var(--rule)}
+  .btn.small{padding:5px 9px;font-size:13px}
+  .grid{display:grid;gap:8px}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  label.f{display:block;font-size:12px;color:var(--graphite);margin-bottom:3px}
+  .funnel{display:flex;flex-direction:column;gap:2px}
+  .frow{display:grid;grid-template-columns:112px 1fr;align-items:center;gap:8px}
+  .fname{font-size:13px;color:var(--graphite)}
+  .fbar{height:26px;background:var(--ink);border-radius:2px;min-width:2px;display:flex;
+    align-items:center;justify-content:flex-end;padding-right:7px;color:#fff;font-size:13px;font-weight:700}
+  .fbar.thin{background:var(--ink-2)}
+  .fbar.win{background:var(--field)}
+  .fconv{grid-column:2;font-size:12px;color:var(--graphite)}
+  .costs{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--rule);
+    border:1px solid var(--rule);border-radius:var(--r);overflow:hidden}
+  .cost{background:var(--sheet);padding:9px 10px}
+  .cost b{display:block;font-size:19px;line-height:1.15}
+  .cost span{font-size:12px;color:var(--graphite)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:right;padding:6px 4px;border-bottom:1px solid var(--rule);white-space:nowrap}
+  th{color:var(--graphite);font-weight:600;font-size:12px}
+  th:first-child,td:first-child{text-align:left}
+  .scroll{overflow-x:auto}
+  .pace{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .pace b{font-size:34px;line-height:1}
+  .pace .of{font-size:15px;color:var(--graphite)}
+  .track{height:9px;background:var(--linen);border:1px solid var(--rule);border-radius:99px;overflow:hidden;margin:10px 0 4px}
+  .track > i{display:block;height:100%;background:var(--ink)}
+  .track > i.behind{background:var(--stamp)}
+  .track > i.ahead{background:var(--field)}
+  .tally{display:flex;gap:16px;flex-wrap:wrap;align-items:baseline;margin-bottom:10px}
+  .tally b{font-size:26px}
+  .tally span{font-size:12px;color:var(--graphite);display:block}
+  .lead{border:1px solid var(--rule);border-left:4px solid var(--graphite);border-radius:var(--r);
+    padding:10px;margin-bottom:8px;background:var(--sheet)}
+  .lead.s-appt{border-left-color:var(--amber)}
+  .lead.s-contract,.lead.s-closed{border-left-color:var(--field)}
+  .lead.flag{border-left-color:var(--stamp)}
+  .lead .addr{font-weight:700;font-size:15px}
+  .lead .meta{font-size:12px;color:var(--graphite);margin-top:2px}
+  .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px}
+  .row select,.row input{width:auto;min-width:120px}
+  .chip{font-size:11px;font-weight:700;border:1px solid var(--rule);border-radius:999px;padding:2px 8px;color:var(--graphite)}
+  .chip.hot{color:var(--stamp);border-color:var(--stamp)}
+  .chip.stale{color:var(--amber);border-color:var(--amber)}
+  .chip.good{color:var(--field);border-color:var(--field)}
+  details{margin-top:9px;border-top:1px solid var(--rule);padding-top:7px}
+  summary{font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-2)}
+  .mao{font-size:13px;margin-top:8px;padding:8px;background:var(--linen);border-radius:var(--r)}
+  .mao b{font-size:16px}
+  .thread{margin-top:9px;border-top:1px solid var(--rule);padding-top:7px}
+  .note{font-size:13px;padding:5px 0;border-bottom:1px dotted var(--rule)}
+  .note b{font-size:12px}
+  .note em{font-style:normal;color:var(--graphite);font-size:11px;margin-left:5px}
+  .queue{border-bottom:1px solid var(--rule);padding:9px 0}
+  .queue:last-child{border-bottom:none}
+  .queue .when{font-size:12px;font-weight:700}
+  .queue .when.over{color:var(--stamp)}
+  .empty{border:1px dashed var(--rule);border-radius:var(--r);padding:16px;text-align:center;color:var(--graphite);font-size:14px}
+  .plan li{margin-bottom:7px}
+  .plan h3{font-size:14px;margin:15px 0 4px}
+  .stamp{display:inline-block;border:2px solid var(--stamp);color:var(--stamp);font-size:11px;
+    font-weight:700;padding:1px 6px;border-radius:2px;transform:rotate(-2deg)}
+  .hint{font-size:12px;color:var(--graphite);margin-top:8px}
+  .warn{background:#FBEDEA;border:1px solid var(--stamp);color:#7C1F13;
+    padding:9px 10px;border-radius:var(--r);font-size:13px;margin-bottom:12px}
+  .loading{color:var(--graphite);padding:20px 0}
+  .pull{margin:18px 0;padding:2px 0 2px 14px;border-left:5px solid var(--stamp);
+    font-size:19px;line-height:1.3;font-weight:700;letter-spacing:-.015em;max-width:34ch}
+  .pull small{display:block;font-size:12px;font-weight:600;color:var(--graphite);
+    letter-spacing:0;margin-top:5px}
+  .people{display:flex;gap:14px;flex-wrap:wrap}
+  .people div b{font-size:20px}
+  .people div span{display:block;font-size:12px;color:var(--graphite)}
+  @media (max-width:520px){
+    .g4,.g3{grid-template-columns:repeat(2,1fr)}
+    .frow{grid-template-columns:88px 1fr}
+    .row select,.row input{min-width:0;flex:1}
+  }
+</style>
+
+<div class="desk">
+  <div class="masthead">
+    <h1>Acquisitions desk</h1>
+    <span class="sub" style="margin:0">Twin Home Buyer &middot; Equity Track PH</span>
+    <div class="who">
+      <label class="f" for="me" style="margin:0">On the desk</label>
+      <select id="me" style="width:auto">
+        <option>Juan</option><option>Cherry</option><option>Thea</option>
+        <option>Genesis</option><option>Jonathan</option><option>Sales manager</option><option>Mexico team</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-view="plan">The plan</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="today">Today</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="numbers">Numbers</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="leads">Lead board</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="tools">Tools we own</button>
+  </div>
+
+  <div id="boot" class="loading">Opening the desk&hellip;</div>
+
+  <!-- TODAY -->
+  <div id="view-today" hidden>
+    <div id="notLogged"></div>
+
+    <div class="sheet">
+      <h2>Today's log</h2>
+      <p class="sub" id="todayLabel"></p>
+      <div class="grid g4">
+        <div><label class="f" for="d_tv">TV spend $</label><input id="d_tv" type="number" min="0"></div>
+        <div><label class="f" for="d_ppc">PPC spend $</label><input id="d_ppc" type="number" min="0"></div>
+        <div><label class="f" for="d_ppl">PPL spend $</label><input id="d_ppl" type="number" min="0"></div>
+        <div><label class="f" for="d_other">Other spend $</label><input id="d_other" type="number" min="0"></div>
+      </div>
+      <div class="grid g3" style="margin-top:8px">
+        <div><label class="f" for="d_newleads">New leads in</label><input id="d_newleads" type="number" min="0"></div>
+        <div><label class="f" for="d_calls">Inbound calls</label><input id="d_calls" type="number" min="0"></div>
+        <div><label class="f" for="d_missed">Calls missed</label><input id="d_missed" type="number" min="0"></div>
+        <div><label class="f" for="d_contacts">Sellers reached</label><input id="d_contacts" type="number" min="0"></div>
+        <div><label class="f" for="d_appts">Appointments set</label><input id="d_appts" type="number" min="0"></div>
+        <div><label class="f" for="d_contracts">Contracts signed</label><input id="d_contracts" type="number" min="0"></div>
+        <div><label class="f" for="d_fell">Contracts fell out</label><input id="d_fell" type="number" min="0"></div>
+        <div><label class="f" for="d_closed">Deals closed</label><input id="d_closed" type="number" min="0"></div>
+        <div><label class="f" for="d_speed">Minutes to first call</label><input id="d_speed" type="number" min="0"></div>
+      </div>
+      <div class="row">
+        <button class="btn" id="saveDay">Save today</button>
+        <span class="hint" id="saveMsg"></span>
+      </div>
+    </div>
+
+    <div class="sheet">
+      <h2>Tools that have to run today</h2>
+      <p class="sub">Tick it when it is actually done. The streak breaks if a day is skipped.</p>
+      <div id="runsToday"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Work queue</h2>
+      <p class="sub">Every property with a next action due. Overdue sits on top.</p>
+      <div id="queue"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Waiting on Juan</h2>
+      <p class="sub">Flagged properties and anything a seller raised about a mailer or check.</p>
+      <div id="flagged"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Who worked the board today</h2>
+      <p class="sub">Notes posted and properties moved since midnight.</p>
+      <div class="people" id="activity"></div>
+    </div>
+  </div>
+
+  <!-- NUMBERS -->
+  <div id="view-numbers" hidden>
+    <div class="sheet">
+      <h2>Pace this month</h2>
+      <p class="sub" id="paceNote"></p>
+      <div class="pace"><b id="paceNum">0</b><span class="of" id="paceOf"></span></div>
+      <div class="track"><i id="paceBar" style="width:0"></i></div>
+      <p class="hint" id="paceMsg"></p>
+      <div class="grid g2" style="margin-top:10px">
+        <div><label class="f" for="t_deals">Deals target per month</label><input id="t_deals" type="number" min="0"></div>
+        <div><label class="f" for="t_budget">Marketing budget per month $</label><input id="t_budget" type="number" min="0"></div>
+      </div>
+      <div class="row"><button class="btn ghost small" id="saveTargets">Save targets</button></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Last 30 days</h2>
+      <p class="sub" id="rangeNote"></p>
+      <div class="funnel" id="funnel"></div>
+      <div class="costs" id="costs" style="margin-top:14px"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Where the money went</h2>
+      <p class="sub">Spend by channel over 30 days against what each channel put on the board.</p>
+      <div class="scroll"><table id="chanTable"></table></div>
+      <p class="hint">Channel results come from the source on each property, so set the source when you add leads.</p>
+    </div>
+
+    <div class="sheet">
+      <h2>Day by day</h2>
+      <p class="sub">One row per day someone logged. Gaps are days nobody reported.</p>
+      <div class="scroll"><table id="daysTable"></table></div>
+    </div>
+  </div>
+
+  <!-- LEADS -->
+  <div id="view-leads" hidden>
+    <div class="sheet">
+      <h2>Live list</h2>
+      <p class="sub">Cut the database to what is worth energy. Archiving hides it here, it never deletes it.</p>
+      <div class="tally" id="tally"></div>
+      <div class="row">
+        <select id="filter">
+          <option value="live">Live list</option>
+          <option value="due">Due or overdue</option>
+          <option value="flag">Needs Juan</option>
+          <option value="stale">Untouched 7+ days</option>
+          <option value="appt">Appointments set</option>
+          <option value="archived">Archived</option>
+          <option value="all">Everything</option>
+        </select>
+        <select id="sort">
+          <option value="due">Sort by next action</option>
+          <option value="touched">Sort by last touched</option>
+          <option value="room">Sort by offer room</option>
+        </select>
+      </div>
+      <div class="row"><input id="search" placeholder="Search address or owner" style="flex:1"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Add leads</h2>
+      <p class="sub">One per line: address, owner, phone, source, equity note</p>
+      <textarea id="bulk" rows="3" placeholder="1420 Ashby Ave Oakland, R. Nunez, 510-555-0134, PPC, owned free and clear"></textarea>
+      <div class="row"><button class="btn" id="addBulk">Add to board</button></div>
+    </div>
+
+    <div id="leadList"></div>
+  </div>
+
+  <!-- TOOLS -->
+  <div id="view-tools" hidden>
+    <div class="sheet">
+      <h2>What we already paid for</h2>
+      <p class="sub">Every build sitting on the shelf. A tool nobody runs is not a tool, it is a receipt.</p>
+      <div class="tally" id="toolTally"></div>
+      <div class="row"><select id="builderFilter"><option value="">Everyone's builds</option></select></div>
+      <p class="hint" id="toolNote"></p>
+    </div>
+    <div class="sheet">
+      <h2>Three things every tool needs</h2>
+      <p class="sub">Set these once per tool and the daily list builds itself.</p>
+      <ol style="margin:0;padding-left:20px;font-size:14px">
+        <li>Steps to run it, written plainly enough that a new hire can follow them.</li>
+        <li>How often it runs, and what the output should look like when it worked.</li>
+        <li>Who is trained on it, and who covers when that person is out.</li>
+      </ol>
+      <p class="hint">Seth writes the steps. Cherry marks who is trained. Nobody guesses.</p>
+    </div>
+    <div class="sheet">
+      <h2>Who hands over what</h2>
+      <p class="sub">Seth, Jonathan and Bryan built these, so they list them and hand them over. Cherry uses them, tells them what breaks, and they fix it. She does not inventory anyone else's work.</p>
+      <div id="rollcall"></div>
+      <p class="hint">Each build needs five things: name, link, what it does for the person using it, whether it still works, and who can run it.</p>
+      <p class="hint">Anything that came in under a name nobody here recognises goes to Bryan until someone claims it.</p>
+      <div id="verdicts" style="margin-top:10px"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>What AI was supposed to take over</h2>
+      <p class="sub">The five pillars, in the order they were meant to ship. Mark where each one actually stands.</p>
+      <div id="pillars"></div>
+    </div>
+    <div id="toolList"></div>
+    <div class="sheet">
+      <h2>Log a build that is not listed</h2>
+      <p class="sub">Anything built in Claude or anywhere else. If it has no link here, nobody will find it.</p>
+      <div class="grid g2">
+        <div><label class="f">What it is called</label><input id="newTool"></div>
+        <div><label class="f">Who built it</label><select id="newToolOwner"><option>Cherry</option><option>Seth</option><option>Bryan</option><option>Jonathan</option><option>Someone else</option></select></div>
+        <div><label class="f">Link</label><input id="newToolLink" placeholder="paste the URL"></div>
+        <div><label class="f">What it does for the person using it</label><input id="newToolJob"></div>
+      </div>
+      <div class="row"><button class="btn" id="addTool">Add to the list</button>
+      <span class="hint" id="addToolMsg"></span></div>
+      <p class="hint">Send this page to Seth and have him paste one line per build. Ten minutes, and the shelf is visible.</p>
+    </div>
+  </div>
+
+  <!-- PLAN -->
+  <div id="view-plan" hidden>
+    <div class="sheet plan">
+      <h2>How this desk works</h2>
+      <p class="sub">10 September 2026</p>
+      <p>Sales has been rebuilt around one job per seat. Cherry has been pioneering acquisitions for the last couple of months without anyone standing over her, and that stays true. What changes is that she is not also expected to run a floor, and the numbers stop living in someone's head.</p>
+
+      <p class="pull">Work 200, not 8,000.<small>Clarity beats volume every single time</small></p>
+
+      <h3>Cherry &mdash; database and closings</h3>
+      <ul>
+        <li>Take the roughly 8,000 records down to a live list near 200 that are genuinely workable.</li>
+        <li>Archive the dead ones with a reason: sold, no equity, not interested, bad data. Nothing gets re-worked by accident.</li>
+        <li>Run the text and call automations already built and report what they produced, not that they ran.</li>
+        <li>Keep closing. Commission is unchanged.</li>
+        <li>Jonathan is the technical resource for tracking and automation.</li>
+        <li>Thea trains to full underwriting: comps, repairs, offer number, unassisted.</li>
+        <li>The other two work the live list as investigators, on this board, daily.</li>
+      </ul>
+
+      <p class="pull">Train for days, not weeks. Get people in the game.<small>You learn on live calls, not in a classroom</small></p>
+
+      <h3>Sales manager &mdash; the floor</h3>
+      <ul>
+        <li>Based in Guadalajara. Owns the Mexico team, after-hours coverage and lead distribution.</li>
+        <li>Owns ramping new reps, marketing spend review, and every number on this desk.</li>
+        <li>Paid on what the team produces, not on his own closings.</li>
+        <li>Last line on a missed inbound call. That stops with him.</li>
+      </ul>
+
+      <p class="pull">Discipline, not motivation. Show up for the boring part.<small>The boring part is where the deals are</small></p>
+
+      <h3>The daily rhythm</h3>
+      <ul>
+        <li>Numbers go in daily. Five minutes, not a weekly report.</li>
+        <li>Juan reads them each morning and asks about them. That is the discipline, not the software.</li>
+        <li>Move a property, leave a note. Set a next action or it falls off the earth.</li>
+        <li>If it needs Juan, flag it and he sees it on the Today tab.</li>
+      </ul>
+
+      <p class="pull">A tool nobody runs is not a tool. It is a receipt.<small>We already own what we need. Use it</small></p>
+
+      <h3>Two standing rules</h3>
+      <p class="pull">The list belongs to the company.<small>Nobody owns leads, everyone works them</small></p>
+      <p>Leads are a company asset that people work, not territory anyone owns. Everyone is fed from the same board because the company needs more than one closer.</p>
+      <p>If a seller mentions a mailer or a check, mark the compliance box on that property and stop the conversation there. It routes to Juan and counsel. No exceptions, no explaining, no apologising.</p>
+      <p><span class="stamp">Not up for debate</span> Boring, consistent, daily. No new tools until this one is being used.</p>
+      <p class="hint">Everyone with this page sees the same board, the same numbers and the same notes.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var K_DAYS='thb:days', K_LEADS='thb:leads', K_SET='thb:settings', K_ME='thb:me', K_TOOLS='thb:tools', K_RUNS='thb:runs';
+  var REC=['Decide','Use it daily','Wire it into the desk','Wrong lane, leave it','Retire it'];
+  var TOOLSTATUS=['Unconfirmed','Live and used daily','Live but nobody uses it','Built, never launched','Waiting on legal clearance','Retired'];
+  var BASE_TOOLS=[
+    {id:'retell',name:'Retell conversation flow and intent routing',builtby:'Seth',owner:'',job:'How the AI speaks, and whether a call is a new seller, existing seller or other'},
+    {id:'retellback',name:'Retell functions, Zapier and Chat alerts',builtby:'Jonathan',owner:'',job:'Caller mapping, live transfer, callback logic, notifications'},
+    {id:'plbids',name:'PropertyLeads bid monitoring',builtby:'Seth',owner:'Seth',cadence:'Every day',job:'Check the top bid morning, lunch and end of day so we do not lose the feed'},
+    {id:'pldispute',name:'PropertyLeads dispute filing',builtby:'Seth',owner:'Seth',cadence:'Every day',job:'File disputes on bad leads in Monday every day, or we pay for junk'},
+    {id:'gui',name:'GUI and mouse automation (Claude Code)',builtby:'Seth',owner:'',job:'Clicks through screens that have no API'},
+    {id:'webhook',name:'Webhook receiver (main.py)',owner:'Bryan',job:'Pushes Retell calls into Monday with duplicate checking and mailer alerts'},
+    {id:'console',name:'Inbound call operations console',owner:'Cherry',job:'Live call handling screen for the PH desk'},
+    {id:'academy',name:'Phone Academy',owner:'Cherry',job:'Trains a new caller before they touch a live line'},
+    {id:'rebuttals',name:'Seller rebuttal library',owner:'Cherry',job:'21 rebuttals, never-say list, consent and DNC rules'},
+    {id:'simulator',name:'Juan Simulator certification',owner:'Cherry',job:'Reps practice seller calls and get graded before going live'},
+    {id:'trainingboard',name:'Team training board and 17-question certification',owner:'Bryan',job:'Nobody takes a live call without a perfect score'},
+    {id:'qa',name:'Phone QA workbook',owner:'Bryan',job:'Tests every published number and form so leads do not vanish'},
+    {id:'website',name:'Website alignment spec',owner:'Christine',job:'Fixes the number and availability conflicts across the site'},
+    {id:'opsdash',name:'Operations dashboard',owner:'Bryan',job:'Who owns what across people, departments and properties'},
+    {id:'kpidash',name:'KPI dashboard',builtby:'Seth',owner:'',job:'The earlier metrics build'},
+    {id:'revival',name:'Revival AI lead screening',owner:'Juan',job:'List cleaning only, no live texting until counsel clears it'},
+    {id:'blackbook',name:'REI BlackBook',owner:'Cherry',job:'The CRM of record where the 8,000 live'},
+    {id:'monday',name:'Monday.com',owner:'Bryan',job:'Operations hub'},
+    {id:'deepseek',name:'Local DeepSeek agent system',builtby:'Seth',owner:'',job:'Runs automation without paying per task'},
+    {id:'dispo',name:'Dispositions training site',owner:'Danny',job:'Wholesale fundamentals and call scripts for dispo'},
+    {id:'closeracademy',name:'Closer recruiting and academy sites',owner:'MC',job:'Hiring and ramping closers in Jalisco and the Philippines'},
+    {id:'agentdesk',name:'Agent Desk Academy and outreach playbook',owner:'MC',job:'Agent outreach with a three-minute reply standard'}
+  ];
+  var tools=[], runs={}, pillars={};
+  var PILLARS=[
+    {id:'p_score',name:'Lead scoring',what:'Every lead scored on value, repairs and profit so the winners surface'},
+    {id:'p_out',name:'Seller outreach',what:'First-touch texts and calls drafted and sent without anyone typing'},
+    {id:'p_follow',name:'Follow-up',what:'Nothing in the 8,000 goes cold unattended'},
+    {id:'p_contract',name:'Contract generation',what:'Offers and paperwork filled from our own data'},
+    {id:'p_report',name:'Reporting',what:'The numbers on this desk assembled without a person'}
+  ];
+  var PSTATE=['Not started','Built, not in use','Partly running','Running every day'];
+  var CADENCE=['Not set','Every day','Every weekday','Weekly','On each new lead','As needed'];
+  var DAILY=['Every day','Every weekday'];
+  var days=[], leads=[], settings={dealTarget:3,budget:0,maoPct:70}, me='Juan';
+  var STATUS=[['new','New'],['investigating','Investigating'],['contact','Contact made'],
+              ['appt','Appointment set'],['contract','Under contract'],['closed','Closed'],
+              ['a_sold','Archived: sold'],['a_equity','Archived: no equity'],
+              ['a_no','Archived: not interested'],['a_bad','Archived: bad data']];
+  var LIVE=['new','investigating','contact','appt','contract'];
+  var CHANNELS=[['tv','TV'],['ppc','PPC'],['ppl','PPL'],['other','Other']];
+  var PEOPLE=['Cherry','Thea','Genesis','Jonathan','Mexico team','Sales manager','Juan'];
+  var DAYF=['tv','ppc','ppl','other','newleads','calls','missed','contacts','appts','contracts','fell','closed','speed'];
+
+  function $(id){return document.getElementById(id)}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function n(v){return Number(v)||0}
+  function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+  function today(){return iso(new Date())}
+  function money(v){return isFinite(v)?'$'+Math.round(v).toLocaleString():'&mdash;'}
+  function pct(a,b){return b>0?Math.round(a/b*100)+'%':'&mdash;'}
+  function daysAgo(t){return t?Math.floor((Date.now()-new Date(t).getTime())/86400000):999}
+  function spendOf(d){return d.spend!=null?n(d.spend):n(d.tv)+n(d.ppc)+n(d.ppl)+n(d.other)}
+  function label(v){for(var i=0;i<STATUS.length;i++)if(STATUS[i][0]===v)return STATUS[i][1];return v}
+  function isLive(l){return LIVE.indexOf(l.status)>-1}
+  function room(l){var a=n(l.arv),r=n(l.repairs);if(!a)return null;
+    var mao=a*(n(settings.maoPct)||70)/100-r; return l.ask?mao-n(l.ask):mao}
+
+  function get(k,shared){return window.storage.get(k,shared).then(function(r){
+    if(!r||!r.value)return null; try{return JSON.parse(r.value)}catch(e){return null}
+  }).catch(function(){return null})}
+  function set(k,v,shared){return window.storage.set(k,JSON.stringify(v),shared).catch(function(e){
+    console.error('save failed',e);return null})}
+  var saveDays=function(){return set(K_DAYS,days,true)};
+  var saveLeads=function(){return set(K_LEADS,leads,true)};
+  var saveSet=function(){return set(K_SET,settings,true)};
+
+  /* ---------- today ---------- */
+  function loadTodayForm(){
+    var d=null; for(var i=0;i<days.length;i++)if(days[i].date===today())d=days[i];
+    DAYF.forEach(function(f){$('d_'+f).value=(d&&d[f]!=null)?d[f]:''});
+    $('todayLabel').innerHTML=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})+
+      (d?' &mdash; logged by '+esc(d.by||'someone')+'. Saving again updates it.':' &mdash; not logged yet.');
+    $('notLogged').innerHTML=d?'':'<div class="warn">Today has not been logged. It takes about a minute.</div>';
+  }
+  function saveToday(){
+    var rec={date:today(),by:me};
+    DAYF.forEach(function(f){var v=$('d_'+f).value; rec[f]=v===''?null:Number(v)});
+    days=days.filter(function(x){return x.date!==rec.date});
+    days.push(rec);
+    days.sort(function(a,b){return a.date<b.date?1:-1});
+    saveDays().then(function(r){
+      $('saveMsg').textContent=r?('Saved by '+me):'Could not save. Check your connection and press Save today again.';
+      renderToday(); renderNumbers();
+    });
+  }
+  function renderQueue(){
+    var t=today();
+    var q=leads.filter(function(l){return isLive(l)&&l.next&&l.due}).sort(function(a,b){return a.due<b.due?-1:1})
+      .filter(function(l){return l.due<=t});
+    $('queue').innerHTML=q.length?q.map(function(l){
+      var over=l.due<t;
+      return '<div class="queue"><div class="when'+(over?' over':'')+'">'+
+        (over?('Overdue since '+l.due.slice(5)):'Due today')+'</div>'+
+        '<div><b>'+esc(l.addr)+'</b></div>'+
+        '<div class="meta" style="font-size:13px">'+esc(l.next)+
+        (l.owner_by?' &middot; '+esc(l.owner_by):'')+'</div>'+
+        '<div class="row"><button class="btn small" data-done="'+l.id+'">Mark done</button>'+
+        '<button class="btn ghost small" data-goto="'+l.id+'">Open on board</button></div></div>'
+    }).join(''):'<div class="empty">Nothing due. Set next actions on the lead board so work does not stall.</div>';
+  }
+  function renderFlagged(){
+    var f=leads.filter(function(l){return (l.flag||l.comply)&&isLive(l)});
+    $('flagged').innerHTML=f.length?f.map(function(l){
+      return '<div class="queue"><div><b>'+esc(l.addr)+'</b></div>'+
+        '<div class="row">'+(l.comply?'<span class="chip hot">Mailer or check mentioned</span>':'')+
+        (l.flag?'<span class="chip hot">Flagged</span>':'')+
+        '<span class="chip">'+esc(label(l.status))+'</span></div>'+
+        (l.notes&&l.notes.length?'<div class="meta" style="font-size:13px;margin-top:6px">'+
+          esc(l.notes[l.notes.length-1].text)+'</div>':'')+'</div>'
+    }).join(''):'<div class="empty">Nothing waiting on Juan.</div>';
+  }
+  function renderActivity(){
+    var start=new Date(); start.setHours(0,0,0,0); var tally={};
+    leads.forEach(function(l){(l.notes||[]).forEach(function(nt){
+      if(new Date(nt.at)>=start)tally[nt.by]=(tally[nt.by]||0)+1})});
+    var keys=Object.keys(tally);
+    $('activity').innerHTML=keys.length?keys.sort(function(a,b){return tally[b]-tally[a]}).map(function(k){
+      return '<div><b>'+tally[k]+'</b><span>'+esc(k)+'</span></div>'}).join(''):
+      '<div class="empty" style="width:100%">Nobody has touched the board today.</div>';
+  }
+  function renderToday(){loadTodayForm();renderQueue();renderFlagged();renderActivity();
+    if(tools.length)renderRunsToday()}
+
+  /* ---------- numbers ---------- */
+  function sum(a,f){return a.reduce(function(t,d){return t+n(d[f])},0)}
+  function renderNumbers(){
+    var now=new Date(), mStart=iso(new Date(now.getFullYear(),now.getMonth(),1));
+    var mo=days.filter(function(d){return d.date>=mStart});
+    var closed=sum(mo,'closed'), target=n(settings.dealTarget);
+    var dayOfMonth=now.getDate(), inMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    var expected=target*dayOfMonth/inMonth;
+    $('paceNum').textContent=closed;
+    $('paceOf').innerHTML=target?('of '+target+' closed this month'):'closed this month';
+    var w=target?Math.min(100,Math.round(closed/target*100)):0;
+    var bar=$('paceBar'); bar.style.width=w+'%';
+    bar.className=target?(closed>=expected?'ahead':'behind'):'';
+    $('paceMsg').innerHTML=target?('Pace for day '+dayOfMonth+' is '+expected.toFixed(1)+'. '+
+      (closed>=expected?'On or ahead of pace.':'Behind pace by '+(expected-closed).toFixed(1)+' deals.')):
+      'Set a monthly target to track pace.';
+    var mSpend=mo.reduce(function(t,d){return t+spendOf(d)},0);
+    $('paceNote').innerHTML='Spent '+money(mSpend)+' this month'+(n(settings.budget)?' of a '+money(n(settings.budget))+' budget':'');
+    $('t_deals').value=settings.dealTarget||''; $('t_budget').value=settings.budget||'';
+
+    var cut=iso(new Date(Date.now()-30*86400000));
+    var r=days.filter(function(d){return d.date>=cut});
+    $('rangeNote').textContent=r.length?(r.length+' days logged in the last 30'):'Nothing logged in the last 30 days.';
+    var nl=sum(r,'newleads'),calls=sum(r,'calls'),miss=sum(r,'missed'),con=sum(r,'contacts'),
+        ap=sum(r,'appts'),ct=sum(r,'contracts'),cl=sum(r,'closed'),fell=sum(r,'fell'),
+        sp=r.reduce(function(t,d){return t+spendOf(d)},0);
+    var steps=[['New leads',nl,''],['Inbound calls',calls,'thin'],['Sellers reached',con,''],
+               ['Appointments',ap,'thin'],['Contracts',ct,''],['Closed',cl,'win']];
+    var max=Math.max.apply(null,steps.map(function(s){return s[1]}).concat([1]));
+    var conv=[null,null,pct(con,nl),pct(ap,con),pct(ct,ap),pct(cl,ct)];
+    $('funnel').innerHTML=steps.map(function(s,i){
+      return '<div class="frow"><span class="fname">'+s[0]+'</span><div class="fbar '+s[2]+
+        '" style="width:'+Math.max(2,Math.round(s[1]/max*100))+'%">'+s[1]+'</div></div>'+
+        (conv[i]?'<div class="frow"><span></span><div class="fconv">'+conv[i]+' carried through</div></div>':'')
+    }).join('');
+    var sd=r.filter(function(d){return d.speed!=null});
+    var avg=sd.length?Math.round(sum(sd,'speed')/sd.length):null;
+    var cells=[[money(nl?sp/nl:NaN),'Cost per lead'],[money(ap?sp/ap:NaN),'Cost per appointment'],
+      [money(ct?sp/ct:NaN),'Cost per contract'],[money(cl?sp/cl:NaN),'Cost per closed deal'],
+      [pct(cl,ct),'Contract to close'],[ct?Math.round(fell/ct*100)+'%':'&mdash;','Fell out after contract'],
+      [avg!=null?avg+' min':'&mdash;','Average speed to first call'],
+      [calls+miss?pct(miss,calls+miss):'&mdash;','Inbound calls missed']];
+    $('costs').innerHTML=cells.map(function(c){
+      return '<div class="cost"><b>'+c[0]+'</b><span>'+c[1]+'</span></div>'}).join('');
+
+    var rows=CHANNELS.map(function(c){
+      var chSpend=sum(r,c[0]);
+      var ls=leads.filter(function(l){return (l.source||'').toLowerCase()===c[1].toLowerCase()});
+      var la=ls.filter(function(l){return ['appt','contract','closed'].indexOf(l.status)>-1}).length;
+      var lc=ls.filter(function(l){return ['contract','closed'].indexOf(l.status)>-1}).length;
+      var lz=ls.filter(function(l){return l.status==='closed'}).length;
+      return '<tr><td>'+c[1]+'</td><td>'+money(chSpend)+'</td><td>'+ls.length+'</td><td>'+
+        money(ls.length?chSpend/ls.length:NaN)+'</td><td>'+la+'</td><td>'+lc+'</td><td>'+lz+'</td><td>'+
+        money(lz?chSpend/lz:NaN)+'</td></tr>'});
+    $('chanTable').innerHTML='<tr><th>Channel</th><th>Spend 30d</th><th>Leads</th><th>Per lead</th>'+
+      '<th>Appts</th><th>Contracts</th><th>Closed</th><th>Per deal</th></tr>'+rows.join('');
+
+    var head=['Date','Spend','Leads','Calls','Missed','Reached','Appts','Contracts','Closed','By'];
+    var dr=days.slice(0,20).map(function(d){
+      return '<tr><td>'+d.date.slice(5)+'</td><td>'+money(spendOf(d))+'</td><td>'+(d.newleads==null?'':d.newleads)+
+        '</td><td>'+(d.calls==null?'':d.calls)+'</td><td>'+(d.missed==null?'':d.missed)+
+        '</td><td>'+(d.contacts==null?'':d.contacts)+'</td><td>'+(d.appts==null?'':d.appts)+
+        '</td><td>'+(d.contracts==null?'':d.contracts)+'</td><td>'+(d.closed==null?'':d.closed)+
+        '</td><td>'+esc(d.by||'')+'</td></tr>'});
+    $('daysTable').innerHTML='<tr>'+head.map(function(h){return '<th>'+h+'</th>'}).join('')+'</tr>'+
+      (dr.length?dr.join(''):'<tr><td colspan="10" style="color:var(--graphite)">Log today and this fills in.</td></tr>');
+  }
+
+  /* ---------- leads ---------- */
+  function byId(id){for(var i=0;i<leads.length;i++)if(leads[i].id===id)return leads[i];return null}
+  function touch(l){l.touched=new Date().toISOString()}
+  function log(l,text){(l.notes=l.notes||[]).push({by:me,at:new Date().toISOString(),text:text})}
+  function addBulk(){
+    var txt=$('bulk').value.trim(); if(!txt)return;
+    txt.split('\n').forEach(function(line){
+      line=line.trim(); if(!line)return;
+      var p=line.split(',').map(function(s){return s.trim()});
+      leads.unshift({id:'L'+Date.now()+'-'+Math.random().toString(36).slice(2,6),
+        addr:p[0]||line,owner:p[1]||'',phone:p[2]||'',source:p[3]||'',equity:p.slice(4).join(', '),
+        status:'new',owner_by:'',flag:false,comply:false,attempts:0,next:'',due:'',
+        arv:'',repairs:'',ask:'',offer:'',apptDate:'',apptOutcome:'',
+        touched:new Date().toISOString(),notes:[]});
+    });
+    $('bulk').value='';
+    saveLeads().then(function(r){renderLeads();renderToday();renderNumbers();
+      if(!r)$('bulk').placeholder='Could not save those. Paste again.'});
+  }
+  function field(id,key,val,note){
+    var l=byId(id); if(!l)return; l[key]=val; touch(l); if(note)log(l,note);
+    saveLeads().then(function(){renderLeads();renderToday();renderNumbers()});
+  }
+  function renderLeads(){
+    var live=leads.filter(isLive).length, arch=leads.length-live,
+        flag=leads.filter(function(l){return (l.flag||l.comply)&&isLive(l)}).length,
+        t=today(), due=leads.filter(function(l){return isLive(l)&&l.due&&l.due<=t}).length;
+    $('tally').innerHTML='<div><b>'+live+'</b><span>live list &middot; target 200</span></div>'+
+      '<div><b>'+due+'</b><span>due or overdue</span></div>'+
+      '<div><b>'+arch+'</b><span>archived</span></div>'+
+      '<div><b>'+flag+'</b><span>waiting on Juan</span></div>';
+    var f=$('filter').value, q=$('search').value.toLowerCase(), s=$('sort').value;
+    var list=leads.filter(function(l){
+      if(q&&(l.addr+' '+l.owner).toLowerCase().indexOf(q)<0)return false;
+      if(f==='live')return isLive(l);
+      if(f==='archived')return !isLive(l);
+      if(f==='flag')return (l.flag||l.comply)&&isLive(l);
+      if(f==='stale')return isLive(l)&&daysAgo(l.touched)>=7;
+      if(f==='due')return isLive(l)&&l.due&&l.due<=t;
+      if(f==='appt')return l.status==='appt';
+      return true;
+    });
+    list.sort(function(a,b){
+      if(s==='touched')return daysAgo(b.touched)-daysAgo(a.touched);
+      if(s==='room'){var ra=room(a),rb=room(b);return (rb==null?-1e12:rb)-(ra==null?-1e12:ra)}
+      var da=a.due||'9999', db=b.due||'9999'; return da<db?-1:da>db?1:0;
+    });
+    if(!list.length){
+      $('leadList').innerHTML='<div class="empty">'+(leads.length?'Nothing matches that filter.':
+        'Paste your first batch above. Work 200, not 8,000.')+'</div>';return;
+    }
+    $('leadList').innerHTML=list.map(function(l){
+      var stale=isLive(l)&&daysAgo(l.touched)>=7, r=room(l);
+      return '<div class="lead s-'+l.status+((l.flag||l.comply)&&isLive(l)?' flag':'')+'" id="lead-'+l.id+'">'+
+        '<div class="addr">'+esc(l.addr)+'</div>'+
+        '<div class="meta">'+[esc(l.owner),esc(l.phone),esc(l.source),esc(l.equity)].filter(Boolean).join(' &middot; ')+'</div>'+
+        '<div class="row">'+
+          '<span class="chip">'+esc(label(l.status))+'</span>'+
+          (l.comply?'<span class="chip hot">Mailer or check &mdash; route to Juan</span>':'')+
+          (l.flag?'<span class="chip hot">Needs Juan</span>':'')+
+          (stale?'<span class="chip stale">'+daysAgo(l.touched)+' days untouched</span>':'')+
+          (n(l.attempts)?'<span class="chip">'+n(l.attempts)+' attempts</span>':'')+
+          (r!=null&&r>0?'<span class="chip good">'+money(r)+' room</span>':'')+
+        '</div>'+
+        '<div class="row">'+
+          '<select data-set="status" data-id="'+l.id+'">'+STATUS.map(function(st){
+            return '<option value="'+st[0]+'"'+(st[0]===l.status?' selected':'')+'>'+st[1]+'</option>'}).join('')+'</select>'+
+          '<select data-set="owner_by" data-id="'+l.id+'"><option value="">Unassigned</option>'+
+            PEOPLE.map(function(p){return '<option'+(p===l.owner_by?' selected':'')+'>'+p+'</option>'}).join('')+'</select>'+
+        '</div>'+
+        '<div class="row">'+
+          '<input data-set="next" data-id="'+l.id+'" value="'+esc(l.next)+'" placeholder="Next action" style="flex:2">'+
+          '<input data-set="due" data-id="'+l.id+'" type="date" value="'+esc(l.due)+'">'+
+        '</div>'+
+        '<div class="row">'+
+          '<button class="btn ghost small" data-attempt="'+l.id+'">Log attempt</button>'+
+          '<button class="btn ghost small" data-flag="'+l.id+'">'+(l.flag?'Clear flag':'Flag for Juan')+'</button>'+
+          '<button class="btn ghost small" data-comply="'+l.id+'">'+(l.comply?'Clear mailer note':'Mailer or check mentioned')+'</button>'+
+        '</div>'+
+        '<details><summary>Underwriting and appointment</summary>'+
+          '<div class="grid g2" style="margin-top:8px">'+
+            '<div><label class="f">After repair value $</label><input data-set="arv" data-id="'+l.id+'" type="number" value="'+esc(l.arv)+'"></div>'+
+            '<div><label class="f">Repairs $</label><input data-set="repairs" data-id="'+l.id+'" type="number" value="'+esc(l.repairs)+'"></div>'+
+            '<div><label class="f">Seller asking $</label><input data-set="ask" data-id="'+l.id+'" type="number" value="'+esc(l.ask)+'"></div>'+
+            '<div><label class="f">Our offer $</label><input data-set="offer" data-id="'+l.id+'" type="number" value="'+esc(l.offer)+'"></div>'+
+            '<div><label class="f">Appointment date</label><input data-set="apptDate" data-id="'+l.id+'" type="date" value="'+esc(l.apptDate)+'"></div>'+
+            '<div><label class="f">Visit outcome</label><select data-set="apptOutcome" data-id="'+l.id+'">'+
+              ['','Not visited yet','Offer made','Thinking about it','Too high on price','No deal','Signed']
+              .map(function(o){return '<option'+(o===l.apptOutcome?' selected':'')+'>'+o+'</option>'}).join('')+'</select></div>'+
+          '</div>'+
+          (n(l.arv)?'<div class="mao">Max offer at '+n(settings.maoPct)+'% of value less repairs: <b>'+
+            money(n(l.arv)*n(settings.maoPct)/100-n(l.repairs))+'</b>'+
+            (n(l.ask)?'<br>Against a '+money(n(l.ask))+' ask, that is '+money(r)+' of room.':'')+'</div>':
+            '<p class="hint">Enter after repair value and repairs to get the max offer.</p>')+
+        '</details>'+
+        '<div class="thread">'+
+          ((l.notes||[]).slice(-4).map(function(nt){
+            return '<div class="note"><b>'+esc(nt.by)+'</b><em>'+new Date(nt.at).toLocaleDateString()+'</em><br>'+esc(nt.text)+'</div>'
+          }).join('')||'<div class="note" style="color:var(--graphite);border:none">No notes yet.</div>')+
+          '<div class="row"><input data-note="'+l.id+'" placeholder="What did you find?" style="flex:1">'+
+          '<button class="btn small" data-send="'+l.id+'">Post</button></div>'+
+        '</div></div>';
+    }).join('');
+  }
+
+  /* ---------- tools ---------- */
+  function mergeTools(saved){
+    var byIdT={}; (saved||[]).forEach(function(t){byIdT[t.id]=t});
+    tools=BASE_TOOLS.map(function(b){
+      var s=byIdT[b.id]||{};
+      return {id:b.id,name:b.name,job:b.job,owner:s.owner||b.owner,builtby:s.builtby||b.builtby||'',
+        status:s.status||'Unconfirmed',proof:s.proof||'',how:s.how||'',output:s.output||'',
+        cadence:s.cadence||b.cadence||'Not set',link:s.link||b.link||'',rec:s.rec||b.rec||'Decide',handed:s.handed||'',verdict:s.verdict||'Not handed over yet',backup:s.backup||'',trained:s.trained||[],custom:false};
+    });
+    (saved||[]).forEach(function(t){if(t.custom)tools.push(t)});
+  }
+  var saveTools=function(){return set(K_TOOLS,tools,true)};
+  var saveRuns=function(){return set(K_RUNS,runs,true)};
+  function dailyTools(){return tools.filter(function(t){return DAILY.indexOf(t.cadence)>-1})}
+  function ranOn(date,id){return runs[date]&&runs[date][id]}
+  function streak(){
+    var d=dailyTools(); if(!d.length)return 0;
+    var count=0, day=new Date();
+    for(var i=0;i<60;i++){
+      var key=iso(day);
+      var all=d.every(function(t){return ranOn(key,t.id)});
+      if(!all)break;
+      count++;
+      day.setDate(day.getDate()-1);
+    }
+    return count;
+  }
+  function renderRunsToday(){
+    var d=dailyTools(), t=today();
+    if(!d.length){
+      $('runsToday').innerHTML='<div class="empty">No tool is set to run daily yet. Set a cadence on the Tools tab.</div>';
+      return;
+    }
+    var done=d.filter(function(x){return ranOn(t,x.id)}).length;
+    var st=streak();
+    $('runsToday').innerHTML='<div class="row" style="margin:0 0 8px">'+
+      '<span class="chip'+(done===d.length?' good':' stale')+'">'+done+' of '+d.length+' run today</span>'+
+      (st>1?'<span class="chip good">'+st+' days in a row</span>':'')+'</div>'+
+      d.map(function(x){
+        var r=ranOn(t,x.id);
+        return '<div class="queue"><div><b>'+esc(x.name)+'</b></div>'+
+          '<div class="meta" style="font-size:13px">'+esc(x.owner||'no owner set')+
+          (r?' &middot; done by '+esc(r.by):'')+'</div>'+
+          '<div class="row"><button class="btn'+(r?' ghost':'')+' small" data-run="'+x.id+'">'+
+          (r?'Undo':'Mark run')+'</button>'+
+          (x.output?'<span class="hint" style="margin:0">Looks right when: '+esc(x.output)+'</span>':'')+
+          '</div></div>';
+      }).join('');
+  }
+  var BUILDERS=['Seth','Jonathan','Bryan'];
+  var VERDICT=['Not handed over yet','Works, in use','Broken, sent back','Needs training first'];
+  var asked={};
+  var saveAsked=function(){return set('thb:asked',asked,true)};
+  function reassignLeo(){
+    var moved=0;
+    tools.forEach(function(t){
+      if((t.builtby||'').toLowerCase().indexOf('leo')>-1){
+        t.builtby='Bryan'; moved++;
+        t.job=(t.job?t.job+' ':'')+'(was logged under a name nobody recognises)';
+      }
+    });
+    return moved;
+  }
+  function renderVerdicts(){
+    var c={};VERDICT.forEach(function(v){c[v]=0});
+    tools.forEach(function(t){c[t.verdict||'Not handed over yet']++});
+    $('verdicts').innerHTML='<div class="row" style="margin:0">'+VERDICT.map(function(v){
+      var cls=v==='Works, in use'?' good':v==='Not handed over yet'?' hot':' stale';
+      return '<span class="chip'+cls+'">'+c[v]+' '+v.toLowerCase()+'</span>'}).join('')+'</div>';
+  }
+  function renderRollcall(){
+    $('rollcall').innerHTML=BUILDERS.map(function(b){
+      var mine=tools.filter(function(t){return (t.builtby||'').indexOf(b)>-1});
+      var withLink=mine.filter(function(t){return t.link}).length;
+      var withSteps=mine.filter(function(t){return t.how}).length;
+      return '<div class="queue"><div><b>'+b+'</b></div>'+
+        '<div class="row" style="margin-top:4px">'+
+          '<span class="chip'+(mine.length?'':' hot')+'">'+mine.length+' logged</span>'+
+          '<span class="chip'+(withLink===mine.length&&mine.length?' good':' hot')+'">'+withLink+' with a link</span>'+
+          '<span class="chip'+(withSteps===mine.length&&mine.length?' good':' hot')+'">'+withSteps+' with steps</span>'+
+        '</div>'+
+        '<div class="row"><button class="btn ghost small" data-showbuilder="'+b+'">See '+b+'\'s builds</button>'+
+        '<input data-asked="'+b+'" value="'+esc(asked[b]||'')+'" placeholder="date you asked them" style="max-width:170px">'+
+        '</div></div>';
+    }).join('');
+  }
+  var savePillars=function(){return set('thb:pillars',pillars,true)};
+  function renderPillars(){
+    $('pillars').innerHTML=PILLARS.map(function(p){
+      var v=pillars[p.id]||'Not started';
+      return '<div class="queue"><div><b>'+p.name+'</b></div>'+
+        '<div class="meta" style="font-size:13px">'+p.what+'</div>'+
+        '<div class="row"><select data-pillar="'+p.id+'">'+PSTATE.map(function(o){
+          return '<option'+(o===v?' selected':'')+'>'+o+'</option>'}).join('')+'</select></div></div>';
+    }).join('');
+  }
+  function renderTools(){
+    var used=tools.filter(function(t){return t.status==='Live and used daily'}).length,
+        dead=tools.filter(function(t){return t.status==='Live but nobody uses it'||t.status==='Built, never launched'}).length,
+        nosteps=tools.filter(function(t){return !t.how}).length,
+        untrained=tools.filter(function(t){return !(t.trained||[]).length}).length,
+        noop=tools.filter(function(t){return !t.owner}).length,
+        undec=tools.filter(function(t){return (t.rec||'Decide')==='Decide'}).length;
+    $('toolTally').innerHTML='<div><b>'+tools.length+'</b><span>built for this team</span></div>'+
+      '<div><b>'+used+'</b><span>used daily</span></div>'+
+      '<div><b>'+dead+'</b><span>sitting unused</span></div>'+
+      '<div><b>'+nosteps+'</b><span>no written steps</span></div>'+
+      '<div><b>'+untrained+'</b><span>nobody trained</span></div>'+
+      '<div><b>'+noop+'</b><span>no daily operator</span></div>'+
+      '<div><b>'+undec+'</b><span>no call made yet</span></div>';
+    $('toolNote').innerHTML=noop?
+      ('A build with no operator is where every one of these died. '+noop+' have a builder but nobody running them.'):
+      nosteps?
+      ('Steps are missing on '+nosteps+' of them. A tool without steps gets used once and abandoned.'):
+      (untrained?'Every tool has steps. Now mark who is trained so it survives one person being out.':
+      'Steps written and people trained on all of them.');
+    var builders={}; tools.forEach(function(t){if(t.builtby)builders[t.builtby]=(builders[t.builtby]||0)+1});
+    var bf=$('builderFilter'), keep=bf.value;
+    bf.innerHTML='<option value="">Everyone\'s builds ('+tools.length+')</option>'+
+      Object.keys(builders).sort().map(function(b){
+        return '<option value="'+esc(b)+'"'+(b===keep?' selected':'')+'>Built by '+esc(b)+' ('+builders[b]+')</option>'}).join('')+
+      '<option value="__none"'+(keep==='__none'?' selected':'')+'>Builder not recorded ('+
+        tools.filter(function(t){return !t.builtby}).length+')</option>';
+    tools.sort(function(a,b){return TOOLSTATUS.indexOf(a.status)-TOOLSTATUS.indexOf(b.status)});
+    $('toolList').innerHTML=tools.filter(function(t){
+      if(!keep)return true;
+      if(keep==='__none')return !t.builtby;
+      return t.builtby===keep;
+    }).map(function(t){
+      var cls=t.status==='Live and used daily'?'s-closed':
+              (t.status==='Live but nobody uses it'||t.status==='Built, never launched')?'flag':'';
+      var tr=t.trained||[];
+      return '<div class="lead '+cls+'">'+
+        '<div class="addr">'+esc(t.name)+'</div>'+
+        '<div class="meta">'+esc(t.job||'')+'</div>'+
+        (t.link?'<div class="row"><a class="btn small" style="text-decoration:none" target="_blank" rel="noopener" href="'+
+          esc(t.link)+'">Open it</a></div>':'')+
+        '<div class="row">'+
+          (t.link?'':'<span class="chip hot">No link saved</span>')+
+          (t.builtby?'<span class="chip">Built by '+esc(t.builtby)+'</span>':'<span class="chip hot">Builder not recorded</span>')+
+          '<span class="chip'+(t.how?' good':' hot')+'">'+(t.how?'Steps written':'No steps')+'</span>'+
+          '<span class="chip'+(tr.length?'':' hot')+'">'+(tr.length?tr.length+' trained':'Nobody trained')+'</span>'+
+          (DAILY.indexOf(t.cadence)>-1?'<span class="chip">On the daily list</span>':'')+
+          (t.verdict==='Works, in use'?'<span class="chip good">Works</span>':
+           t.verdict==='Broken, sent back'?'<span class="chip hot">Broken, back with '+esc(t.builtby||'builder')+'</span>':
+           t.verdict==='Needs training first'?'<span class="chip stale">Needs training</span>':
+           '<span class="chip hot">Not handed over</span>')+
+        '</div>'+
+        '<div class="row">'+
+          '<select data-tool="status" data-tid="'+t.id+'">'+TOOLSTATUS.map(function(o){
+            return '<option'+(o===t.status?' selected':'')+'>'+o+'</option>'}).join('')+'</select>'+
+          '<select data-tool="rec" data-tid="'+t.id+'">'+REC.map(function(o){
+            return '<option'+(o===t.rec?' selected':'')+'>'+o+'</option>'}).join('')+'</select>'+
+          '<select data-tool="cadence" data-tid="'+t.id+'">'+CADENCE.map(function(o){
+            return '<option'+(o===t.cadence?' selected':'')+'>'+o+'</option>'}).join('')+'</select>'+
+        '</div>'+
+        '<details><summary>How it works, who runs it</summary>'+
+          '<div style="margin-top:8px"><label class="f">Steps to run it</label>'+
+          '<textarea data-tool="how" data-tid="'+t.id+'" rows="4" placeholder="1. Open ... 2. Run ... 3. Export ...">'+esc(t.how)+'</textarea></div>'+
+          '<div style="margin-top:8px"><label class="f">Link to open it</label>'+
+          '<input data-tool="link" data-tid="'+t.id+'" value="'+esc(t.link||'')+'" placeholder="paste the URL"></div>'+
+          '<div style="margin-top:8px"><label class="f">It worked when you see</label>'+
+          '<input data-tool="output" data-tid="'+t.id+'" value="'+esc(t.output)+'" placeholder="e.g. a fresh list in the export folder"></div>'+
+          '<div class="grid g2" style="margin-top:8px">'+
+            '<div><label class="f">Built it</label><input data-tool="builtby" data-tid="'+t.id+'" value="'+esc(t.builtby)+'" placeholder="e.g. Seth"></div>'+
+            '<div><label class="f">Runs it every day</label><input data-tool="owner" data-tid="'+t.id+'" value="'+esc(t.owner)+'" placeholder="the operator, not the builder"></div>'+
+            '<div><label class="f">Covers when they are out</label><input data-tool="backup" data-tid="'+t.id+'" value="'+esc(t.backup)+'"></div>'+
+            '<div><label class="f">Asked the builder for the steps?</label><input data-tool="asked" data-tid="'+t.id+'" value="'+esc(t.asked||'')+'" placeholder="date asked"></div>'+
+          '</div>'+
+          '<div style="margin-top:9px"><label class="f">Trained and able to run it alone</label><div class="row" style="margin:0">'+
+            PEOPLE.map(function(p){
+              var on=tr.indexOf(p)>-1;
+              return '<button class="btn '+(on?'':'ghost ')+'small" data-trained="'+t.id+'" data-person="'+p+'">'+p+'</button>'
+            }).join('')+'</div></div>'+
+          '<div class="grid g2" style="margin-top:8px">'+
+            '<div><label class="f">Handed to the user on</label><input data-tool="handed" data-tid="'+t.id+'" value="'+esc(t.handed||'')+'" placeholder="date"></div>'+
+            '<div><label class="f">User verdict</label><select data-tool="verdict" data-tid="'+t.id+'">'+
+              VERDICT.map(function(v){return '<option'+(v===t.verdict?' selected':'')+'>'+v+'</option>'}).join('')+'</select></div>'+
+          '</div>'+
+          '<div style="margin-top:9px"><label class="f">What it produced last week</label>'+
+          '<input data-tool="proof" data-tid="'+t.id+'" value="'+esc(t.proof)+'" placeholder="e.g. 340 records cleared, 12 callbacks"></div>'+
+        '</details></div>';
+    }).join('');
+  }
+
+  /* ---------- wiring ---------- */
+  $('view-tools').addEventListener('change',function(e){
+    var t=e.target; if(!t.dataset.tool)return;
+    tools.forEach(function(x){if(x.id===t.dataset.tid)x[t.dataset.tool]=t.value});
+    saveTools().then(function(){renderTools();renderRollcall();renderVerdicts();renderRunsToday()});
+  });
+  $('view-tools').addEventListener('click',function(e){
+    var t=e.target; if(!t.dataset.trained)return;
+    tools.forEach(function(x){
+      if(x.id!==t.dataset.trained)return;
+      x.trained=x.trained||[];
+      var i=x.trained.indexOf(t.dataset.person);
+      if(i>-1)x.trained.splice(i,1); else x.trained.push(t.dataset.person);
+    });
+    saveTools().then(renderTools);
+  });
+  $('view-today').addEventListener('click',function(e){
+    var t=e.target; if(!t.dataset.run)return;
+    var d=today(); runs[d]=runs[d]||{};
+    if(runs[d][t.dataset.run])delete runs[d][t.dataset.run];
+    else runs[d][t.dataset.run]={by:me,at:new Date().toISOString()};
+    saveRuns().then(renderRunsToday);
+  });
+  $('view-tools').addEventListener('blur',function(e){
+    var t=e.target; if(!t.dataset.tool||(t.tagName!=='INPUT'&&t.tagName!=='TEXTAREA'))return;
+    tools.forEach(function(x){if(x.id===t.dataset.tid)x[t.dataset.tool]=t.value});
+    saveTools();
+  },true);
+  $('builderFilter').onchange=renderTools;
+  $('view-tools').addEventListener('click',function(e){
+    if(!e.target.dataset.showbuilder)return;
+    var b=e.target.dataset.showbuilder;
+    var opt=Array.prototype.filter.call($('builderFilter').options,function(o){return o.value.indexOf(b)>-1})[0];
+    $('builderFilter').value=opt?opt.value:'';
+    renderTools();
+    $('toolList').scrollIntoView({block:'start'});
+  });
+  $('view-tools').addEventListener('blur',function(e){
+    if(!e.target.dataset.asked)return;
+    asked[e.target.dataset.asked]=e.target.value;
+    saveAsked().then(renderRollcall);
+  },true);
+  $('view-tools').addEventListener('change',function(e){
+    if(!e.target.dataset.pillar)return;
+    pillars[e.target.dataset.pillar]=e.target.value;
+    savePillars().then(renderPillars);
+  });
+  $('addTool').onclick=function(){
+    var nm=$('newTool').value.trim(); if(!nm)return;
+    tools.push({id:'T'+Date.now(),name:nm,builtby:$('newToolOwner').value.trim(),owner:'',
+      job:$('newToolJob').value.trim(),link:$('newToolLink').value.trim(),
+      status:'Unconfirmed',proof:'',how:'',output:'',cadence:'Not set',backup:'',trained:[],custom:true});
+    $('newTool').value='';$('newToolLink').value='';$('newToolJob').value='';
+    saveTools().then(function(){renderTools();renderRollcall();
+      $('addToolMsg').textContent='Added. Now set its steps, cadence and who runs it.'});
+  };
+  function show(v){
+    document.querySelectorAll('.tab').forEach(function(x){x.setAttribute('aria-selected',x.dataset.view===v)});
+    ['today','numbers','leads','tools','plan'].forEach(function(k){$('view-'+k).hidden=(k!==v)});
+  }
+  document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){show(t.dataset.view)}});
+  $('me').onchange=function(){me=this.value;set(K_ME,me,false)};
+  $('saveDay').onclick=saveToday;
+  $('saveTargets').onclick=function(){
+    settings.dealTarget=Number($('t_deals').value)||0;
+    settings.budget=Number($('t_budget').value)||0;
+    saveSet().then(renderNumbers);
+  };
+  $('addBulk').onclick=addBulk;
+  $('filter').onchange=renderLeads; $('sort').onchange=renderLeads; $('search').oninput=renderLeads;
+
+  $('view-leads').addEventListener('change',function(e){
+    var t=e.target; if(!t.dataset.set)return;
+    var note=null;
+    if(t.dataset.set==='status')note='Moved to '+label(t.value);
+    if(t.dataset.set==='apptOutcome'&&t.value)note='Visit outcome: '+t.value;
+    if(t.dataset.set==='due'&&t.value)note='Next action due '+t.value;
+    field(t.dataset.id,t.dataset.set,t.value,note);
+  });
+  $('view-leads').addEventListener('blur',function(e){
+    var t=e.target;
+    if(t.dataset.set&&t.tagName==='INPUT'&&t.type!=='date')field(t.dataset.id,t.dataset.set,t.value,null);
+  },true);
+  $('view-leads').addEventListener('click',function(e){
+    var t=e.target, l;
+    if(t.dataset.flag){l=byId(t.dataset.flag);l.flag=!l.flag;touch(l);
+      log(l,l.flag?'Flagged for Juan':'Flag cleared');saveLeads().then(function(){renderLeads();renderToday()})}
+    if(t.dataset.comply){l=byId(t.dataset.comply);l.comply=!l.comply;touch(l);
+      log(l,l.comply?'Seller mentioned a mailer or check. Conversation stopped, routed to Juan.':'Mailer note cleared');
+      saveLeads().then(function(){renderLeads();renderToday()})}
+    if(t.dataset.attempt){l=byId(t.dataset.attempt);l.attempts=n(l.attempts)+1;touch(l);
+      log(l,'Contact attempt '+l.attempts);saveLeads().then(function(){renderLeads();renderToday()})}
+    if(t.dataset.send){l=byId(t.dataset.send);
+      var box=document.querySelector('[data-note="'+t.dataset.send+'"]');
+      if(box&&box.value.trim()){log(l,box.value.trim());touch(l);box.value='';
+        saveLeads().then(function(){renderLeads();renderToday()})}}
+  });
+  $('view-leads').addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&e.target.dataset.note){
+      var id=e.target.dataset.note,l=byId(id);
+      if(e.target.value.trim()){log(l,e.target.value.trim());touch(l);e.target.value='';
+        saveLeads().then(function(){renderLeads();renderToday()})}}
+  });
+  $('view-today').addEventListener('click',function(e){
+    var t=e.target,l;
+    if(t.dataset.done){l=byId(t.dataset.done);log(l,'Done: '+l.next);l.next='';l.due='';touch(l);
+      saveLeads().then(function(){renderToday();renderLeads()})}
+    if(t.dataset.goto){show('leads');$('filter').value='all';renderLeads();
+      var el=document.getElementById('lead-'+t.dataset.goto); if(el)el.scrollIntoView({block:'center'})}
+  });
+
+  Promise.all([get(K_DAYS,true),get(K_LEADS,true),get(K_SET,true),get(K_ME,false),get(K_TOOLS,true),get(K_RUNS,true),get('thb:pillars',true),get('thb:asked',true)]).then(function(r){
+    days=Array.isArray(r[0])?r[0]:[];
+    leads=Array.isArray(r[1])?r[1]:[];
+    if(r[2]&&typeof r[2]==='object'){settings.dealTarget=r[2].dealTarget||3;
+      settings.budget=r[2].budget||0;settings.maoPct=r[2].maoPct||70}
+    if(typeof r[3]==='string')me=r[3];
+    mergeTools(Array.isArray(r[4])?r[4]:[]);
+    if(reassignLeo())saveTools();
+    runs=(r[5]&&typeof r[5]==='object')?r[5]:{};
+    pillars=(r[6]&&typeof r[6]==='object')?r[6]:{};
+    asked=(r[7]&&typeof r[7]==='object')?r[7]:{};
+    $('me').value=me;
+    $('boot').hidden=true; show('plan');
+    renderToday(); renderNumbers(); renderLeads(); renderTools(); renderPillars(); renderRollcall(); renderVerdicts(); renderRunsToday();
+  });
+})();
+</script>
