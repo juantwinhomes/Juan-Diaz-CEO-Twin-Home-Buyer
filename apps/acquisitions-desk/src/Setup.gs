@@ -64,11 +64,11 @@ function setEnvironment(env) {
 }
 
 function ensureSheet_(ss, name, headers) {
-  var sh = ss.getSheetByName(name), status = 'ok_';
+  var sh = ss.getSheetByName(name), status = 'ok';
   if (!sh) { sh = ss.insertSheet(name); status = 'created'; }
   var lastCol = sh.getLastColumn();
   var existing = lastCol ? sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) { return toStr_(h).trim(); }) : [];
-  if (!existing.filter(function (h) { return h; }).length) { sh.getRange(1, 1, 1, headers.length).setValues([headers]); existing = headers.slice(); if (status === 'ok_') status = 'headers written'; }
+  if (!existing.filter(function (h) { return h; }).length) { sh.getRange(1, 1, 1, headers.length).setValues([headers]); existing = headers.slice(); if (status === 'ok') status = 'headers written'; }
   else {
     var missing = headers.filter(function (h) { return existing.indexOf(h) < 0; });
     if (missing.length) { var start = existing.filter(function (h) { return h; }).length + 1; sh.getRange(1, start, 1, missing.length).setValues([missing]); status = 'added columns: ' + missing.join(', '); }
