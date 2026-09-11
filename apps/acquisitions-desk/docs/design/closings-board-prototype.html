@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recorded or not</title>
+<style>
+  :root{
+    --void:#0B0D10;
+    --panel:#15181D;
+    --panel2:#1D2127;
+    --line:#2E343C;
+    --paper:#F3F5F7;
+    --dim:#8A949E;
+    --late:#FF3B30;
+    --wait:#FFB400;
+    --good:#22C55E;
+    --act:#3B7BFF;
+    --heavy: Impact, Haettenschweiler, "Arial Narrow Bold", "Franklin Gothic Bold", sans-serif;
+    --sans: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--void);color:var(--paper);font-family:var(--sans);font-size:15px}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 16px 90px}
+
+  /* top bar */
+  .bar{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:14px 0;border-bottom:3px solid var(--paper);margin-bottom:0;
+  }
+  .brand{font-family:var(--heavy);font-size:30px;letter-spacing:.01em;line-height:1}
+  .brand span{color:var(--late)}
+  .you{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:13px;color:var(--dim)}
+  .you input{
+    font:inherit;font-size:14px;background:var(--panel);color:var(--paper);
+    border:2px solid var(--line);border-radius:0;padding:7px 10px;width:170px;
+  }
+  .you input:focus{border-color:var(--act);outline:none}
+
+  /* verdict */
+  .verdict{
+    font-family:var(--heavy);font-size:clamp(30px,7vw,58px);line-height:.95;
+    letter-spacing:.005em;margin:22px 0 4px;text-transform:uppercase;
+  }
+  .verdict.hot{color:var(--late)}
+  .verdict.ok{color:var(--good)}
+  .verdict-sub{color:var(--dim);font-size:14px;font-weight:600;margin:0 0 20px}
+
+  /* tiles */
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:22px}
+  .tile{background:var(--panel);border-left:8px solid var(--line);padding:12px 14px 10px}
+  .tile b{display:block;font-family:var(--heavy);font-size:44px;line-height:.9}
+  .tile em{font-style:normal;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--dim)}
+  .tile.late{border-left-color:var(--late)} .tile.late b{color:var(--late)}
+  .tile.wait{border-left-color:var(--wait)} .tile.wait b{color:var(--wait)}
+  .tile.good{border-left-color:var(--good)} .tile.good b{color:var(--good)}
+
+  /* buttons */
+  button{font:inherit;cursor:pointer;border-radius:0}
+  .b{
+    background:var(--act);color:#fff;border:none;padding:11px 16px;
+    font-weight:800;font-size:14px;letter-spacing:.02em;text-transform:uppercase;
+  }
+  .b:hover{filter:brightness(1.12)}
+  .b.go{background:var(--good);color:#04220F}
+  .b.hot{background:var(--late)}
+  .b.ghost{background:transparent;color:var(--paper);border:2px solid var(--line);padding:9px 14px}
+  .b.ghost:hover{border-color:var(--paper)}
+  .b.sm{padding:8px 12px;font-size:12.5px}
+  .b:disabled{opacity:.35;cursor:not-allowed;filter:none}
+  :focus-visible{outline:3px solid var(--act);outline-offset:2px}
+
+  .toprow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .tabs{display:flex;gap:4px;margin-left:auto}
+  .tabs button{
+    background:transparent;border:2px solid transparent;color:var(--dim);
+    padding:8px 11px;font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;
+  }
+  .tabs button[aria-pressed="true"]{background:var(--panel);border-color:var(--line);color:var(--paper)}
+
+  /* add */
+  .add{background:var(--panel);border-left:8px solid var(--act);padding:14px;margin-bottom:18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+  .f label{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--dim);margin-bottom:4px;text-transform:uppercase}
+  .f input,.f select{
+    font:inherit;width:100%;padding:9px 10px;background:var(--panel2);color:var(--paper);
+    border:2px solid var(--line);
+  }
+  .f input:focus,.f select:focus{border-color:var(--act);outline:none}
+  .add .go-row{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+
+  /* rows */
+  .row{background:var(--panel);border-left:8px solid var(--line);margin-bottom:8px}
+  .row[data-s="issue"]{border-left-color:var(--late);background:#1C1113}
+  .row[data-s="funded"],.row[data-s="escrow"]{border-left-color:var(--wait)}
+  .row[data-s="recorded"]{border-left-color:var(--good)}
+  .row[data-s="closed"]{border-left-color:var(--good);opacity:.62}
+  .head{display:grid;grid-template-columns:1fr auto;gap:6px 16px;padding:14px;align-items:center}
+  .addr{font-family:var(--heavy);font-size:clamp(20px,3.2vw,28px);line-height:1;text-transform:uppercase}
+  .meta{color:var(--dim);font-size:12.5px;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums}
+  .meta b{color:var(--paper);font-weight:800}
+  .flag{
+    font-family:var(--heavy);font-size:19px;text-transform:uppercase;white-space:nowrap;justify-self:end;line-height:1;
+  }
+  .flag[data-s="issue"]{color:var(--late)}
+  .flag[data-s="funded"],.flag[data-s="escrow"]{color:var(--wait)}
+  .flag[data-s="recorded"],.flag[data-s="closed"]{color:var(--good)}
+
+  .act{
+    display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;
+    padding:0 14px 14px;border-top:2px solid var(--line);padding-top:12px;margin:0 0 0;
+  }
+  .act .f{flex:1 1 130px;min-width:120px}
+  .act .f.narrow{flex:0 1 150px}
+  .doc{font-variant-numeric:tabular-nums;letter-spacing:.03em;font-weight:700}
+  .warn{color:var(--late);font-weight:700;font-size:13px;padding:0 14px 12px;margin:0}
+  .stamped{
+    padding:0 14px 14px;font-size:13.5px;font-weight:700;color:var(--good);
+    font-variant-numeric:tabular-nums;
+  }
+  .stamped small{display:block;color:var(--dim);font-weight:600;margin-top:3px}
+  .log{padding:0 14px 14px}
+  .log summary{cursor:pointer;color:var(--dim);font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+  .log ol{list-style:none;margin:8px 0 0;padding:0;font-size:12.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .log li{padding:4px 0;border-bottom:1px solid var(--line)}
+  .rm{background:none;border:none;color:#5D666F;font-size:12px;font-weight:700;padding:0;text-decoration:underline}
+
+  .empty{border:3px dashed var(--line);padding:34px 18px;text-align:center}
+  .empty p{font-family:var(--heavy);font-size:clamp(22px,4vw,34px);text-transform:uppercase;margin:0 0 16px}
+  .hidden{display:none!important}
+  .toast{
+    position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--paper);color:#0B0D10;
+    padding:12px 18px;font-weight:800;font-size:14px;z-index:60;
+  }
+  @media (max-width:620px){
+    .tiles{grid-template-columns:1fr 1fr}
+    .tiles .tile:last-child{grid-column:span 2}
+    .head{grid-template-columns:1fr}
+    .flag{justify-self:start}
+    .you{margin-left:0;width:100%}
+    .you input{flex:1}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="bar">
+    <div class="brand">RECORDED<span>?</span></div>
+    <div class="you">
+      <label for="me">You</label>
+      <input id="me" type="text" placeholder="your name" autocomplete="off">
+    </div>
+  </div>
+
+  <h1 class="verdict" id="verdict">LOADING</h1>
+  <p class="verdict-sub" id="vsub">Funded is not closed. Signed is not closed. Recorded is closed.</p>
+
+  <div class="tiles">
+    <div class="tile late"><b id="tLate">0</b><em>Late, not recorded</em></div>
+    <div class="tile wait"><b id="tWait">0</b><em>Waiting on recording</em></div>
+    <div class="tile good"><b id="tGood">0</b><em>Recorded</em></div>
+  </div>
+
+  <div class="toprow">
+    <button class="b" id="addBtn">+ Add closing</button>
+    <div class="tabs" id="tabs">
+      <button data-f="all" aria-pressed="true">All</button>
+      <button data-f="hot" aria-pressed="false">Hot</button>
+      <button data-f="open" aria-pressed="false">Not recorded</button>
+      <button data-f="done" aria-pressed="false">Recorded</button>
+    </div>
+  </div>
+
+  <div class="add hidden" id="addPanel">
+    <div class="grid">
+      <div class="f"><label for="n-addr">Address</label><input id="n-addr" placeholder="1420 Bayshore Ave"></div>
+      <div class="f"><label for="n-owner">Owner (one name)</label><input id="n-owner" placeholder="who confirms it"></div>
+      <div class="f"><label for="n-exp">Must record by</label><input id="n-exp" type="date"></div>
+      <div class="f"><label for="n-escrow">Title / escrow</label><input id="n-escrow" placeholder="optional"></div>
+      <div class="f"><label for="n-side">Transaction type</label><select id="n-side">
+        <option>Wholesale- Assignment</option><option>Wholesale- Double Close</option>
+        <option>Buy- Wholetail</option><option>Buy- Fix &amp; Flip</option>
+        <option>Sale- Wholetail</option><option>Sale- Fix &amp; Flip</option></select></div>
+    </div>
+    <p class="warn hidden" id="addWarn" style="padding:10px 0 0"></p>
+    <div class="go-row">
+      <button class="b go" id="saveNew">Put it on the board</button>
+      <button class="b ghost" id="cancelNew">Cancel</button>
+    </div>
+  </div>
+
+  <div id="ledger"></div>
+
+  <div class="empty hidden" id="empty">
+    <p>Board is empty</p>
+    <button class="b" id="emptyAdd">Add a closing</button>
+    <button class="b ghost" id="emptyDemo">Load example</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY="closings:v1", state={me:"",deals:[],filter:"all"}, memoryOnly=false;
+
+  function load(){
+    if(!window.storage){memoryOnly=true;return Promise.resolve();}
+    return window.storage.get(KEY).then(function(r){
+      if(r&&r.value){var d=JSON.parse(r.value);state.me=d.me||"";state.deals=Array.isArray(d.deals)?d.deals:[];}
+    }).catch(function(){});
+  }
+  function save(){
+    if(memoryOnly||!window.storage)return;
+    window.storage.set(KEY,JSON.stringify({me:state.me,deals:state.deals}))
+      .catch(function(){toast("SAVE FAILED — ON SCREEN ONLY");});
+  }
+  function uid(){return "d"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+  function todayISO(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  function fmtDate(iso){if(!iso)return "—";var p=iso.slice(0,10).split("-");if(p.length<3)return iso;
+    return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+p[1]-1]+" "+(+p[2]);}
+  function fmtStamp(iso){var d=new Date(iso);return fmtDate(iso.slice(0,10))+" "+d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});}
+  function late(iso){return Math.round((new Date(todayISO()+"T00:00:00")-new Date(iso+"T00:00:00"))/86400000);}
+  function toast(m){var t=document.createElement("div");t.className="toast";t.textContent=m;
+    document.body.appendChild(t);setTimeout(function(){t.remove();},2600);}
+  function copy(t){if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){toast("COPIED — SEND IT");},function(){toast("COPY BLOCKED");});
+    }else toast("COPY BLOCKED");}
+  function byId(i){return document.getElementById(i);}
+  function find(id){for(var i=0;i<state.deals.length;i++)if(state.deals[i].id===id)return state.deals[i];return null;}
+
+  function newDeal(f){return {id:uid(),addr:f.addr,owner:f.owner,expected:f.expected,escrow:f.escrow,side:f.side,
+    funded:null,recorded:null,crm:null,notified:null,
+    log:[{at:new Date().toISOString(),text:"On the board. Owner: "+f.owner+". Must record by "+fmtDate(f.expected)+"."}]};}
+  function stateOf(d){
+    if(d.recorded) return (d.crm&&d.notified)?"closed":"recorded";
+    if(d.expected&&late(d.expected)>0) return "issue";
+    if(d.funded) return "funded";
+    return "escrow";
+  }
+  var FLAG={issue:"NOT RECORDED",funded:"FUNDED, NOT RECORDED",escrow:"IN ESCROW",recorded:"RECORDED",closed:"CLOSED"};
+  var RANK={issue:0,funded:1,escrow:2,recorded:3,closed:4};
+  function list(){
+    return state.deals.slice().sort(function(a,b){
+      var r=RANK[stateOf(a)]-RANK[stateOf(b)];return r?r:((a.expected||"9999")<(b.expected||"9999")?-1:1);
+    }).filter(function(d){var s=stateOf(d);
+      if(state.filter==="hot")return s==="issue"||s==="recorded";
+      if(state.filter==="open")return s==="issue"||s==="funded"||s==="escrow";
+      if(state.filter==="done")return s==="recorded"||s==="closed";
+      return true;});
+  }
+  function logIt(d,t){d.log.push({at:new Date().toISOString(),text:t});}
+
+  function closedText(d){
+    return "CLOSED — "+d.addr+".\nRecorded "+fmtDate(d.recorded.date)+", doc #"+d.recorded.doc+
+      ".\nConfirmed by "+d.recorded.by+" ("+d.recorded.source+")."+(d.crm?"\nCRM updated.":"");
+  }
+  function escText(d){
+    var n=late(d.expected);
+    return "OPEN ISSUE — "+d.addr+".\nWas due to record "+fmtDate(d.expected)+". Still not recorded. "+n+" day"+(n===1?"":"s")+" late.\nOwner: "+d.owner+
+      (d.escrow?" · "+d.escrow:"")+".\nToday: "+d.owner+" gets written confirmation from title/escrow — doc number or a new recording date. This is NOT closed.";
+  }
+
+  function render(){
+    byId("me").value=state.me;
+    var L=0,W=0,G=0;
+    state.deals.forEach(function(d){var s=stateOf(d);
+      if(s==="issue")L++; else if(s==="funded"||s==="escrow")W++; else G++;});
+    byId("tLate").textContent=L;byId("tWait").textContent=W;byId("tGood").textContent=G;
+
+    var v=byId("verdict"),sub=byId("vsub");
+    v.className="verdict";
+    if(!state.deals.length){v.textContent="NOTHING ON THE BOARD";sub.textContent="Every open closing goes here with one owner and a hard date.";}
+    else if(L){v.classList.add("hot");
+      v.textContent=L+" DEAL"+(L===1?"":"S")+" LATE AND NOT RECORDED";
+      sub.textContent="Escalate now. Nobody calls these closed.";}
+    else if(W){v.textContent=W+" WAITING ON RECORDING";sub.textContent="No doc number, no close. Nothing is late.";}
+    else {v.classList.add("ok");v.textContent="ALL RECORDED";sub.textContent="Every deal on the board has a doc number and a name on it.";}
+
+    byId("empty").classList.toggle("hidden",state.deals.length>0);
+    var arr=list(),out="";
+    for(var i=0;i<arr.length;i++)out+=row(arr[i]);
+    byId("ledger").innerHTML=out;
+  }
+
+  function row(d){
+    var s=stateOf(d),n=(s==="issue")?late(d.expected):0;
+    var meta=["Owner <b>"+esc(d.owner)+"</b>"];
+    meta.push(d.recorded?("Recorded <b>"+esc(fmtDate(d.recorded.date))+"</b>"):("Due <b>"+esc(fmtDate(d.expected))+"</b>"));
+    if(d.escrow)meta.push(esc(d.escrow));
+    meta.push(esc(d.side));
+
+    var h='<article class="row" data-s="'+s+'" data-id="'+d.id+'">';
+    h+='<div class="head"><div><div class="addr">'+esc(d.addr)+'</div><div class="meta">'+meta.join(" &nbsp;·&nbsp; ")+'</div></div>';
+    h+='<div class="flag" data-s="'+s+'">'+FLAG[s]+(n>0?" · "+n+"D LATE":"")+'</div></div>';
+
+    if(!d.recorded){
+      h+='<div class="act">';
+      h+='<div class="f"><label>Doc / instrument #</label><input class="doc" data-f="doc" placeholder="2026-041877"></div>';
+      h+='<div class="f narrow"><label>Recorded on</label><input type="date" data-f="date" value="'+todayISO()+'"></div>';
+      h+='<div class="f narrow"><label>Proof</label><select data-f="source">'+
+         '<option>recorded copy</option><option>title confirmation</option>'+
+         '<option>escrow confirmation</option><option>county record</option></select></div>';
+      h+='<button class="b go" data-act="record">Confirm recorded</button>';
+      if(!d.funded)h+='<button class="b ghost" data-act="funded">Funded</button>';
+      if(s==="issue")h+='<button class="b hot" data-act="esc">Escalate</button>';
+      h+='</div>';
+      h+='<p class="warn hidden" data-warn></p>';
+    } else {
+      h+='<div class="stamped">DOC #'+esc(d.recorded.doc)+' · '+esc(fmtDate(d.recorded.date))+
+         '<small>Confirmed by '+esc(d.recorded.by)+' · '+esc(d.recorded.source)+' · '+esc(fmtStamp(d.recorded.at))+'</small></div>';
+      h+='<div class="act">';
+      h+='<button class="b" data-act="copy">Copy team text</button>';
+      if(!d.crm)h+='<button class="b ghost" data-act="crm">CRM updated</button>';
+      if(!d.notified)h+='<button class="b ghost" data-act="notified">Team notified</button>';
+      h+='</div>';
+    }
+
+    h+='<details class="log"><summary>Log</summary><ol>';
+    for(var i=d.log.length-1;i>=0;i--)h+='<li>'+esc(fmtStamp(d.log[i].at))+' — '+esc(d.log[i].text)+'</li>';
+    h+='</ol><p style="margin:10px 0 0"><button class="rm" data-act="rm">Remove</button></p></details>';
+    h+='</article>';
+    return h;
+  }
+
+  function needMe(){
+    if(state.me.trim())return true;
+    toast("PUT YOUR NAME IN FIRST");byId("me").focus();return false;
+  }
+
+  document.addEventListener("click",function(e){
+    var t=e.target.closest("[data-act]");if(!t)return;
+    var el=e.target.closest(".row"),d=el?find(el.dataset.id):null;if(!d)return;
+    var a=t.dataset.act;
+
+    if(a==="funded"){if(!needMe())return;
+      d.funded={at:new Date().toISOString(),by:state.me};
+      logIt(d,"Funded, confirmed by "+state.me+". Recording still unconfirmed.");save();render();return;}
+
+    if(a==="record"){if(!needMe())return;
+      var z=el.querySelector(".act"),doc=z.querySelector('[data-f="doc"]').value.trim(),
+          dt=z.querySelector('[data-f="date"]').value,src=z.querySelector('[data-f="source"]').value,
+          w=el.querySelector("[data-warn]");
+      if(!doc||!dt){w.textContent="NO DOC NUMBER, NO CLOSE. Enter the instrument number and the recording date.";
+        w.classList.remove("hidden");return;}
+      d.recorded={at:new Date().toISOString(),by:state.me,doc:doc,date:dt,source:src};
+      if(!d.funded)d.funded={at:new Date().toISOString(),by:state.me};
+      logIt(d,"RECORDED — doc #"+doc+" on "+fmtDate(dt)+", confirmed by "+state.me+" ("+src+").");
+      save();render();toast("RECORDED — NOW TELL THE TEAM");return;}
+
+    if(a==="crm"){if(!needMe())return;d.crm={at:new Date().toISOString(),by:state.me};
+      logIt(d,"CRM updated by "+state.me+".");save();render();return;}
+    if(a==="notified"){if(!needMe())return;d.notified={at:new Date().toISOString(),by:state.me};
+      logIt(d,"Team notified by "+state.me+".");save();render();return;}
+    if(a==="copy"){copy(closedText(d));return;}
+    if(a==="esc"){copy(escText(d));logIt(d,"Escalated"+(state.me?" by "+state.me:"")+".");save();render();return;}
+    if(a==="rm"){state.deals=state.deals.filter(function(x){return x.id!==d.id;});save();render();return;}
+  });
+
+  byId("me").addEventListener("input",function(e){state.me=e.target.value;save();});
+  function showAdd(v){byId("addPanel").classList.toggle("hidden",!v);if(v)byId("n-addr").focus();}
+  byId("addBtn").addEventListener("click",function(){showAdd(true);});
+  byId("emptyAdd").addEventListener("click",function(){showAdd(true);});
+  byId("cancelNew").addEventListener("click",function(){showAdd(false);});
+
+  byId("saveNew").addEventListener("click",function(){
+    var f={addr:byId("n-addr").value.trim(),owner:byId("n-owner").value.trim(),expected:byId("n-exp").value,
+           escrow:byId("n-escrow").value.trim(),side:byId("n-side").value},w=byId("addWarn");
+    if(!f.addr||!f.owner||!f.expected){
+      w.textContent="ADDRESS, ONE OWNER, AND A MUST-RECORD-BY DATE. The date is what turns the row red.";
+      w.classList.remove("hidden");return;}
+    w.classList.add("hidden");
+    state.deals.push(newDeal(f));
+    ["n-addr","n-owner","n-exp","n-escrow"].forEach(function(i){byId(i).value="";});
+    showAdd(false);save();render();
+  });
+
+  byId("emptyDemo").addEventListener("click",function(){
+    var back=new Date(Date.now()-4*86400000).toISOString();
+    var d=newDeal({addr:"1420 Bayshore Ave, San Mateo",owner:"Cherry",expected:back.slice(0,10),
+                   escrow:"Old Republic Title",side:"Sale- Fix & Flip"});
+    d.funded={at:back,by:"Cherry"};
+    d.log.push({at:back,text:"Funded, confirmed by Cherry. Recording still unconfirmed."});
+    state.deals.push(d);save();render();
+  });
+
+  byId("tabs").addEventListener("click",function(e){
+    var b=e.target.closest("button[data-f]");if(!b)return;
+    state.filter=b.dataset.f;
+    Array.prototype.forEach.call(this.querySelectorAll("button"),function(x){x.setAttribute("aria-pressed",String(x===b));});
+    render();
+  });
+
+  load().then(function(){render();if(memoryOnly)toast("NO SAVING HERE — THIS SESSION ONLY");});
+})();
+</script>
+</body>
+</html>
