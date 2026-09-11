@@ -56,8 +56,11 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
   });
   await test('TEST B in the browser: stale save gets the conflict message, nothing silently overwritten', async () => {
     await tab(A, 'leads'); await card(A, leadId).locator('summary').click(); await card(B, leadId).locator('summary').click();
-    await card(A, leadId).locator('[data-set=repairs]').fill('10000'); // Seth starts typing (his board will not auto-refresh while he types)
+    await card(A, leadId).locator('[data-set=repairs]').fill('10000'); await A.waitForTimeout(700); // Seth is typing; let any in-flight refresh settle
+    const staleV = await card(A, leadId).getAttribute('data-v');
     await card(B, leadId).locator('[data-set=arv]').fill('500000'); await card(B, leadId).locator('[data-set=arv]').dispatchEvent('change'); await saved(B, leadId);
+    // Seth's screen still shows the version he loaded (pin it, in case a background refresh raced B's save in this test)
+    await A.evaluate(([id, v]) => { document.getElementById('lead-' + id).dataset.v = v; }, [leadId, staleV]);
     await card(A, leadId).locator('[data-set=repairs]').dispatchEvent('change');
     await A.waitForFunction(id => document.getElementById('lead-' + id).textContent.includes('updated by another team member'), leadId);
     assert(await card(A, leadId).locator('[data-set=arv]').inputValue() === '500000', 'latest copy (Cherry\'s ARV) now shown to Seth');

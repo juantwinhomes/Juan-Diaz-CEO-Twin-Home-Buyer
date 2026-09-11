@@ -76,8 +76,10 @@ function ensureSheet_(ss, name, headers) {
   var width = Math.max(sh.getLastColumn(), headers.length);
   sh.getRange(1, 1, 1, width).setFontWeight('bold').setBackground('#17223B').setFontColor('#FFFFFF');
   if (sh.getFrozenRows() < 1) sh.setFrozenRows(1);
-  // Plain-text format so yyyy-MM-dd strings and ISO timestamps are stored exactly as written (no date coercion).
-  try { sh.getRange(2, 1, Math.max(1, sh.getMaxRows() - 1), width).setNumberFormat('@'); } catch (e) {}
+  // Plain-text format on the whole sheet so yyyy-MM-dd strings and ISO timestamps are stored exactly as written.
+  // Converted/imported sheets can be only a few rows tall, so grow them first; appended rows inherit the format.
+  try { if (sh.getMaxRows() < 2000) sh.insertRowsAfter(sh.getMaxRows(), 2000 - sh.getMaxRows()); } catch (e) {}
+  try { sh.getRange(1, 1, sh.getMaxRows(), Math.max(width, sh.getMaxColumns())).setNumberFormat('@'); } catch (e) {}
   return { sheet: name, status: status };
 }
 function seedSettings_() {
@@ -170,6 +172,32 @@ function archiveTestData() {
     n++;
   });
   return n + ' test leads archived';
+}
+/**
+ * Repair: if DAILY_METRICS ever ended up with two rows for the same business date (e.g. from the date-coercion bug
+ * fixed in v1.0.1), keep the most recently updated row and clear the duplicates. Owner only. Reports what it did.
+ */
+function dedupeDailyMetrics() {
+  requireOwnerSession_();
+  var t = readTable_(SHEETS.DAILY_METRICS), byDate = {}, cleared = [];
+  t.rows.forEach(function (r, i) { var k = idKey_(r.business_date); (byDate[k] = byDate[k] || []).push({ row: r, rn: t.rowNumbers[i] }); });
+  var sh = getSheet_(SHEETS.DAILY_METRICS), width = headersOf_(SHEETS.DAILY_METRICS).length;
+  Object.keys(byDate).forEach(function (k) {
+    var list = byDate[k]; if (list.length < 2) return;
+    list.sort(function (a, b) { return -cmpStr_(a.row.updated_at, b.row.updated_at); }); // newest first
+    // merge: newest wins, but take any field the newest left blank from older rows
+    var keep = list[0]; list.slice(1).forEach(function (d) { METRIC_FIELDS.forEach(function (f) { if (keep.row[f] === '' && d.row[f] !== '') keep.row[f] = d.row[f]; }); });
+    keep.row.business_date = k; writeRowObject_(SHEETS.DAILY_METRICS, keep.rn, keep.row);
+    list.slice(1).forEach(function (d) { sh.getRange(d.rn, 1, 1, width).clearContent(); cleared.push(k + ' row ' + d.rn); });
+  });
+  // re-normalize every remaining date cell to plain yyyy-MM-dd text
+  invalidateTable_(SHEETS.DAILY_METRICS);
+  var t2 = readTable_(SHEETS.DAILY_METRICS), col = colIndex_(SHEETS.DAILY_METRICS, 'business_date');
+  t2.rows.forEach(function (r, i) { sh.getRange(t2.rowNumbers[i], col).setNumberFormat('@').setValue(idKey_(r.business_date)); });
+  invalidateTable_(SHEETS.DAILY_METRICS);
+  safeAudit_(setupUser_(), 'DAILY_METRICS', 'ALL', 'DEDUPE', { cleared: cleared });
+  var msg = cleared.length ? 'Merged duplicates; cleared: ' + cleared.join(', ') : 'No duplicate dates found.';
+  Logger.log(msg); return msg;
 }
 /**
  * DEVELOPMENT ONLY: clears data rows (keeps headers, SETTINGS, USERS, TOOL_INVENTORY) in a database whose

@@ -286,8 +286,19 @@
   }
   function cardOf(el){return el.closest('.lead')}
   function setCardStatus(card,kind,text){var s=card.querySelector('[data-save]');if(!s)return;s.className='saving '+kind;s.textContent=text;if(kind==='ok')setTimeout(function(){if(s.textContent===text)s.textContent=''},2000)}
+  /* Re-render a card with fresh server data. If the person is typing in a field on that card, the text they have
+     typed so far, the cursor and the focus are carried over to the new card, so a save never eats their input. */
   function replaceLead(l){for(var i=0;i<board.items.length;i++)if(board.items[i].lead_id===l.lead_id){board.items[i]=l;break}
-    var old=document.getElementById('lead-'+l.lead_id); if(!old)return; var wasOpen=!!old.querySelector('details[open]'); var tmp=document.createElement('div'); tmp.innerHTML=leadCard(l,wasOpen); old.replaceWith(tmp.firstChild)}
+    var old=document.getElementById('lead-'+l.lead_id); if(!old)return;
+    var a=document.activeElement, keep=null;
+    if(a&&old.contains(a)&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA')){
+      keep={sel:a.hasAttribute('data-note')?'[data-note]':(a.dataset.set?'[data-set="'+a.dataset.set+'"]':null),value:a.value};
+      try{keep.s=a.selectionStart;keep.e=a.selectionEnd}catch(e){}
+    }
+    var wasOpen=!!old.querySelector('details[open]'); var tmp=document.createElement('div'); tmp.innerHTML=leadCard(l,wasOpen);
+    var fresh=tmp.firstChild; old.replaceWith(fresh);
+    if(keep&&keep.sel){var f=fresh.querySelector(keep.sel); if(f){ if(keep.sel==='[data-note]'||f.value!==keep.value)f.value=keep.value; f.focus(); try{if(keep.s!=null)f.setSelectionRange(keep.s,keep.e)}catch(e){} }}
+  }
   function handleConflict(e,id){
     if(e&&e.code==='CONFLICT_RECORD_CHANGED'&&e.data){var l=e.data; l.recent_activity=l.recent_activity||(board.items.filter(function(x){return x.lead_id===id})[0]||{}).recent_activity||[]; replaceLead(l);
       var card=document.getElementById('lead-'+id); if(card){card.querySelector('[data-conflict]').innerHTML='<div class="conflict"><b>This lead was updated by another team member.</b> Review the latest information (now shown) before saving your change.</div>'} toast('This lead was updated by another team member. Review the latest information before saving your change.','err'); loadToday(); return}

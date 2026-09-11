@@ -109,6 +109,18 @@ test('date coercion: yyyy-MM-dd written to a non-plain cell round-trips as the s
   const raw = sh.getRange(ctx.findRowNumberById_('LEADS', l.lead_id), ctx.colIndex_('LEADS', 'due_date')).getValue(); assert(raw instanceof Date, 'cell was coerced to Date by the sheet');
   assert(ok(ctx.getLead(l.lead_id)).due_date === '2026-12-31', 'read back as string');
 });
+test('date coercion on an ID column: a Date cell in DAILY_METRICS.business_date is still found and updated in place', () => {
+  const ss = state.spreadsheets[state.props.THB_DB_SPREADSHEET_ID]; const sh = ss.getSheetByName('DAILY_METRICS'); sh._fmt.clear(); sh._plainCols.clear();
+  as(OWNER); const today = ctx.todayBusinessDate_(); const before = sh.getLastRow();
+  ok(ctx.saveDailyMetrics(today, { tv_spend: 11 })); ctx._dbCache.tables = {};
+  const raw = sh.getRange(ctx.findRowNumberById_('DAILY_METRICS', today), 1).getValue(); assert(raw instanceof Date || raw === today, 'id cell coerced (or plain) — got ' + raw);
+  const m2 = ok(ctx.saveDailyMetrics(today, { new_leads: 7 })); assert(m2.tv_spend === 11 && m2.new_leads === 7, 'second save merged into same row');
+  assert(sh.getLastRow() <= before + 1, 'no duplicate row appended'); assert(ok(ctx.getDailyMetrics(today)).tv_spend === 11, 'getDailyMetrics finds the coerced row');
+  // simulate the pre-fix duplicate and repair it
+  ctx.appendRowObject_('DAILY_METRICS', { business_date: today, tv_spend: 99, new_leads: '', created_by: 'x', created_at: '2000-01-01T00:00:00.000Z', updated_by: 'x', updated_at: '2000-01-01T00:00:00.000Z' });
+  const msg = ctx.dedupeDailyMetrics(); assert(msg.indexOf('cleared') > -1, msg); ctx._dbCache.tables = {};
+  const rows = ctx.readTable_('DAILY_METRICS').rows.filter(r => r.business_date === today); assert(rows.length === 1 && Number(rows[0].tv_spend) === 11, 'one row left, newest kept');
+});
 as(OWNER); try { ctx.archiveTestData(); } catch (e) {}
 for (const r of results) console.log(r[0].padEnd(5), r[1], r[2] ? '\n      ' + r[2] : '');
 console.log(`\n${results.filter(r => r[0] === 'PASS').length} passed, ${failed} failed`);

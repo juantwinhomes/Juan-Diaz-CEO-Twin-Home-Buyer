@@ -54,5 +54,6 @@
   "createTestData",
   "archiveTestData",
   "resetDevelopmentDatabase",
+  "dedupeDailyMetrics",
   "runAllTests"
 ]

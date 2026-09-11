@@ -174,7 +174,7 @@ function testSuite_() {
     var mo = readTable_(SHEETS.DAILY_METRICS).rows.filter(function (r) { return toStr_(r.business_date) >= monthStartOf_(today) && toStr_(r.business_date) <= today; });
     assert_(p.closed === sumField_(mo, 'deals_closed') && p.target === target, 'pace closed/target');
     assert_(p.expected_to_date === Math.round(target * dayOfMonthOf_(today) / daysInMonthOf_(today) * 10) / 10, 'pace expected to date');
-    if (prev) saveDailyMetrics(today, METRIC_FIELDS.reduce(function (o, k) { o[k] = prev[k] == null ? '' : prev[k]; return o; }, {}));
+    saveDailyMetrics(today, METRIC_FIELDS.reduce(function (o, k) { o[k] = (prev && prev[k] != null) ? prev[k] : ''; return o; }, {})); // restore real numbers or leave the day blank
     assert_(before.today === n.today, 'same business date');
   };
   T['tools: create, operator, cadence, training, run today, undo keeps row, streak'] = function () {

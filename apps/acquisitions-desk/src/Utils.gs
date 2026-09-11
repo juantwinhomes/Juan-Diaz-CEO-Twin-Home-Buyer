@@ -74,6 +74,11 @@ function toNum_(v) {
   var n = Number(v); return isFinite(n) ? n : null;
 }
 function toStr_(v) { return v == null ? '' : String(v); }
+/** Key used to match IDs in sheet cells. Sheets may coerce date-like text (e.g. a business_date) into a Date cell. */
+function idKey_(v) {
+  if (v instanceof Date) return isNaN(v.getTime()) ? '' : Utilities.formatDate(v, getBusinessTimezone_(), 'yyyy-MM-dd');
+  return toStr_(v).trim();
+}
 function trimStr_(v) { return toStr_(v).replace(/\s+/g, ' ').trim(); }
 
 /** Accepts yyyy-MM-dd strings or Date objects; returns yyyy-MM-dd or ''. Throws on garbage. */

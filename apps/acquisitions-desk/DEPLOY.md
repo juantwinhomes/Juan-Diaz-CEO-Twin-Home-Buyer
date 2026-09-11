@@ -53,8 +53,10 @@ authorization screen — approve it (Sheets, Drive, email identity, triggers).
    the owner (and therefore the app) can edit cells. Execution log shows the report.
 2. Run **installTriggers** → installs the daily 03:00 backup (`runDailyBackup`).
 3. Run **bootstrapAdmin** if the account you are using is not already in USERS (Seth, Juan and Cherry already are).
-4. Run **runAllTests** → creates `TEST - …` leads, runs the 17-test suite against the real sheet, archives the test
-   leads. Expect `"failed": 0` in the execution log. (Optional but recommended once.)
+4. Run **runAllTests** (in `Tests.gs`; the function dropdown only lists functions of the open file) → creates
+   `TEST - …` leads, runs the 17-test suite against the real sheet, archives the test leads and blanks the test
+   numbers for today. Expect `"failed": 0` in the execution log. (Optional but recommended once.)
+   If a run ever leaves two DAILY_METRICS rows for one date, run **dedupeDailyMetrics** (in `Setup.gs`) once.
 5. Run **createDatabaseBackup** once and confirm a copy appears in the Backups folder and in BACKUP_LOG.
 
 ## Step 4 — Deploy the web app (2 min)

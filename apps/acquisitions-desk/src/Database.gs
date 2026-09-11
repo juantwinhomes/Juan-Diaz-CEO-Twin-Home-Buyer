@@ -72,11 +72,11 @@ function readTable_(name) {
   if (lastRow >= 2) {
     var values = sh.getRange(2, 1, lastRow - 1, headers.length).getValues();
     for (var i = 0; i < values.length; i++) {
-      var idv = values[i][headers.indexOf(idField)];
-      if (idv === '' || idv == null) continue; // blank row
+      var idv = idKey_(values[i][headers.indexOf(idField)]);
+      if (!idv) continue; // blank row
       var o = rowToObject_(name, values[i], headers);
       rows.push(o); rowNumbers.push(i + 2);
-      byId[toStr_(o[idField])] = o;
+      byId[idv] = o;
     }
   }
   var t = { headers: headers, rows: rows, rowNumbers: rowNumbers, byId: byId };
@@ -90,16 +90,17 @@ function findRowNumberById_(name, id) {
   var sh = getSheet_(name), idCol = colIndex_(name, ID_COLUMN[name]);
   var lastRow = sh.getLastRow();
   if (lastRow < 2) return -1;
+  var key = idKey_(id);
   var t = _dbCache.tables[name];
   if (t) {
-    var i = t.rows.findIndex ? t.rows.findIndex(function (r) { return toStr_(r[ID_COLUMN[name]]) === toStr_(id); }) : -1;
+    var i = t.rows.findIndex ? t.rows.findIndex(function (r) { return idKey_(r[ID_COLUMN[name]]) === key; }) : -1;
     if (i >= 0) {
       var rn = t.rowNumbers[i];
-      if (toStr_(sh.getRange(rn, idCol).getValue()) === toStr_(id)) return rn; // verify before trusting the cache
+      if (idKey_(sh.getRange(rn, idCol).getValue()) === key) return rn; // verify before trusting the cache
     }
   }
   var ids = sh.getRange(2, idCol, lastRow - 1, 1).getValues();
-  for (var r = 0; r < ids.length; r++) if (toStr_(ids[r][0]) === toStr_(id)) return r + 2;
+  for (var r = 0; r < ids.length; r++) if (idKey_(ids[r][0]) === key) return r + 2;
   return -1;
 }
 function getRowObjectByNumber_(name, rowNumber) {
