@@ -135,7 +135,7 @@
   function renderBoard(){var t=board.tally||{live:0,due:0,archived:0,flag:0,target:200,stale:0,no_next_action:0};
     $('boardHero').innerHTML='<b>'+t.live+'</b> live<small>target '+t.target+' · '+t.stale+' untouched '+(S.stale_lead_days||7)+'+ days · '+t.archived+' archived</small>';
     $('tally').innerHTML=fact(t.due,'due or overdue',t.due?'alert':'')+fact(t.flag,'need Juan',t.flag?'alert':'')+fact(t.no_next_action,'no next action',t.no_next_action?'alert':'');
-    var counts={live:t.live,due:t.due,flag:t.flag,stale:t.stale,archived:t.archived};$('filterTabs').querySelectorAll('button').forEach(function(b){var c=b.querySelector('.c');if(!c)return;var v=counts[b.dataset.filter];c.textContent=v==null?'':v.toLocaleString();c.className='c'+((b.dataset.filter==='due'||b.dataset.filter==='flag')&&v?' hot':'')});
+    var counts={live:t.live,due:t.due,flag:t.flag,stale:t.stale,closed:t.closed,archived:t.archived};$('filterTabs').querySelectorAll('button').forEach(function(b){var c=b.querySelector('.c');if(!c)return;var v=counts[b.dataset.filter];c.textContent=v==null?'':v.toLocaleString();c.className='c'+((b.dataset.filter==='due'||b.dataset.filter==='flag')&&v?' hot':'')});
     $('pageNote').textContent='showing '+board.items.length+' of '+board.total; $('morePager').hidden=!board.has_more; $('pageFoot').textContent='Showing '+board.items.length+' of '+board.total;
     $('leadList').innerHTML=board.items.length?board.items.map(leadRow).join(''):'<div class="empty">'+(t.live===0&&t.archived===0&&filter==='live'&&!$('globalSearch').value?'Paste your first batch with “Add leads”. Work 200, not 8,000.':'Nothing matches that view.')+'</div>';
     if(current){var fresh=board.items.filter(function(x){return x.lead_id===current.lead_id})[0];if(fresh){fresh.activity=current.activity;fresh.appointments=current.appointments;current=fresh;var f=document.querySelector('#leadList .row[aria-selected="true"]');if(!f){var r=$('lead-'+current.lead_id);if(r)r.setAttribute('aria-selected','true')}}}}
@@ -221,7 +221,8 @@
   /* add leads */
   $('openAdd').onclick=function(){$('scrim').hidden=false;$('addDrawer').hidden=false;$('drawer').hidden=true;$('toolDrawer').hidden=true;$('bulk').focus()};
   $('addBulk').onclick=function(){var txt=$('bulk').value.trim();if(!txt)return;$('addBulk').disabled=true;$('bulkMsg').textContent='Adding…';
-    call('addBulkLeads',txt).then(function(r){var s=r.data;$('bulkMsg').textContent=r.message;if(!s.failed&&!s.duplicates_skipped)$('bulk').value='';
+    call('addBulkLeads',txt,{status:$('bulkStatus').value}).then(function(r){var s=r.data;$('bulkMsg').textContent=r.message;if(!s.failed&&!s.duplicates_skipped){$('bulk').value='';$('bulkStatus').value='NEW'}
+      if(s.added&&s.status&&s.status!=='NEW'){setFilter(s.status==='CLOSED'?'closed':'live',true)}
       $('importReport').innerHTML=(s.failures.length?'<div class="alertbox import"><b>Failed ('+s.failed+') — fix and paste again</b><ul>'+s.failures.map(function(f){return '<li>Line '+f.line+': '+esc(f.reason)+' — <code>'+esc(f.text)+'</code></li>'}).join('')+'</ul></div>':'')+(s.duplicates.length?'<div class="conflict import"><b>Duplicates skipped ('+s.duplicates_skipped+')</b><ul>'+s.duplicates.map(function(d){return '<li>Line '+d.line+': '+esc(d.reason)+' ('+esc(d.lead_id)+') — <code>'+esc(d.text)+'</code></li>'}).join('')+'</ul></div>':'');
       dashDrawn='';return Promise.all([loadBoard(1),loadToday()])}).catch(function(e){$('bulkMsg').textContent=showError(e)}).then(function(){$('addBulk').disabled=false})};
 

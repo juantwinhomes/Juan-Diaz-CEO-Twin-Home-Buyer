@@ -50,11 +50,12 @@ function listLeads(filters) {
     filters = filters || {};
     var ctx = leadContext_(), t = readTable_(SHEETS.LEADS);
     var all = t.rows.map(function (l) { return enrichLead_(l, ctx); });
-    var tally = { live: 0, due: 0, archived: 0, flag: 0, stale: 0, no_next_action: 0, target: toNum_(ctx.settings.live_list_target) || 200 };
+    var tally = { live: 0, due: 0, closed: 0, archived: 0, flag: 0, stale: 0, no_next_action: 0, target: toNum_(ctx.settings.live_list_target) || 200 };
     all.forEach(function (l) {
       if (l.is_live) { tally.live++; if (l.due_date && l.due_date <= ctx.today) tally.due++;
         if (l.flag_juan || l.compliance_mailer_check) tally.flag++;
         if (l.days_untouched >= ctx.staleDays) tally.stale++; if (!l.next_action) tally.no_next_action++; }
+      else if (l.status === LEAD_STATUS.CLOSED) tally.closed++;
       else tally.archived++;
     });
     var f = toStr_(filters.filter || 'live'), q = trimStr_(filters.search).toLowerCase(), s = toStr_(filters.sort || 'due');
@@ -62,7 +63,8 @@ function listLeads(filters) {
       if (q) { var hay = [l.address, l.seller_name, l.phone, normalizePhone_(l.phone), l.assigned_name, l.lead_id].join(' ').toLowerCase(); if (hay.indexOf(q) < 0) return false; }
       switch (f) {
         case 'live': return l.is_live;
-        case 'archived': return !l.is_live;
+        case 'closed': return l.status === LEAD_STATUS.CLOSED;
+        case 'archived': return !l.is_live && l.status !== LEAD_STATUS.CLOSED;
         case 'flag': return l.is_live && (l.flag_juan || l.compliance_mailer_check);
         case 'stale': return l.is_live && l.days_untouched >= ctx.staleDays;
         case 'due': return l.is_live && l.due_date && l.due_date <= ctx.today;
@@ -143,7 +145,9 @@ function createLead(data) {
 }
 
 /**
- * addBulkLeads(text) — one lead per line: address, seller, phone, source, equity note.
+ * addBulkLeads(text, options) — one lead per line: address, seller, phone, source, equity note.
+ * options.status (optional): import every line at this status (any live status or CLOSED; default NEW).
+ * Used to load historical deals (under contract / acquired) without faking a status-change trail.
  * Returns { added, duplicates_skipped, failed, failures:[{line, text, reason}], duplicates:[{line, text, lead_id, reason}] }.
  */
 function addBulkLeads(text, options) {
@@ -151,8 +155,11 @@ function addBulkLeads(text, options) {
     options = options || {};
     var lines = toStr_(text).split(/\r?\n/);
     if (lines.length > 500) return fail_('VALIDATION_ERROR', 'Paste at most 500 lines at a time.');
+    var importStatus = toStr_(options.status || LEAD_STATUS.NEW).toUpperCase();
+    if (LIVE_STATUSES.indexOf(importStatus) < 0 && importStatus !== LEAD_STATUS.CLOSED) return fail_('VALIDATION_ERROR', 'Leads can only be imported at a live status or Closed, not ' + importStatus + '.');
+    var importNote = importStatus === LEAD_STATUS.NEW ? '' : ' · imported as ' + STATUS_LABELS[importStatus];
     return withLock_(function () {
-      var idx = buildDuplicateIndex_(), toAdd = [], acts = [], summary = { added: 0, duplicates_skipped: 0, failed: 0, failures: [], duplicates: [] };
+      var idx = buildDuplicateIndex_(), toAdd = [], acts = [], summary = { added: 0, duplicates_skipped: 0, failed: 0, failures: [], duplicates: [], status: importStatus };
       lines.forEach(function (raw, i) {
         var line = raw.trim(); if (!line) return;
         var p = line.split(',').map(function (s) { return s.trim(); });
@@ -162,12 +169,13 @@ function addBulkLeads(text, options) {
         var dup = findDuplicate_(idx, d);
         if (dup) { summary.duplicates_skipped++; summary.duplicates.push({ line: i + 1, text: line, lead_id: dup.lead_id, reason: dup.reason }); return; }
         var rec = newLeadRecord_(user, d, function (id) { return leadExists_(id) || toAdd.some(function (r) { return r.lead_id === id; }); });
+        rec.status = importStatus;
         toAdd.push(rec); indexLead_(idx, rec);
-        acts.push(buildActivity_(user, rec.lead_id, ACTION.LEAD_IMPORTED, '', '', '', 'Bulk paste line ' + (i + 1)));
+        acts.push(buildActivity_(user, rec.lead_id, ACTION.LEAD_IMPORTED, '', '', '', 'Bulk paste line ' + (i + 1) + importNote));
       });
       if (toAdd.length) { appendRowObjects_(SHEETS.LEADS, toAdd); recordActivities_(acts); }
       summary.added = toAdd.length;
-      audit_(user, 'LEAD', 'BULK', 'BULK_IMPORT', { added: summary.added, duplicates: summary.duplicates_skipped, failed: summary.failed });
+      audit_(user, 'LEAD', 'BULK', 'BULK_IMPORT', { added: summary.added, duplicates: summary.duplicates_skipped, failed: summary.failed, status: importStatus });
       return ok_(summary, 'Added: ' + summary.added + '. Duplicates skipped: ' + summary.duplicates_skipped + '. Failed: ' + summary.failed + '.');
     });
   }, { capability: 'create_leads' });

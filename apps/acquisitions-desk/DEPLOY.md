@@ -131,6 +131,15 @@ What changed for the team: the five tabs became a left rail (Today, Board, Dashb
 admins); Numbers moved into Dashboards → Pace and Marketing; each property opens in a side drawer instead of an
 inline card; the work queue is one list with tabs; identity, permissions, data and URL are all unchanged.
 
+## Updating to v1.1.1 (import deals that already exist)
+
+Same three steps as above (`git pull`, `clasp push --force`, New version `v1.1.1`). No database change.
+
+What changed: **Add leads** has an "Add them as" picker. Leave it on New for fresh leads. Pick **Under contract** or
+**Closed** to load deals that already exist (signed contracts, acquired properties) so they show on the board without
+a fake status-change trail. Closed properties get their own **Closed** tab on the board; Archived is now only the
+dead leads. Prices (ARV, repairs, asking, offer) are filled in on each property afterwards.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

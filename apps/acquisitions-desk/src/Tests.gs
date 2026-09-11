@@ -46,6 +46,21 @@ function testSuite_() {
     var s2 = assertOk_(addBulkLeads(addr('200 oak avenue') + ', same house normalized'));
     assert_(s2.duplicates_skipped === 1 && s2.added === 0, 'normalized address duplicate detected');
   };
+  T['bulk import at a status: under contract / closed land in the right tab, archived refused'] = function () {
+    var uc = assertOk_(addBulkLeads(addr('27 Prague St') + ', G. Steele, ' + phone(3) + ', Other, historical deal', { status: 'under_contract' }));
+    assert_(uc.added === 1 && uc.status === 'UNDER_CONTRACT', 'imported at UNDER_CONTRACT');
+    var cl = assertOk_(addBulkLeads(addr('1464 Sunrise Pkwy') + ', S. Warnock, ' + phone(4) + ', Other', { status: 'CLOSED' }));
+    assert_(cl.added === 1, 'imported at CLOSED');
+    var board = assertOk_(listLeads({ filter: 'closed', search: addr('1464 Sunrise Pkwy') }));
+    assert_(board.items.length === 1 && board.items[0].status === 'CLOSED' && !board.items[0].is_live, 'closed tab shows the acquired property');
+    var arch = assertOk_(listLeads({ filter: 'archived', search: addr('1464 Sunrise Pkwy') }));
+    assert_(arch.items.length === 0, 'closed is not mixed into archived');
+    var live = assertOk_(listLeads({ filter: 'live', search: addr('27 Prague St') }));
+    assert_(live.items.length === 1 && live.items[0].status === 'UNDER_CONTRACT', 'under contract stays on the live board');
+    var hist = assertOk_(getLead(live.items[0].lead_id));
+    assert_(hist.activity.length === 1 && hist.activity[0].action_type === 'LEAD_IMPORTED' && /imported as Under contract/.test(hist.activity[0].note), 'import trail names the status, no fake status change');
+    assertFail_(addBulkLeads(addr('9 Nope St') + ', X', { status: 'ARCHIVED_SOLD' }), 'VALIDATION_ERROR');
+  };
   T['status change writes LEADS + LEAD_ACTIVITY and bumps version'] = function () {
     var l = assertOk_(createLead({ address: addr('300 Pine St') }));
     var u = assertOk_(updateLead(l.lead_id, { status: 'CONTACT_MADE' }, l.version));
