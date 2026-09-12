@@ -274,6 +274,18 @@ No database change: `git pull`, `clasp push --force`, then New version `v1.4.1` 
   free-text note stays on live properties, where it is the reason to call, capped at 60 characters. On closed
   properties it was repeating the status and the source, so it is gone from the row and stays in the drawer.
 
+## Updating to v1.4.2 (the drawer header, and an editable background note)
+
+No database change: `git pull`, `clasp push --force`, then New version `v1.4.2` → Deploy.
+
+The header line inside a property is now the same short line as the board row: seller, number, source, who is on it,
+attempts. It was repeating the exit strategy, the disposition and the whole background note, all of which are fields
+further down the same card.
+
+**Background** is now an editable field on the Work tab. It holds the free text that came across on import (the
+REI BlackBook tags, for example). Until now it was displayed but had no field, so a wrong or stale note could not be
+corrected. Imported notes can contradict a source that has since been changed — read them once and fix what is wrong.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |
