@@ -174,6 +174,15 @@ What changed for the team:
 - **Purchase price** on every property, under Underwriting next to the offer: what we actually pay, as opposed to what
   we offered. On the Closed tab it replaces offer room on the row.
 
+## Updating to v1.2.2 (typing fix)
+
+No database change: `git pull`, `clasp push --force`, then New version `v1.2.2` → Deploy.
+
+Fixes a real bug. While someone was typing a next action, a save on another field rebuilt the property card, and the
+browser committed whatever was in the half-finished sentence. One property picked up twelve versions of the same
+line. The card now waits until the person leaves the field, so only a deliberate commit (Tab, Enter, or clicking away)
+saves. No data was lost by the bug; the log just collected partial entries.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

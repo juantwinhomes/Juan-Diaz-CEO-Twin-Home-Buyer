@@ -161,11 +161,19 @@
   $('scrim').onclick=closeDrawers;$('drClose').onclick=closeDrawers;$('addClose').onclick=closeDrawers;$('tdClose').onclick=closeDrawers;
   $('dtabs').querySelectorAll('button').forEach(function(b){b.onclick=function(){dtab=b.dataset.t;renderDrawer()}});
   function kv(dt,dd){return '<div class="kv"><dt>'+dt+'</dt><dd>'+dd+'</dd></div>'}
-  function renderDrawer(){var l=current;if(!l)return;var d=$('drawer');d.dataset.id=l.lead_id;d.dataset.v=l.version;
+  /* The field the person is typing in right now, if any. Rebuilding around it is what caused partial saves. */
+  function focusedField(){var a=document.activeElement;
+    if(!a||!$('drBody').contains(a)||!/^(INPUT|TEXTAREA)$/.test(a.tagName))return null;
+    return a.value===(a.dataset.rendered||'')?null:a; /* committed or untouched: safe to redraw */ }
+  var pendingRender=false;
+  function renderDrawer(force){var l=current;if(!l)return;var d=$('drawer');d.dataset.id=l.lead_id;d.dataset.v=l.version;
     var keep=null,a=document.activeElement;if(a&&d.contains(a)&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA')){keep={sel:a.hasAttribute('data-note')?'[data-note]':a.dataset.set?'[data-set="'+a.dataset.set+'"]':null,value:a.value};try{keep.s=a.selectionStart;keep.e=a.selectionEnd}catch(e){}}
     $('drLbl').textContent='Property · '+l.lead_id+' · v'+l.version; $('drTitle').textContent=l.address||'';
     $('drMeta').textContent=[l.seller_name,l.phone,l.source,l.exit_strategy?'exit: '+l.exit_strategy:'',l.disposition,l.equity_note,l.assigned_name?l.assigned_name+' is working it':'unassigned',l.contact_attempts?l.contact_attempts+' attempts':''].filter(Boolean).join(' · ');
     $('dtabs').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.t===dtab?'true':'false');if(b.dataset.t==='hist')b.textContent='History'+(l.activity?' · '+l.activity.length:'')});
+    /* Someone is typing: leave their field alone and redraw when they move on. */
+    if(!force&&focusedField()){pendingRender=true;return}
+    pendingRender=false;
     var work=can('work_leads'),ro=work?'':' disabled',uw=can('underwrite')?'':' disabled',html=conflictNote[l.lead_id]?'<div class="conflict"><b>This lead was updated by another team member.</b> The latest information is now shown. Review it, then make your change again.</div>':'';
     if(dtab==='work'){
       html+=(l.compliance_mailer_check?'<div class="alertbox"><b>Mailer or check mentioned</b>Conversation stopped, routed to Juan and counsel. Do not contact the seller until Juan clears it.</div>':l.flag_juan?'<div class="alertbox"><b>Flagged for Juan</b>Waiting on Juan\'s call.</div>':'')+'';
@@ -189,7 +197,10 @@
     } else {html+=thread((l.activity||l.recent_activity||[]),true)}
     html+=(work?'<div class="compose"><input data-note placeholder="What did you find? Enter to post"><button class="btn" data-send>Post</button></div>':'');
     $('drBody').innerHTML=html;
-    if(keep&&keep.sel){var f=$('drBody').querySelector(keep.sel);if(f){if(keep.sel==='[data-note]'||f.value!==keep.value)f.value=keep.value;f.focus();try{if(keep.s!=null)f.setSelectionRange(keep.s,keep.e)}catch(e){}}}}
+    if(keep&&keep.sel){var f=$('drBody').querySelector(keep.sel);if(f){if(keep.sel==='[data-note]'||f.value!==keep.value)f.value=keep.value;f.focus();try{if(keep.s!=null)f.setSelectionRange(keep.s,keep.e)}catch(e){}}}
+    stampRendered()}
+  /* Remember the value every field was drawn with; anything else in it is unsaved typing. */
+  function stampRendered(){$('drBody').querySelectorAll('input,textarea').forEach(function(f){f.dataset.rendered=f.value})}
   function thread(list,full){if(!list.length)return '<div class="empty" style="padding:14px 0;text-align:left">No notes yet.</div>';var items=list.slice().reverse();return '<div class="thread">'+items.map(function(a){var sys=a.action_type!=='NOTE_ADDED';return '<div class="entry"><span class="when">'+esc(full?when(a.timestamp_utc):timeOnly(a.timestamp_utc))+'</span><div><span class="who">'+esc(a.user_name)+'</span><span'+(sys?' class="sys"':'')+'>'+esc(a.display)+'</span></div></div>'}).join('')+'</div>'}
   function setDrStatus(kind,text){var s=$('drStatus');s.className='status '+kind;s.textContent=text;if(kind==='ok')setTimeout(function(){if(s.textContent===text)s.textContent=''},2000)}
   /* absorb a fresh lead from the server: board row, drawer, today counts */
@@ -201,12 +212,15 @@
     var run=prev.catch(function(){}).then(function(){if((leadGen[id]||0)!==gen){setDrStatus('err','Review the latest, then save again');return}
       var ver=current&&current.lead_id===id?current.version:Number(($('lead-'+id)||{dataset:{}}).dataset.v);
       return makeCall(ver).then(function(r){clearInFlight(id);delete conflictNote[id];absorb(r.data);setDrStatus('ok','Saved');if(r.message&&/Routed|NO NEXT|Restored|Archived|Offer/.test(r.message))toast(r.message,/NO NEXT/.test(r.message)?'err':'ok');loadToday();dashDrawn='';if(/status|archive|restore/i.test(String(r.message)))loadBoard(1,true)})
-        .catch(function(e){clearInFlight(id);if(e&&e.code==='CONFLICT_RECORD_CHANGED'&&e.data){leadGen[id]=(leadGen[id]||0)+1;conflictNote[id]=true;absorb(e.data);toast('This lead was updated by another team member. Review the latest information before saving your change.','err');setDrStatus('err','Changed by another user');return}setDrStatus('err',codeLabel(e.code));showError(e)})});
+        .catch(function(e){clearInFlight(id);if(e&&e.code==='CONFLICT_RECORD_CHANGED'&&e.data){leadGen[id]=(leadGen[id]||0)+1;conflictNote[id]=true;absorb(e.data);renderDrawer(true);toast('This lead was updated by another team member. Review the latest information before saving your change.','err');setDrStatus('err','Changed by another user');return}setDrStatus('err',codeLabel(e.code));showError(e)})});
     leadQueues[id]=run;return run}
   /* Browsers fire a second native change on blur after a scripted one; the same field+value in flight is sent once. */
   var inFlight={};
   function clearInFlight(id){setTimeout(function(){Object.keys(inFlight).forEach(function(k){if(k.indexOf(id+'|')===0)delete inFlight[k]})},500)} /* grace: the browser's own change on blur lands right after a re-render */
-  $('drawer').addEventListener('change',function(e){var t=e.target;if(!t.dataset.set||!current)return;var f=t.dataset.set,v=t.value,id=current.lead_id;
+  $('drawer').addEventListener('focusout',function(){setTimeout(function(){if(pendingRender&&!focusedField())renderDrawer()},0)});
+  $('drawer').addEventListener('change',function(e){var t=e.target;if(!t.dataset.set||!current)return;
+    if(!document.contains(t))return; /* the browser's parting change on a field a re-render removed — not an edit */
+    var f=t.dataset.set,v=t.value,id=current.lead_id;t.dataset.rendered=v;
     var key=id+'|'+f;if(inFlight[key]===v)return;inFlight[key]=v;
     if(f==='assigned_to')return leadAction(id,function(ver){return call('assignLead',id,v,ver,'')});
     if(f==='status'){var cur=current;if(C.archived_statuses.indexOf(v)>-1&&(cur.is_live||cur.status==='CLOSED')){var why=window.prompt('Archive reason (optional). It stays in the database and can be restored.','');if(why===null){t.value=cur.status;return}return leadAction(id,function(ver){return call('archiveLead',id,v,why,ver)})}

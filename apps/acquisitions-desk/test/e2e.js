@@ -68,6 +68,21 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     await A.fill('#drawer [data-set=repairs]', '12000'); await A.press('#drawer [data-set=repairs]', 'Tab'); await drSaved(A); // a deliberate new value after reviewing
     const mao = 500000 * 0.7 - 12000; assert((await A.textContent('#drBody')).replace(/,/g, '').includes('$' + mao), 'MAO = ' + mao);
   });
+  await test('half-typed text is never saved: a save elsewhere does not commit the field under the cursor', async () => {
+    const nextActions = () => { freshRequest(SETH); return ctx.getLead(leadId).data.activity.filter(a => a.action_type === 'NEXT_ACTION_CHANGED').length; };
+    await openLead(A, leadId, 'work'); const before = nextActions();
+    await A.click('#drawer [data-set=next_action]'); await A.keyboard.press('Control+a'); await A.keyboard.type('Call the title company');
+    // A save on another field lands while the person is still typing — this is what rebuilt the card mid-sentence.
+    await A.evaluate(() => { const s = document.querySelector('#drBody [data-set=status]'); s.value = 'INVESTIGATING'; s.dispatchEvent(new Event('change', { bubbles: true })); });
+    await drSaved(A);
+    assert(await A.evaluate(() => document.activeElement.dataset.set) === 'next_action', 'the cursor stays in the field');
+    assert(await A.inputValue('#drawer [data-set=next_action]') === 'Call the title company', 'typed text survives the save');
+    assert(nextActions() === before, `half-typed next action reached the database: ${before} -> ${nextActions()}`);
+    await A.keyboard.press('Tab'); await drSaved(A); // committing it deliberately does save, exactly once
+    await A.waitForFunction(id => document.getElementById('lead-' + id).textContent.includes('Call the title company'), leadId);
+    assert(nextActions() === before + 1, `deliberate commit should write one entry, got ${nextActions() - before}`);
+    assert(ctx.getLead(leadId).data.next_action === 'Call the title company', 'the whole sentence was saved, not a prefix');
+  });
   await test('compliance: mailer/check → both flags, visible warning, Waiting on Juan, lead kept', async () => {
     await A.click('#dtabs [data-t=work]'); A.dialogs.push(true); await A.click('#drawer [data-comply="1"]'); await drSaved(A);
     const t = await A.textContent('#drBody'); assert(t.includes('Mailer or check mentioned') && t.includes('routed to Juan'), 'warning shown');
