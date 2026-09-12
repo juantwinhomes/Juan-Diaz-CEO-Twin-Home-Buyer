@@ -106,6 +106,19 @@ function testSuite_() {
     var t = assertOk_(getTodayDashboard());
     assert_(t.juan && t.juan.totals_today, 'the Juan panel rides along with today, so the client makes one call');
   };
+  T['tool dates are real dates, and the team list has one entry per person'] = function () {
+    var id = SEED_TOOLS[0].tool_id;
+    var t = assertOk_(updateTool(id, { asked_date: '2026-09-01', handoff_date: '' }));
+    assert_(t.asked_date === '2026-09-01' && t.handoff_date === '', 'a date saves, a blank clears it');
+    assertFail_(updateTool(id, { asked_date: 'last tuesday' }), 'VALIDATION_ERROR');
+    assertFail_(updateTool(id, { handoff_date: '2026-02-31' }), 'VALIDATION_ERROR');
+    var people = assertOk_(getTools()).people, names = people.map(function (p) { return p.name.toLowerCase(); });
+    assert_(names.length === names.filter(function (n, i) { return names.indexOf(n) === i; }).length, 'no name appears twice');
+    ['Marieflor', 'Kristine', 'Genesis', 'Christine Joy', 'Darlyn'].forEach(function (n) {
+      assert_(names.indexOf(n.toLowerCase()) > -1, n + ' is on the team list');
+    });
+    assertFail_(createUser({ name: 'Kristine', role: 'REP' }), 'VALIDATION_ERROR', 'a second entry for the same name is refused');
+  };
   T['status change writes LEADS + LEAD_ACTIVITY and bumps version'] = function () {
     var l = assertOk_(createLead({ address: addr('300 Pine St') }));
     var u = assertOk_(updateLead(l.lead_id, { status: 'CONTACT_MADE' }, l.version));

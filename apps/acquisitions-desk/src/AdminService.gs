@@ -27,6 +27,8 @@ function createUser(data) {
     var d = validateUserInput_(data || {}, true);
     var rec = withLock_(function () {
       if (d.email && findUserByEmail_(d.email)) throw validationError_('A user with that email already exists.');
+      var same = getUsersTable_().rows.filter(function (u) { return toStr_(u.name).trim().toLowerCase() === d.name.trim().toLowerCase(); });
+      if (same.length) throw validationError_(d.name + ' is already on the team. Open that person instead of adding a second entry.');
       var ts = nowUtcIso_();
       var rec = { user_id: generateId_('USR', function (id) { return !!findUserById_(id); }), name: d.name, email: d.email, team: d.team || '', role: d.role,
         active: d.email ? (d.active !== undefined ? d.active : true) : false, permission_level: d.permission_level, created_at: ts, updated_at: ts };

@@ -49,7 +49,15 @@ function getTools() {
     var order = TOOL_STATUS; tools.sort(function (a, b) { return order.indexOf(a.status) - order.indexOf(b.status) || a.name.localeCompare(b.name); });
     var pillars = PILLARS.map(function (p) { return { id: p.id, name: p.name, what: p.what, state: s['pillar_' + p.id] || PILLAR_STATES[0] }; });
     var asked = {}; BUILDERS.forEach(function (b) { asked[b] = s['asked_' + b] || ''; });
-    var people = getUsersTable_().rows.map(function (u) { return { user_id: toStr_(u.user_id), name: toStr_(u.name), role: toStr_(u.role), active: toBool_(u.active) }; });
+    // One chip per person: a name that appears twice keeps the row someone can actually sign in as.
+    var seen = {}, people = [];
+    getUsersTable_().rows.forEach(function (u) {
+      var name = toStr_(u.name), key = name.trim().toLowerCase(); if (!key) return;
+      var row = { user_id: toStr_(u.user_id), name: name, role: toStr_(u.role), active: toBool_(u.active) };
+      if (!(key in seen)) { seen[key] = people.length; people.push(row); return; }
+      var kept = people[seen[key]];
+      if (!kept.active && row.active) people[seen[key]] = row;
+    });
     return ok_({ tools: tools, pillars: pillars, asked: asked, builders: BUILDERS, people: people, tools_today: buildToolsToday_(ctx),
       enums: { status: TOOL_STATUS, recommendation: TOOL_RECOMMENDATION, cadence: TOOL_CADENCE, verdict: TOOL_VERDICT, pillar_states: PILLAR_STATES } });
   }, { capability: 'view_tools' });
@@ -66,6 +74,7 @@ function validateToolPatch_(patch) {
     if (k === 'cadence' && TOOL_CADENCE.indexOf(v) < 0) throw validationError_('Unknown cadence.');
     if (k === 'verdict' && TOOL_VERDICT.indexOf(v) < 0) throw validationError_('Unknown verdict.');
     if (k === 'link' && v && !isValidUrl_(v)) throw validationError_('Link must start with http:// or https://');
+    if (TOOL_DATE_FIELDS.indexOf(k) > -1) { out[k] = normalizeDate_(v, getBusinessTimezone_()); return; }
     assertLen_(v, k === 'steps' ? MAX_LEN.steps : k === 'link' ? MAX_LEN.url : k === 'description' ? 1000 : MAX_LEN.short, k.replace(/_/g, ' '));
     out[k] = v;
   });

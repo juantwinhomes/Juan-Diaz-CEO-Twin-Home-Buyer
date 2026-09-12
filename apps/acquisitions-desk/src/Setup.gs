@@ -90,14 +90,26 @@ function seedSettings_() {
   upsertSetting_('app_version', APP_VERSION, null);
   return added;
 }
+/**
+ * Adds anyone in SEED_USERS who is not on the team yet, matched by name. Existing rows are never touched, so a
+ * role, email or team an admin has set is kept, and someone deactivated stays deactivated instead of returning.
+ */
 function seedUsers_() {
-  var t = readTable_(SHEETS.USERS); if (t.rows.length) return 'skipped (USERS already has ' + t.rows.length + ' rows)';
-  var ts = nowUtcIso_(), rows = SEED_USERS.map(function (u) {
-    return { user_id: 'USR-' + u.name.split(' ')[0].toUpperCase().replace(/[^A-Z0-9]/g, ''), name: u.name, email: u.email, team: u.team, role: u.role,
-      active: !!(u.active && u.email), permission_level: PERMISSION_LEVEL[u.role], created_at: ts, updated_at: ts };
+  var t = readTable_(SHEETS.USERS), ts = nowUtcIso_();
+  var have = {}, ids = {};
+  t.rows.forEach(function (u) { have[toStr_(u.name).trim().toLowerCase()] = true; ids[toStr_(u.user_id)] = true; });
+  var rows = [];
+  SEED_USERS.forEach(function (u) {
+    if (have[u.name.trim().toLowerCase()]) return;
+    var base = 'USR-' + u.name.split(' ')[0].toUpperCase().replace(/[^A-Z0-9]/g, ''), id = base, n = 2;
+    while (ids[id]) id = base + '-' + (n++);
+    ids[id] = true; have[u.name.trim().toLowerCase()] = true;
+    rows.push({ user_id: id, name: u.name, email: u.email, team: u.team, role: u.role,
+      active: !!(u.active && u.email), permission_level: PERMISSION_LEVEL[u.role], created_at: ts, updated_at: ts });
   });
+  if (!rows.length) return 'no new people (USERS has ' + t.rows.length + ')';
   appendRowObjects_(SHEETS.USERS, rows);
-  return rows.length + ' users seeded; ' + rows.filter(function (r) { return !r.email; }).length + ' need an email before they can log in';
+  return rows.length + ' added; ' + rows.filter(function (r) { return !r.email; }).length + ' need an email before they can log in';
 }
 function seedTools_() {
   var t = readTable_(SHEETS.TOOL_INVENTORY); if (t.rows.length) return 'skipped (TOOL_INVENTORY already has ' + t.rows.length + ' rows)';

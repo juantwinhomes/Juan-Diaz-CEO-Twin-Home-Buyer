@@ -213,6 +213,28 @@ complete; it is fetched when you open the History tab.
 One thing to know: settings and the user list are held for up to 5 minutes. Change them in the Admin tab and they
 apply at once. Edit those two tabs directly in the spreadsheet and the desk can take up to 5 minutes to notice.
 
+## Updating to v1.3.1 (the whole team, real dates on tools)
+
+```powershell
+git pull
+npx.cmd @google/clasp@3 push --force
+```
+
+Then run **`setupDatabase`** once in the editor — that is what adds the missing people — and Deploy → Manage
+deployments → pencil → New version `v1.3.1` → Deploy.
+
+- **The rest of the team is on the list**: Genesis, Gian, Lawrence, Christine Joy, Mc, Jesery, Arjane, John,
+  Kristine, Denzel, Darlyn, Leo and Marieflor, alongside the ten already there. They show up wherever people do,
+  including the trained-on-a-tool chips. No emails were invented, so each is inactive and cannot sign in until an
+  admin sets their real email in the Admin tab. Everyone new starts as TECHNICAL, which can see the board and run
+  tools but cannot work properties; change the role when you set the email.
+- Re-running `setupDatabase` now **tops up** missing people instead of skipping. It never edits a row that already
+  exists, so a role, team or email you set by hand survives, and anyone you deactivated stays deactivated.
+- **A name can only appear once.** Adding a second person with an existing name is refused, and a tool's trained list
+  shows one chip per person, keeping the entry that can actually sign in.
+- **Asked builder for steps** and **Handed to the user on** are date pickers now, not free text. Anything that is not
+  a real date is refused rather than stored.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

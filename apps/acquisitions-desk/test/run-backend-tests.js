@@ -22,7 +22,8 @@ test('setupDatabase creates all 12 sheets with exact headers, seeds settings/use
   for (const k of Object.keys(ctx.SHEETS)) { const sh = ss.getSheetByName(ctx.SHEETS[k]); assert(sh, 'sheet ' + k); const hdr = sh.getRange(1, 1, 1, ctx.HEADERS[k].length).getValues()[0]; assert(JSON.stringify(hdr) === JSON.stringify(ctx.HEADERS[k]), 'headers ' + k + ' ' + hdr); }
   assert(ss.getSheetByName('USERS').getLastRow() === 1 + ctx.SEED_USERS.length, 'users seeded'); assert(ss.getSheetByName('TOOL_INVENTORY').getLastRow() === 1 + ctx.SEED_TOOLS.length, 'tools seeded');
   assert(ctx.getSettingValue_('mao_percentage') === '70' && ctx.getSettingValue_('auto_refresh_seconds') === '30' && ctx.getSettingValue_('stale_lead_days') === '7', 'default settings');
-  const again = ctx.setupDatabase(); assert(!again.created && again.seeded.users.indexOf('skipped') === 0, 'idempotent re-run');
+  const again = ctx.setupDatabase(); assert(!again.created && again.seeded.users.indexOf('no new people') === 0, 'idempotent re-run adds nobody: ' + again.seeded.users);
+  assert(ss.getSheetByName('USERS').getLastRow() === 1 + ctx.SEED_USERS.length, 'still one row per person after a re-run');
   assert(ss.getSheets().every(s => s.protections.length === 1), 'every sheet protected');
 });
 test('upgrade: an existing sheet with last release\'s headers gets the new columns appended, rows still read', () => {
@@ -34,6 +35,21 @@ test('upgrade: an existing sheet with last release\'s headers gets the new colum
   assert(hdr.indexOf('exit_strategy') === old.length && hdr.indexOf('disposition') === old.length + 1 && hdr.indexOf('purchase_price') === old.length + 2 && hdr.indexOf('address') === 1, 'new columns at the end, old order untouched');
   assert(sh.getRange(2, 1, 1, 2).getValues()[0][1] === '1 Old St', 'existing row intact');
   const again = ctx.ensureSheet_(ss, 'LEADS_V1', ctx.HEADERS.LEADS); assert(again.status === 'ok', 'idempotent');
+});
+test('team top-up: a re-run adds only missing people and never touches an existing row', () => {
+  as(OWNER); const sh = ctx._dbCache.ss.getSheetByName('USERS');
+  const before = ok(ctx.getUsers()); const kristine = before.find(u => u.name === 'Kristine');
+  ok(ctx.updateUser(kristine.user_id, { team: 'Finance', role: 'MANAGER' }));   // an admin set this by hand
+  const last = sh.getLastRow();
+  sh.deleteRow(before.findIndex(u => u.name === 'Marieflor') + 2);              // someone is missing from the sheet
+  ctx._dbCache.tables = {}; ctx._dbCache.activityTail = null; ctx.cachedTableRemove_('USERS');
+  const rep = ctx.setupDatabase().seeded.users;
+  assert(/^1 added/.test(rep), 'exactly one person added back: ' + rep);
+  assert(sh.getLastRow() === last, 'row count back to where it was');
+  const after = ok(ctx.getUsers());
+  assert(after.filter(u => u.name === 'Marieflor').length === 1, 'Marieflor restored once');
+  const k = after.find(u => u.name === 'Kristine');
+  assert(k.team === 'Finance' && k.role === 'MANAGER', "the admin's own edit survived the re-run");
 });
 test('API surface: every global function is public-listed or private (ends with _)', () => {
   const fns = Object.keys(ctx).filter(k => typeof ctx[k] === 'function' && /^[a-zA-Z]/.test(k) && !['Date','Math','JSON','Object','Array','String','Number','Boolean','RegExp','Error','isFinite','isNaN','parseInt','parseFloat','encodeURIComponent','decodeURIComponent','AppError'].includes(k) && !k.endsWith('_'));

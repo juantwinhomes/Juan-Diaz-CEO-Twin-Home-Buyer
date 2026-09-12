@@ -48,6 +48,7 @@ class Sheet {
   getRange(r, c, nr = 1, nc = 1) { if (r < 1 || c < 1 || nr < 1 || nc < 1) throw new Error('Range out of bounds ' + [r, c, nr, nc]); return new Range(this, r, c, nr, nc); }
   getDataRange() { return new Range(this, 1, 1, Math.max(1, this.getLastRow()), Math.max(1, this.getLastColumn())); }
   appendRow(vals) { const r = this.getLastRow() + 1; vals.forEach((v, j) => this._set(r, j + 1, v)); return this; }
+  deleteRow(r) { if (r >= 1 && r <= this.rows.length) { this.rows.splice(r - 1, 1); this.maxRows = Math.max(1, this.maxRows - 1); } return this; }
   setFrozenRows(n) { this.frozen = n; } getFrozenRows() { return this.frozen; }
   protect() { const p = new Protection(); this.protections.push(p); return p; } getProtections() { return this.protections.slice(); }
 }

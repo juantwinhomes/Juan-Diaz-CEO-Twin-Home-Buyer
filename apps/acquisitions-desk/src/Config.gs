@@ -5,7 +5,7 @@
  */
 
 var APP_NAME = 'THB Acquisitions Desk';
-var APP_VERSION = '1.3.0';
+var APP_VERSION = '1.3.1';
 var DB_NAME = 'THB Acquisitions Desk — Production Database';
 var BACKUP_FOLDER_NAME = 'THB Acquisitions Desk Backups';
 
@@ -149,6 +149,8 @@ var SOURCE_ALIASES = { 'ppl': 'Motivated Leads', 'motivated lead': 'Motivated Le
 var ACTIVITY_TAIL_ROWS = 1500;
 /** Small, hot tables kept in CacheService between requests, in seconds. Every write clears them. */
 var TABLE_CACHE_SECONDS = { SETTINGS: 300, USERS: 300 };
+/** Tool fields stored as a business date (yyyy-MM-dd), not free text. */
+var TOOL_DATE_FIELDS = ['asked_date','handoff_date'];
 var METRIC_FIELDS = ['tv_spend','ppc_spend','seo_spend','ppl_spend','mail_spend','other_spend','new_leads','inbound_calls','missed_calls',
                      'sellers_reached','appointments_set','contracts_signed','contracts_fell_out','deals_closed',
                      'minutes_to_first_call'];
@@ -226,5 +228,20 @@ var SEED_USERS = [
   {name:'Barbie', email:'', team:'Acquisitions PH', role:'REP', active:false},
   {name:'Thea', email:'', team:'Acquisitions PH', role:'REP', active:false},
   {name:'Jonathan', email:'', team:'Technical', role:'TECHNICAL', active:false},
-  {name:'Bryan', email:'', team:'Technical', role:'TECHNICAL', active:false}
+  {name:'Bryan', email:'', team:'Technical', role:'TECHNICAL', active:false},
+  // The rest of the team, from the PC board. No emails invented — each stays inactive until an admin sets one,
+  // and the role is a starting point the admin confirms at that moment.
+  {name:'Genesis', email:'', team:'Acquisitions', role:'REP', active:false},
+  {name:'Gian', email:'', team:'AI & Systems', role:'TECHNICAL', active:false},
+  {name:'Lawrence', email:'', team:'AI & Systems', role:'TECHNICAL', active:false},
+  {name:'Christine Joy', email:'', team:'AI & Systems', role:'TECHNICAL', active:false},
+  {name:'Mc', email:'', team:'AI & Systems', role:'TECHNICAL', active:false},
+  {name:'Jesery', email:'', team:'Operations', role:'TECHNICAL', active:false},
+  {name:'Arjane', email:'', team:'Operations', role:'TECHNICAL', active:false},
+  {name:'John', email:'', team:'Operations', role:'TECHNICAL', active:false},
+  {name:'Kristine', email:'', team:'Operations', role:'TECHNICAL', active:false},
+  {name:'Denzel', email:'', team:'Operations', role:'TECHNICAL', active:false},
+  {name:'Darlyn', email:'', team:'Operations', role:'TECHNICAL', active:false},
+  {name:'Leo', email:'', team:'Other', role:'TECHNICAL', active:false},
+  {name:'Marieflor', email:'', team:'Other', role:'TECHNICAL', active:false}
 ];
