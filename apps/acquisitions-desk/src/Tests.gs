@@ -66,6 +66,10 @@ function testSuite_() {
     var b = assertOk_(createLead({ address: addr('12 Source Ave'), source: 'DM- Post Card' })); assert_(b.source === 'DM- Post Card', 'unknown spelling kept as typed');
     var c = assertOk_(createLead({ address: addr('13 Source Ave'), source: 'mls lead' })); assert_(c.source === 'Realtor', 'MLS Lead → Realtor');
     var d = assertOk_(createLead({ address: addr('14 Source Ave'), source: 'ppl' })); assert_(d.source === 'Motivated Leads', 'PPL → Motivated Leads');
+    var e = assertOk_(createLead({ address: addr('15 Source Ave'), source: 'MLS/Redfin' })); assert_(e.source === 'MLS/Redfin', 'MLS/Redfin is its own source');
+    var f = assertOk_(createLead({ address: addr('16 Source Ave'), source: 'property leads' })); assert_(f.source === 'Property Leads', 'Property Leads is its own source');
+    assert_(channelOfSource_('MLS/Redfin') === 'other' && channelOfSource_('Property Leads') === 'other', 'both new sources bill to the Other channel');
+    assert_(normalizeSource_('MLS Lead') === 'Realtor', 'agent-tagged MLS Lead still means Realtor');
     assert_(channelOfSource_('DM Postcard') === 'mail' && channelOfSource_('DM Checks') === 'mail' && channelOfSource_('SEO') === 'seo' && channelOfSource_('Realtor') === 'other' && channelOfSource_('') === 'other', 'source → channel rollup');
     var u = assertOk_(updateLead(a.lead_id, { exit_strategy: 'Fix & Flip', disposition: 'Under construction', source: 'tv commercial' }, a.version));
     assert_(u.exit_strategy === 'Fix & Flip' && u.disposition === 'Under construction' && u.source === 'TV', 'deal fields saved and source re-normalized');
@@ -76,8 +80,13 @@ function testSuite_() {
     var rep = assertOk_(getDashboards({ period: '30d' })).marketing;
     var mail = rep.channels.filter(function (ch) { return ch.channel === 'Direct mail'; })[0], srcs = rep.sources.map(function (s) { return s.source; });
     assert_(mail && mail.spend >= 480 && rep.channels.length === 6, 'six spend channels with direct mail spend');
-    assert_(srcs.indexOf('PPC') > -1 && srcs.indexOf('DM Postcard') > -1 && srcs.indexOf('DM- Post Card') > -1, 'leads by source lists the nine sources plus unknown spellings');
+    assert_(srcs.indexOf('PPC') > -1 && srcs.indexOf('DM Postcard') > -1 && srcs.indexOf('MLS/Redfin') > -1 && srcs.indexOf('Property Leads') > -1 && srcs.indexOf('DM- Post Card') > -1, 'leads by source lists every source plus unknown spellings');
+    assert_(rep.sources.length >= LEAD_SOURCES.length, 'every configured source has a row');
     var closedList = assertOk_(listLeads({ filter: 'all', search: addr('11 Source Ave') })); assert_(closedList.items[0].disposition === 'Under construction', 'board rows carry disposition');
+    var pp = assertOk_(updateLead(a.lead_id, { purchase_price: 475000 }, closedList.items[0].version));
+    assert_(pp.purchase_price === 475000, 'purchase price saved');
+    assertFail_(updateLead(a.lead_id, { purchase_price: -1 }, pp.version), 'VALIDATION_ERROR');
+    assertFail_(updateLead(a.lead_id, { purchase_price: 'a lot' }, pp.version), 'VALIDATION_ERROR');
   };
   T['status change writes LEADS + LEAD_ACTIVITY and bumps version'] = function () {
     var l = assertOk_(createLead({ address: addr('300 Pine St') }));

@@ -5,7 +5,7 @@
  */
 
 var APP_NAME = 'THB Acquisitions Desk';
-var APP_VERSION = '1.2.0';
+var APP_VERSION = '1.2.1';
 var DB_NAME = 'THB Acquisitions Desk — Production Database';
 var BACKUP_FOLDER_NAME = 'THB Acquisitions Desk Backups';
 
@@ -33,7 +33,7 @@ var HEADERS = {
   LEADS: ['lead_id','address','seller_name','phone','source','equity_note','status','assigned_to','team',
           'flag_juan','compliance_mailer_check','contact_attempts','next_action','due_date','arv','repairs',
           'asking_price','offer','appointment_date','appointment_outcome','archive_reason','created_by',
-          'created_at','updated_by','updated_at','last_touched_at','version','exit_strategy','disposition'],
+          'created_at','updated_by','updated_at','last_touched_at','version','exit_strategy','disposition','purchase_price'],
   LEAD_ACTIVITY: ['activity_id','lead_id','user_id','user_name','user_email','business_date','timestamp_utc',
                   'action_type','field_changed','old_value','new_value','note'],
   APPOINTMENTS: ['appointment_id','lead_id','appointment_date','appointment_time','timezone','assigned_to',
@@ -117,12 +117,12 @@ var ACTION = {
 // Fields a REP may patch through updateLead. Everything else needs a dedicated function or a higher role.
 var LEAD_PATCHABLE = ['address','seller_name','phone','source','equity_note','status','next_action','due_date',
                       'arv','repairs','asking_price','offer','appointment_date','appointment_outcome','team',
-                      'exit_strategy','disposition'];
+                      'exit_strategy','disposition','purchase_price'];
 /** What we plan to do with the house once we control it (whiteboard: Exit Strategy). */
 var EXIT_STRATEGIES = ['Wholesale','Wholetail','Fix & Flip','Wholetail / Flip','Hold'];
 /** Where an acquired property is in disposition (whiteboard: Status). */
 var DISPOSITIONS = ['Under construction','Listed','Listed - pending','Sold','Wholesaled'];
-var LEAD_NUMERIC = ['arv','repairs','asking_price','offer','contact_attempts','version'];
+var LEAD_NUMERIC = ['arv','repairs','asking_price','offer','purchase_price','contact_attempts','version'];
 var LEAD_DATE = ['due_date','appointment_date'];
 var LEAD_BOOL = ['flag_juan','compliance_mailer_check'];
 
@@ -131,14 +131,17 @@ var MAX_LEN = { short: 200, address: 300, note: 4000, steps: 8000, url: 2000 };
 /** Spend channels: [metrics field prefix, label]. DAILY_METRICS has one <key>_spend column per channel. */
 var CHANNELS = [['tv','TV'],['ppc','PPC'],['seo','SEO'],['ppl','Motivated Leads'],['mail','Direct mail'],['other','Other']];
 /** Lead sources: [label, spend channel]. Each source rolls up into one spend channel for cost-per-lead. */
-var LEAD_SOURCES = [['PPC','ppc'],['TV','tv'],['SEO','seo'],['Motivated Leads','ppl'],['DM Postcard','mail'],
-                    ['DM Letters','mail'],['DM Checks','mail'],['Realtor','other'],['Other','other']];
+var LEAD_SOURCES = [['PPC','ppc'],['TV','tv'],['SEO','seo'],['Motivated Leads','ppl'],['Property Leads','other'],
+                    ['DM Postcard','mail'],['DM Letters','mail'],['DM Checks','mail'],['MLS/Redfin','other'],
+                    ['Realtor','other'],['Other','other']];
 /** Spellings we accept from REI BlackBook tags, the whiteboard and old data → canonical source label. */
 var SOURCE_ALIASES = { 'ppl': 'Motivated Leads', 'motivated lead': 'Motivated Leads', 'pay per lead': 'Motivated Leads',
   'ppc - google ads': 'PPC', 'ppc-google ads': 'PPC', 'google ads': 'PPC', 'ppc lead': 'PPC', 'tv commercial': 'TV',
   'postcard': 'DM Postcard', 'post card': 'DM Postcard', 'dm post card': 'DM Postcard', 'dm-post card': 'DM Postcard', 'dm-postcard': 'DM Postcard',
   'letters': 'DM Letters', 'letter': 'DM Letters', 'dm letter': 'DM Letters', 'checks': 'DM Checks', 'check': 'DM Checks', 'dm check': 'DM Checks',
-  'agent': 'Realtor', 'agent/realtor': 'Realtor', 'realtor/agent': 'Realtor', 'mls': 'Realtor', 'mls lead': 'Realtor', 'mls/redfin': 'Realtor', 'redfin': 'Realtor', 'property leads': 'Other' };
+  'agent': 'Realtor', 'agent/realtor': 'Realtor', 'realtor/agent': 'Realtor', 'mls': 'Realtor', 'mls lead': 'Realtor',
+  'mls/redfin': 'MLS/Redfin', 'mls / redfin': 'MLS/Redfin', 'redfin': 'MLS/Redfin',
+  'property leads': 'Property Leads', 'propertyleads': 'Property Leads', 'propertyleads.com': 'Property Leads' };
 var METRIC_FIELDS = ['tv_spend','ppc_spend','seo_spend','ppl_spend','mail_spend','other_spend','new_leads','inbound_calls','missed_calls',
                      'sellers_reached','appointments_set','contracts_signed','contracts_fell_out','deals_closed',
                      'minutes_to_first_call'];

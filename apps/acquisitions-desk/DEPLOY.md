@@ -140,7 +140,7 @@ What changed: **Add leads** has an "Add them as" picker. Leave it on New for fre
 a fake status-change trail. Closed properties get their own **Closed** tab on the board; Archived is now only the
 dead leads. Prices (ARV, repairs, asking, offer) are filled in on each property afterwards.
 
-## Updating to v1.2.0 (sources, exit strategy, disposition, six spend channels)
+## Updating to v1.2.1 (sources, exit strategy, disposition, purchase price, six spend channels)
 
 This release adds columns, so there is one extra step. From `apps/acquisitions-desk`:
 
@@ -151,10 +151,10 @@ npx.cmd @google/clasp@3 push --force
 
 Then in the Apps Script editor pick **`setupDatabase`** in the function dropdown and **Run** it once. It only appends
 the four new columns to the existing sheets (`LEADS`: `exit_strategy`, `disposition`; `DAILY_METRICS`: `seo_spend`,
-`mail_spend`). Nothing is moved, re-seeded or deleted; the log says `added columns: …` for those two tabs and `ok`
-for the rest. Skip this and the desk shows "Sheet LEADS is missing column exit_strategy" until you run it.
+`mail_spend`; `LEADS` also gets `purchase_price`). Nothing is moved, re-seeded or deleted; the log says
+`added columns: …` for those two tabs and `ok` for the rest. Skip this and the desk shows "Sheet LEADS is missing column exit_strategy" until you run it.
 
-Then **Deploy → Manage deployments → pencil → New version `v1.2.0` → Deploy.** Same `/exec` URL.
+Then **Deploy → Manage deployments → pencil → New version `v1.2.1` → Deploy.** Same `/exec` URL.
 
 The push also adds one Google permission (read the Workspace directory) so the desk can show each person's Google
 profile photo in the rail. The first time you run `setupDatabase` after the push, Google asks you to authorize again;
@@ -162,14 +162,17 @@ accept it. People without a profile photo, or accounts outside the Workspace dir
 
 What changed for the team:
 - **Profile photo** from your Google account in the bottom-left of the rail.
-- **Source** is now a fixed list: PPC, TV, SEO, Motivated Leads, DM Postcard, DM Letters, DM Checks, Realtor, Other.
-  REI BlackBook spellings ("PPC LEAD", "TV Commercial", "MLS Lead", "PPL") are recognized on paste and on edit.
+- **Source** is now a fixed list: PPC, TV, SEO, Motivated Leads, Property Leads, DM Postcard, DM Letters, DM Checks,
+  MLS/Redfin, Realtor, Other. REI BlackBook spellings ("PPC LEAD", "TV Commercial", "PPL", "MLS Lead") are recognized
+  on paste and on edit.
 - Each source rolls up into one of six **spend channels** on the day log: TV, PPC, SEO, Motivated Leads, Direct mail
   (postcards + letters + checks), Other. Cost per lead is computed per channel; Dashboards → Marketing also lists
   leads by source.
 - Every property has an **Exit strategy** (Wholesale, Wholetail, Fix & Flip, Wholetail / Flip, Hold) and, once
   acquired, a **Disposition** (Under construction, Listed, Listed - pending, Sold, Wholesaled). Both live in the
   property drawer under Underwriting → Deal. Disposition shows on the Closed tab in place of offer room.
+- **Purchase price** on every property, under Underwriting next to the offer: what we actually pay, as opposed to what
+  we offered. On the Closed tab it replaces offer room on the row.
 
 ## Roles
 

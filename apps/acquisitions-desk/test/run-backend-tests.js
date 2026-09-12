@@ -26,12 +26,12 @@ test('setupDatabase creates all 12 sheets with exact headers, seeds settings/use
   assert(ss.getSheets().every(s => s.protections.length === 1), 'every sheet protected');
 });
 test('upgrade: an existing sheet with last release\'s headers gets the new columns appended, rows still read', () => {
-  as(OWNER); const ss = ctx._dbCache.ss; const old = ctx.HEADERS.LEADS.filter(h => h !== 'exit_strategy' && h !== 'disposition');
+  as(OWNER); const ss = ctx._dbCache.ss; const old = ctx.HEADERS.LEADS.filter(h => h !== 'exit_strategy' && h !== 'disposition' && h !== 'purchase_price');
   const first = ctx.ensureSheet_(ss, 'LEADS_V1', old); assert(/created/.test(first.status), 'fixture created: ' + JSON.stringify(first));
   ss.getSheetByName('LEADS_V1').appendRow(old.map(h => h === 'lead_id' ? 'LEAD-X' : h === 'address' ? '1 Old St' : ''));
-  const up = ctx.ensureSheet_(ss, 'LEADS_V1', ctx.HEADERS.LEADS); assert(/added columns: exit_strategy, disposition/.test(up.status), 'columns appended: ' + up.status);
+  const up = ctx.ensureSheet_(ss, 'LEADS_V1', ctx.HEADERS.LEADS); assert(/added columns: exit_strategy, disposition, purchase_price/.test(up.status), 'columns appended: ' + up.status);
   const sh = ss.getSheetByName('LEADS_V1'); const hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  assert(hdr.indexOf('exit_strategy') === old.length && hdr.indexOf('disposition') === old.length + 1 && hdr.indexOf('address') === 1, 'new columns at the end, old order untouched');
+  assert(hdr.indexOf('exit_strategy') === old.length && hdr.indexOf('disposition') === old.length + 1 && hdr.indexOf('purchase_price') === old.length + 2 && hdr.indexOf('address') === 1, 'new columns at the end, old order untouched');
   assert(sh.getRange(2, 1, 1, 2).getValues()[0][1] === '1 Old St', 'existing row intact');
   const again = ctx.ensureSheet_(ss, 'LEADS_V1', ctx.HEADERS.LEADS); assert(again.status === 'ok', 'idempotent');
 });
