@@ -57,5 +57,7 @@
   "archiveTestData",
   "resetDevelopmentDatabase",
   "dedupeDailyMetrics",
+  "previewWhiteboardUpdate",
+  "applyWhiteboardUpdate",
   "runAllTests"
 ]

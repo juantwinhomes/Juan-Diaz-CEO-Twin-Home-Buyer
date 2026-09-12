@@ -235,6 +235,31 @@ deployments → pencil → New version `v1.3.1` → Deploy.
 - **Asked builder for steps** and **Handed to the user on** are date pickers now, not free text. Anything that is not
   a real date is refused rather than stored.
 
+## Updating to v1.4.0 (closing date, sale price, and the whiteboard)
+
+```powershell
+git pull
+npx.cmd @google/clasp@3 push --force
+```
+
+Run **`setupDatabase`** once (it appends `closing_date` and `sale_price` to LEADS), then Deploy → Manage
+deployments → pencil → New version `v1.4.0` → Deploy.
+
+Every property now has a **closing date** and a **sale price** alongside the purchase price, under Underwriting.
+On the Closed tab a sold property shows its sale price on the row, with what it was bought for underneath.
+
+### Putting the whiteboard into the desk
+
+The office whiteboard photographed on 2026-09-12 is transcribed in `src/Whiteboard.gs`. In the Apps Script editor:
+
+1. Run **`previewWhiteboardUpdate`**. It writes nothing and prints, per property, exactly what would change.
+   Read the log before going further.
+2. Run **`applyWhiteboardUpdate`**. It writes through the normal lead API, so every field change is version
+   checked, recorded in LEAD_ACTIVITY and attributed to you. Running it again does nothing.
+
+It matches each property by a distinctive part of its address. A row that matches nothing, or matches more than
+one property, is reported and skipped rather than guessed at.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

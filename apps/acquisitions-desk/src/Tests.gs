@@ -119,6 +119,23 @@ function testSuite_() {
     });
     assertFail_(createUser({ name: 'Kristine', role: 'REP' }), 'VALIDATION_ERROR', 'a second entry for the same name is refused');
   };
+  T['whiteboard: preview writes nothing, apply is logged, a second run changes nothing'] = function () {
+    var a = addr('492 Umland Dr Santa Rosa CA');
+    var l = assertOk_(addBulkLeads(a + ', R. Walker, ' + phone(7) + ', Other', { status: 'CLOSED' }));
+    assert_(l.added === 1, 'fixture property added');
+    var row = assertOk_(listLeads({ filter: 'closed', search: a })).items[0];
+    var plan = assertOk_(previewWhiteboardUpdate());
+    var mine = plan.rows.filter(function (r) { return /Umland/.test(r.property); })[0];
+    assert_(mine && /would change/.test(mine.result), 'preview says what it would do: ' + (mine && mine.result));
+    assert_(assertOk_(getLead(row.lead_id)).purchase_price === '', 'preview wrote nothing');
+    assertOk_(applyWhiteboardUpdate());
+    var after = assertOk_(getLead(row.lead_id, true));
+    assert_(after.purchase_price === 475000 && after.source === 'Property Leads' && after.disposition === 'Under construction', 'board values written');
+    assert_(after.activity.some(function (x) { return x.action_type === 'UNDERWRITING_CHANGED' && x.field_changed === 'purchase_price'; }), 'the change is in the history');
+    var second = assertOk_(applyWhiteboardUpdate());
+    var again = second.rows.filter(function (r) { return /Umland/.test(r.property); })[0];
+    assert_(again.result === 'already matches the board', 'running it twice changes nothing: ' + again.result);
+  };
   T['status change writes LEADS + LEAD_ACTIVITY and bumps version'] = function () {
     var l = assertOk_(createLead({ address: addr('300 Pine St') }));
     var u = assertOk_(updateLead(l.lead_id, { status: 'CONTACT_MADE' }, l.version));
