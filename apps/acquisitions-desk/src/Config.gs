@@ -5,7 +5,7 @@
  */
 
 var APP_NAME = 'THB Acquisitions Desk';
-var APP_VERSION = '1.6.0';
+var APP_VERSION = '1.6.1';
 var DB_NAME = 'THB Acquisitions Desk — Production Database';
 var BACKUP_FOLDER_NAME = 'THB Acquisitions Desk Backups';
 
@@ -44,7 +44,7 @@ var HEADERS = {
                   'seo_spend','mail_spend'],
   TOOL_INVENTORY: ['tool_id','name','description','built_by','operator','backup_operator','status','steps',
                    'expected_output','cadence','link','recommendation','handoff_date','verdict','proof_last_week',
-                   'asked_date','created_at','updated_at'],
+                   'asked_date','created_at','updated_at','tool_type'],
   TOOL_TRAINING: ['record_id','tool_id','user_id','trained','certified_date','certified_by','notes'],
   TOOL_RUNS: ['run_id','tool_id','business_date','run_by','run_at','status','result','proof'],
   SETTINGS: ['setting_key','setting_value','updated_by','updated_at'],
@@ -161,7 +161,9 @@ var TOOL_CADENCE = ['Not set','Every day','Every weekday','Weekly','On each new 
 var TOOL_DAILY_CADENCE = ['Every day','Every weekday'];
 var TOOL_VERDICT = ['Not handed over yet','Works, in use','Broken, sent back','Needs training first'];
 var TOOL_PATCHABLE = ['name','description','built_by','operator','backup_operator','status','steps','expected_output',
-                      'cadence','link','recommendation','handoff_date','verdict','proof_last_week','asked_date'];
+                      'cadence','link','recommendation','handoff_date','verdict','proof_last_week','asked_date','tool_type'];
+/** What a build is for. The inventory is filtered by this. */
+var TOOL_TYPES = ['System','Automation','Reporting'];
 
 var PILLARS = [
   {id:'p_score',name:'Lead scoring',what:'Every lead scored on value, repairs and profit so the winners surface'},

@@ -117,6 +117,22 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     await A.click('#sub-dash [data-d=pipeline]'); assert((await A.locator('#funnel .stage').count()) === 6, 'six funnel stages');
     await A.click('#sub-dash [data-d=discipline]'); await A.waitForFunction(() => document.querySelectorAll('#cal i.logged').length >= 1, 'today logged in calendar');
   });
+  await test('tools: the inventory filters by type, not by who built it', async () => {
+    await tab(A, 'tools'); await A.waitForFunction(() => document.querySelectorAll('#typeFilter button').length > 0);
+    const labels = await A.$$eval('#typeFilter button', b => b.map(x => x.textContent.replace(/\s+\d+$/, '').trim()));
+    assert(labels[0] === 'All' && labels.includes('System') && labels.includes('Automation') && labels.includes('Reporting'), 'type tabs: ' + labels.join(', '));
+    assert(!labels.some(l => /Seth|Cherry|Bryan|Jonathan|Builder/.test(l)), 'no builder tabs left: ' + labels.join(', '));
+    const id = await A.$eval('#toolList .row', r => r.dataset.tid);
+    await A.click('#tool-' + id); await A.waitForSelector('#toolDrawer:not([hidden])');
+    await A.selectOption('#toolDrawer [data-tool="tool_type"]', 'Automation');
+    await A.waitForFunction(() => document.getElementById('tdStatus').textContent === 'Saved', null, { timeout: 10000 });
+    await A.keyboard.press('Escape');
+    await A.click('#typeFilter button[data-b="Automation"]');
+    await A.waitForFunction(i => document.getElementById('toolList').textContent.length > 0 && document.querySelectorAll('#toolList .row').length >= 1 && !!document.getElementById('tool-' + i), id);
+    await A.click('#typeFilter button[data-b="Reporting"]');
+    await A.waitForFunction(i => !document.getElementById('tool-' + i), id, { timeout: 10000 });
+    await A.click('#typeFilter button[data-b=""]');
+  });
   await test('tools: daily list, training from USERS, mark run / undo on Today', async () => {
     await tab(A, 'tools'); await A.waitForSelector('#tool-plbids'); assert((await A.textContent('#tool-plbids')).includes('every day'), 'seeded daily');
     await A.click('#tool-plbids'); await A.waitForSelector('#toolDrawer:not([hidden])'); await A.click('#toolDrawer [data-trained="USR-CHERRY"]'); await A.waitForFunction(() => document.getElementById('tool-plbids').textContent.includes('1 trained')); await A.keyboard.press('Escape');

@@ -73,6 +73,7 @@ function validateToolPatch_(patch) {
     if (k === 'recommendation' && TOOL_RECOMMENDATION.indexOf(v) < 0) throw validationError_('Unknown recommendation.');
     if (k === 'cadence' && TOOL_CADENCE.indexOf(v) < 0) throw validationError_('Unknown cadence.');
     if (k === 'verdict' && TOOL_VERDICT.indexOf(v) < 0) throw validationError_('Unknown verdict.');
+    if (k === 'tool_type' && v && TOOL_TYPES.indexOf(v) < 0) throw validationError_('Unknown type: ' + v);
     if (k === 'link' && v && !isValidUrl_(v)) throw validationError_('Link must start with http:// or https://');
     if (TOOL_DATE_FIELDS.indexOf(k) > -1) { out[k] = normalizeDate_(v, getBusinessTimezone_()); return; }
     assertLen_(v, k === 'steps' ? MAX_LEN.steps : k === 'link' ? MAX_LEN.url : k === 'description' ? 1000 : MAX_LEN.short, k.replace(/_/g, ' '));
@@ -88,7 +89,7 @@ function createTool(data) {
       var rec = { tool_id: generateId_('TOOL', function (id) { return findRowNumberById_(SHEETS.TOOL_INVENTORY, id) > 0; }), name: p.name, description: p.description || '', built_by: p.built_by || '',
         operator: p.operator || '', backup_operator: p.backup_operator || '', status: p.status || 'Unconfirmed', steps: p.steps || '', expected_output: p.expected_output || '',
         cadence: p.cadence || 'Not set', link: p.link || '', recommendation: p.recommendation || 'Decide', handoff_date: p.handoff_date || '', verdict: p.verdict || 'Not handed over yet',
-        proof_last_week: p.proof_last_week || '', asked_date: p.asked_date || '', created_at: ts, updated_at: ts };
+        proof_last_week: p.proof_last_week || '', asked_date: p.asked_date || '', tool_type: p.tool_type || '', created_at: ts, updated_at: ts };
       appendRowObject_(SHEETS.TOOL_INVENTORY, rec); return rec;
     });
     audit_(user, 'TOOL', rec.tool_id, 'TOOL_CREATED', { name: rec.name });

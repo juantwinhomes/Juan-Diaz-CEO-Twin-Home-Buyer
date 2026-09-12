@@ -118,7 +118,7 @@ function seedTools_() {
   var ts = nowUtcIso_(), rows = SEED_TOOLS.map(function (s) {
     return { tool_id: s.tool_id, name: s.name, description: s.description || '', built_by: s.built_by || '', operator: s.operator || '', backup_operator: '',
       status: 'Unconfirmed', steps: '', expected_output: '', cadence: s.cadence || 'Not set', link: s.link || '', recommendation: 'Decide', handoff_date: '',
-      verdict: 'Not handed over yet', proof_last_week: '', asked_date: '', created_at: ts, updated_at: ts };
+      verdict: 'Not handed over yet', proof_last_week: '', asked_date: '', tool_type: s.tool_type || '', created_at: ts, updated_at: ts };
   });
   appendRowObjects_(SHEETS.TOOL_INVENTORY, rows);
   return rows.length + ' tools seeded';

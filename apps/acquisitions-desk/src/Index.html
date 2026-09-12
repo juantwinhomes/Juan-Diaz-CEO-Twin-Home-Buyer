@@ -171,8 +171,9 @@
       <div class="sheet" id="addToolSheet">
         <div class="head"><h2>Log a build</h2><span class="hint">anything we own that is not on the list yet</span></div>
         <div class="body">
-          <div class="g4">
+          <div class="g5">
             <div class="field"><label for="newTool">What it is called</label><input id="newTool"></div>
+            <div class="field"><label for="newToolType">Type</label><select id="newToolType"></select></div>
             <div class="field"><label for="newToolOwner">Who built it</label><select id="newToolOwner"><option>Cherry</option><option>Seth</option><option>Bryan</option><option>Jonathan</option><option>Someone else</option></select></div>
             <div class="field"><label for="newToolLink">Link</label><input id="newToolLink" placeholder="https://..."></div>
             <div class="field"><label for="newToolJob">What it does for the person using it</label><input id="newToolJob"></div>
@@ -182,7 +183,7 @@
       </div>
       <div class="sheet">
         <div class="head"><h2>Inventory</h2><span class="hint">click a tool to set its steps, cadence, operator, training and verdict</span></div>
-        <div class="tabs" id="builderFilter"></div>
+        <div class="tabs" id="typeFilter"></div>
         <div id="toolList" class="cols2"></div>
       </div>
       <div class="quiet two">

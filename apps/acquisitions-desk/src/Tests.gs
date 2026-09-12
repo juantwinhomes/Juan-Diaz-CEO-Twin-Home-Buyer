@@ -154,6 +154,16 @@ function testSuite_() {
     assert_(!second.rows.some(function (r) { return r.property === after.address; }), 'a second run leaves it alone');
     assertFail_(updateLead(after.lead_id, { seller_email: 'not an email' }, after.version), 'VALIDATION_ERROR');
   };
+  T['tools carry a type, and only one of the three'] = function () {
+    var t = assertOk_(createTool({ name: 'Typed build ' + Date.now(), tool_type: 'Reporting', built_by: 'Seth' }));
+    assert_(t.tool_type === 'Reporting', 'type saved on create');
+    var u = assertOk_(updateTool(t.tool_id, { tool_type: 'Automation' }));
+    assert_(u.tool_type === 'Automation', 'type can be changed');
+    assertOk_(updateTool(t.tool_id, { tool_type: '' }));
+    assertFail_(updateTool(t.tool_id, { tool_type: 'Marketing' }), 'VALIDATION_ERROR');
+    assert_(TOOL_TYPES.length === 3 && TOOL_TYPES.join(',') === 'System,Automation,Reporting', 'the three types');
+    assert_(assertOk_(getTools()).tools.some(function (x) { return x.tool_id === t.tool_id && x.tool_type === ''; }), 'a blank type is allowed and comes back blank');
+  };
   T['status change writes LEADS + LEAD_ACTIVITY and bumps version'] = function () {
     var l = assertOk_(createLead({ address: addr('300 Pine St') }));
     var u = assertOk_(updateLead(l.lead_id, { status: 'CONTACT_MADE' }, l.version));

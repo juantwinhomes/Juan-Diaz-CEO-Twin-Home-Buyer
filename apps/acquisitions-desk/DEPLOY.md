@@ -318,13 +318,21 @@ like "high equity", "liens noted" and "co-trustee is signing contact" survive.
 
 ## Updating to v1.6.0 (Tools page, and emptying the inventory)
 
-No database change: `git pull`, `clasp push --force`, then New version `v1.6.0` → Deploy.
+No database change: `git pull`, `clasp push --force`, then New version `v1.6.1` → Deploy.
 
 - **Log a build sits at the top of the Tools page**, as one row of four fields, so adding something does not mean
   scrolling past everything already there.
 - **The inventory is two columns**, which halves the scroll. The status column was dropped from the row because the
   middle column already says the same thing; it is still in the tool's drawer.
 - **Date asked** under "Who hands over what" is a date picker rather than free text.
+
+### The inventory filters by type
+
+Every build has a **Type**: System, Automation or Reporting. The tabs above the inventory are those three plus All,
+instead of one tab per builder. Type is set on the Log a build form and can be changed on the tool itself. A build
+with no type yet gets a "No type yet" tab so nothing hides; that tab disappears once everything is typed.
+
+Who built what did not go away. It is on the tool and in the "Who hands over what" panel at the bottom of the page.
 
 ### Emptying the tool inventory before entering real builds
 
