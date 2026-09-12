@@ -30,11 +30,13 @@ function leadContext_() {
 function leadExists_(id) { return findRowNumberById_(SHEETS.LEADS, id) > 0; }
 
 /* ---------- read ---------- */
-function getLead(leadId) {
+/** getLead(leadId, fullHistory) — recent activity by default; the whole history only when the history view asks. */
+function getLead(leadId, fullHistory) {
   return guarded_('getLead', function (user) {
     var l = findById_(SHEETS.LEADS, leadId); if (!l) throw notFound_('Lead not found.');
     var out = enrichLead_(l);
-    out.activity = getActivityForLead_(leadId);
+    out.activity = getActivityForLead_(leadId, fullHistory);
+    out.activity_complete = !!fullHistory;
     out.appointments = listAppointmentsForLead_(leadId);
     return ok_(out);
   }, { capability: 'view_leads', entityType: 'LEAD', entityId: leadId });
@@ -205,7 +207,7 @@ function mutateLead_(user, leadId, expectedVersion, fn, touch) {
     writeRowObject_(SHEETS.LEADS, rn, lead);
     recordActivities_(acts);
     var out = enrichLead_(lead);
-    out.recent_activity = getRecentActivityFor_([leadId], 4)[leadId] || [];
+    out.new_activity = acts.map(publicActivity_); // what this call just wrote — no re-read of the sheet
     return out;
   });
 }

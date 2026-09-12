@@ -30,13 +30,26 @@ function include(name) { return HtmlService.createHtmlOutputFromFile(name).getCo
 function escapeHtml_(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
 /** First call from the browser: identity, permissions, settings, constants, team list, today's date. */
+/** Runs one first-screen section; a section the person has no access to comes back null instead of failing boot. */
+function firstScreenPart_(fn) {
+  try { var r = fn(); return (r && r.ok) ? r.data : null; } catch (e) { return null; }
+}
 function bootstrapApp() {
   return guarded_('bootstrapApp', function (user) {
     var s = getSettingsMap_();
     var users = getUsersTable_().rows.map(function (u) { return { user_id: toStr_(u.user_id), name: toStr_(u.name), role: toStr_(u.role), active: toBool_(u.active), team: toStr_(u.team) }; });
     audit_(user, 'SESSION', user.user_id, 'LOGIN', { role: user.role });
     user.photo_url = profilePhotoUrl_(user.email);
+    /* Everything the first screen needs, in this one execution. The sheets are read once here instead of once per
+     * call, so opening the desk costs one round trip instead of five. A section the person cannot see is null. */
+    var first = {
+      today: firstScreenPart_(function () { return getTodayDashboard(); }),
+      board: firstScreenPart_(function () { return listLeads({ filter: 'live', page: 1 }); }),
+      juan: firstScreenPart_(function () { return getJuanDashboard(); }),
+      tools: firstScreenPart_(function () { return getTools(); })
+    };
     return ok_({
+      first_screen: first,
       user: user, settings: publicSettings_(s), today: businessDateOf_(new Date(), s.business_timezone), timezone: s.business_timezone,
       app_version: APP_VERSION, env: PropertiesService.getScriptProperties().getProperty(PROP_ENV) || 'production',
       users: users,

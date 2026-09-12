@@ -5,7 +5,7 @@
  */
 
 var APP_NAME = 'THB Acquisitions Desk';
-var APP_VERSION = '1.2.2';
+var APP_VERSION = '1.3.0';
 var DB_NAME = 'THB Acquisitions Desk — Production Database';
 var BACKUP_FOLDER_NAME = 'THB Acquisitions Desk Backups';
 
@@ -142,6 +142,13 @@ var SOURCE_ALIASES = { 'ppl': 'Motivated Leads', 'motivated lead': 'Motivated Le
   'agent': 'Realtor', 'agent/realtor': 'Realtor', 'realtor/agent': 'Realtor', 'mls': 'Realtor', 'mls lead': 'Realtor',
   'mls/redfin': 'MLS/Redfin', 'mls / redfin': 'MLS/Redfin', 'redfin': 'MLS/Redfin',
   'property leads': 'Property Leads', 'propertyleads': 'Property Leads', 'propertyleads.com': 'Property Leads' };
+/**
+ * How many of the newest LEAD_ACTIVITY rows a summary read looks at. The sheet is append-only and in time order,
+ * so recent activity always lives at the end. Full history reads are separate and still complete.
+ */
+var ACTIVITY_TAIL_ROWS = 1500;
+/** Small, hot tables kept in CacheService between requests, in seconds. Every write clears them. */
+var TABLE_CACHE_SECONDS = { SETTINGS: 300, USERS: 300 };
 var METRIC_FIELDS = ['tv_spend','ppc_spend','seo_spend','ppl_spend','mail_spend','other_spend','new_leads','inbound_calls','missed_calls',
                      'sellers_reached','appointments_set','contracts_signed','contracts_fell_out','deals_closed',
                      'minutes_to_first_call'];

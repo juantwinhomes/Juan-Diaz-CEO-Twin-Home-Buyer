@@ -73,7 +73,7 @@ function testSuite_() {
     assert_(channelOfSource_('DM Postcard') === 'mail' && channelOfSource_('DM Checks') === 'mail' && channelOfSource_('SEO') === 'seo' && channelOfSource_('Realtor') === 'other' && channelOfSource_('') === 'other', 'source → channel rollup');
     var u = assertOk_(updateLead(a.lead_id, { exit_strategy: 'Fix & Flip', disposition: 'Under construction', source: 'tv commercial' }, a.version));
     assert_(u.exit_strategy === 'Fix & Flip' && u.disposition === 'Under construction' && u.source === 'TV', 'deal fields saved and source re-normalized');
-    assert_((u.recent_activity || []).filter(function (x) { return x.action_type === 'FIELD_CHANGED'; }).length === 3, 'each deal field change is its own activity');
+    assert_((u.new_activity || []).filter(function (x) { return x.action_type === 'FIELD_CHANGED'; }).length === 3, 'each deal field change is its own activity');
     assertFail_(updateLead(a.lead_id, { exit_strategy: 'Airbnb' }, u.version), 'VALIDATION_ERROR');
     assertFail_(updateLead(a.lead_id, { disposition: 'Demolished' }, u.version), 'VALIDATION_ERROR');
     var today = todayBusinessDate_(); var m = assertOk_(saveDailyMetrics(today, { seo_spend: 120, mail_spend: 480 })); assert_(m.seo_spend === 120 && m.mail_spend === 480, 'new spend channels saved');
@@ -87,6 +87,24 @@ function testSuite_() {
     assert_(pp.purchase_price === 475000, 'purchase price saved');
     assertFail_(updateLead(a.lead_id, { purchase_price: -1 }, pp.version), 'VALIDATION_ERROR');
     assertFail_(updateLead(a.lead_id, { purchase_price: 'a lot' }, pp.version), 'VALIDATION_ERROR');
+  };
+  T['activity: summary reads are bounded, full history stays complete'] = function () {
+    var l = assertOk_(createLead({ address: addr('900 Tail St') }));
+    for (var i = 0; i < 12; i++) assertOk_(addLeadNote(l.lead_id, 'note ' + i));
+    var quick = assertOk_(getLead(l.lead_id));
+    assert_(quick.activity_complete === false, 'the quick read says it is not the whole history');
+    assert_(quick.activity.length === 13, 'recent activity present, got ' + quick.activity.length);
+    var full = assertOk_(getLead(l.lead_id, true));
+    assert_(full.activity_complete === true && full.activity.length === 13, 'full history complete');
+    assert_(full.activity[0].action_type === 'LEAD_CREATED', 'history starts at creation');
+    var onDate = getActivityOnDate_(todayBusinessDate_());
+    assert_(onDate.filter(function (a) { return a.lead_id === l.lead_id; }).length === 13, "today's activity found through the tail");
+    var tail = readActivityTail_(3);
+    assert_(tail.length === 3 && tail[2].lead_id === l.lead_id, 'the tail is the newest rows, in order');
+  };
+  T['today carries the Juan panel for someone allowed to see it'] = function () {
+    var t = assertOk_(getTodayDashboard());
+    assert_(t.juan && t.juan.totals_today, 'the Juan panel rides along with today, so the client makes one call');
   };
   T['status change writes LEADS + LEAD_ACTIVITY and bumps version'] = function () {
     var l = assertOk_(createLead({ address: addr('300 Pine St') }));
@@ -116,7 +134,7 @@ function testSuite_() {
   T['notes, attempts, next action, due date'] = function () {
     var l = assertOk_(createLead({ address: addr('600 Cedar St') }));
     var n = assertOk_(addLeadNote(l.lead_id, 'Spoke to seller, wants to sell by December'));
-    assert_(n.recent_activity.some(function (a) { return a.action_type === 'NOTE_ADDED' && a.display.indexOf('December') > -1; }), 'note in thread');
+    assert_(n.new_activity.some(function (a) { return a.action_type === 'NOTE_ADDED' && a.display.indexOf('December') > -1; }), 'note in thread');
     var a1 = assertOk_(logAttempt(l.lead_id, 'no answer')); var a2 = assertOk_(logAttempt(l.lead_id, ''));
     assert_(a1.contact_attempts === 1 && a2.contact_attempts === 2, 'attempts count');
     assertFail_(addLeadNote(l.lead_id, '   '), 'VALIDATION_ERROR', 'blank note rejected');
@@ -260,7 +278,7 @@ function testSuite_() {
   T['dashboards: one call, six sections, figures agree with the source tables'] = function () {
     var l = assertOk_(createLead({ address: addr('1400 Report Rd'), source: 'PPC' })); var la = assertOk_(logAttempt(l.lead_id, ''));
     assertOk_(updateLead(l.lead_id, { offer: 250000 }, la.version)); var o = assertOk_(markOfferSent(l.lead_id, null, 'verbal offer'));
-    assert_(o.recent_activity.some(function (a) { return a.action_type === 'OFFER_SENT' && a.display.indexOf('$250,000') > -1; }), 'offer sent recorded with amount');
+    assert_(o.new_activity.some(function (a) { return a.action_type === 'OFFER_SENT' && a.display.indexOf('$250,000') > -1; }), 'offer sent recorded with amount');
     ['8w', '30d', 'q'].forEach(function (p) {
       var d = assertOk_(getDashboards({ period: p }));
       ['pace', 'pipeline', 'marketing', 'team', 'discipline', 'appointments'].forEach(function (k) { assert_(d[k], k + ' present for ' + p); });

@@ -26,7 +26,7 @@ function getDashboards(params) {
     params = params || {};
     var ctx = leadContext_(), today = ctx.today, spec = periodSpec_(params.period, today);
     var leads = readTable_(SHEETS.LEADS).rows.map(function (l) { return enrichLead_(l, ctx); });
-    var acts = readTable_(SHEETS.LEAD_ACTIVITY).rows, metrics = readTable_(SHEETS.DAILY_METRICS).rows, appts = readTable_(SHEETS.APPOINTMENTS).rows, runs = readTable_(SHEETS.TOOL_RUNS).rows;
+    var acts = activitySince_(spec.from), metrics = readTable_(SHEETS.DAILY_METRICS).rows, appts = readTable_(SHEETS.APPOINTMENTS).rows, runs = readTable_(SHEETS.TOOL_RUNS).rows;
     var users = getUsersTable_().rows, nameOf = {}; users.forEach(function (u) { nameOf[toStr_(u.user_id)] = toStr_(u.name); });
     var inRange = function (d) { return d >= spec.from && d <= spec.to; };
     var mIn = metrics.filter(function (m) { return inRange(toStr_(m.business_date)); });

@@ -33,6 +33,12 @@ function getWorkQueue() {
 function buildWaitingOnJuan_(ctx, leads) {
   var flagged = leads.filter(function (l) { return l.is_live && (l.flag_juan || l.compliance_mailer_check); });
   var acts = getRecentActivityFor_(flagged.map(function (l) { return l.lead_id; }), 0);
+  var flagEvent = function (a) { return a.action_type === 'FLAGGED_FOR_JUAN' || a.action_type === 'COMPLIANCE_FLAGGED'; };
+  var stale = flagged.filter(function (l) { return !(acts[l.lead_id] || []).some(flagEvent); });
+  if (stale.length) { // flagged longer ago than the tail reaches — read history for just those
+    var older = getAllActivityFor_(stale.map(function (l) { return l.lead_id; }), 0);
+    Object.keys(older).forEach(function (k) { acts[k] = older[k]; });
+  }
   return flagged.map(function (l) {
     var hist = acts[l.lead_id] || [], flaggedAt = '', lastNote = '';
     for (var i = hist.length - 1; i >= 0; i--) {
@@ -100,6 +106,8 @@ function getTodayDashboard() {
         .sort(function (x, y) { return cmpStr_(x.appointment_date, y.appointment_date); })
         .map(function (a) { var o = publicAppointment_(a); var l = readTable_(SHEETS.LEADS).byId[toStr_(a.lead_id)]; o.address = l ? l.address : ''; return o; })
     };
+    // Managers and admins get the Juan panel in the same response; a rep never sees it in the payload at all.
+    if (hasCapability_(user, 'view_team')) { var j = getJuanDashboard(); out.juan = (j && j.ok) ? j.data : null; }
     return ok_(out);
   }, { capability: 'view_leads' });
 }

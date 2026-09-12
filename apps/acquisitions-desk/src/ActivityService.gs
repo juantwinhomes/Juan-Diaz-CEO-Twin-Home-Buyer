@@ -53,12 +53,32 @@ function publicActivity_(a) {
     field_changed: a.field_changed, old_value: a.old_value, new_value: a.new_value, note: a.note, display: activityDisplay_(a) };
 }
 
-/** Map lead_id → last N activities (chronological) for the given lead ids. One sheet read. */
-function getRecentActivityFor_(leadIds, limitPerLead) {
-  var want = {}; leadIds.forEach(function (id) { want[id] = true; });
-  var rows = readTable_(SHEETS.LEAD_ACTIVITY).rows, out = {};
+/**
+ * The newest `n` activity rows. The sheet is append-only in time order, so this is where anything recent is.
+ * Reading the tail instead of the whole sheet is what keeps the board and Today flat as history piles up.
+ */
+function readActivityTail_(n) {
+  var whole = _dbCache.tables[SHEETS.LEAD_ACTIVITY];
+  if (whole) return whole.rows.slice(-n);
+  if (!_dbCache.activityTail) _dbCache.activityTail = {};
+  if (_dbCache.activityTail[n]) return _dbCache.activityTail[n];
+  var sh = getSheet_(SHEETS.LEAD_ACTIVITY), headers = headersOf_(SHEETS.LEAD_ACTIVITY), lastRow = sh.getLastRow();
+  if (lastRow < 2) return [];
+  var start = Math.max(2, lastRow - n + 1);
+  var values = sh.getRange(start, 1, lastRow - start + 1, headers.length).getValues(), rows = [];
+  for (var i = 0; i < values.length; i++) {
+    var o = rowToObject_(SHEETS.LEAD_ACTIVITY, values[i], headers);
+    if (toStr_(o.activity_id)) rows.push(o);
+  }
+  _dbCache.activityTail[n] = rows;
+  return rows;
+}
+/** Group activity rows by lead, oldest first, keeping the last N per lead. */
+function groupActivity_(rows, leadIds, limitPerLead) {
+  var want = {}; leadIds.forEach(function (id) { want[toStr_(id)] = true; });
+  var out = {};
   for (var i = 0; i < rows.length; i++) {
-    var a = rows[i]; if (!want[a.lead_id]) continue;
+    var a = rows[i]; if (!want[toStr_(a.lead_id)]) continue;
     (out[a.lead_id] = out[a.lead_id] || []).push(a);
   }
   Object.keys(out).forEach(function (id) {
@@ -68,7 +88,40 @@ function getRecentActivityFor_(leadIds, limitPerLead) {
   });
   return out;
 }
-function getActivityForLead_(leadId) { return (getRecentActivityFor_([leadId], 0)[leadId] || []); }
+/** Recent activity per lead, from the tail only. A lead with nothing recent comes back empty, by design. */
+function getRecentActivityFor_(leadIds, limitPerLead) {
+  return groupActivity_(readActivityTail_(ACTIVITY_TAIL_ROWS), leadIds, limitPerLead);
+}
+/** Complete history per lead — reads every row. Only for the history view and the stale-flag fallback. */
+function getAllActivityFor_(leadIds, limitPerLead) {
+  return groupActivity_(readTable_(SHEETS.LEAD_ACTIVITY).rows, leadIds, limitPerLead);
+}
+function getActivityForLead_(leadId, full) {
+  return ((full ? getAllActivityFor_ : getRecentActivityFor_)([leadId], 0)[leadId] || []);
+}
+/**
+ * Every activity row on or after a business date. Starts from the tail and widens until the window reaches back
+ * past the date asked for, so a report never reads more of the sheet than the period needs.
+ */
+function activitySince_(fromDate) {
+  var rows = readActivityTail_(ACTIVITY_TAIL_ROWS);
+  if (!tailReachesBack_(rows, fromDate)) rows = readTable_(SHEETS.LEAD_ACTIVITY).rows; // period predates the window
+  return rows.filter(function (a) { return cmpStr_(toStr_(a.business_date), fromDate) >= 0; });
+}
+/**
+ * True when the rows read go back at least as far as the date asked for — either because they are the whole sheet
+ * or because the oldest row read is older than the date. Widening in steps would re-read what we already have,
+ * so the caller falls straight back to one full read instead.
+ */
+function tailReachesBack_(rows, fromDate) {
+  return rows.length < ACTIVITY_TAIL_ROWS || cmpStr_(toStr_(rows[0].business_date), fromDate) <= 0;
+}
+/**
+ * Every activity row on one business date. Reads the tail and widens only if the oldest row read is still newer
+ * than the date asked for, which means rows for that date sit above the window.
+ */
 function getActivityOnDate_(businessDate) {
-  return readTable_(SHEETS.LEAD_ACTIVITY).rows.filter(function (a) { return toStr_(a.business_date) === businessDate; });
+  var rows = readActivityTail_(ACTIVITY_TAIL_ROWS);
+  if (!tailReachesBack_(rows, businessDate)) rows = readTable_(SHEETS.LEAD_ACTIVITY).rows;
+  return rows.filter(function (a) { return toStr_(a.business_date) === businessDate; });
 }

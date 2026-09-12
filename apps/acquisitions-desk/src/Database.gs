@@ -66,6 +66,8 @@ function objectToRow_(name, obj, headers) {
  */
 function readTable_(name) {
   if (_dbCache.tables[name]) return _dbCache.tables[name];
+  var ttl = TABLE_CACHE_SECONDS[name];
+  if (ttl) { var hit = cachedTableGet_(name); if (hit) { _dbCache.tables[name] = hit; return hit; } }
   var sh = getSheet_(name), headers = headersOf_(name);
   var lastRow = sh.getLastRow();
   var rows = [], rowNumbers = [], byId = {}, idField = ID_COLUMN[name];
@@ -81,9 +83,26 @@ function readTable_(name) {
   }
   var t = { headers: headers, rows: rows, rowNumbers: rowNumbers, byId: byId };
   _dbCache.tables[name] = t;
+  if (ttl) cachedTablePut_(name, t, ttl);
   return t;
 }
-function invalidateTable_(name) { delete _dbCache.tables[name]; }
+function invalidateTable_(name) {
+  delete _dbCache.tables[name];
+  if (name === SHEETS.LEAD_ACTIVITY) _dbCache.activityTail = null; // the tail is a view of this sheet
+  if (TABLE_CACHE_SECONDS[name]) cachedTableRemove_(name);
+}
+
+/* SETTINGS and USERS are small, read on nearly every request and change rarely, so they are kept in CacheService
+ * between requests. Every write goes through this file and clears them, and findRowNumberById_ verifies a row
+ * against the sheet before writing, so a stale copy can never misplace a write. */
+function tableCacheKey_(name) { return 'tbl:' + APP_VERSION + ':' + name; }
+function cachedTableGet_(name) {
+  try { var s = CacheService.getScriptCache().get(tableCacheKey_(name)); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+}
+function cachedTablePut_(name, t, ttl) {
+  try { var s = JSON.stringify(t); if (s.length < 90000) CacheService.getScriptCache().put(tableCacheKey_(name), s, ttl); } catch (e) {}
+}
+function cachedTableRemove_(name) { try { CacheService.getScriptCache().remove(tableCacheKey_(name)); } catch (e) {} }
 
 /** Finds the sheet row number for an ID by reading only the ID column. Returns -1 when absent. */
 function findRowNumberById_(name, id) {

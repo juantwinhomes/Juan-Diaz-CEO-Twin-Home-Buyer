@@ -183,6 +183,36 @@ browser committed whatever was in the half-finished sentence. One property picke
 line. The card now waits until the person leaves the field, so only a deliberate commit (Tab, Enter, or clicking away)
 saves. No data was lost by the bug; the log just collected partial entries.
 
+## Updating to v1.3.0 (speed)
+
+No database change: `git pull`, `clasp push --force`, then New version `v1.3.0` → Deploy.
+
+The desk asks the server for far less. Nothing about the data, the sheets or how anything works changed.
+
+| What you do | Server calls before | After |
+|---|---|---|
+| Open the desk | 5 | 1 |
+| Today tab | 2 | 1 |
+| Return to a tab you already opened | 1, and you wait | 1, in the background, screen is already there |
+
+Spreadsheet cells read, measured on 2,000 properties with 12,000 activity entries:
+
+| Operation | Before | After |
+|---|---|---|
+| Board page | 204,189 | 78,042 |
+| Today | 204,784 | 78,637 |
+| Open a property | 146,232 | 20,085 |
+| Any save (log attempt, status, note) | 146,231 | 2,072 |
+| Dashboards, 8 weeks | 206,897 | 80,897 |
+
+How: the activity log is append-only and in time order, so anything recent sits at the end. Summary views read the
+newest 1,500 rows instead of the whole sheet, and fall back to a full read only when a report reaches further back
+than that. A save returns the entries it just wrote rather than re-reading. The full history of a property is still
+complete; it is fetched when you open the History tab.
+
+One thing to know: settings and the user list are held for up to 5 minutes. Change them in the Admin tab and they
+apply at once. Edit those two tabs directly in the spreadsheet and the desk can take up to 5 minutes to notice.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

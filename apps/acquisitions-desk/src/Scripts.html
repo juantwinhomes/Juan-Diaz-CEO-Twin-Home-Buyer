@@ -41,6 +41,7 @@
   function fact(v,l,cls){return '<div class="fact"><b'+(cls?' class="'+cls+'"':'')+'>'+v+'</b><span>'+l+'</span></div>'}
   var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  var loaded={today:false,leads:false,tools:false};
   /* ================= boot ================= */
   read('bootstrapApp').then(function(r){
     boot=r.data; me=boot.user; C=boot.constants; S=boot.settings; today=boot.today; users=boot.users; users.forEach(function(u){usersById[u.user_id]=u});
@@ -52,7 +53,13 @@
     if(!can('manage_targets')){$('targetsBox').hidden=true} if(!can('enter_metrics'))$('saveDay').disabled=true;
     $('boot').hidden=true;
     if(prefs.sort)$('sort').value=prefs.sort; if(prefs.filter)setFilter(prefs.filter,true); if(prefs.period)$('period').value=prefs.period;
-    show(prefs.tab||'today'); loadAll(); startAutoRefresh();
+    var f=boot.first_screen||{};
+    if(f.today){todayData=f.today;today=todayData.today;juan=f.today.juan||f.juan||null;renderToday();loaded.today=true}
+    if(f.board){seedBoard(f.board);loaded.leads=true}
+    if(f.tools){toolsData=f.tools;renderTools();loaded.tools=true}
+    show(prefs.tab||'today');
+    if(!f.today||!f.board||!f.tools)loadAll(); /* older server, or a section this person cannot see */
+    startAutoRefresh();
   }).catch(function(e){$('boot').hidden=true;var el=$('bootError');el.hidden=false;el.innerHTML='<b>'+esc(codeLabel(e.code)==='Could not save'?'Could not open the desk':codeLabel(e.code))+'</b>'+esc(e.message||'')+(e.code==='IDENTITY_UNAVAILABLE'?'<p class="small muted">Administrator: deploy the web app with access limited to the company Workspace, executing as the owner.</p>':'')});
 
   var TITLES={today:['Today',function(){return 'business day '+today+' · '+(boot?boot.timezone:'')}],leads:['Board',function(){return board.tally?board.tally.live+' live · '+(board.tally.closed||0)+' closed · '+board.tally.archived+' archived':''}],dash:['Dashboards',function(){return 'reporting · one question per page'}],tools:['Tools',function(){return toolsData?toolsData.tools.length+' builds · '+toolsData.tools_today.required+' on the daily list':''}],plan:['The plan',function(){return '10 September 2026'}],admin:['Admin',function(){return 'users · settings · backups'}]};
@@ -61,7 +68,10 @@
     $('viewTitle').textContent=TITLES[v][0];$('viewSub').textContent=TITLES[v][1]();
     $('sub-today').hidden=v!=='today';$('sub-dash').hidden=v!=='dash';
     if(v==='admin'&&can('manage_users'))loadAdmin(); if(v==='dash'){loadDash().then(function(){animateIn()})} window.scrollTo(0,0)}
-  document.querySelectorAll('[data-view]').forEach(function(b){b.onclick=function(){show(b.dataset.view);if(['today','leads','tools'].indexOf(b.dataset.view)>-1)refreshCurrent()}});
+  document.querySelectorAll('[data-view]').forEach(function(b){b.onclick=function(){var v=b.dataset.view;show(v);
+    if(['today','leads','tools'].indexOf(v)<0)return;
+    if(loaded[v])return void refreshCurrent().catch(function(){}); /* already on screen — refresh quietly */
+    loaded[v]=true;setNet('busy','Loading…');refreshCurrent().then(function(){setNet('ok','Up to date')},showError)}});
   document.querySelectorAll('[data-goto]').forEach(function(b){b.onclick=function(){show(b.dataset.goto)}});
   $('sub-today').querySelectorAll('button[data-p]').forEach(function(b){b.onclick=function(){setTodayPane(b.dataset.p)}});
   function setTodayPane(p){todayPane=p;$('sub-today').querySelectorAll('button[data-p]').forEach(function(x){x.setAttribute('aria-selected',x.dataset.p===p?'true':'false')});document.querySelectorAll('.pane-today').forEach(function(s){s.hidden=s.dataset.p!==p});if(p==='team')$('juanPanel').hidden=!can('view_team')}
@@ -75,8 +85,7 @@
 
   /* ================= TODAY ================= */
   var METRICS=['tv_spend','ppc_spend','seo_spend','ppl_spend','mail_spend','other_spend','new_leads','inbound_calls','missed_calls','sellers_reached','appointments_set','contracts_signed','contracts_fell_out','deals_closed','minutes_to_first_call'];
-  function loadToday(){var p=[read('getTodayDashboard')];if(can('view_team'))p.push(read('getJuanDashboard').catch(function(){return null}));
-    return Promise.all(p).then(function(r){todayData=r[0].data;juan=r[1]?r[1].data:null;today=todayData.today;renderToday()})}
+  function loadToday(){return read('getTodayDashboard').then(function(r){todayData=r.data;juan=todayData.juan||null;today=todayData.today;renderToday()})}
   function renderToday(){var t=todayData;if(!t)return;var q=t.work_queue,needs=q.counts.overdue+q.counts.no_next_action;
     $('todayHero').innerHTML='<b>'+needs+'</b> '+(needs===1?'property':'properties')+'<small>'+q.counts.overdue+' overdue · '+q.counts.no_next_action+' with no next action'+(q.counts.no_due_date?' · '+q.counts.no_due_date+' with no due date':'')+'</small>';
     $('todayHeroNote').textContent=needs?'Clear these and the board is clean. Everything else is moving.':'Nothing is stuck. Work the due list and log the day.';
@@ -130,6 +139,7 @@
   document.addEventListener('keydown',function(e){if(e.key==='/'&&!/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){e.preventDefault();$('globalSearch').focus()}if(e.key==='Escape')closeDrawers()});
   function boardParams(page){return {filter:filter,sort:$('sort').value,search:$('globalSearch').value.trim(),page:page||1,page_size:S.page_size||150}}
   var boardReq=0;
+  function seedBoard(d){board.items=d.items;board.page=d.page;board.has_more=d.has_more;board.tally=d.tally;board.total=d.total;today=d.today||today;renderBoard()}
   function loadBoard(page,keep){var my=++boardReq,p=boardParams(page);return read('listLeads',p).then(function(r){if(my!==boardReq)return;var d=r.data;board.items=page>1?board.items.concat(d.items):d.items;board.page=d.page;board.has_more=d.has_more;board.tally=d.tally;board.total=d.total;today=d.today||today;renderBoard();if(view==='leads')$('viewSub').textContent=TITLES.leads[1]()})}
   $('loadMore').onclick=function(){loadBoard(board.page+1,true)};
   function renderBoard(){var t=board.tally||{live:0,due:0,archived:0,flag:0,target:200,stale:0,no_next_action:0};
@@ -159,7 +169,9 @@
     read('getLead',id).then(function(r){if(!current||current.lead_id!==id)return;var full=r.data;current=full;renderDrawer()}).catch(showError)}
   function closeDrawers(){$('scrim').hidden=true;$('drawer').hidden=true;$('addDrawer').hidden=true;$('toolDrawer').hidden=true;current=null;currentTool=null;document.querySelectorAll('#leadList .row[aria-selected="true"]').forEach(function(r){r.setAttribute('aria-selected','false')})}
   $('scrim').onclick=closeDrawers;$('drClose').onclick=closeDrawers;$('addClose').onclick=closeDrawers;$('tdClose').onclick=closeDrawers;
-  $('dtabs').querySelectorAll('button').forEach(function(b){b.onclick=function(){dtab=b.dataset.t;renderDrawer()}});
+  $('dtabs').querySelectorAll('button').forEach(function(b){b.onclick=function(){dtab=b.dataset.t;renderDrawer();
+    if(dtab==='hist'&&current&&!current.activity_complete){var id=current.lead_id;
+      read('getLead',id,true).then(function(r){if(current&&current.lead_id===id){r.data.appointments=r.data.appointments||current.appointments;current=r.data;renderDrawer()}}).catch(function(){})}}});
   function kv(dt,dd){return '<div class="kv"><dt>'+dt+'</dt><dd>'+dd+'</dd></div>'}
   /* The field the person is typing in right now, if any. Rebuilding around it is what caused partial saves. */
   function focusedField(){var a=document.activeElement;
@@ -206,7 +218,12 @@
   /* absorb a fresh lead from the server: board row, drawer, today counts */
   function absorb(l){if(!l||!l.lead_id)return;var i;for(i=0;i<board.items.length;i++)if(board.items[i].lead_id===l.lead_id){board.items[i]=l;break}
     var row=$('lead-'+l.lead_id);if(row){var tmp=document.createElement('div');tmp.innerHTML=leadRow(l);row.replaceWith(tmp.firstChild)}
-    if(current&&current.lead_id===l.lead_id){l.activity=(l.activity||current.activity);l.appointments=l.appointments||current.appointments;current=l;renderDrawer();if(dtab==='hist'||dtab==='appt')read('getLead',l.lead_id).then(function(r){if(current&&current.lead_id===l.lead_id){current=r.data;renderDrawer()}}).catch(function(){})}}
+    if(current&&current.lead_id===l.lead_id){
+      var log=(l.activity||current.activity||[]).slice();
+      (l.new_activity||[]).forEach(function(a){if(!log.some(function(x){return x.activity_id===a.activity_id}))log.push(a)});
+      l.activity=log;l.activity_complete=l.activity_complete||current.activity_complete;
+      l.appointments=l.appointments||current.appointments;current=l;renderDrawer();
+      if(dtab==='appt')read('getLead',l.lead_id,true).then(function(r){if(current&&current.lead_id===l.lead_id){current=r.data;renderDrawer()}}).catch(function(){})}}
   var leadQueues={},leadGen={},conflictNote={};
   function leadAction(id,makeCall){setDrStatus('busy','Saving…');var prev=leadQueues[id]||Promise.resolve(),gen=leadGen[id]||0;
     var run=prev.catch(function(){}).then(function(){if((leadGen[id]||0)!==gen){setDrStatus('err','Review the latest, then save again');return}
