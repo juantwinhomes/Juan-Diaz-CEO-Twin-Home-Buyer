@@ -164,6 +164,14 @@ function testSuite_() {
     assert_(TOOL_TYPES.length === 3 && TOOL_TYPES.join(',') === 'System,Automation,Reporting', 'the three types');
     assert_(assertOk_(getTools()).tools.some(function (x) { return x.tool_id === t.tool_id && x.tool_type === ''; }), 'a blank type is allowed and comes back blank');
   };
+  T['revenue is the one end figure, repairs included, on every kind of deal'] = function () {
+    var l = assertOk_(createLead({ address: addr('8 Revenue Ct') }));
+    var u = assertOk_(updateLead(l.lead_id, { exit_strategy: 'Fix & Flip', purchase_price: 755000, sale_price: 1020000, repairs: 165000 }, l.version));
+    assert_(u.sale_price - u.purchase_price - u.repairs === 100000, 'the whiteboard flip works out at 100,000');
+    var w = assertOk_(createLead({ address: addr('9 Revenue Ct') }));
+    var v = assertOk_(updateLead(w.lead_id, { exit_strategy: 'Wholesale - Double Close', purchase_price: 230000, sale_price: 250000 }, w.version));
+    assert_(v.sale_price - v.purchase_price - (toNum_(v.repairs) || 0) === 20000, 'the whiteboard wholesale works out at 20,000');
+  };
   T['wholesale: an assignment carries a fee, a double close carries both prices'] = function () {
     var a = assertOk_(createLead({ address: addr('5 Assign Way') }));
     var u = assertOk_(updateLead(a.lead_id, { exit_strategy: 'Wholesale - Assignment', purchase_price: 270000, assignment_fee: 85000 }, a.version));

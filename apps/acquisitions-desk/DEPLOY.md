@@ -386,6 +386,19 @@ Also fixed: the big figures on a dashboard were written into the page as 0 and o
 animation ran. An auto refresh redraws without that animation, so a number could sit at zero while the rest of the
 card was right. The real figure is now in the page from the start and the animation is only decoration.
 
+## Updating to v1.8.1 (one figure, called Revenue)
+
+No database change: `git pull`, `clasp push --force`, then New version `v1.8.1` → Deploy.
+
+The end figure on a deal is called **Revenue** everywhere — the property card and the Closed row — on a flip, a
+wholetail, a double close and an assignment alike. It replaces the Profit and Spread wording, which changed
+depending on whether repairs had been entered.
+
+Revenue is the sale price less the purchase price and repairs, matching the Projected Revenue column on the office
+whiteboard. On an assignment it is the fee. A negative figure still shows in orange.
+
+It does not include commission, closing costs or holding costs, so it is a gross figure rather than what is banked.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

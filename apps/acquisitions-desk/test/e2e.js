@@ -96,6 +96,7 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     assert(!(await A.$('#drawer [data-set=sale_price]')), 'an assignment has no sale price to enter');
     await A.waitForFunction(() => document.getElementById('drBody').textContent.includes('There is a sale price on an assignment'));
     assert((await A.textContent('#drBody')).includes('Contract price'), 'purchase price is called the contract price');
+    assert((await A.textContent('#drBody')).includes('Revenue'), 'the end figure is called Revenue on an assignment too');
   });
   await test('compliance: mailer/check → both flags, visible warning, Waiting on Juan, lead kept', async () => {
     await A.click('#dtabs [data-t=work]'); A.dialogs.push(true); await A.click('#drawer [data-comply="1"]'); await drSaved(A);

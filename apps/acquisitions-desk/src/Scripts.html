@@ -172,12 +172,12 @@
   function moneyCell(l){
     var bought=num(l.purchase_price),sold=num(l.sale_price),fix=num(l.repairs)||0,fee=num(l.assignment_fee);
     if(l.exit_strategy===C.exit_assignment&&(fee!=null||bought!=null))
-      return '<div class="money">'+(bought!=null?fig(bought,'under contract'):'')+(fee!=null?fig(fee,'fee','gain'):'')+'</div>';
+      return '<div class="money">'+(bought!=null?fig(bought,'under contract'):'')+(fee!=null?fig(fee,'revenue','gain'):'')+'</div>';
     if(l.status==='CLOSED'&&(bought!=null||sold!=null)){
       var out=[];
       if(bought!=null)out.push(fig(bought,'bought'));
       if(sold!=null)out.push(fig(sold,'sold'));
-      if(bought!=null&&sold!=null){var p=sold-bought-fix;out.push(fig(p,fix?'profit':'spread',p<0?'loss':'gain'))}
+      if(bought!=null&&sold!=null){var p=sold-bought-fix;out.push(fig(p,'revenue',p<0?'loss':'gain'))}
       return '<div class="money">'+out.join('')+'</div>';
     }
     if(l.status==='UNDER_CONTRACT'&&bought!=null)
@@ -234,17 +234,17 @@
       if(isAssign){
         var fee=num(l.assignment_fee);
         money3+=kv('Assignment fee $','<input type="number" min="0" data-set="assignment_fee" value="'+esc(l.assignment_fee)+'"'+uw+'>')
-          +kv('We make',fee!=null?'<b class="okc">'+money(fee)+'</b>':'<span class="dim muted">enter the fee</span>');
+          +kv('Revenue',fee!=null?'<b class="okc">'+money(fee)+'</b>':'<span class="dim muted">enter the fee</span>');
       } else {
         var sale=num(l.sale_price),buy=num(l.purchase_price),fix=num(l.repairs)||0;
         money3+=kv('Sale price $','<input type="number" min="0" data-set="sale_price" value="'+esc(l.sale_price)+'"'+uw+'>')
-          +kv(fix?'Profit':'Spread',(sale!=null&&buy!=null)?'<b class="'+(sale-buy-fix<0?'alertc':'okc')+'">'+money(sale-buy-fix)+'</b>':'<span class="dim muted">needs a purchase and a sale price</span>');
+          +kv('Revenue',(sale!=null&&buy!=null)?'<b class="'+(sale-buy-fix<0?'alertc':'okc')+'">'+money(sale-buy-fix)+'</b>':'<span class="dim muted">needs a purchase and a sale price</span>');
       }
       money3+=kv('Closing date','<input type="date" data-set="closing_date" value="'+esc(l.closing_date)+'"'+ro+'>')+kv('Ask as % of ARV',(n(l.arv)&&n(l.asking_price)?Math.round(n(l.asking_price)/n(l.arv)*100)+'%':'<span class="dim muted">\u2014</span>'));
       html+='<div class="spec one"><dl>'+money3+'</dl></div>';
       if(isAssign&&num(l.sale_price)!=null)html+='<div class="alertbox"><b>There is a sale price on an assignment</b>On an assignment we never own the house, so there is nothing to resell. If '+money(num(l.sale_price))+' was the fee, move it to Assignment fee and clear Sale price.</div>';
       if(!isAssign&&num(l.sale_price)!=null&&num(l.purchase_price)!=null&&num(l.sale_price)<num(l.purchase_price))html+='<div class="alertbox"><b>Selling for less than we paid</b>That is a real loss unless a number is wrong. On an assignment the fee belongs in its own field, not in Sale price.</div>';
-      html+='<p class="small muted" style="margin:0">MAO % is a company setting (Admin \u2192 Settings). Enter ARV and repairs to price the property. '+(isAssign?'On an assignment the fee is the whole of what we make; there is no purchase and resale.':'Profit is the sale price less the purchase price and repairs; with no repairs entered it is only the spread.')+'</p>';
+      html+='<p class="small muted" style="margin:0">MAO % is a company setting (Admin \u2192 Settings). Enter ARV and repairs to price the property. '+(isAssign?'On an assignment revenue is the fee; there is no purchase and resale.':'Revenue is the sale price less the purchase price and repairs. Costs of the deal — commission, closing and holding — are not in it.')+'</p>';
       };
       var dealGrp=function(){      var srcList=C.lead_sources.map(function(s){return s[0]});if(l.source&&srcList.indexOf(l.source)<0)srcList=[l.source].concat(srcList);
       html+='<div class="lbl" style="margin-top:14px;margin-bottom:8px">Deal</div><div class="spec one"><dl>'+kv('Source','<select data-set="source"'+ro+'>'+opt([''].concat(srcList),l.source)+'</select>')+kv('Exit strategy','<select data-set="exit_strategy"'+ro+'>'+opt(exitList(l),l.exit_strategy)+'</select>')+kv('Disposition','<select data-set="disposition"'+ro+'>'+opt([''].concat(C.dispositions),l.disposition)+'</select>')+'</dl></div><p class="small muted" style="margin:0">Exit strategy is the plan for the house. Disposition tracks an acquired property until it is sold or wholesaled; it shows on the Closed tab.</p>';
