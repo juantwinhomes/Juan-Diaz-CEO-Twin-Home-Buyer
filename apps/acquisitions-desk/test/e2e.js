@@ -83,6 +83,20 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     assert(nextActions() === before + 1, `deliberate commit should write one entry, got ${nextActions() - before}`);
     assert(ctx.getLead(leadId).data.next_action === 'Call the title company', 'the whole sentence was saved, not a prefix');
   });
+  await test('wholesale: the money fields follow the exit strategy', async () => {
+    await openLead(A, leadId, 'uw');
+    await A.selectOption('#drawer [data-set=exit_strategy]', 'Wholesale - Double Close'); await drSaved(A);
+    assert(await A.$('#drawer [data-set=sale_price]'), 'a double close asks for a sale price');
+    assert(!(await A.$('#drawer [data-set=assignment_fee]')), 'and not for a fee');
+    await A.fill('#drawer [data-set=purchase_price]', '270000'); await A.press('#drawer [data-set=purchase_price]', 'Tab'); await drSaved(A);
+    await A.fill('#drawer [data-set=sale_price]', '85000'); await A.press('#drawer [data-set=sale_price]', 'Tab'); await drSaved(A);
+    await A.waitForFunction(() => document.getElementById('drBody').textContent.includes('Selling for less than we paid'));
+    await A.selectOption('#drawer [data-set=exit_strategy]', 'Wholesale - Assignment'); await drSaved(A);
+    await A.waitForSelector('#drawer [data-set=assignment_fee]');
+    assert(!(await A.$('#drawer [data-set=sale_price]')), 'an assignment has no sale price to enter');
+    await A.waitForFunction(() => document.getElementById('drBody').textContent.includes('There is a sale price on an assignment'));
+    assert((await A.textContent('#drBody')).includes('Contract price'), 'purchase price is called the contract price');
+  });
   await test('compliance: mailer/check → both flags, visible warning, Waiting on Juan, lead kept', async () => {
     await A.click('#dtabs [data-t=work]'); A.dialogs.push(true); await A.click('#drawer [data-comply="1"]'); await drSaved(A);
     const t = await A.textContent('#drBody'); assert(t.includes('Mailer or check mentioned') && t.includes('routed to Juan'), 'warning shown');

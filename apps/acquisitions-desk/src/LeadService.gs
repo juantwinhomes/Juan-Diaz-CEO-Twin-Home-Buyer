@@ -108,7 +108,7 @@ function newLeadRecord_(user, d, existsFn) {
     equity_note: d.equity_note, status: LEAD_STATUS.NEW, assigned_to: d.assigned_to || '', team: d.team || '',
     flag_juan: false, compliance_mailer_check: false, contact_attempts: 0, next_action: d.next_action || '', due_date: d.due_date || '',
     arv: '', repairs: '', asking_price: '', offer: '', appointment_date: '', appointment_outcome: '', archive_reason: '',
-    exit_strategy: '', disposition: '', purchase_price: '', closing_date: '', sale_price: '', seller_email: '',
+    exit_strategy: '', disposition: '', purchase_price: '', closing_date: '', sale_price: '', seller_email: '', assignment_fee: '',
     created_by: user.user_id, created_at: ts, updated_by: user.user_id, updated_at: ts, last_touched_at: ts, version: 1
   };
 }
@@ -218,7 +218,7 @@ function normalizeLeadField_(field, value, ctx) {
   if (LEAD_DATE.indexOf(field) > -1) return normalizeDate_(value, ctx.tz);
   if (field === 'status') { var st = toStr_(value).toUpperCase(); if (!LEAD_STATUS[st]) throw validationError_('Unknown status: ' + value); return st; }
   if (field === 'appointment_outcome') { var v = trimStr_(value); if (v && APPOINTMENT_OUTCOMES.indexOf(v) < 0) throw validationError_('Unknown visit outcome: ' + v); return v; }
-  if (field === 'exit_strategy') { var ex = trimStr_(value); if (ex && EXIT_STRATEGIES.indexOf(ex) < 0) throw validationError_('Unknown exit strategy: ' + ex); return ex; }
+  if (field === 'exit_strategy') { var ex = trimStr_(value); if (ex && EXIT_STRATEGIES.indexOf(ex) < 0 && EXIT_STRATEGIES_LEGACY.indexOf(ex) < 0) throw validationError_('Unknown exit strategy: ' + ex); return ex; }
   if (field === 'disposition') { var dp = trimStr_(value); if (dp && DISPOSITIONS.indexOf(dp) < 0) throw validationError_('Unknown disposition status: ' + dp); return dp; }
   if (field === 'source') { var src = normalizeSource_(value); assertLen_(src, 60, 'Source'); return src; }
   if (field === 'seller_email') { var em = trimStr_(value).toLowerCase(); if (em && !isValidEmail_(em)) throw validationError_('Seller email looks wrong: ' + value); assertLen_(em, 200, 'Seller email'); return em; }
@@ -241,7 +241,7 @@ function updateLead(leadId, patch, expectedVersion) {
     var rejected = Object.keys(patch).filter(function (k) { return LEAD_PATCHABLE.indexOf(k) < 0; });
     if (rejected.length) throw validationError_('These fields cannot be changed here: ' + rejected.join(', '));
     if (!fields.length) throw validationError_('Nothing to update.');
-    var uw = ['arv', 'repairs', 'asking_price', 'offer', 'purchase_price', 'sale_price'];
+    var uw = ['arv', 'repairs', 'asking_price', 'offer', 'purchase_price', 'sale_price', 'assignment_fee'];
     if (fields.some(function (f) { return uw.indexOf(f) > -1; })) requireCapability_(user, 'underwrite');
     if (fields.indexOf('appointment_date') > -1 || fields.indexOf('appointment_outcome') > -1) {
       // Appointment fields go through the appointment service so history is kept.

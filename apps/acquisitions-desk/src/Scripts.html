@@ -162,11 +162,14 @@
   var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   function shortDate(iso){var p=String(iso||'').slice(0,10).split('-');if(p.length<3)return String(iso||'');
     return MON[+p[1]-1]+' '+(+p[2])+(p[0]===String(today).slice(0,4)?'':' '+p[0])}
+  function exitList(l){var x=[''].concat(C.exit_strategies);if(l.exit_strategy&&x.indexOf(l.exit_strategy)<0)x.splice(1,0,l.exit_strategy);return x}
   function clip(s,n){s=String(s==null?'':s);return s.length>n?s.slice(0,n-1)+'\u2026':s}
   function fig(v,label,cls){return '<span'+(cls?' class="'+cls+'"':'')+'><b>'+(typeof v==='number'?money(v):esc(v))+'</b><small>'+esc(label)+'</small></span>'}
   /* The money column: what a closed deal made, what a contract costs, otherwise the acquisition maths. */
   function moneyCell(l){
-    var bought=num(l.purchase_price),sold=num(l.sale_price),fix=num(l.repairs)||0;
+    var bought=num(l.purchase_price),sold=num(l.sale_price),fix=num(l.repairs)||0,fee=num(l.assignment_fee);
+    if(l.exit_strategy===C.exit_assignment&&(fee!=null||bought!=null))
+      return '<div class="money">'+(bought!=null?fig(bought,'under contract'):'')+(fee!=null?fig(fee,'fee','gain'):'')+'</div>';
     if(l.status==='CLOSED'&&(bought!=null||sold!=null)){
       var out=[];
       if(bought!=null)out.push(fig(bought,'bought'));
@@ -221,11 +224,27 @@
       if(work)html+='<div class="actions">'+(l.next_action?'<button class="btn sm" data-done>Mark done → set next</button>':'')+'<button class="btn ghost sm" data-attempt>Log attempt</button><button class="btn ghost sm" data-offer>Offer sent</button><button class="btn ghost sm" data-flag="'+(l.flag_juan?0:1)+'">'+(l.flag_juan?'Clear Juan flag':'Flag for Juan')+'</button><button class="btn ghost sm" data-comply="'+(l.compliance_mailer_check?0:1)+'">'+(l.compliance_mailer_check?'Clear mailer note':'Mailer or check mentioned')+'</button>'+(!l.is_live&&can('restore_leads')?'<button class="btn sm" data-restore>Restore to live</button>':'')+'</div>';
       html+='<div class="lbl" style="margin-top:6px">Latest</div>'+thread((l.activity||l.recent_activity||[]).slice(-5),false);
     } else if(dtab==='uw'){
-      var pricing=function(){      var pct=S.mao_percentage;html+='<div class="lbl" style="margin-bottom:8px">Proposed offer</div><div class="bigmao"><div><b>'+(l.mao!=null?money(l.mao):'—')+'</b><span>max offer · '+esc(pct)+'% of ARV less repairs</span></div><div><b class="'+(l.offer_room==null?'':l.offer_room>=0?'ok':'alert')+'">'+(l.offer_room!=null?(l.offer_room<0?'−':'')+money(Math.abs(l.offer_room)):'—')+'</b><span>room against the ask</span></div></div>';
-      html+='<div class="spec one"><dl>'+kv('After repair value $','<input type="number" min="0" data-set="arv" value="'+esc(l.arv)+'"'+uw+'>')+kv('Repairs $','<input type="number" min="0" data-set="repairs" value="'+esc(l.repairs)+'"'+uw+'>')+kv('Seller asking $','<input type="number" min="0" data-set="asking_price" value="'+esc(l.asking_price)+'"'+uw+'>')+kv('Our offer $','<input type="number" min="0" data-set="offer" value="'+esc(l.offer)+'"'+uw+'>')+kv('Purchase price $','<input type="number" min="0" data-set="purchase_price" value="'+esc(l.purchase_price)+'"'+uw+'>')+kv('Sale price $','<input type="number" min="0" data-set="sale_price" value="'+esc(l.sale_price)+'"'+uw+'>')+kv(num(l.repairs)?'Profit':'Spread',(num(l.sale_price)!=null&&num(l.purchase_price)!=null)?'<b class="'+(num(l.sale_price)-num(l.purchase_price)-(num(l.repairs)||0)<0?'alertc':'okc')+'">'+money(num(l.sale_price)-num(l.purchase_price)-(num(l.repairs)||0))+'</b>':'<span class="dim muted">needs a purchase and a sale price</span>')+kv('Closing date','<input type="date" data-set="closing_date" value="'+esc(l.closing_date)+'"'+ro+'>')+kv('Ask as % of ARV',(n(l.arv)&&n(l.asking_price)?Math.round(n(l.asking_price)/n(l.arv)*100)+'%':'<span class="dim muted">—</span>'))+'</dl></div><p class="small muted" style="margin:0">MAO % is a company setting (Admin → Settings). Enter ARV and repairs to price the property. Profit is the sale price less the purchase price and repairs; with no repairs entered it is only the spread.</p>';
+      var isAssign=l.exit_strategy===C.exit_assignment;
+      var pricing=function(){
+      var pct=S.mao_percentage;html+='<div class="lbl" style="margin-bottom:8px">Proposed offer</div><div class="bigmao"><div><b>'+(l.mao!=null?money(l.mao):'\u2014')+'</b><span>max offer · '+esc(pct)+'% of ARV less repairs</span></div><div><b class="'+(l.offer_room==null?'':l.offer_room>=0?'ok':'alert')+'">'+(l.offer_room!=null?(l.offer_room<0?'\u2212':'')+money(Math.abs(l.offer_room)):'\u2014')+'</b><span>room against the ask</span></div></div>';
+      var money3=kv('After repair value $','<input type="number" min="0" data-set="arv" value="'+esc(l.arv)+'"'+uw+'>')+kv('Repairs $','<input type="number" min="0" data-set="repairs" value="'+esc(l.repairs)+'"'+uw+'>')+kv('Seller asking $','<input type="number" min="0" data-set="asking_price" value="'+esc(l.asking_price)+'"'+uw+'>')+kv('Our offer $','<input type="number" min="0" data-set="offer" value="'+esc(l.offer)+'"'+uw+'>')+kv(isAssign?'Contract price $':'Purchase price $','<input type="number" min="0" data-set="purchase_price" value="'+esc(l.purchase_price)+'"'+uw+'>');
+      if(isAssign){
+        var fee=num(l.assignment_fee);
+        money3+=kv('Assignment fee $','<input type="number" min="0" data-set="assignment_fee" value="'+esc(l.assignment_fee)+'"'+uw+'>')
+          +kv('We make',fee!=null?'<b class="okc">'+money(fee)+'</b>':'<span class="dim muted">enter the fee</span>');
+      } else {
+        var sale=num(l.sale_price),buy=num(l.purchase_price),fix=num(l.repairs)||0;
+        money3+=kv('Sale price $','<input type="number" min="0" data-set="sale_price" value="'+esc(l.sale_price)+'"'+uw+'>')
+          +kv(fix?'Profit':'Spread',(sale!=null&&buy!=null)?'<b class="'+(sale-buy-fix<0?'alertc':'okc')+'">'+money(sale-buy-fix)+'</b>':'<span class="dim muted">needs a purchase and a sale price</span>');
+      }
+      money3+=kv('Closing date','<input type="date" data-set="closing_date" value="'+esc(l.closing_date)+'"'+ro+'>')+kv('Ask as % of ARV',(n(l.arv)&&n(l.asking_price)?Math.round(n(l.asking_price)/n(l.arv)*100)+'%':'<span class="dim muted">\u2014</span>'));
+      html+='<div class="spec one"><dl>'+money3+'</dl></div>';
+      if(isAssign&&num(l.sale_price)!=null)html+='<div class="alertbox"><b>There is a sale price on an assignment</b>On an assignment we never own the house, so there is nothing to resell. If '+money(num(l.sale_price))+' was the fee, move it to Assignment fee and clear Sale price.</div>';
+      if(!isAssign&&num(l.sale_price)!=null&&num(l.purchase_price)!=null&&num(l.sale_price)<num(l.purchase_price))html+='<div class="alertbox"><b>Selling for less than we paid</b>That is a real loss unless a number is wrong. On an assignment the fee belongs in its own field, not in Sale price.</div>';
+      html+='<p class="small muted" style="margin:0">MAO % is a company setting (Admin \u2192 Settings). Enter ARV and repairs to price the property. '+(isAssign?'On an assignment the fee is the whole of what we make; there is no purchase and resale.':'Profit is the sale price less the purchase price and repairs; with no repairs entered it is only the spread.')+'</p>';
       };
       var dealGrp=function(){      var srcList=C.lead_sources.map(function(s){return s[0]});if(l.source&&srcList.indexOf(l.source)<0)srcList=[l.source].concat(srcList);
-      html+='<div class="lbl" style="margin-top:14px;margin-bottom:8px">Deal</div><div class="spec one"><dl>'+kv('Source','<select data-set="source"'+ro+'>'+opt([''].concat(srcList),l.source)+'</select>')+kv('Exit strategy','<select data-set="exit_strategy"'+ro+'>'+opt([''].concat(C.exit_strategies),l.exit_strategy)+'</select>')+kv('Disposition','<select data-set="disposition"'+ro+'>'+opt([''].concat(C.dispositions),l.disposition)+'</select>')+'</dl></div><p class="small muted" style="margin:0">Exit strategy is the plan for the house. Disposition tracks an acquired property until it is sold or wholesaled; it shows on the Closed tab.</p>';
+      html+='<div class="lbl" style="margin-top:14px;margin-bottom:8px">Deal</div><div class="spec one"><dl>'+kv('Source','<select data-set="source"'+ro+'>'+opt([''].concat(srcList),l.source)+'</select>')+kv('Exit strategy','<select data-set="exit_strategy"'+ro+'>'+opt(exitList(l),l.exit_strategy)+'</select>')+kv('Disposition','<select data-set="disposition"'+ro+'>'+opt([''].concat(C.dispositions),l.disposition)+'</select>')+'</dl></div><p class="small muted" style="margin:0">Exit strategy is the plan for the house. Disposition tracks an acquired property until it is sold or wholesaled; it shows on the Closed tab.</p>';
       };
       if(l.status==='CLOSED'){dealGrp();html+='<div style="height:14px"></div>';pricing()}else{pricing();dealGrp()}
     } else if(dtab==='appt'){

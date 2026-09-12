@@ -346,6 +346,30 @@ This is the one place in the desk that deletes rather than archives, because a s
 it runs, `setupDatabase` will not put the examples back, so the inventory stays as you leave it. Only an admin or a
 manager can run it. Then add real builds with the form at the top of the Tools page.
 
+## Updating to v1.7.0 (assignment vs double close)
+
+```powershell
+git pull
+npx.cmd @google/clasp@3 push --force
+```
+
+Run **`setupDatabase`** once (it appends `assignment_fee` to LEADS), then New version `v1.7.0` → Deploy.
+
+**Wholesale is now two exit strategies**: *Wholesale - Assignment* and *Wholesale - Double Close*. The money fields
+follow whichever is chosen.
+
+- On an **assignment** we never own the house, so there is no resale price. Purchase price is labelled **Contract
+  price**, the only other figure is the **Assignment fee**, and the fee is what we make. The board row shows the
+  contract price and the fee.
+- On a **double close** and every other exit, both prices apply and profit stays sale less purchase less repairs.
+
+Two guards were added because this is where a typo hides:
+- A sale price on an assignment is flagged, with a note to move it to the fee.
+- A sale price below the purchase price on any other exit is flagged as a real loss unless a number is wrong.
+
+Records written before the split still say plain `Wholesale`. They stay readable and savable, and that value appears
+in the dropdown on those records only so it can be changed to the right one. It is not offered on anything else.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

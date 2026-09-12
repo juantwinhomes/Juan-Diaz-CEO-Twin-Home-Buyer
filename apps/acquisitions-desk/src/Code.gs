@@ -55,7 +55,7 @@ function bootstrapApp() {
       users: users,
       constants: { status_order: STATUS_ORDER, status_labels: STATUS_LABELS, live_statuses: LIVE_STATUSES, archived_statuses: ARCHIVED_STATUSES,
         appointment_outcomes: APPOINTMENT_OUTCOMES, tool_status: TOOL_STATUS, tool_recommendation: TOOL_RECOMMENDATION, tool_cadence: TOOL_CADENCE,
-        tool_verdict: TOOL_VERDICT, tool_types: TOOL_TYPES, pillar_states: PILLAR_STATES, builders: BUILDERS, channels: CHANNELS, lead_sources: LEAD_SOURCES, exit_strategies: EXIT_STRATEGIES, dispositions: DISPOSITIONS, roles: Object.keys(ROLES) }
+        tool_verdict: TOOL_VERDICT, tool_types: TOOL_TYPES, pillar_states: PILLAR_STATES, builders: BUILDERS, channels: CHANNELS, lead_sources: LEAD_SOURCES, exit_strategies: EXIT_STRATEGIES, exit_assignment: EXIT_ASSIGNMENT, dispositions: DISPOSITIONS, roles: Object.keys(ROLES) }
     });
   });
 }

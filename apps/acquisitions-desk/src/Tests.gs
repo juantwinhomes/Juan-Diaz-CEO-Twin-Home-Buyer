@@ -164,6 +164,20 @@ function testSuite_() {
     assert_(TOOL_TYPES.length === 3 && TOOL_TYPES.join(',') === 'System,Automation,Reporting', 'the three types');
     assert_(assertOk_(getTools()).tools.some(function (x) { return x.tool_id === t.tool_id && x.tool_type === ''; }), 'a blank type is allowed and comes back blank');
   };
+  T['wholesale: an assignment carries a fee, a double close carries both prices'] = function () {
+    var a = assertOk_(createLead({ address: addr('5 Assign Way') }));
+    var u = assertOk_(updateLead(a.lead_id, { exit_strategy: 'Wholesale - Assignment', purchase_price: 270000, assignment_fee: 85000 }, a.version));
+    assert_(u.exit_strategy === 'Wholesale - Assignment' && u.assignment_fee === 85000 && u.purchase_price === 270000, 'assignment saved');
+    var d = assertOk_(createLead({ address: addr('6 Double Cl') }));
+    var v = assertOk_(updateLead(d.lead_id, { exit_strategy: 'Wholesale - Double Close', purchase_price: 230000, sale_price: 250000 }, d.version));
+    assert_(v.exit_strategy === 'Wholesale - Double Close' && v.sale_price - v.purchase_price === 20000, 'double close keeps both prices');
+    assert_(EXIT_STRATEGIES.indexOf('Wholesale') < 0, 'the old single Wholesale is no longer offered');
+    var legacy = assertOk_(createLead({ address: addr('7 Legacy Rd') }));
+    var lg = assertOk_(updateLead(legacy.lead_id, { exit_strategy: 'Wholesale' }, legacy.version));
+    assert_(lg.exit_strategy === 'Wholesale', 'a record written before the split can still be saved');
+    assertFail_(updateLead(legacy.lead_id, { exit_strategy: 'Wholesale - Assingment' }, lg.version), 'VALIDATION_ERROR');
+    assertFail_(updateLead(a.lead_id, { assignment_fee: -5 }, u.version), 'VALIDATION_ERROR');
+  };
   T['status change writes LEADS + LEAD_ACTIVITY and bumps version'] = function () {
     var l = assertOk_(createLead({ address: addr('300 Pine St') }));
     var u = assertOk_(updateLead(l.lead_id, { status: 'CONTACT_MADE' }, l.version));
