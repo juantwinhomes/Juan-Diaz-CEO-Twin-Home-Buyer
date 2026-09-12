@@ -35,7 +35,7 @@
       </div>
       <div class="stripe"></div>
       <div class="subnav" id="sub-today"><button aria-selected="true" data-p="queue">Work queue <span class="c" id="c-queue"></span></button><button data-p="juan">Waiting on Juan <span class="c" id="c-juan"></span></button><button data-p="team" id="juanPanelTab">Team today</button><button data-p="log">Day log <span class="c" id="c-log"></span></button><button data-p="tools">Tools <span class="c" id="c-tools"></span></button></div>
-      <div class="subnav" id="sub-dash" hidden><button aria-selected="true" data-d="pace">Pace</button><button data-d="pipeline">Pipeline</button><button data-d="marketing">Marketing</button><button data-d="team">Team</button><button data-d="discipline">Discipline</button><button data-d="appts">Appointments</button><span class="end"><span class="lbl">Period</span><select id="period" class="btn ghost sm" style="clip-path:none;height:28px"><option value="8w">8 weeks</option><option value="30d">30 days</option><option value="q">Quarter</option></select></span></div>
+      <div class="subnav" id="sub-dash" hidden><button aria-selected="true" data-d="pace">Pace</button><button data-d="pipeline">Pipeline</button><button data-d="marketing">Marketing</button><button data-d="team">Team</button><button data-d="discipline">Discipline</button><button data-d="appts">Appointments</button><span class="end"><span class="lbl">From</span><input type="date" id="dFrom" class="btn ghost sm" style="clip-path:none;height:28px;width:150px"><span class="lbl">To</span><input type="date" id="dTo" class="btn ghost sm" style="clip-path:none;height:28px;width:150px"><button class="btn ghost sm" id="dReset" title="Back to the last 8 weeks">Last 8 weeks</button></span></div>
     </header>
 
     <div id="boot" class="boot">Opening the desk…</div>
@@ -119,6 +119,7 @@
 
     <!-- ================= DASHBOARDS ================= -->
     <section class="content" id="view-dash" hidden>
+      <div class="cmp" id="dashCompare"></div>
       <div class="pane dpane" id="d-pace"><div class="hero"><div><div class="q">Are we going to hit the month?</div><div class="pace"><div class="big" id="paceHero"><b>—</b></div><span class="lbl" id="paceLbl"></span></div><div class="track" id="paceTrack"><i></i><em></em></div><p id="paceNote" class="muted"></p></div><div class="facts" id="paceFacts"></div></div>
         <div class="dgrid">
           <div class="card c8 c3d"><div class="ch"><h3>Contracts and closes</h3><span class="hint" id="paceChartHint"></span><span class="right">hover a bar</span></div><svg class="chart" id="ch-pace" viewBox="0 0 720 220"></svg><div class="legend"><span><i style="background:var(--accent)"></i>Contracts signed</span><span><i style="background:var(--ink)"></i>Deals closed</span><span><i style="background:var(--alert);width:14px;height:2px;transform:none;vertical-align:2px"></i>Pace for the monthly target</span></div></div>

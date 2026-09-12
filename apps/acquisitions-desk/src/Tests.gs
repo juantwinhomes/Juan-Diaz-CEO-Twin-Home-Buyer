@@ -351,10 +351,20 @@ function testSuite_() {
     var l = assertOk_(createLead({ address: addr('1400 Report Rd'), source: 'PPC' })); var la = assertOk_(logAttempt(l.lead_id, ''));
     assertOk_(updateLead(l.lead_id, { offer: 250000 }, la.version)); var o = assertOk_(markOfferSent(l.lead_id, null, 'verbal offer'));
     assert_(o.new_activity.some(function (a) { return a.action_type === 'OFFER_SENT' && a.display.indexOf('$250,000') > -1; }), 'offer sent recorded with amount');
-    ['8w', '30d', 'q'].forEach(function (p) {
-      var d = assertOk_(getDashboards({ period: p }));
+    var td = todayBusinessDate_();
+    [{ from: shiftDateString_(td, -6), to: td, buckets: 7, unit: 1 },      // a week, one bar a day
+     { from: shiftDateString_(td, -55), to: td, buckets: 8, unit: 7 },     // eight weeks, one bar a week
+     { from: shiftDateString_(td, -200), to: td, unit: 30 }                // longer, one bar a month
+    ].forEach(function (w) {
+      var p = w.from + '..' + w.to;
+      var d = assertOk_(getDashboards({ from: w.from, to: w.to }));
       ['pace', 'pipeline', 'marketing', 'team', 'discipline', 'appointments'].forEach(function (k) { assert_(d[k], k + ' present for ' + p); });
-      assert_(d.labels.length === d.pace.contracts_by_bucket.length && d.labels.length === (p === 'q' ? 3 : p === '30d' ? 5 : 8), 'bucket count for ' + p);
+      assert_(d.from === w.from && d.to === w.to, 'the window is the one asked for: ' + d.from + '..' + d.to);
+      assert_(d.bucket_days === w.unit, 'bucket size ' + d.bucket_days + ' for ' + p);
+      if (w.buckets) assert_(d.labels.length === w.buckets, 'bucket count ' + d.labels.length + ' for ' + p);
+      assert_(d.labels.length === d.pace.contracts_by_bucket.length, 'labels line up with the bars for ' + p);
+      assert_(d.compare && d.compare.current.from === w.from && d.compare.previous.to === shiftDateString_(w.from, -1), 'the window before it ends the day before');
+      assert_(daysBetween_(d.compare.previous.from, d.compare.previous.to) === daysBetween_(w.from, w.to), 'both windows are the same length');
       var mo = readTable_(SHEETS.DAILY_METRICS).rows.filter(function (r) { return toStr_(r.business_date) >= d.from && toStr_(r.business_date) <= d.to; });
       assert_(d.pace.contracts_period === sumField_(mo, 'contracts_signed') && d.pace.closed_period === sumField_(mo, 'deals_closed'), 'pace totals match DAILY_METRICS for ' + p);
       assert_(d.pace.contracts_by_bucket.reduce(function (t, v) { return t + v; }, 0) === d.pace.contracts_period, 'buckets sum to period total');

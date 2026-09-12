@@ -171,6 +171,13 @@
   .quiet.two{grid-template-columns:repeat(2,minmax(0,1fr))}
   .g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
   .g5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+  .cmp{display:flex;flex-wrap:wrap;border:1px solid var(--line);background:var(--panel);margin-bottom:18px}
+  .cmp .u{flex:1 1 140px;min-width:128px;padding:10px 14px;border-right:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .cmp .u:last-child{border-right:none}
+  .cmp .u b{display:block;font-size:19px;font-weight:600;line-height:1.2}
+  .cmp .u em{display:block;font-style:normal;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+  .cmp .u i{display:block;font-style:normal;font-size:11.5px;margin-top:4px;color:var(--mist)}
+  .cmp .u i.up{color:var(--ok)} .cmp .u i.down{color:var(--alert-deep)}
   .cols2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line)}
   .cols2 .row.two{grid-template-columns:22px minmax(0,1fr) 128px;background:var(--panel)}
   .cols2 .row.two .state:last-child{display:none} /* the status repeats what the middle column already says */

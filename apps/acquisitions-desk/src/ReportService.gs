@@ -2,19 +2,59 @@
  * ReportService.gs — the Dashboards tab. One call returns all six dashboards for a period so the browser makes
  * one round trip. Everything is computed from the database; business dates drive every bucket.
  *
- * period: '8w' (8 weekly buckets ending this week), '30d' (5 weekly buckets), 'q' (3 monthly buckets)
+ * params: { from, to } as yyyy-MM-dd. Charts bucket by day, week or month to suit the span, and every report
+ * carries the same totals for the equal window immediately before, so any figure can be read as a movement.
  */
 
-function periodSpec_(period, today) {
-  var p = toStr_(period || '8w');
-  if (p === 'q') {
-    var buckets = [], y = +today.slice(0, 4), m = +today.slice(5, 7);
-    for (var i = 2; i >= 0; i--) { var mm = m - i, yy = y; while (mm < 1) { mm += 12; yy--; } var start = yy + '-' + String(mm).padStart(2, '0') + '-01'; var end = shiftDateString_(monthStartOf_(shiftDateString_(start, 32)), -1); buckets.push({ start: start, end: end > today ? today : end, label: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mm - 1] }); }
-    return { key: 'q', buckets: buckets, from: buckets[0].start, to: today, days: daysBetween_(buckets[0].start, today) + 1 };
+/**
+ * The window a report covers, its chart buckets, and the equal window immediately before it to compare against.
+ * Dates are taken as given; with none, the last eight weeks. Bucket size follows the span, so a chart never ends
+ * up with two bars or ninety.
+ */
+function periodSpec_(params, today) {
+  params = params || {};
+  var tz = getBusinessTimezone_();
+  var to = normalizeDate_(params.to, tz) || today;
+  var from = normalizeDate_(params.from, tz) || shiftDateString_(to, -55);
+  if (from > to) { var swap = from; from = to; to = swap; }
+  var days = daysBetween_(from, to) + 1, buckets = [], i;
+  if (days <= 14) {
+    for (i = 0; i < days; i++) { var d = shiftDateString_(from, i); buckets.push({ start: d, end: d, label: monthDay_(d) }); }
+  } else if (days <= 140) {
+    var ws = from;
+    while (ws <= to) { var we = shiftDateString_(ws, 6); buckets.push({ start: ws, end: we > to ? to : we, label: monthDay_(ws) }); ws = shiftDateString_(we, 1); }
+  } else {
+    var ms = monthStartOf_(from);
+    while (ms <= to) {
+      var next = monthStartOf_(shiftDateString_(ms, 32)), me = shiftDateString_(next, -1);
+      buckets.push({ start: ms < from ? from : ms, end: me > to ? to : me, label: MONTH_ABBR[+ms.slice(5, 7) - 1] });
+      ms = next;
+    }
   }
-  var n = p === '30d' ? 5 : 8, bk = [];
-  for (var w = n - 1; w >= 0; w--) { var end = shiftDateString_(today, -7 * w), start = shiftDateString_(end, -6); bk.push({ start: start, end: end, label: monthDay_(start) }); }
-  return { key: n === 5 ? '30d' : '8w', buckets: bk, from: bk[0].start, to: today, days: 7 * n };
+  var prevTo = shiftDateString_(from, -1), prevFrom = shiftDateString_(prevTo, -(days - 1));
+  return { from: from, to: to, days: days, buckets: buckets, bucket_days: days <= 14 ? 1 : days <= 140 ? 7 : 30,
+    prev_from: prevFrom, prev_to: prevTo };
+}
+var MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+/** The handful of figures worth putting side by side with the window before. Cheap: it reuses rows already read. */
+function windowTotals_(from, to, leads, acts, metrics) {
+  var inW = function (d) { return d >= from && d <= to; };
+  var m = metrics.filter(function (x) { return inW(toStr_(x.business_date)); });
+  var a = acts.filter(function (x) { return inW(toStr_(x.business_date)); });
+  var created = leads.filter(function (l) { return inW(toStr_(l.created_at).slice(0, 10)); }).length;
+  var spend = m.reduce(function (t, x) { return t + spendOf_(x); }, 0);
+  var leadsLogged = sumField_(m, 'new_leads') || created;
+  return {
+    from: from, to: to,
+    leads: leadsLogged,
+    attempts: a.filter(function (x) { return x.action_type === 'CALL_ATTEMPT'; }).length,
+    appointments: a.filter(function (x) { return x.action_type === 'APPOINTMENT_SET'; }).length,
+    offers: a.filter(function (x) { return x.action_type === 'OFFER_SENT'; }).length,
+    contracts: sumField_(m, 'contracts_signed'),
+    closed: sumField_(m, 'deals_closed'),
+    spend: spend,
+    cost_per_lead: safeDiv_(spend, leadsLogged)
+  };
 }
 function monthDay_(ymd) { var mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+ymd.slice(5, 7) - 1]; return mon + ' ' + (+ymd.slice(8, 10)); }
 function bucketIndex_(spec, ymd) { for (var i = 0; i < spec.buckets.length; i++) if (ymd >= spec.buckets[i].start && ymd <= spec.buckets[i].end) return i; return -1; }
@@ -24,9 +64,9 @@ function minutesBetween_(aIso, bIso) { var a = new Date(aIso), b = new Date(bIso
 function getDashboards(params) {
   return guarded_('getDashboards', function (user) {
     params = params || {};
-    var ctx = leadContext_(), today = ctx.today, spec = periodSpec_(params.period, today);
+    var ctx = leadContext_(), today = ctx.today, spec = periodSpec_(params, today);
     var leads = readTable_(SHEETS.LEADS).rows.map(function (l) { return enrichLead_(l, ctx); });
-    var acts = activitySince_(spec.from), metrics = readTable_(SHEETS.DAILY_METRICS).rows, appts = readTable_(SHEETS.APPOINTMENTS).rows, runs = readTable_(SHEETS.TOOL_RUNS).rows;
+    var acts = activitySince_(spec.prev_from), metrics = readTable_(SHEETS.DAILY_METRICS).rows, appts = readTable_(SHEETS.APPOINTMENTS).rows, runs = readTable_(SHEETS.TOOL_RUNS).rows;
     var users = getUsersTable_().rows, nameOf = {}; users.forEach(function (u) { nameOf[toStr_(u.user_id)] = toStr_(u.name); });
     var inRange = function (d) { return d >= spec.from && d <= spec.to; };
     var mIn = metrics.filter(function (m) { return inRange(toStr_(m.business_date)); });
@@ -38,7 +78,7 @@ function getDashboards(params) {
     var contractsW = zeros_(N), closedW = zeros_(N), spendW = zeros_(N), fellW = zeros_(N);
     mIn.forEach(function (m) { var i = bucketIndex_(spec, toStr_(m.business_date)); if (i < 0) return; contractsW[i] += toNum_(m.contracts_signed) || 0; closedW[i] += toNum_(m.deals_closed) || 0; fellW[i] += toNum_(m.contracts_fell_out) || 0; spendW[i] += spendOf_(m); });
     var ct = sumField_(mIn, 'contracts_signed'), cl = sumField_(mIn, 'deals_closed'), fo = sumField_(mIn, 'contracts_fell_out');
-    var weeklyTarget = spec.key === 'q' ? pace.target : Math.round(pace.target * 12 / 52 * 100) / 100;
+    var weeklyTarget = Math.round(pace.target * (spec.bucket_days / 30.4) * 100) / 100;
 
     /* ---- PIPELINE ---- */
     var live = leads.filter(function (l) { return l.is_live; });
@@ -114,7 +154,9 @@ function getDashboards(params) {
     var upcoming = appts.filter(function (a) { var d = toStr_(a.appointment_date); return d >= today && d <= shiftDateString_(today, 7) && a.status !== 'CANCELLED'; }).length;
 
     return ok_({
-      period: spec.key, from: spec.from, to: spec.to, labels: labels, today: today,
+      from: spec.from, to: spec.to, days: spec.days, bucket_days: spec.bucket_days, labels: labels, today: today,
+      compare: { current: windowTotals_(spec.from, spec.to, leads, acts, metrics),
+                 previous: windowTotals_(spec.prev_from, spec.prev_to, leads, acts, metrics) },
       pace: { closed_mtd: pace.closed, target: pace.target, expected_to_date: pace.expected_to_date, on_pace: pace.on_pace, behind_by: pace.behind_by, percent: pace.percent, day_of_month: pace.day_of_month, days_in_month: pace.days_in_month,
         spend_mtd: pace.spend_mtd, budget: pace.budget, contracts_mtd: pace.contracts_mtd, contracts_by_bucket: contractsW, closed_by_bucket: closedW, fell_out_by_bucket: fellW, spend_by_bucket: spendW,
         contracts_period: ct, closed_period: cl, fell_out_period: fo, contract_to_close: pctOf_(cl, ct), fallout_pct: pctOf_(fo, ct), weekly_target: weeklyTarget },

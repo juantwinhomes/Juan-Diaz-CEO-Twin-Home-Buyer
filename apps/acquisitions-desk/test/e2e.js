@@ -126,10 +126,22 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     await A.click('#sub-dash [data-d=marketing]'); await A.waitForFunction(() => document.getElementById('mktHero').textContent.includes('$80 per lead'), null, { timeout: 15000 });
     const facts = (await A.textContent('#mktFacts')).replace(/,/g, ''); assert(facts.includes('$500') && facts.includes('$1000') && facts.includes('$2000'), 'CPA/CPC/CPD: ' + facts);
     assert((await A.textContent('#chanTable')).replace(/,/g, '').includes('PPC$500'), 'channel table'); assert((await A.locator('#ch-pace rect.bar').count()) === 16, '8 weeks × 2 series bars');
-    await A.selectOption('#period', '30d'); await A.waitForFunction(() => document.querySelectorAll('#ch-pace rect.bar').length === 10, null, { timeout: 15000 });
     assert((await A.locator('#chan-tiles .tile').count()) === 6, 'six spend channels'); assert((await A.locator('#ch-src rect.bar').count()) >= 9, 'leads by source bars');
     await A.click('#sub-dash [data-d=pipeline]'); assert((await A.locator('#funnel .stage').count()) === 6, 'six funnel stages');
     await A.click('#sub-dash [data-d=discipline]'); await A.waitForFunction(() => document.querySelectorAll('#cal i.logged').length >= 1, 'today logged in calendar');
+  });
+  await test('dashboards: the window is picked by date and compared with the one before', async () => {
+    await tab(A, 'dash'); await A.waitForFunction(() => document.getElementById('dashCompare').textContent.length > 0, null, { timeout: 15000 });
+    const cmp = await A.textContent('#dashCompare');
+    assert(/Leads/.test(cmp) && /vs before|nothing before|same as before/.test(cmp), 'compared with the window before: ' + cmp.slice(0, 120));
+    assert(await A.$('#period') === null, 'the preset dropdown is gone');
+    const to = await A.inputValue('#dTo');
+    const shift = (d, n) => { const p = d.split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10); };
+    await A.fill('#dFrom', shift(to, -6)); await A.press('#dFrom', 'Tab');
+    await A.waitForFunction(() => document.querySelectorAll('#ch-pace rect.bar').length === 14, null, { timeout: 20000 }); // 7 daily buckets x 2 series
+    await A.click('#dReset');
+    await A.waitForFunction(() => document.querySelectorAll('#ch-pace rect.bar').length === 16, null, { timeout: 20000 }); // back to 8 weekly buckets
+    assert(await A.inputValue('#dFrom') === shift(to, -55), 'reset goes back to the last eight weeks');
   });
   await test('tools: the inventory filters by type, not by who built it', async () => {
     await tab(A, 'tools'); await A.waitForFunction(() => document.querySelectorAll('#typeFilter button').length > 0);

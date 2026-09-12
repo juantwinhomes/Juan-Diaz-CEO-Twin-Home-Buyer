@@ -53,7 +53,8 @@
     if(!can('create_leads'))$('openAdd').hidden=true; if(!can('manage_tools'))$('addToolSheet').hidden=true;
     if(!can('manage_targets')){$('targetsBox').hidden=true} if(!can('enter_metrics'))$('saveDay').disabled=true;
     $('boot').hidden=true;
-    if(prefs.sort)$('sort').value=prefs.sort; if(prefs.filter)setFilter(prefs.filter,true); if(prefs.period)$('period').value=prefs.period;
+    if(prefs.sort)$('sort').value=prefs.sort; if(prefs.filter)setFilter(prefs.filter,true);
+    $('dFrom').value=prefs.from||shiftDays(today,-55); $('dTo').value=prefs.to||today;
     var f=boot.first_screen||{};
     if(f.today){todayData=f.today;today=todayData.today;juan=f.today.juan||f.juan||null;renderToday();loaded.today=true}
     if(f.board){seedBoard(f.board);loaded.leads=true}
@@ -78,7 +79,9 @@
   $('sub-today').querySelectorAll('button[data-p]').forEach(function(b){b.onclick=function(){setTodayPane(b.dataset.p)}});
   function setTodayPane(p){todayPane=p;$('sub-today').querySelectorAll('button[data-p]').forEach(function(x){x.setAttribute('aria-selected',x.dataset.p===p?'true':'false')});document.querySelectorAll('.pane-today').forEach(function(s){s.hidden=s.dataset.p!==p});if(p==='team')$('juanPanel').hidden=!can('view_team')}
   $('sub-dash').querySelectorAll('button[data-d]').forEach(function(b){b.onclick=function(){dashPane=b.dataset.d;$('sub-dash').querySelectorAll('button[data-d]').forEach(function(x){x.setAttribute('aria-selected',x.dataset.d===dashPane?'true':'false')});document.querySelectorAll('.dpane').forEach(function(p){p.hidden=p.id!=='d-'+dashPane;p.classList.remove('in')});setTimeout(animateIn,30);window.scrollTo(0,0)}});
-  $('period').onchange=function(){pref('period',this.value);dashDrawn='';loadDash().then(animateIn)};
+  function windowChanged(){pref('from',$('dFrom').value);pref('to',$('dTo').value);dashDrawn='';loadDash().then(animateIn)}
+  $('dFrom').onchange=windowChanged; $('dTo').onchange=windowChanged;
+  $('dReset').onclick=function(){$('dFrom').value=shiftDays(today,-55);$('dTo').value=today;windowChanged()};
 
   function loadAll(){return Promise.all([loadToday(),loadBoard(1),loadTools()]).catch(showError)}
   function refreshCurrent(){if(view==='today')return loadToday();if(view==='leads')return loadBoard(1,true);if(view==='tools')return loadTools();if(view==='admin')return loadAdmin();if(view==='dash'){dashDrawn='';return loadDash()}return Promise.resolve()}
@@ -314,7 +317,9 @@
   function animateIn(){var pane=document.querySelector('.dpane:not([hidden])');if(!pane)return;pane.classList.add('in');pane.querySelectorAll('[data-count]').forEach(countUp)}
   function countUp(el){if(el.dataset.done)return;el.dataset.done='1';var to=+el.dataset.count,suf=el.dataset.suffix||'',pre=el.dataset.prefix||'',t0=performance.now(),dur=900;if(reduce||!isFinite(to)){el.textContent=pre+to.toLocaleString()+suf;return}
     (function f(t){var p=Math.min(1,(t-t0)/dur);p=1-Math.pow(1-p,3);el.textContent=pre+Math.round(to*p).toLocaleString()+suf;if(p<1)requestAnimationFrame(f)})(t0)}
-  function cnt(v,pre,suf){return '<b data-count="'+(v==null?0:v)+'" data-prefix="'+(pre||'')+'" data-suffix="'+(suf||'')+'">0</b>'}
+  /* The final figure is in the markup. The count-up is decoration on top of it, so a redraw that never gets
+     animated — an auto refresh, say — still shows the real number rather than a zero. */
+  function cnt(v,pre,suf){var val=(v==null?0:v);return '<b data-count="'+val+'" data-prefix="'+(pre||'')+'" data-suffix="'+(suf||'')+'">'+esc((pre||'')+(isFinite(val)?Number(val).toLocaleString():val)+(suf||''))+'</b>'}
   var svgNS='http://www.w3.org/2000/svg';function el(nm,a,txt){var e=document.createElementNS(svgNS,nm);for(var k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e}
   function grid(svg,x0,x1,y0,y1,nn,max,fmt){var g=el('g',{class:'grid'}),seen={};if(!fmt&&max<=8&&Number.isInteger(max))nn=Math.max(1,max);for(var i=0;i<=nn;i++){var y=y1-(y1-y0)*i/nn,lab=fmt?fmt(max*i/nn):String(Math.round(max*i/nn));g.appendChild(el('line',{x1:x0,x2:x1,y1:y,y2:y}));if(!seen[lab]){seen[lab]=1;g.appendChild(el('text',{x:x0-8,y:y+4,'text-anchor':'end'},lab))}}svg.appendChild(g)}
   function niceMax(v){if(v<=0)return 1;if(v<=8)return Math.ceil(v);var p=Math.pow(10,Math.floor(Math.log10(v)));var m=v/p;return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p}
@@ -340,8 +345,24 @@
     stages.forEach(function(s,i){var d=document.createElement('div');d.className='stage';var conv=i&&stages[i-1].v?Math.round(s.v/stages[i-1].v*100)+'%':(i?'—':'');d.innerHTML='<span class="name">'+esc(s.l)+'</span><div class="blk '+shades[i%6]+'" data-tip="<b>'+esc(s.l)+'</b> · '+s.v+'" style="width:'+Math.max(6,s.v/max*100)+'%;transition-delay:'+(i*90)+'ms">'+s.v+'</div><span class="conv">'+conv+(i?'<small>from '+esc(stages[i-1].l.toLowerCase())+'</small>':'<small>&nbsp;</small>')+'</span>';elm.appendChild(d)})}
   function spark(svg,v){var W=200,H=34,vals=v.map(function(x){return x==null?0:x}),max=Math.max.apply(null,vals.concat([1]))*1.1,N=vals.length;svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.innerHTML='';if(N<2)return;var pts=vals.map(function(x,i){return [i/(N-1)*(W-6)+3,H-3-(H-8)*x/max]});var d=pts.map(function(p,i){return (i?'L':'M')+p[0]+','+p[1]}).join(' ');
     svg.appendChild(el('path',{d:d+' L'+pts[N-1][0]+','+H+' L3,'+H+'Z',class:'a'}));svg.appendChild(el('path',{d:d,class:'l'}));svg.appendChild(el('circle',{cx:pts[N-1][0],cy:pts[N-1][1],r:4}))}
-  function loadDash(){var period=$('period').value;if(dash&&dashDrawn===period)return Promise.resolve();return read('getDashboards',{period:period}).then(function(r){dash=r.data;dashDrawn=period;drawDash();if(!isTyping()){$('t_deals').value=S.monthly_deal_target||'';$('t_budget').value=S.monthly_marketing_budget||''}}).catch(showError)}
-  function drawDash(){var d=dash;if(!d)return;var L=d.labels,P=d.pace,unit=d.period==='q'?'month':'week';
+  function loadDash(){var w=$('dFrom').value+'|'+$('dTo').value;if(dash&&dashDrawn===w)return Promise.resolve();return read('getDashboards',{from:$('dFrom').value,to:$('dTo').value}).then(function(r){dash=r.data;dashDrawn=w;drawDash();if(!isTyping()){$('t_deals').value=S.monthly_deal_target||'';$('t_budget').value=S.monthly_marketing_budget||''}}).catch(showError)}
+  var COMPARE=[{k:'leads',t:'Leads',up:1},{k:'attempts',t:'Attempts',up:1},{k:'appointments',t:'Appointments',up:1},
+    {k:'offers',t:'Offers sent',up:1},{k:'contracts',t:'Contracts',up:1},{k:'closed',t:'Closed',up:1},
+    {k:'spend',t:'Spend',up:-1,m:1},{k:'cost_per_lead',t:'Per lead',up:-1,m:1}];
+  /* This window against the one immediately before it, same number of days. */
+  function drawCompare(c){if(!c)return $('dashCompare').innerHTML='';
+    $('dashCompare').innerHTML=COMPARE.map(function(f){
+      var now=c.current[f.k],was=c.previous[f.k];
+      var show=f.m?money(now==null?0:now):(now==null?'—':now.toLocaleString());
+      var delta='',cls='';
+      if(now!=null&&was!=null&&(now||was)){var diff=Math.round((now-was)*100)/100;
+        if(!diff)delta='same as before';
+        else {cls=(diff>0?f.up:-f.up)>0?'up':'down';delta=(diff>0?'+':'−')+(f.m?money(Math.abs(diff)):Math.abs(diff).toLocaleString())+' vs before'}}
+      else if(was==null||!was)delta='nothing before';
+      return '<div class="u"><b>'+esc(show)+'</b><em>'+esc(f.t)+'</em><i class="'+cls+'">'+esc(delta)+'</i></div>'}).join('');}
+  function shiftDays(ymd,n){var p=String(ymd).split('-');var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]+n));return d.toISOString().slice(0,10)}
+  function drawDash(){var d=dash;if(!d)return;var L=d.labels,P=d.pace,unit=d.bucket_days===1?'day':d.bucket_days===7?'week':'month';
+    drawCompare(d.compare);
     document.querySelectorAll('.dpane [data-count]').forEach(function(e){delete e.dataset.done});
     /* pace */
     $('paceHero').innerHTML=cnt(P.closed_mtd)+' / '+(P.target||'—'); $('paceLbl').textContent='closed · day '+P.day_of_month+' of '+P.days_in_month;

@@ -370,6 +370,22 @@ Two guards were added because this is where a typo hides:
 Records written before the split still say plain `Wholesale`. They stay readable and savable, and that value appears
 in the dropdown on those records only so it can be changed to the right one. It is not offered on anything else.
 
+## Updating to v1.8.0 (pick the window, compare it with the one before)
+
+No database change: `git pull`, `clasp push --force`, then New version `v1.8.0` → Deploy.
+
+The Dashboards period dropdown is gone. Pick a **From** and **To** date instead, with a button back to the last
+eight weeks. Charts bucket themselves to suit the span: a day per bar up to two weeks, a week up to about twenty,
+a month beyond that.
+
+Above every dashboard is a strip comparing that window with **the equal window immediately before it** — same number
+of days, ending the day before your From date. Leads, attempts, appointments, offers, contracts, closed, spend and
+cost per lead, each with the movement. Green is the good direction, which for spend and cost per lead means down.
+
+Also fixed: the big figures on a dashboard were written into the page as 0 and only became correct once the count-up
+animation ran. An auto refresh redraws without that animation, so a number could sit at zero while the rest of the
+card was right. The real figure is now in the page from the start and the animation is only decoration.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |
