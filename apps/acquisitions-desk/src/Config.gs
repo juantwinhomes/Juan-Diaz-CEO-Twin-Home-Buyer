@@ -5,7 +5,7 @@
  */
 
 var APP_NAME = 'THB Acquisitions Desk';
-var APP_VERSION = '1.4.0';
+var APP_VERSION = '1.4.1';
 var DB_NAME = 'THB Acquisitions Desk — Production Database';
 var BACKUP_FOLDER_NAME = 'THB Acquisitions Desk Backups';
 

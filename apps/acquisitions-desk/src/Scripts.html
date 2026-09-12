@@ -26,6 +26,7 @@
   function $(id){return document.getElementById(id)}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function n(v){return Number(v)||0}
+  function num(v){return (v===''||v==null||!isFinite(Number(v)))?null:Number(v)} /* blank stays blank, unlike n() */
   function money(v){return (v!=null&&isFinite(v))?'$'+Math.round(v).toLocaleString():'—'}
   function pctS(v){return v==null?'—':v+'%'}
   function when(iso){if(!iso)return '';var d=new Date(iso);return isNaN(d)?'':d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})}
@@ -149,7 +150,7 @@
     $('pageNote').textContent='showing '+board.items.length+' of '+board.total; $('morePager').hidden=!board.has_more; $('pageFoot').textContent='Showing '+board.items.length+' of '+board.total;
     $('leadList').innerHTML=board.items.length?board.items.map(leadRow).join(''):'<div class="empty">'+(t.live===0&&t.archived===0&&filter==='live'&&!$('globalSearch').value?'Paste your first batch with “Add leads”. Work 200, not 8,000.':'Nothing matches that view.')+'</div>';
     if(current){var fresh=board.items.filter(function(x){return x.lead_id===current.lead_id})[0];if(fresh){fresh.activity=current.activity;fresh.appointments=current.appointments;current=fresh;var f=document.querySelector('#leadList .row[aria-selected="true"]');if(!f){var r=$('lead-'+current.lead_id);if(r)r.setAttribute('aria-selected','true')}}}}
-  function stateOf(l){if(!l.is_live)return {t:esc(l.status_label),s:l.archive_reason?esc(l.archive_reason):'',a:false};
+  function stateOf(l){if(!l.is_live)return {t:esc(l.status_label),s:esc(l.status==='CLOSED'?(l.disposition||l.exit_strategy||''):(l.archive_reason||'')),a:false};
     if(l.compliance_mailer_check)return {t:'Mailer or check',s:esc(l.status_label)+(l.next_action?' · '+esc(l.next_action):''),a:true};
     if(l.due_state==='OVERDUE')return {t:'Overdue '+daysBetween(l.due_date,today)+'d',s:esc(l.status_label)+(l.next_action?' · '+esc(l.next_action):''),a:true};
     if(l.due_state==='NO_NEXT_ACTION')return {t:'No next action',s:esc(l.status_label)+' · untouched '+l.days_untouched+' days',a:true};
@@ -157,9 +158,32 @@
     if(l.due_state==='DUE_TODAY')return {t:'Due today',s:esc(l.status_label)+(l.next_action?' · '+esc(l.next_action):''),a:false};
     return {t:esc(l.status_label),s:(l.next_action?esc(l.next_action):'')+(l.due_date?' · due '+esc(l.due_date):l.due_state==='NO_DUE_DATE'?' · no due date':''),a:false}}
   function daysBetween(a,b){return Math.round((new Date(b+'T12:00:00Z')-new Date(a+'T12:00:00Z'))/86400000)}
-  function leadRow(l){var st=stateOf(l);var sold=l.sale_price!==''&&l.sale_price!=null,bought=l.purchase_price!==''&&l.purchase_price!=null;
-    var room=(l.status==='CLOSED'&&(l.disposition||bought||sold))?'<div class="state">'+(sold?money(l.sale_price):bought?money(l.purchase_price):esc(l.disposition||'—'))+'<small>'+esc(sold?'sold'+(bought?' · bought '+money(l.purchase_price):''):l.disposition||l.exit_strategy||'disposition')+'</small></div>':l.offer_room!=null?'<div class="state'+(l.offer_room<0?' alert':'')+'">'+(l.offer_room<0?'−':'')+money(Math.abs(l.offer_room))+'<small>offer room</small></div>':l.mao!=null?'<div class="state">'+money(l.mao)+'<small>max offer</small></div>':'<div class="state"><span class="muted">—</span><small>no ARV yet</small></div>';
-    return '<div class="row two clickable lead" id="lead-'+esc(l.lead_id)+'" data-id="'+esc(l.lead_id)+'" data-v="'+l.version+'" data-open="'+esc(l.lead_id)+'"'+(current&&current.lead_id===l.lead_id?' aria-selected="true"':'')+'><i class="sq'+(st.a?' alert':'')+'"></i><div><div class="t">'+esc(l.address)+'</div><div class="m">'+[esc(l.seller_name),esc(l.phone),esc(l.source),l.exit_strategy?'exit: '+esc(l.exit_strategy):'',esc(l.equity_note),esc(l.assigned_name||'unassigned')].filter(Boolean).join(' · ')+(l.contact_attempts?' · '+l.contact_attempts+' attempts':'')+'</div></div><div class="state'+(st.a?' alert':'')+'">'+st.t+'<small>'+st.s+'</small></div>'+room+'</div>'}
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function shortDate(iso){var p=String(iso||'').slice(0,10).split('-');if(p.length<3)return String(iso||'');
+    return MON[+p[1]-1]+' '+(+p[2])+(p[0]===String(today).slice(0,4)?'':' '+p[0])}
+  function clip(s,n){s=String(s==null?'':s);return s.length>n?s.slice(0,n-1)+'\u2026':s}
+  function fig(v,label,cls){return '<span'+(cls?' class="'+cls+'"':'')+'><b>'+(typeof v==='number'?money(v):esc(v))+'</b><small>'+esc(label)+'</small></span>'}
+  /* The money column: what a closed deal made, what a contract costs, otherwise the acquisition maths. */
+  function moneyCell(l){
+    var bought=num(l.purchase_price),sold=num(l.sale_price),fix=num(l.repairs)||0;
+    if(l.status==='CLOSED'&&(bought!=null||sold!=null)){
+      var out=[];
+      if(bought!=null)out.push(fig(bought,'bought'));
+      if(sold!=null)out.push(fig(sold,'sold'));
+      if(bought!=null&&sold!=null){var p=sold-bought-fix;out.push(fig(p,fix?'profit':'spread',p<0?'loss':'gain'))}
+      return '<div class="money">'+out.join('')+'</div>';
+    }
+    if(l.status==='UNDER_CONTRACT'&&bought!=null)
+      return '<div class="money">'+fig(bought,'buying at')+(l.closing_date?fig(shortDate(l.closing_date),'closes'):'')+'</div>';
+    if(l.status==='CLOSED')return '<div class="state"><span class="muted">\u2014</span><small>no prices yet</small></div>';
+    if(l.offer_room!=null)return '<div class="state'+(l.offer_room<0?' alert':'')+'">'+(l.offer_room<0?'\u2212':'')+money(Math.abs(l.offer_room))+'<small>offer room</small></div>';
+    if(l.mao!=null)return '<div class="state">'+money(l.mao)+'<small>max offer</small></div>';
+    return '<div class="state"><span class="muted">\u2014</span><small>no ARV yet</small></div>';
+  }
+  function leadRow(l){var st=stateOf(l);
+    /* Who and where it came from. The note stays on live work, where it is the reason to call. */
+    var meta=[esc(l.seller_name),esc(l.phone),esc(l.source),l.is_live?esc(clip(l.equity_note,60)):'',esc(l.assigned_name||'unassigned')].filter(Boolean).join(' \u00b7 ');
+    return '<div class="row two clickable lead" id="lead-'+esc(l.lead_id)+'" data-id="'+esc(l.lead_id)+'" data-v="'+l.version+'" data-open="'+esc(l.lead_id)+'"'+(current&&current.lead_id===l.lead_id?' aria-selected="true"':'')+'><i class="sq'+(st.a?' alert':'')+'"></i><div><div class="t">'+esc(l.address)+'</div><div class="m">'+meta+(l.contact_attempts?' \u00b7 '+l.contact_attempts+' attempts':'')+'</div></div><div class="state'+(st.a?' alert':'')+'">'+st.t+'<small>'+st.s+'</small></div>'+moneyCell(l)+'</div>'}
   $('leadList').addEventListener('click',function(e){var r=e.target.closest('[data-open]');if(r)openLead(r.dataset.open)});
 
   /* ================= LEAD DRAWER ================= */
@@ -197,7 +221,7 @@
       html+='<div class="lbl" style="margin-top:6px">Latest</div>'+thread((l.activity||l.recent_activity||[]).slice(-5),false);
     } else if(dtab==='uw'){
       var pricing=function(){      var pct=S.mao_percentage;html+='<div class="lbl" style="margin-bottom:8px">Proposed offer</div><div class="bigmao"><div><b>'+(l.mao!=null?money(l.mao):'—')+'</b><span>max offer · '+esc(pct)+'% of ARV less repairs</span></div><div><b class="'+(l.offer_room==null?'':l.offer_room>=0?'ok':'alert')+'">'+(l.offer_room!=null?(l.offer_room<0?'−':'')+money(Math.abs(l.offer_room)):'—')+'</b><span>room against the ask</span></div></div>';
-      html+='<div class="spec one"><dl>'+kv('After repair value $','<input type="number" min="0" data-set="arv" value="'+esc(l.arv)+'"'+uw+'>')+kv('Repairs $','<input type="number" min="0" data-set="repairs" value="'+esc(l.repairs)+'"'+uw+'>')+kv('Seller asking $','<input type="number" min="0" data-set="asking_price" value="'+esc(l.asking_price)+'"'+uw+'>')+kv('Our offer $','<input type="number" min="0" data-set="offer" value="'+esc(l.offer)+'"'+uw+'>')+kv('Purchase price $','<input type="number" min="0" data-set="purchase_price" value="'+esc(l.purchase_price)+'"'+uw+'>')+kv('Sale price $','<input type="number" min="0" data-set="sale_price" value="'+esc(l.sale_price)+'"'+uw+'>')+kv('Closing date','<input type="date" data-set="closing_date" value="'+esc(l.closing_date)+'"'+ro+'>')+kv('Ask as % of ARV',(n(l.arv)&&n(l.asking_price)?Math.round(n(l.asking_price)/n(l.arv)*100)+'%':'<span class="dim muted">—</span>'))+'</dl></div><p class="small muted" style="margin:0">MAO % is a company setting (Admin → Settings). Enter ARV and repairs to price the property.</p>';
+      html+='<div class="spec one"><dl>'+kv('After repair value $','<input type="number" min="0" data-set="arv" value="'+esc(l.arv)+'"'+uw+'>')+kv('Repairs $','<input type="number" min="0" data-set="repairs" value="'+esc(l.repairs)+'"'+uw+'>')+kv('Seller asking $','<input type="number" min="0" data-set="asking_price" value="'+esc(l.asking_price)+'"'+uw+'>')+kv('Our offer $','<input type="number" min="0" data-set="offer" value="'+esc(l.offer)+'"'+uw+'>')+kv('Purchase price $','<input type="number" min="0" data-set="purchase_price" value="'+esc(l.purchase_price)+'"'+uw+'>')+kv('Sale price $','<input type="number" min="0" data-set="sale_price" value="'+esc(l.sale_price)+'"'+uw+'>')+kv(num(l.repairs)?'Profit':'Spread',(num(l.sale_price)!=null&&num(l.purchase_price)!=null)?'<b class="'+(num(l.sale_price)-num(l.purchase_price)-(num(l.repairs)||0)<0?'alertc':'okc')+'">'+money(num(l.sale_price)-num(l.purchase_price)-(num(l.repairs)||0))+'</b>':'<span class="dim muted">needs a purchase and a sale price</span>')+kv('Closing date','<input type="date" data-set="closing_date" value="'+esc(l.closing_date)+'"'+ro+'>')+kv('Ask as % of ARV',(n(l.arv)&&n(l.asking_price)?Math.round(n(l.asking_price)/n(l.arv)*100)+'%':'<span class="dim muted">—</span>'))+'</dl></div><p class="small muted" style="margin:0">MAO % is a company setting (Admin → Settings). Enter ARV and repairs to price the property. Profit is the sale price less the purchase price and repairs; with no repairs entered it is only the spread.</p>';
       };
       var dealGrp=function(){      var srcList=C.lead_sources.map(function(s){return s[0]});if(l.source&&srcList.indexOf(l.source)<0)srcList=[l.source].concat(srcList);
       html+='<div class="lbl" style="margin-top:14px;margin-bottom:8px">Deal</div><div class="spec one"><dl>'+kv('Source','<select data-set="source"'+ro+'>'+opt([''].concat(srcList),l.source)+'</select>')+kv('Exit strategy','<select data-set="exit_strategy"'+ro+'>'+opt([''].concat(C.exit_strategies),l.exit_strategy)+'</select>')+kv('Disposition','<select data-set="disposition"'+ro+'>'+opt([''].concat(C.dispositions),l.disposition)+'</select>')+'</dl></div><p class="small muted" style="margin:0">Exit strategy is the plan for the house. Disposition tracks an acquired property until it is sold or wholesaled; it shows on the Closed tab.</p>';

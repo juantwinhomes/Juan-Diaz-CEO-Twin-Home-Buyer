@@ -260,6 +260,20 @@ The office whiteboard photographed on 2026-09-12 is transcribed in `src/Whiteboa
 It matches each property by a distinctive part of its address. A row that matches nothing, or matches more than
 one property, is reported and skipped rather than guessed at.
 
+## Updating to v1.4.1 (money on the row, less noise)
+
+No database change: `git pull`, `clasp push --force`, then New version `v1.4.1` → Deploy.
+
+- A closed property shows **bought, sold and profit** on its row instead of one figure. Profit is the sale price less
+  the purchase price and repairs; with no repairs entered the caption reads **spread**, because that is all it is.
+  The same figure is in the drawer under Underwriting.
+- A property under contract shows **what we are buying at and when it closes**, instead of "no ARV yet".
+- Where a closed property is in disposition (under construction, listed pending, sold, wholesaled) sits under the
+  word CLOSED, where the status belongs.
+- The line under each address is now just **who, their number, where the lead came from, and who is on it**. The
+  free-text note stays on live properties, where it is the reason to call, capped at 60 characters. On closed
+  properties it was repeating the status and the source, so it is gone from the row and stays in the drawer.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |
