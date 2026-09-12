@@ -136,6 +136,24 @@ function testSuite_() {
     var again = second.rows.filter(function (r) { return /Umland/.test(r.property); })[0];
     assert_(again.result === 'already matches the board', 'running it twice changes nothing: ' + again.result);
   };
+  T['tidy notes: tags go, real notes stay, the email gets its own field'] = function () {
+    var t = tidyNote_('Acquired · postcard · liens noted · artscott9600@gmail.com');
+    assert_(t.note === 'liens noted' && t.email === 'artscott9600@gmail.com', 'tags dropped, fact kept, email lifted: ' + JSON.stringify(t));
+    assert_(tidyNote_('Contract signed · web inquiry · high equity').note === 'high equity', 'only the fact survives');
+    assert_(tidyNote_('co-trustee is signing contact').note === 'co-trustee is signing contact', 'a sentence is not a tag');
+    assert_(tidyNote_('').note === '' && tidyNote_('').email === '', 'a blank note stays blank');
+    var a = addr('77 Tidy St');
+    assertOk_(addBulkLeads(a + ', A. Seller, ' + phone(8) + ', TV, Acquired · TV commercial · liens noted · seller@example.com'));
+    var before = assertOk_(listLeads({ filter: 'all', search: a })).items[0];
+    assertOk_(previewTidyNotes());
+    assert_(assertOk_(getLead(before.lead_id)).equity_note === before.equity_note, 'preview wrote nothing');
+    assertOk_(applyTidyNotes());
+    var after = assertOk_(getLead(before.lead_id));
+    assert_(after.equity_note === 'liens noted' && after.seller_email === 'seller@example.com', 'applied: ' + after.equity_note + ' / ' + after.seller_email);
+    var second = assertOk_(applyTidyNotes());
+    assert_(!second.rows.some(function (r) { return r.property === after.address; }), 'a second run leaves it alone');
+    assertFail_(updateLead(after.lead_id, { seller_email: 'not an email' }, after.version), 'VALIDATION_ERROR');
+  };
   T['status change writes LEADS + LEAD_ACTIVITY and bumps version'] = function () {
     var l = assertOk_(createLead({ address: addr('300 Pine St') }));
     var u = assertOk_(updateLead(l.lead_id, { status: 'CONTACT_MADE' }, l.version));

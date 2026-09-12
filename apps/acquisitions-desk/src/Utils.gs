@@ -103,6 +103,7 @@ function normalizeAddress_(a) {
     .replace(/\s+/g, ' ').trim();
 }
 /** Canonical source label for any spelling we know; unknown non-empty text is kept as typed. */
+function isValidEmail_(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimStr_(e)); }
 function normalizeSource_(s) {
   var t = trimStr_(s); if (!t) return '';
   var k = t.toLowerCase().replace(/\s+/g, ' ');

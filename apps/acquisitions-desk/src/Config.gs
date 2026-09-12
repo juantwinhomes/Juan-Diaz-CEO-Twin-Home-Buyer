@@ -5,7 +5,7 @@
  */
 
 var APP_NAME = 'THB Acquisitions Desk';
-var APP_VERSION = '1.4.2';
+var APP_VERSION = '1.5.0';
 var DB_NAME = 'THB Acquisitions Desk — Production Database';
 var BACKUP_FOLDER_NAME = 'THB Acquisitions Desk Backups';
 
@@ -33,7 +33,7 @@ var HEADERS = {
   LEADS: ['lead_id','address','seller_name','phone','source','equity_note','status','assigned_to','team',
           'flag_juan','compliance_mailer_check','contact_attempts','next_action','due_date','arv','repairs',
           'asking_price','offer','appointment_date','appointment_outcome','archive_reason','created_by',
-          'created_at','updated_by','updated_at','last_touched_at','version','exit_strategy','disposition','purchase_price','closing_date','sale_price'],
+          'created_at','updated_by','updated_at','last_touched_at','version','exit_strategy','disposition','purchase_price','closing_date','sale_price','seller_email'],
   LEAD_ACTIVITY: ['activity_id','lead_id','user_id','user_name','user_email','business_date','timestamp_utc',
                   'action_type','field_changed','old_value','new_value','note'],
   APPOINTMENTS: ['appointment_id','lead_id','appointment_date','appointment_time','timezone','assigned_to',
@@ -117,7 +117,7 @@ var ACTION = {
 // Fields a REP may patch through updateLead. Everything else needs a dedicated function or a higher role.
 var LEAD_PATCHABLE = ['address','seller_name','phone','source','equity_note','status','next_action','due_date',
                       'arv','repairs','asking_price','offer','appointment_date','appointment_outcome','team',
-                      'exit_strategy','disposition','purchase_price','closing_date','sale_price'];
+                      'exit_strategy','disposition','purchase_price','closing_date','sale_price','seller_email'];
 /** What we plan to do with the house once we control it (whiteboard: Exit Strategy). */
 var EXIT_STRATEGIES = ['Wholesale','Wholetail','Fix & Flip','Wholetail / Flip','Hold'];
 /** Where an acquired property is in disposition (whiteboard: Status). */

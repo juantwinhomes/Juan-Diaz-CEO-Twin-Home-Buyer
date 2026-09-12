@@ -286,6 +286,31 @@ further down the same card.
 REI BlackBook tags, for example). Until now it was displayed but had no field, so a wrong or stale note could not be
 corrected. Imported notes can contradict a source that has since been changed — read them once and fix what is wrong.
 
+## Updating to v1.5.0 (seller email, and the tags out of the notes)
+
+```powershell
+git pull
+npx.cmd @google/clasp@3 push --force
+```
+
+Run **`setupDatabase`** once (it appends `seller_email` to LEADS), then Deploy → Manage deployments → pencil →
+New version `v1.5.0` → Deploy.
+
+**Seller email** is a proper field now, on the Work tab under Background.
+
+### Taking the REI BlackBook tags out of the Background notes
+
+The properties imported from REI BlackBook carried their tag list in the Background note, which repeated the status
+and the source back at you and, after the whiteboard run, sometimes contradicted them. In the Apps Script editor,
+open the **TidyNotes** file and:
+
+1. Run **`previewTidyNotes`**. It writes nothing and prints, per property, the note before and after.
+2. Run **`applyTidyNotes`**. Running it again does nothing.
+
+A note is read as a list of fragments separated by "·". An email moves into the Seller email field rather than being
+thrown away. A fragment that is a known tag is dropped. Everything else is kept, because a person wrote it: notes
+like "high equity", "liens noted" and "co-trustee is signing contact" survive.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |
