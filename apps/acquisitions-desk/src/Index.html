@@ -168,18 +168,26 @@
     <!-- ================= TOOLS ================= -->
     <section class="content" id="view-tools" hidden>
       <div class="hero"><div><div class="q">Tools we own</div><div class="big" id="toolsHero"><b>—</b></div><p class="muted" id="toolNote">A tool nobody runs is not a tool. It is a receipt. Every build needs steps, a cadence, and a person.</p></div><div class="facts" id="toolTally"></div></div>
+      <div class="sheet" id="addToolSheet">
+        <div class="head"><h2>Log a build</h2><span class="hint">anything we own that is not on the list yet</span></div>
+        <div class="body">
+          <div class="g4">
+            <div class="field"><label for="newTool">What it is called</label><input id="newTool"></div>
+            <div class="field"><label for="newToolOwner">Who built it</label><select id="newToolOwner"><option>Cherry</option><option>Seth</option><option>Bryan</option><option>Jonathan</option><option>Someone else</option></select></div>
+            <div class="field"><label for="newToolLink">Link</label><input id="newToolLink" placeholder="https://..."></div>
+            <div class="field"><label for="newToolJob">What it does for the person using it</label><input id="newToolJob"></div>
+          </div>
+          <div class="actions" style="margin-top:12px;align-items:center"><button class="btn sm" id="addTool">Add to the list</button><span class="small muted" id="addToolMsg"></span></div>
+        </div>
+      </div>
       <div class="sheet">
         <div class="head"><h2>Inventory</h2><span class="hint">click a tool to set its steps, cadence, operator, training and verdict</span></div>
         <div class="tabs" id="builderFilter"></div>
-        <div id="toolList"></div>
+        <div id="toolList" class="cols2"></div>
       </div>
-      <div class="quiet">
+      <div class="quiet two">
         <div><h3>Who hands over what</h3><div id="rollcall"></div></div>
         <div><h3>What AI was supposed to take over</h3><div id="pillars"></div></div>
-        <div id="addToolSheet"><h3>Log a build that is not listed</h3><div class="field" style="margin-top:10px"><label for="newTool">What it is called</label><input id="newTool"></div>
-          <div class="g2" style="margin-top:8px"><div class="field"><label for="newToolOwner">Who built it</label><select id="newToolOwner"><option>Cherry</option><option>Seth</option><option>Bryan</option><option>Jonathan</option><option>Someone else</option></select></div><div class="field"><label for="newToolLink">Link</label><input id="newToolLink" placeholder="https://..."></div></div>
-          <div class="field" style="margin-top:8px"><label for="newToolJob">What it does for the person using it</label><input id="newToolJob"></div>
-          <div class="actions" style="margin-top:10px;align-items:center"><button class="btn sm" id="addTool">Add to the list</button><span class="small muted" id="addToolMsg"></span></div></div>
       </div>
     </section>
 

@@ -61,5 +61,7 @@
   "applyWhiteboardUpdate",
   "previewTidyNotes",
   "applyTidyNotes",
+  "previewClearTools",
+  "clearTools",
   "runAllTests"
 ]

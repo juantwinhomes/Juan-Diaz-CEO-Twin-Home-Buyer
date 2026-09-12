@@ -316,6 +316,28 @@ A note is read as a list of fragments separated by "·". An email moves into the
 thrown away. A fragment that is a known tag is dropped. Everything else is kept, because a person wrote it: notes
 like "high equity", "liens noted" and "co-trustee is signing contact" survive.
 
+## Updating to v1.6.0 (Tools page, and emptying the inventory)
+
+No database change: `git pull`, `clasp push --force`, then New version `v1.6.0` → Deploy.
+
+- **Log a build sits at the top of the Tools page**, as one row of four fields, so adding something does not mean
+  scrolling past everything already there.
+- **The inventory is two columns**, which halves the scroll. The status column was dropped from the row because the
+  middle column already says the same thing; it is still in the tool's drawer.
+- **Date asked** under "Who hands over what" is a date picker rather than free text.
+
+### Emptying the tool inventory before entering real builds
+
+The 22 tools that came with the desk were examples. In the Apps Script editor, open the **ClearTools** file and:
+
+1. Run **`previewClearTools`**. It lists what would go and writes nothing.
+2. Run **`clearTools`**. It takes a full backup of the database first and stops if that backup fails, then empties
+   TOOL_INVENTORY, TOOL_TRAINING and TOOL_RUNS. The log names the backup; BACKUP_LOG and the Drive folder hold it.
+
+This is the one place in the desk that deletes rather than archives, because a seeded example is not history. After
+it runs, `setupDatabase` will not put the examples back, so the inventory stays as you leave it. Only an admin or a
+manager can run it. Then add real builds with the form at the top of the Tools page.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

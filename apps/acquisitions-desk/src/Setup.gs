@@ -113,6 +113,8 @@ function seedUsers_() {
 }
 function seedTools_() {
   var t = readTable_(SHEETS.TOOL_INVENTORY); if (t.rows.length) return 'skipped (TOOL_INVENTORY already has ' + t.rows.length + ' rows)';
+  var cleared = PropertiesService.getScriptProperties().getProperty(PROP_TOOLS_SEEDED);
+  if (cleared) return 'skipped (the inventory was ' + cleared + '; the examples do not come back)';
   var ts = nowUtcIso_(), rows = SEED_TOOLS.map(function (s) {
     return { tool_id: s.tool_id, name: s.name, description: s.description || '', built_by: s.built_by || '', operator: s.operator || '', backup_operator: '',
       status: 'Unconfirmed', steps: '', expected_output: '', cadence: s.cadence || 'Not set', link: s.link || '', recommendation: 'Decide', handoff_date: '',

@@ -180,3 +180,18 @@ as(OWNER); try { ctx.archiveTestData(); } catch (e) {}
 for (const r of results) console.log(r[0].padEnd(5), r[1], r[2] ? '\n      ' + r[2] : '');
 console.log(`\n${results.filter(r => r[0] === 'PASS').length} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
+
+test('clear tools: preview writes nothing, clearing backs up first and stops the examples returning', () => {
+  as(OWNER); const before = ok(ctx.getTools()).tools.length; assert(before > 0, 'there are tools to clear');
+  const pv = ok(ctx.previewClearTools());
+  assert(pv.tools === before && ok(ctx.getTools()).tools.length === before, 'preview wrote nothing');
+  const done = ok(ctx.clearTools());
+  assert(done.tools === before && done.backup && done.backup.backup_id, 'a backup was taken first: ' + JSON.stringify(done.backup));
+  assert(ok(ctx.getTools()).tools.length === 0, 'inventory empty');
+  assert(ctx.readTable_('TOOL_TRAINING').rows.length === 0 && ctx.readTable_('TOOL_RUNS').rows.length === 0, 'training and runs cleared too');
+  assert(/do not come back/.test(ctx.seedTools_()), 'seeding stays off: ' + ctx.seedTools_());
+  assert(ok(ctx.getTools()).tools.length === 0, 'still empty after setupDatabase would re-seed');
+  const made = ok(ctx.createTool({ name: 'A real build', built_by: 'Seth' }));
+  assert(ok(ctx.getTools()).tools.length === 1 && made.name === 'A real build', 'real tools can be added after');
+  as('david.test@example.com'); bad(ctx.clearTools(), 'ACCESS_DENIED', 'a rep cannot wipe the inventory'); as(OWNER);
+});

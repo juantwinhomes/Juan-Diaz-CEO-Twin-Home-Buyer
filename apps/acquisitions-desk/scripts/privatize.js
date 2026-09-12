@@ -17,7 +17,7 @@ const PUBLIC = [
   'getSettings','saveSetting','getUsers','createUser','updateUser','disableUser',
   'createDatabaseBackup','getBackupLog','getAuditLog','getErrorLog','runDailyBackup',
   'setupDatabase','configureDatabase','setEnvironment','installTriggers','bootstrapAdmin','createTestData','archiveTestData',
-  'resetDevelopmentDatabase','dedupeDailyMetrics', 'previewWhiteboardUpdate', 'applyWhiteboardUpdate', 'previewTidyNotes', 'applyTidyNotes','runAllTests'
+  'resetDevelopmentDatabase','dedupeDailyMetrics', 'previewWhiteboardUpdate', 'applyWhiteboardUpdate', 'previewTidyNotes', 'applyTidyNotes', 'previewClearTools', 'clearTools','runAllTests'
 ];
 const files = fs.readdirSync(SRC).filter(f => f.endsWith('.gs')).map(f => path.join(SRC, f));
 const sources = Object.fromEntries(files.map(f => [f, fs.readFileSync(f, 'utf8')]));
