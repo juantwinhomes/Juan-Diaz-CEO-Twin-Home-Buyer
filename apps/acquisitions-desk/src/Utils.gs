@@ -135,6 +135,19 @@ function conflictError_(latest) { return new AppError_('CONFLICT_RECORD_CHANGED'
  * Wraps a server entry point: authenticates, runs fn(user), converts any exception into a standard failure
  * and writes unexpected errors to ERROR_LOG. Every client-callable function goes through this.
  */
+/**
+ * Prints the outcome of a maintenance run to the Execution log. Every public function returns failures as a value
+ * rather than throwing, so without this a run that could not start looks identical to one that did nothing.
+ */
+function logResult_(name, r) {
+  if (r && r.ok) { Logger.log(name + ' — ' + r.message + '\n' + JSON.stringify(r.data, null, 2)); return r; }
+  var code = (r && r.code) || 'UNKNOWN', msg = (r && r.message) || 'no result';
+  var hint = code === 'NOT_CONFIGURED' ? '\n\nRun setupDatabase once from the Setup file, then run this again.'
+    : code === 'ACCESS_DENIED' ? '\n\nThe signed-in account is not allowed to do this.' : '';
+  Logger.log('!! ' + name + ' did NOT run.\n' + code + ': ' + msg + hint);
+  return r;
+}
+
 function guarded_(fnName, fn, opts) {
   opts = opts || {};
   var user = null;

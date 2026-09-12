@@ -46,8 +46,8 @@ var WHITEBOARD_2026_09_12 = [
     note: 'Not on the desk before; added as a closed deal.' }
 ];
 
-function previewWhiteboardUpdate() { return runWhiteboardUpdate_(false); }
-function applyWhiteboardUpdate() { return runWhiteboardUpdate_(true); }
+function previewWhiteboardUpdate() { return logResult_('previewWhiteboardUpdate', runWhiteboardUpdate_(false)); }
+function applyWhiteboardUpdate() { return logResult_('applyWhiteboardUpdate', runWhiteboardUpdate_(true)); }
 
 function runWhiteboardUpdate_(write) {
   return guarded_('runWhiteboardUpdate', function (user) {
@@ -86,7 +86,6 @@ function runWhiteboardUpdate_(write) {
       report.rows.push(line);
     });
     if (write) audit_(user, 'LEAD', 'WHITEBOARD', 'WHITEBOARD_APPLIED', { rows: report.rows.length });
-    Logger.log(JSON.stringify(report, null, 2));
     return ok_(report, report.rows.length + ' rows ' + (write ? 'applied' : 'previewed'));
   }, { capability: 'view_leads' });
 }

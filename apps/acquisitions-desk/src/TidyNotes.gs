@@ -22,8 +22,8 @@ var NOTE_TAGS = [
   'transferred to airtable', 'do not automate', 'signing contact', 'co-trustee'
 ];
 
-function previewTidyNotes() { return runTidyNotes_(false); }
-function applyTidyNotes() { return runTidyNotes_(true); }
+function previewTidyNotes() { return logResult_('previewTidyNotes', runTidyNotes_(false)); }
+function applyTidyNotes() { return logResult_('applyTidyNotes', runTidyNotes_(true)); }
 
 function runTidyNotes_(write) {
   return guarded_('runTidyNotes', function (user) {
@@ -45,7 +45,6 @@ function runTidyNotes_(write) {
       report.rows.push(line);
     });
     if (write) audit_(user, 'LEAD', 'NOTES', 'NOTES_TIDIED', { changed: report.changed });
-    Logger.log(JSON.stringify(report, null, 2));
     return ok_(report, report.changed + ' propert' + (report.changed === 1 ? 'y' : 'ies') + ' ' + (write ? 'tidied' : 'would be tidied'));
   }, { capability: 'view_leads' });
 }

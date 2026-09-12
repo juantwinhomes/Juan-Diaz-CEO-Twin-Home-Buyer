@@ -298,6 +298,11 @@ New version `v1.5.0` → Deploy.
 
 **Seller email** is a proper field now, on the Work tab under Background.
 
+> **`setupDatabase` has to run before `applyTidyNotes`.** Without the new column the run stops, and because every
+> public function returns failures as a value rather than throwing, the editor still reports "Execution completed".
+> Since v1.5.1 the Execution log says `!! applyTidyNotes did NOT run` and names the fix, so an empty log means the
+> run really did nothing rather than silently failing.
+
 ### Taking the REI BlackBook tags out of the Background notes
 
 The properties imported from REI BlackBook carried their tag list in the Background note, which repeated the status

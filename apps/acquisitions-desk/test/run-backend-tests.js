@@ -51,6 +51,21 @@ test('team top-up: a re-run adds only missing people and never touches an existi
   const k = after.find(u => u.name === 'Kristine');
   assert(k.team === 'Finance' && k.role === 'MANAGER', "the admin's own edit survived the re-run");
 });
+test('maintenance runs say so in the log when they cannot start', () => {
+  as(OWNER); const sh = ctx._dbCache.ss.getSheetByName('LEADS');
+  const hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0], col = hdr.indexOf('seller_email') + 1;
+  const logged = []; const realLog = ctx.Logger.log; ctx.Logger.log = (...a) => logged.push(a.join(' '));
+  sh.getRange(1, col).setValue('');                       // the code is pushed but setupDatabase has not been run
+  ctx._dbCache.tables = {}; ctx._dbCache.headers = {}; ctx.cachedTableRemove_('USERS');
+  const bad = ctx.applyTidyNotes();
+  assert(bad.ok === false && bad.code === 'NOT_CONFIGURED', 'refused: ' + JSON.stringify(bad));
+  assert(/did NOT run/.test(logged.join('\n')) && /setupDatabase/.test(logged.join('\n')), 'the log says what to do: ' + logged.join(' | '));
+  sh.getRange(1, col).setValue('seller_email');
+  ctx._dbCache.tables = {}; ctx._dbCache.headers = {}; ctx.cachedTableRemove_('USERS');
+  logged.length = 0; const good = ctx.previewTidyNotes();
+  assert(good.ok && /previewTidyNotes/.test(logged.join('\n')), 'a run that works reports too: ' + logged.join(' | '));
+  ctx.Logger.log = realLog;
+});
 test('API surface: every global function is public-listed or private (ends with _)', () => {
   const fns = Object.keys(ctx).filter(k => typeof ctx[k] === 'function' && /^[a-zA-Z]/.test(k) && !['Date','Math','JSON','Object','Array','String','Number','Boolean','RegExp','Error','isFinite','isNaN','parseInt','parseFloat','encodeURIComponent','decodeURIComponent','AppError'].includes(k) && !k.endsWith('_'));
   const leaks = fns.filter(f => !PUBLIC.includes(f)); assert(!leaks.length, 'exposed: ' + leaks.join(','));
