@@ -117,8 +117,38 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     await A.waitForFunction(id => !document.querySelector(`#queue [data-qdone="${id}"]`), lead2Id);
     await A.click('#queueTabs [data-q=no_next_action]'); await A.waitForFunction(() => document.getElementById('queue').textContent.includes('820 28th St') && document.getElementById('queue').textContent.includes('No next action'));
   });
+  await test('a row claims revenue only when someone typed one, and the rep spread is on the card', async () => {
+    // its own page and its own property, so nothing here depends on where the other tests left the desk
+    freshRequest(SETH);
+    const made = ctx.addBulkLeads('9 Margin Row Oakland, R. Owner, 510-555-0909, PPC', { status: 'CLOSED' });
+    assert(made.ok && made.data.added === 1, 'fixture added: ' + made.message);
+    const fx = ctx.listLeads({ filter: 'closed', search: '9 Margin Row' }).data.items[0];
+    freshRequest(SETH);
+    const priced = ctx.updateLead(fx.lead_id, { arv: 1200000, asking_price: 850000, purchase_price: 350000, sale_price: 700000 }, fx.version);
+    assert(priced.ok, 'prices set: ' + JSON.stringify(priced).slice(0, 140));
+
+    const P = await open(SETH); await booted(P);
+    await P.click('#railNav [data-view="leads"]'); await P.waitForSelector('#view-leads:not([hidden])');
+    await P.click('#filterTabs [data-filter="closed"]');
+    await P.waitForFunction(id => !!document.getElementById('lead-' + id), fx.lead_id, { timeout: 15000 });
+    const before = (await P.locator('#lead-' + fx.lead_id).textContent()).toLowerCase();
+    assert(before.includes('bought') && before.includes('sold'), 'both prices on the row: ' + before);
+    assert(!before.includes('revenue'), 'nothing is called revenue until someone enters one: ' + before);
+
+    await P.click('#lead-' + fx.lead_id); await P.waitForSelector('#drawer:not([hidden])');
+    await P.click('#dtabs [data-t="uw"]');
+    await P.waitForFunction(() => document.getElementById('drBody').textContent.includes('possible spread'), null, { timeout: 15000 });
+    const card = (await P.textContent('#drBody')).replace(/,/g, '');
+    assert(card.includes('$350000'), 'ARV less the ask is 350,000: ' + card.slice(0, 200));
+
+    await P.fill('#drawer [data-set=revenue]', '230000'); await P.press('#drawer [data-set=revenue]', 'Tab');
+    await P.waitForFunction(() => document.getElementById('drStatus').textContent === 'Saved', null, { timeout: 15000 });
+    await P.keyboard.press('Escape');
+    await P.waitForFunction(id => { const r = document.getElementById('lead-' + id); return !!r && r.textContent.toLowerCase().includes('revenue'); }, fx.lead_id, { timeout: 15000 });
+    await P.context().close();
+  });
   await test('archive hides from live, shows in archived with history, restore returns it', async () => {
-    await tab(A, 'leads'); await openLead(A, lead2Id); A.dialogs.push('no equity after liens'); await A.selectOption('#drawer [data-set=status]', 'ARCHIVED_NO_EQUITY'); await drSaved(A); await A.keyboard.press('Escape');
+    await tab(A, 'leads'); await openLead(A, lead2Id, 'work'); A.dialogs.push('no equity after liens'); await A.selectOption('#drawer [data-set=status]', 'ARCHIVED_NO_EQUITY'); await drSaved(A); await A.keyboard.press('Escape');
     await setFilter(A, 'live'); await A.waitForFunction(id => !document.getElementById('lead-' + id), lead2Id);
     await setFilter(A, 'archived'); await boardHas(A, '820 28th St'); await openLead(A, lead2Id, 'hist'); const t = await A.textContent('#drBody'); assert(t.includes('Archived: no equity') && t.includes('Call county on liens'), 'history intact');
     await A.click('#dtabs [data-t=work]'); await A.click('#drawer [data-restore]'); await drSaved(A); await A.keyboard.press('Escape'); await setFilter(A, 'live'); await boardHas(A, '820 28th St');

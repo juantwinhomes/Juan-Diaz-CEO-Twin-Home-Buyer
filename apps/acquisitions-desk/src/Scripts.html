@@ -181,9 +181,11 @@
   /* The money column: what a closed deal made, what a contract costs, otherwise the acquisition maths. */
   function moneyCell(l){
     var bought=num(l.purchase_price),sold=num(l.sale_price),fix=num(l.repairs)||0,fee=num(l.assignment_fee);
-    var rev=num(l.revenue_shown);
-    if(l.exit_strategy===C.exit_assignment&&(rev!=null||bought!=null))
-      return '<div class="money">'+(bought!=null?fig(bought,'under contract'):'')+(rev!=null?fig(rev,'revenue',rev<0?'loss':'gain'):'')+'</div>';
+    /* Only a figure somebody entered is called revenue. A calculation is a projection and stays off the row. */
+    var rev=l.revenue_is_typed?num(l.revenue_shown):null;
+    if(l.exit_strategy===C.exit_assignment&&(rev!=null||fee!=null||bought!=null))
+      return '<div class="money">'+(bought!=null?fig(bought,'under contract'):'')
+        +(rev!=null?fig(rev,'revenue',rev<0?'loss':'gain'):fee!=null?fig(fee,'fee','gain'):'')+'</div>';
     if(l.status==='CLOSED'&&(bought!=null||sold!=null)){
       var out=[];
       if(bought!=null)out.push(fig(bought,'bought'));
@@ -240,7 +242,11 @@
     } else if(dtab==='uw'){
       var isAssign=l.exit_strategy===C.exit_assignment;
       var pricing=function(){
-      var pct=S.mao_percentage;html+='<div class="lbl" style="margin-bottom:8px">Proposed offer</div><div class="bigmao"><div><b>'+(l.mao!=null?money(l.mao):'\u2014')+'</b><span>max offer · '+esc(pct)+'% of ARV less repairs</span></div><div><b class="'+(l.offer_room==null?'':l.offer_room>=0?'ok':'alert')+'">'+(l.offer_room!=null?(l.offer_room<0?'\u2212':'')+money(Math.abs(l.offer_room)):'\u2014')+'</b><span>room against the ask</span></div></div>';
+      var pct=S.mao_percentage,ps=num(l.possible_spread);
+      html+='<div class="lbl" style="margin-bottom:8px">Proposed offer</div><div class="bigmao">'
+        +'<div><b class="'+(ps==null?'':ps>0?'ok':'alert')+'">'+(ps!=null?(ps<0?'\u2212':'')+money(Math.abs(ps)):'\u2014')+'</b><span>possible spread · ARV less the ask</span></div>'
+        +'<div><b>'+(l.mao!=null?money(l.mao):'\u2014')+'</b><span>max offer · '+esc(pct)+'% of ARV less repairs</span></div>'
+        +'<div><b class="'+(l.offer_room==null?'':l.offer_room>=0?'ok':'alert')+'">'+(l.offer_room!=null?(l.offer_room<0?'\u2212':'')+money(Math.abs(l.offer_room)):'\u2014')+'</b><span>room against the ask</span></div></div>';
       var money3=kv('After repair value $','<input type="number" min="0" data-set="arv" value="'+esc(l.arv)+'"'+uw+'>')+kv('Repairs $','<input type="number" min="0" data-set="repairs" value="'+esc(l.repairs)+'"'+uw+'>')+kv('Seller asking $','<input type="number" min="0" data-set="asking_price" value="'+esc(l.asking_price)+'"'+uw+'>')+kv('Our offer $','<input type="number" min="0" data-set="offer" value="'+esc(l.offer)+'"'+uw+'>')+kv(isAssign?'Contract price $':'Purchase price $','<input type="number" min="0" data-set="purchase_price" value="'+esc(l.purchase_price)+'"'+uw+'>');
       if(isAssign){
         var fee=num(l.assignment_fee);

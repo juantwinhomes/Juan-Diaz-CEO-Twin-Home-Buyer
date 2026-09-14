@@ -208,7 +208,8 @@
   .entry .who{font-weight:600;margin-right:6px}
   .entry .sys{color:var(--muted)}
   .compose{display:flex;gap:8px;position:sticky;bottom:0;background:var(--panel);padding-top:8px} .compose input{flex:1;height:38px;border:1px solid var(--line);background:var(--panel);padding:0 12px;color:var(--text)}
-  .bigmao{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .bigmao{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .bigmao.two{grid-template-columns:1fr 1fr}
   .bigmao div{padding:16px 0} .bigmao div+div{border-left:1px solid var(--line);padding-left:20px}
   .bigmao b{display:block;font-size:30px;font-weight:300;letter-spacing:-.02em;line-height:1} .bigmao span{display:block;margin-top:6px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
   .bigmao b.ok{color:var(--ok);font-weight:600} .bigmao b.alert{color:var(--alert-deep);font-weight:600}

@@ -415,6 +415,17 @@ Clear it and it goes back to following the prices.
 The line under the box says which you are looking at: *from the prices above*, or *typed in*. When a typed figure
 disagrees with the prices it also says what they work out to, so the two never quietly diverge.
 
+## Updating to v1.9.1 (possible spread, and revenue stops guessing)
+
+No database change: `git pull`, `clasp push --force`, then New version `v1.9.1` → Deploy.
+
+- **Possible spread** is a third tile at the top of Underwriting: **after repair value less the seller's asking
+  price**, the screen the reps are taught. With an ARV of 1,200,000 against an ask of 850,000 it reads $350,000.
+  It sits beside Max offer and Room against the ask, which answer the different question of what we can pay.
+- **A row only says Revenue when somebody entered one.** A closed property with prices but no typed revenue shows
+  what it cost and what it sold for, and nothing else. The calculation is still offered inside the property, as the
+  placeholder in the Revenue box, where it reads as a suggestion rather than money earned.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

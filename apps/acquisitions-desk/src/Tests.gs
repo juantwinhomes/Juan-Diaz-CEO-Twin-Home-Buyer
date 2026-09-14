@@ -172,6 +172,16 @@ function testSuite_() {
     var v = assertOk_(updateLead(w.lead_id, { exit_strategy: 'Wholesale - Double Close', purchase_price: 230000, sale_price: 250000 }, w.version));
     assert_(v.sale_price - v.purchase_price - (toNum_(v.repairs) || 0) === 20000, 'the whiteboard wholesale works out at 20,000');
   };
+  T['possible spread is the ARV less the ask, the way the reps are taught it'] = function () {
+    var l = assertOk_(createLead({ address: addr('11 Spread Ln') }));
+    var u = assertOk_(updateLead(l.lead_id, { arv: 1200000, asking_price: 850000 }, l.version));
+    assert_(u.possible_spread === 350000, 'her example comes out at 350,000, got ' + u.possible_spread);
+    assert_(u.mao === 840000 && u.offer_room === -10000, 'and the ask is still above max offer at 70%');
+    var r = assertOk_(updateLead(l.lead_id, { repairs: 100000 }, u.version));
+    assert_(r.possible_spread === 350000 && r.mao === 740000, 'repairs move max offer, not the spread');
+    var none = assertOk_(createLead({ address: addr('12 Spread Ln') }));
+    assert_(none.possible_spread === null, 'no ARV and no ask, no spread');
+  };
   T['revenue: typed in it stands, cleared it goes back to the prices'] = function () {
     var l = assertOk_(createLead({ address: addr('10 Revenue Ct') }));
     var u = assertOk_(updateLead(l.lead_id, { purchase_price: 350000, sale_price: 700000 }, l.version));

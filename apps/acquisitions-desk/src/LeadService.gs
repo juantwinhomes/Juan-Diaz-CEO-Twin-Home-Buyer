@@ -17,6 +17,7 @@ function enrichLead_(l, ctx) {
   var arv = toNum_(o.arv), rep = toNum_(o.repairs) || 0, ask = toNum_(o.asking_price);
   o.mao = arv ? Math.round(arv * ctx.maoPct / 100 - rep) : null;
   o.offer_room = (o.mao != null && ask != null) ? o.mao - ask : null;
+  o.possible_spread = (arv != null && ask != null) ? arv - ask : null; // ARV less the ask, before repairs
   /* Revenue is worked out from the prices, unless someone has typed one in; then theirs stands. */
   var sale = toNum_(o.sale_price), buy = toNum_(o.purchase_price), fee = toNum_(o.assignment_fee), typed = toNum_(o.revenue);
   o.revenue_calculated = toStr_(o.exit_strategy) === EXIT_ASSIGNMENT ? fee : ((sale != null && buy != null) ? sale - buy - rep : null);
