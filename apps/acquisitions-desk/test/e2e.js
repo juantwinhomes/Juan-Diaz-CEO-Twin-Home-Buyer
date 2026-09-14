@@ -97,6 +97,10 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     await A.waitForFunction(() => document.getElementById('drBody').textContent.includes('There is a sale price on an assignment'));
     assert((await A.textContent('#drBody')).includes('Contract price'), 'purchase price is called the contract price');
     assert((await A.textContent('#drBody')).includes('Revenue'), 'the end figure is called Revenue on an assignment too');
+    await A.fill('#drawer [data-set=revenue]', '42000'); await A.press('#drawer [data-set=revenue]', 'Tab'); await drSaved(A);
+    await A.waitForFunction(() => document.getElementById('drBody').textContent.includes('typed in'), null, { timeout: 10000 });
+    await A.fill('#drawer [data-set=revenue]', ''); await A.press('#drawer [data-set=revenue]', 'Tab'); await drSaved(A);
+    await A.waitForFunction(() => /from the prices above|add the prices/.test(document.getElementById('drBody').textContent), null, { timeout: 10000 });
   });
   await test('compliance: mailer/check → both flags, visible warning, Waiting on Juan, lead kept', async () => {
     await A.click('#dtabs [data-t=work]'); A.dialogs.push(true); await A.click('#drawer [data-comply="1"]'); await drSaved(A);

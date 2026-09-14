@@ -172,6 +172,18 @@ function testSuite_() {
     var v = assertOk_(updateLead(w.lead_id, { exit_strategy: 'Wholesale - Double Close', purchase_price: 230000, sale_price: 250000 }, w.version));
     assert_(v.sale_price - v.purchase_price - (toNum_(v.repairs) || 0) === 20000, 'the whiteboard wholesale works out at 20,000');
   };
+  T['revenue: typed in it stands, cleared it goes back to the prices'] = function () {
+    var l = assertOk_(createLead({ address: addr('10 Revenue Ct') }));
+    var u = assertOk_(updateLead(l.lead_id, { purchase_price: 350000, sale_price: 700000 }, l.version));
+    assert_(u.revenue_calculated === 350000 && u.revenue_shown === 350000 && u.revenue_is_typed === false, 'from the prices');
+    var t = assertOk_(updateLead(l.lead_id, { revenue: 230000 }, u.version));
+    assert_(t.revenue_shown === 230000 && t.revenue_is_typed === true && t.revenue_calculated === 350000, 'a typed figure wins and the calculation is still there');
+    var r = assertOk_(updateLead(l.lead_id, { repairs: 120000 }, t.version));
+    assert_(r.revenue_shown === 230000 && r.revenue_calculated === 230000, 'changing repairs moves the calculation, not the typed figure');
+    var c = assertOk_(updateLead(l.lead_id, { revenue: '' }, r.version));
+    assert_(c.revenue_is_typed === false && c.revenue_shown === 230000, 'clearing it goes back to the prices');
+    assertFail_(updateLead(l.lead_id, { revenue: 'lots' }, c.version), 'VALIDATION_ERROR');
+  };
   T['wholesale: an assignment carries a fee, a double close carries both prices'] = function () {
     var a = assertOk_(createLead({ address: addr('5 Assign Way') }));
     var u = assertOk_(updateLead(a.lead_id, { exit_strategy: 'Wholesale - Assignment', purchase_price: 270000, assignment_fee: 85000 }, a.version));

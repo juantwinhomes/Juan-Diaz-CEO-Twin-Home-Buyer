@@ -399,6 +399,22 @@ whiteboard. On an assignment it is the fee. A negative figure still shows in ora
 
 It does not include commission, closing costs or holding costs, so it is a gross figure rather than what is banked.
 
+## Updating to v1.9.0 (Revenue can be typed in)
+
+```powershell
+git pull
+npx.cmd @google/clasp@3 push --force
+```
+
+Run **`setupDatabase`** once (it appends `revenue` to LEADS), then New version `v1.9.0` → Deploy.
+
+**Revenue is now a field you can type into.** Leave it blank and it works itself out from the prices, as before:
+sale less purchase less repairs, or the fee on an assignment. Type a figure and yours stands, whatever the prices do.
+Clear it and it goes back to following the prices.
+
+The line under the box says which you are looking at: *from the prices above*, or *typed in*. When a typed figure
+disagrees with the prices it also says what they work out to, so the two never quietly diverge.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

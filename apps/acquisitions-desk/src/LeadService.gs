@@ -17,6 +17,11 @@ function enrichLead_(l, ctx) {
   var arv = toNum_(o.arv), rep = toNum_(o.repairs) || 0, ask = toNum_(o.asking_price);
   o.mao = arv ? Math.round(arv * ctx.maoPct / 100 - rep) : null;
   o.offer_room = (o.mao != null && ask != null) ? o.mao - ask : null;
+  /* Revenue is worked out from the prices, unless someone has typed one in; then theirs stands. */
+  var sale = toNum_(o.sale_price), buy = toNum_(o.purchase_price), fee = toNum_(o.assignment_fee), typed = toNum_(o.revenue);
+  o.revenue_calculated = toStr_(o.exit_strategy) === EXIT_ASSIGNMENT ? fee : ((sale != null && buy != null) ? sale - buy - rep : null);
+  o.revenue_shown = typed != null ? typed : o.revenue_calculated;
+  o.revenue_is_typed = typed != null;
   o.due_state = !o.is_live ? '' : !o.next_action ? 'NO_NEXT_ACTION' : !o.due_date ? 'NO_DUE_DATE' :
     (o.due_date < ctx.today ? 'OVERDUE' : o.due_date === ctx.today ? 'DUE_TODAY' : 'UPCOMING');
   return o;
@@ -108,7 +113,7 @@ function newLeadRecord_(user, d, existsFn) {
     equity_note: d.equity_note, status: LEAD_STATUS.NEW, assigned_to: d.assigned_to || '', team: d.team || '',
     flag_juan: false, compliance_mailer_check: false, contact_attempts: 0, next_action: d.next_action || '', due_date: d.due_date || '',
     arv: '', repairs: '', asking_price: '', offer: '', appointment_date: '', appointment_outcome: '', archive_reason: '',
-    exit_strategy: '', disposition: '', purchase_price: '', closing_date: '', sale_price: '', seller_email: '', assignment_fee: '',
+    exit_strategy: '', disposition: '', purchase_price: '', closing_date: '', sale_price: '', seller_email: '', assignment_fee: '', revenue: '',
     created_by: user.user_id, created_at: ts, updated_by: user.user_id, updated_at: ts, last_touched_at: ts, version: 1
   };
 }
@@ -241,7 +246,7 @@ function updateLead(leadId, patch, expectedVersion) {
     var rejected = Object.keys(patch).filter(function (k) { return LEAD_PATCHABLE.indexOf(k) < 0; });
     if (rejected.length) throw validationError_('These fields cannot be changed here: ' + rejected.join(', '));
     if (!fields.length) throw validationError_('Nothing to update.');
-    var uw = ['arv', 'repairs', 'asking_price', 'offer', 'purchase_price', 'sale_price', 'assignment_fee'];
+    var uw = ['arv', 'repairs', 'asking_price', 'offer', 'purchase_price', 'sale_price', 'assignment_fee', 'revenue'];
     if (fields.some(function (f) { return uw.indexOf(f) > -1; })) requireCapability_(user, 'underwrite');
     if (fields.indexOf('appointment_date') > -1 || fields.indexOf('appointment_outcome') > -1) {
       // Appointment fields go through the appointment service so history is kept.
