@@ -426,6 +426,20 @@ No database change: `git pull`, `clasp push --force`, then New version `v1.9.1` 
   what it cost and what it sold for, and nothing else. The calculation is still offered inside the property, as the
   placeholder in the Revenue box, where it reads as a suggestion rather than money earned.
 
+## Updating to v1.9.2 (cancelled contract)
+
+No database change: `git pull`, `clasp push --force`, then New version `v1.9.2` → Deploy.
+
+**Archived: contract cancelled** joins sold, no equity, not interested and bad data as an archive outcome. Set it
+from the Status dropdown on a property, the same way as the others, and type what happened when it asks for a reason.
+
+It lands on the **Archived** tab, not Closed, because a cancelled contract is not a deal we did. It is counted by
+name in Dashboards → Pipeline → Archived by reason, so you can see how many contracts are falling apart and why.
+If the seller comes back, restore it to Under contract and carry on.
+
+This is separate from **contracts fell out** on the day log, which is the manual count Kristine enters. This one is
+the property-by-property record of which contract died and what killed it.
+
 ## Roles
 
 | | ADMIN | MANAGER | REP | TECHNICAL |

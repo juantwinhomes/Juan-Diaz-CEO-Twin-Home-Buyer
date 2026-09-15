@@ -383,7 +383,7 @@ function setComplianceFlag(leadId, flagged, note) {
 function archiveLead(leadId, archiveStatus, reason, expectedVersion) {
   return guarded_('archiveLead', function (user) {
     var st = toStr_(archiveStatus).toUpperCase();
-    if (ARCHIVED_STATUSES.indexOf(st) < 0) throw validationError_('Pick an archive reason: sold, no equity, not interested or bad data.');
+    if (ARCHIVED_STATUSES.indexOf(st) < 0) throw validationError_('Pick an archive reason: contract cancelled, sold, no equity, not interested or bad data.');
     var out = mutateLead_(user, leadId, expectedVersion, function (lead, acts) {
       acts.push(buildActivity_(user, leadId, ACTION.ARCHIVED, 'status', lead.status, st, trimStr_(reason)));
       lead.status = st; lead.archive_reason = trimStr_(reason) || STATUS_LABELS[st]; return true;

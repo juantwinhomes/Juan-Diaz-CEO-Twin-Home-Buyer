@@ -194,6 +194,26 @@ function testSuite_() {
     assert_(c.revenue_is_typed === false && c.revenue_shown === 230000, 'clearing it goes back to the prices');
     assertFail_(updateLead(l.lead_id, { revenue: 'lots' }, c.version), 'VALIDATION_ERROR');
   };
+  T['a contract that cancels is archived as its own outcome, and the reason shows on the dashboard'] = function () {
+    var l = assertOk_(createLead({ address: addr('13 Cancelled Way') }));
+    var uc = assertOk_(updateLead(l.lead_id, { status: 'UNDER_CONTRACT' }, l.version));
+    var x = assertOk_(archiveLead(uc.lead_id, 'ARCHIVED_CONTRACT_CANCELLED', 'buyer walked at inspection', uc.version));
+    assert_(x.status === 'ARCHIVED_CONTRACT_CANCELLED' && x.is_live === false, 'archived as cancelled');
+    assert_(x.status_label === 'Archived: contract cancelled', 'label reads as an outcome');
+    assert_(x.archive_reason === 'buyer walked at inspection', 'the note someone typed is kept: ' + x.archive_reason);
+    var bare = assertOk_(createLead({ address: addr('14 Cancelled Way') }));
+    var b2 = assertOk_(archiveLead(bare.lead_id, 'ARCHIVED_CONTRACT_CANCELLED', '', bare.version));
+    assert_(b2.archive_reason === 'Archived: contract cancelled', 'with no note it falls back to the label: ' + b2.archive_reason);
+    var arch = assertOk_(listLeads({ filter: 'archived', search: addr('13 Cancelled Way') }));
+    assert_(arch.items.length === 1, 'on the archived tab, not the closed tab');
+    var closed = assertOk_(listLeads({ filter: 'closed', search: addr('13 Cancelled Way') }));
+    assert_(closed.items.length === 0, 'a cancelled contract is not a closed deal');
+    var reasons = assertOk_(getDashboards({ from: shiftDateString_(todayBusinessDate_(), -30), to: todayBusinessDate_() })).pipeline.archive_reasons;
+    var row = reasons.filter(function (r) { return r.key === 'ARCHIVED_CONTRACT_CANCELLED'; })[0];
+    assert_(row && row.label === 'contract cancelled' && row.count >= 1, 'counted on the pipeline dashboard: ' + JSON.stringify(row));
+    var back = assertOk_(restoreLead(x.lead_id, 'UNDER_CONTRACT', x.version));
+    assert_(back.status === 'UNDER_CONTRACT' && back.is_live === true, 'a cancelled deal can be revived if the seller comes back');
+  };
   T['wholesale: an assignment carries a fee, a double close carries both prices'] = function () {
     var a = assertOk_(createLead({ address: addr('5 Assign Way') }));
     var u = assertOk_(updateLead(a.lead_id, { exit_strategy: 'Wholesale - Assignment', purchase_price: 270000, assignment_fee: 85000 }, a.version));
