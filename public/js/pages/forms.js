@@ -54,9 +54,22 @@ export function commitmentForm(values = {}) {
 }
 
 /* ------------------------------------------------------------ Progress */
-export function progressForm(values = {}) {
+export async function progressForm(values = {}) {
   const project = state.projects.find((p) => p.id === Number(values.project_id));
   const e = state.enums;
+
+  // The milestone framework already carries the percentage for each stage, so
+  // picking the stage you reached sets the number for you. Typing a figure by
+  // hand still works when the move does not line up with a milestone.
+  let milestones = [];
+  if (values.project_id) {
+    try { milestones = await api.get('/milestones', { project_id: values.project_id }); } catch { /* fall back to manual */ }
+  }
+  const milestoneOptions = milestones.map((m) => ({
+    value: m.id,
+    label: `${m.name} — ${m.target_pct}%${m.completed ? ' (already reached)' : ''}`
+  }));
+
   U.openForm({
     title: values.id ? 'Edit progress entry' : `Log progress${project ? ` — ${project.name}` : ''}`,
     subtitle: 'What measurably changed today?',
@@ -67,6 +80,11 @@ export function progressForm(values = {}) {
     fields: [
       { name: 'completed_text', label: 'What was completed', type: 'textarea', required: true, rows: 3,
         quality: 'progress', placeholder: 'e.g. Passed 18 of 20 transfer test cases and fixed the after-hours route' },
+      ...(milestoneOptions.length ? [{
+        name: 'milestone_id', label: 'Milestone reached', type: 'select', options: milestoneOptions,
+        placeholder: 'None — I will set the % myself',
+        help: 'Choosing one fills in the completion % below and ticks the milestone off'
+      }] : []),
       { name: 'new_pct', label: 'New completion %', type: 'number', min: 0, max: 100, step: 1, half: true,
         help: project ? `Currently ${project.completion_pct}%` : '' },
       { name: 'status', label: 'Project status', type: 'select', options: e.project_statuses, half: true,
@@ -87,6 +105,18 @@ export function progressForm(values = {}) {
       ...values
     },
     submitLabel: values.id ? 'Save changes' : 'Log progress',
+    onReady(form) {
+      const picker = form.elements.milestone_id;
+      const pct = form.elements.new_pct;
+      if (!picker || !pct) return;
+      const hint = pct.parentElement.querySelector('.hint');
+      picker.addEventListener('change', () => {
+        const chosen = milestones.find((m) => String(m.id) === picker.value);
+        if (!chosen) return;
+        pct.value = chosen.target_pct;
+        if (hint) hint.textContent = `Set to ${chosen.target_pct}% by "${chosen.name}" — change it if the real figure differs`;
+      });
+    },
     async onSubmit(data, close) {
       const result = values.id
         ? await api.patch(`/progress/${values.id}`, data)

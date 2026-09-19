@@ -217,7 +217,7 @@ export function closeModal() {
  * Field: { name, label, type, options, required, help, placeholder,
  *          full, quality: 'commitment'|'progress', min, max, step, rows }
  */
-export function openForm({ title, subtitle, fields, values = {}, submitLabel = 'Save', wide = false, note = '', onSubmit }) {
+export function openForm({ title, subtitle, fields, values = {}, submitLabel = 'Save', wide = false, note = '', onSubmit, onReady }) {
   const body = `<form id="entityForm" novalidate>${note}${renderFields(fields, values)}</form>`;
   const footer = `
     <span class="spacer"></span>
@@ -227,6 +227,7 @@ export function openForm({ title, subtitle, fields, values = {}, submitLabel = '
   return openModal({ title, subtitle, body, footer, wide, onMount(modal, close) {
     const form = modal.querySelector('#entityForm');
     wireQuality(form, fields);
+    if (onReady) onReady(form, modal);
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = modal.querySelector('#formSubmit');

@@ -236,6 +236,12 @@ async function syncMilestones(projectId, pct, date) {
   }
 }
 
+GET('/api/milestones', async (_p, q) => {
+  if (!q.project_id) bad('project_id is required');
+  return all('SELECT * FROM project_milestones WHERE project_id = ? ORDER BY sort_order, target_pct',
+             q.project_id);
+});
+
 PATCH('/api/milestones/:id', async (p, _q, body) => {
   const m = await get('SELECT * FROM project_milestones WHERE id = ?', p.id) || notFound('Milestone not found');
   if ('completed' in body) {
