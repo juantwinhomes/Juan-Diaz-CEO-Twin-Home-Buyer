@@ -46,11 +46,17 @@ async function connect() {
     // COUNT and percentage comparison in the KPI code.
     pg.types.setTypeParser(20, (v) => (v === null ? null : Number(v)));
     pg.types.setTypeParser(1700, (v) => (v === null ? null : Number(v)));
+    // Serverless runs many short-lived instances, each with its own pool, so a
+    // large pool per instance is how you exhaust the database's connection
+    // limit. One connection per instance, and let the provider's pooler fan out.
+    const serverless = Boolean(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME
+      || process.env.VERCEL || process.env.FUNCTIONS_WORKER_RUNTIME);
     const pool = new pg.Pool({
       connectionString: DATABASE_URL,
       ssl: DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
-      max: 5,
-      idleTimeoutMillis: 30_000
+      max: serverless ? 1 : 5,
+      idleTimeoutMillis: serverless ? 10_000 : 30_000,
+      connectionTimeoutMillis: 10_000
     });
     client = {
       query: (text, params) => pool.query(text, params),

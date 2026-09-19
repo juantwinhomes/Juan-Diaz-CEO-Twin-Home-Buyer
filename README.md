@@ -52,8 +52,13 @@ To start empty, use **Settings → Remove data → Everything**, or delete `data
 
 Running locally puts the database on one machine. To have the team working against the
 same data, deploy it. **[deploy/DEPLOY.md](deploy/DEPLOY.md) is a step-by-step guide**
-written for someone who has never deployed anything: Supabase for the database and Render
-for the app, neither of which asks for a credit card.
+written for someone who has never deployed anything: Supabase for the database and
+Netlify for the app, neither of which asks for a credit card.
+
+The request handling lives in `server/handler.js`, which takes a plain request and
+returns a plain response. `server/index.js` wraps it in a Node server for local use,
+Docker and any VM; `netlify/functions/api.js` wraps the same module for Netlify's
+serverless runtime. One set of routing, auth and KPI logic behind both.
 
 ### Environment variables
 
@@ -217,7 +222,8 @@ one day old on Monday, not three.
 
 ```
 server/
-  index.js          HTTP server (node:http) + static file serving
+  handler.js        Transport-agnostic request handling (routing, auth, static)
+  index.js          Node server wrapper for local, Docker and VM use
   api.js            REST API — every entity supports create, update and delete
   db.js             Postgres access, settings, insert/update/remove helpers
   schema.sql        13 relational tables
@@ -229,6 +235,8 @@ server/
     reports.js      The seven report builders
     dates.js        Business-day arithmetic
     enums.js        Every dropdown, shared by the API and the UI
+netlify/
+  functions/api.js  Netlify serverless wrapper around the same handler
 public/
   index.html        App shell
   css/app.css       Design system

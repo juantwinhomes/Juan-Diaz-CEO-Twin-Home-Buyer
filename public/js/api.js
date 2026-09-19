@@ -9,6 +9,12 @@ async function request(method, path, { params, body } = {}) {
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined
   });
+  if (res.status === 401 && !location.pathname.startsWith('/login')) {
+    // The session has expired, or the password gate is on and nobody has signed
+    // in yet. The login page lives behind the same gate, so go there.
+    location.href = '/login';
+    return null;
+  }
   const text = await res.text();
   let payload = null;
   try { payload = text ? JSON.parse(text) : null; } catch { payload = { error: text }; }

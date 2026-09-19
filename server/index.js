@@ -1,109 +1,42 @@
+/** Long-running Node server: local development, Docker, a VM, Render. */
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
-import { join, extname, normalize } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { dirname } from 'node:path';
-import { match, HttpError } from './api.js';
+import { handleRequest } from './handler.js';
+import { authEnabled } from './auth.js';
 import { init } from './db.js';
-import { authEnabled, isAuthed, login, logout, LOGIN_PAGE } from './auth.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PUBLIC_DIR = join(__dirname, '..', 'public');
 const PORT = Number(process.env.PORT) || 4000;
 const HOST = process.env.HOST || '0.0.0.0';
 
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2'
-};
-
-const json = (res, status, payload) => {
-  const body = JSON.stringify(payload ?? null);
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body) });
-  res.end(body);
-};
-
 async function readBody(req) {
-  if (req.method === 'GET' || req.method === 'HEAD') return {};
+  if (req.method === 'GET' || req.method === 'HEAD') return '';
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > 2 * 1024 * 1024) throw new HttpError(413, 'Request body too large');
+    if (size > 2 * 1024 * 1024) throw new Error('Request body too large');
     chunks.push(chunk);
   }
-  if (!chunks.length) return {};
-  try {
-    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
-  } catch {
-    throw new HttpError(400, 'Invalid JSON body');
-  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 const server = createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const pathname = decodeURIComponent(url.pathname);
-
-  // ---- Password gate (only active when APP_PASSWORD is set) ----------------
-  if (pathname === '/api/login' && req.method === 'POST') {
-    const body = await readBody(req).catch(() => ({}));
-    return login(req, res, body.password);
-  }
-  if (pathname === '/api/logout' && req.method === 'POST') return logout(req, res);
-
-  if (authEnabled() && !isAuthed(req)) {
-    if (pathname.startsWith('/api/')) return json(res, 401, { error: 'Not signed in' });
-    res.writeHead(pathname === '/login' ? 200 : 401, { 'Content-Type': 'text/html; charset=utf-8' });
-    return res.end(LOGIN_PAGE);
-  }
-  if (pathname === '/login') {
-    res.writeHead(302, { Location: '/' });
-    return res.end();
-  }
-
-  if (pathname.startsWith('/api/')) {
-    try {
-      const hit = match(req.method, pathname);
-      if (!hit) return json(res, 404, { error: `No route for ${req.method} ${pathname}` });
-      const query = Object.fromEntries(url.searchParams.entries());
-      const body = await readBody(req);
-      const result = await hit.handler(hit.params, query, body);
-      return json(res, req.method === 'POST' ? 201 : 200, result);
-    } catch (err) {
-      const status = err instanceof HttpError ? err.status : 500;
-      if (status === 500) console.error(`[api] ${req.method} ${pathname}:`, err);
-      return json(res, status, { error: err.message || 'Server error' });
-    }
-  }
-
-  // Static files; unknown paths fall back to the SPA shell.
   try {
-    let rel = pathname === '/' ? '/index.html' : pathname;
-    let file = join(PUBLIC_DIR, normalize(rel).replace(/^(\.\.[/\\])+/, ''));
-    if (!file.startsWith(PUBLIC_DIR)) throw new Error('Forbidden');
-    try {
-      const info = await stat(file);
-      if (info.isDirectory()) file = join(file, 'index.html');
-    } catch {
-      if (extname(file)) throw new Error('Not found');
-      file = join(PUBLIC_DIR, 'index.html');
-    }
-    const data = await readFile(file);
-    res.writeHead(200, {
-      'Content-Type': MIME[extname(file)] || 'application/octet-stream',
-      'Cache-Control': 'no-cache'
+    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const result = await handleRequest({
+      method: req.method,
+      path: decodeURIComponent(url.pathname),
+      query: Object.fromEntries(url.searchParams.entries()),
+      headers: req.headers,
+      body: await readBody(req),
+      ip: (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown',
+      secure: (req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https'
     });
-    res.end(data);
-  } catch {
-    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('Not found');
+    res.writeHead(result.status, result.headers);
+    res.end(result.body);
+  } catch (err) {
+    console.error('[server]', err);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Server error' }));
   }
 });
 

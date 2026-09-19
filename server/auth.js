@@ -43,13 +43,13 @@ function validToken(token) {
   return safeEqual(signature, sign(expires));
 }
 
-const readCookie = (req, name) =>
-  (req.headers.cookie || '')
+const readCookie = (headers, name) =>
+  String(headers.cookie || headers.Cookie || '')
     .split(';')
     .map((c) => c.trim().split('='))
     .find(([k]) => k === name)?.[1];
 
-export const isAuthed = (req) => !authEnabled() || validToken(readCookie(req, COOKIE));
+export const isAuthed = (headers = {}) => !authEnabled() || validToken(readCookie(headers, COOKIE));
 
 /* Modest brute-force protection: 10 wrong guesses per IP per 15 minutes. */
 const attempts = new Map();
@@ -71,36 +71,34 @@ function recordFailure(ip) {
   if (attempts.size > 5000) attempts.clear();
 }
 
-const clientIp = (req) =>
-  (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+const JSON_TYPE = { 'Content-Type': 'application/json; charset=utf-8' };
 
-const isHttps = (req) => (req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
-
-export function login(req, res, password) {
-  const ip = clientIp(req);
+export function login({ ip = 'unknown', secure = false } = {}, password) {
   if (rateLimited(ip)) {
-    res.writeHead(429, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ error: 'Too many attempts. Wait 15 minutes and try again.' }));
+    return { status: 429, headers: JSON_TYPE,
+      body: JSON.stringify({ error: 'Too many attempts. Wait 15 minutes and try again.' }) };
   }
   if (!password || !safeEqual(password, PASSWORD)) {
     recordFailure(ip);
-    res.writeHead(401, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ error: 'Wrong password.' }));
+    return { status: 401, headers: JSON_TYPE, body: JSON.stringify({ error: 'Wrong password.' }) };
   }
   attempts.delete(ip);
-  res.writeHead(200, {
-    'Content-Type': 'application/json',
-    'Set-Cookie': `${COOKIE}=${makeToken()}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${MAX_AGE_DAYS * 86400}${isHttps(req) ? '; Secure' : ''}`
-  });
-  res.end(JSON.stringify({ ok: true }));
+  return {
+    status: 200,
+    headers: {
+      ...JSON_TYPE,
+      'Set-Cookie': `${COOKIE}=${makeToken()}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${MAX_AGE_DAYS * 86400}${secure ? '; Secure' : ''}`
+    },
+    body: JSON.stringify({ ok: true })
+  };
 }
 
-export function logout(req, res) {
-  res.writeHead(200, {
-    'Content-Type': 'application/json',
-    'Set-Cookie': `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`
-  });
-  res.end(JSON.stringify({ ok: true }));
+export function logout() {
+  return {
+    status: 200,
+    headers: { ...JSON_TYPE, 'Set-Cookie': `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0` },
+    body: JSON.stringify({ ok: true })
+  };
 }
 
 export const LOGIN_PAGE = `<!doctype html>

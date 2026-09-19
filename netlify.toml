@@ -1,0 +1,25 @@
+# Netlify deployment.
+#
+# The CDN serves the dashboard's static files, and a serverless function
+# handles /api/* and the login page. Functions wake in about a second, so
+# there is no 30-60 second cold start to sit through.
+#
+# Set these in Netlify under Site configuration -> Environment variables:
+#   DATABASE_URL    Supabase connection string (use the transaction pooler)
+#   APP_PASSWORD    the shared password your team signs in with
+#   SESSION_SECRET  any long random string
+
+[build]
+  publish = "public"
+  command = "npm install"
+
+[functions]
+  node_bundler = "esbuild"
+  # pg ships optional native extras that esbuild should leave alone.
+  external_node_modules = ["pg", "pg-native"]
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"
