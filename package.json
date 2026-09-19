@@ -13,7 +13,8 @@
     "seed": "node server/seed.js",
     "reset": "node server/seed.js --reset",
     "export": "node server/export.js",
-    "check:bundle": "node scripts/check-bundle.mjs"
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "check:queries": "node scripts/check-queries.mjs"
   },
   "keywords": [
     "kpi",

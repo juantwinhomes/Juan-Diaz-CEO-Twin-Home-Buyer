@@ -59,7 +59,7 @@ async function connect() {
     const pool = new pg.Pool({
       connectionString: DATABASE_URL,
       ssl: DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
-      max: serverless ? 1 : 5,
+      max: serverless ? 3 : 5,
       idleTimeoutMillis: serverless ? 10_000 : 30_000,
       connectionTimeoutMillis: 10_000
     });

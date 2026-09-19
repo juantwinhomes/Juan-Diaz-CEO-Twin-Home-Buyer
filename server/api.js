@@ -124,7 +124,10 @@ GET('/api/projects', async (_p, q) => {
       ORDER BY CASE p.priority WHEN 'P1' THEN 1 WHEN 'P2' THEN 2 WHEN 'P3' THEN 3 ELSE 4 END, p.name`,
     ...args
   );
-  const rows = await Promise.all(found.map((p) => K.projectDay(p, date)));
+  // Load the day's data once and share it. Calling projectDay without a context
+  // makes every project fetch its own, which is a few hundred round-trips here.
+  const ctx = await K.loadDayContext(date);
+  const rows = await Promise.all(found.map((p) => K.projectDay(p, date, ctx)));
 
   if (q.blocked === '1') return rows.filter((r) => r.blockers.length);
   if (q.blocked === '0') return rows.filter((r) => !r.blockers.length);

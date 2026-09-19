@@ -181,7 +181,7 @@ export async function weeklyTeamReport(date) {
 
 /* ---------------------------------------------------------------- */
 export async function projectStatusReport(date) {
-  const projects = await Promise.all((await K.activeProjects()).map((p) => K.projectDay(p, date)));
+  const projects = await K.activeProjectsWithDay(date);
   const sections = [{
     heading: 'ACTIVE PROJECTS',
     rows: projects.map((p) => [
