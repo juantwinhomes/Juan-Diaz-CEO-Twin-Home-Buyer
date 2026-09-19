@@ -1,0 +1,661 @@
+/**
+ * KPI engine. Every number shown on the dashboard is computed here so the
+ * math stays in one place and every score can be explained line by line.
+ */
+import { all, get, run, getSettings } from '../db.js';
+import * as D from './dates.js';
+
+export const ACTIVE_STATUSES = [
+  'Requirements', 'Building', 'Internal Testing', 'User Testing',
+  'Ready for Deployment', 'Production', 'Monitoring', 'Blocked'
+];
+const ACTIVE_IN = ACTIVE_STATUSES.map(() => '?').join(', ');
+
+export const SEVERITY_WEIGHT = { Critical: 15, High: 7, Medium: 3, Low: 1 };
+export const SYSTEM_STATUS_WEIGHT = { Down: 10, Degraded: 5, Warning: 2, Healthy: 0 };
+
+/* ------------------------------------------------------------------ */
+/* Snapshots                                                           */
+/* ------------------------------------------------------------------ */
+
+/** Record a project's completion % for a day (idempotent per project/day). */
+export function ensureSnapshot(projectId, date, pct, status) {
+  run(
+    `INSERT INTO project_snapshots (project_id, snapshot_date, completion_pct, status)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(project_id, snapshot_date)
+     DO UPDATE SET completion_pct = excluded.completion_pct, status = excluded.status`,
+    projectId, date, Number(pct) || 0, status || null
+  );
+}
+
+export function previousPct(projectId, date) {
+  const row = get(
+    `SELECT completion_pct FROM project_snapshots
+      WHERE project_id = ? AND snapshot_date < ?
+      ORDER BY snapshot_date DESC LIMIT 1`,
+    projectId, date
+  );
+  return row ? Number(row.completion_pct) : 0;
+}
+
+export function pctOn(projectId, date, fallback = 0) {
+  const exact = get(
+    'SELECT completion_pct FROM project_snapshots WHERE project_id = ? AND snapshot_date = ?',
+    projectId, date
+  );
+  if (exact) return Number(exact.completion_pct);
+  const before = get(
+    `SELECT completion_pct FROM project_snapshots
+      WHERE project_id = ? AND snapshot_date < ?
+      ORDER BY snapshot_date DESC LIMIT 1`,
+    projectId, date
+  );
+  return before ? Number(before.completion_pct) : Number(fallback) || 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Projects                                                            */
+/* ------------------------------------------------------------------ */
+
+export const activeProjects = () =>
+  all(
+    `SELECT p.*, o.name AS owner_name, o.color AS owner_color, s.name AS secondary_name
+       FROM projects p
+       LEFT JOIN users o ON o.id = p.owner_id
+       LEFT JOIN users s ON s.id = p.secondary_owner_id
+      WHERE p.archived = 0 AND p.status IN (${ACTIVE_IN})
+      ORDER BY CASE p.priority WHEN 'P1' THEN 1 WHEN 'P2' THEN 2 WHEN 'P3' THEN 3 ELSE 4 END, p.name`,
+    ...ACTIVE_STATUSES
+  );
+
+/**
+ * Evidence that a project moved today. A percentage bump on its own is not
+ * enough: the log entry has to pass the measurable-progress check.
+ */
+export function projectDay(project, date) {
+  const prev = previousPct(project.id, date);
+  const today = pctOn(project.id, date, project.completion_pct);
+
+  const logs = all(
+    `SELECT pl.*, u.name AS user_name FROM progress_logs pl
+       LEFT JOIN users u ON u.id = pl.user_id
+      WHERE pl.project_id = ? AND pl.log_date = ? ORDER BY pl.id`,
+    project.id, date
+  );
+  const deployments = all(
+    'SELECT * FROM deployments WHERE project_id = ? AND deploy_date = ?', project.id, date
+  );
+  const milestones = all(
+    'SELECT * FROM project_milestones WHERE project_id = ? AND completed = 1 AND completed_date = ?',
+    project.id, date
+  );
+  const fixedIncidents = all(
+    'SELECT * FROM incidents WHERE project_id = ? AND resolved_date = ?', project.id, date
+  );
+
+  const measurableLogs = logs.filter((l) => l.counts_as_progress === 1);
+  const evidence = [];
+  if (measurableLogs.length) evidence.push(...measurableLogs.map((l) => l.completed_text));
+  if (deployments.length) evidence.push(...deployments.map((d) => `Deployed: ${d.title}`));
+  if (milestones.length) evidence.push(...milestones.map((m) => `Milestone: ${m.name}`));
+  if (fixedIncidents.length) evidence.push(...fixedIncidents.map((i) => `Resolved: ${i.title}`));
+
+  const openBlockers = all(
+    `SELECT * FROM blockers
+      WHERE project_id = ? AND status IN ('Open','Waiting','Escalated') AND date_reported <= ?
+      ORDER BY date_reported`,
+    project.id, date
+  );
+
+  const rejected = logs.filter((l) => l.counts_as_progress === 0);
+
+  return {
+    ...project,
+    previous_pct: round(prev),
+    today_pct: round(today),
+    progress_today: round(today - prev),
+    progressed: evidence.length > 0,
+    evidence,
+    logs,
+    rejected_logs: rejected,
+    deployments,
+    milestones_completed: milestones,
+    incidents_resolved: fixedIncidents,
+    blockers: openBlockers,
+    blocker_summary: openBlockers.length ? openBlockers.map((b) => b.title).join('; ') : null,
+    last_progress_date: lastProgressDate(project.id, date),
+    days_since_progress: (() => {
+      const lp = lastProgressDate(project.id, date);
+      return lp ? D.businessDaysBetween(lp, date) : null;
+    })()
+  };
+}
+
+/** Last date (on or before `date`) with real, evidenced progress. */
+export function lastProgressDate(projectId, date) {
+  const candidates = [
+    get(`SELECT MAX(log_date) AS d FROM progress_logs
+          WHERE project_id = ? AND log_date <= ? AND counts_as_progress = 1`, projectId, date),
+    get('SELECT MAX(deploy_date) AS d FROM deployments WHERE project_id = ? AND deploy_date <= ?', projectId, date),
+    get(`SELECT MAX(completed_date) AS d FROM project_milestones
+          WHERE project_id = ? AND completed = 1 AND completed_date <= ?`, projectId, date),
+    get('SELECT MAX(resolved_date) AS d FROM incidents WHERE project_id = ? AND resolved_date <= ?', projectId, date)
+  ].map((r) => r && r.d).filter(Boolean);
+  return candidates.length ? candidates.sort().pop() : null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Component metrics                                                   */
+/* ------------------------------------------------------------------ */
+
+export function commitmentStats(date, userId = null) {
+  const rows = userId
+    ? all('SELECT * FROM commitments WHERE commit_date = ? AND user_id = ?', date, userId)
+    : all('SELECT * FROM commitments WHERE commit_date = ?', date);
+  const counted = rows.filter((c) => c.status !== 'Cancelled');
+  const completed = counted.filter((c) => c.status === 'Completed').length;
+  return {
+    total: counted.length,
+    completed,
+    cancelled: rows.length - counted.length,
+    blocked: counted.filter((c) => c.status === 'Blocked').length,
+    in_progress: counted.filter((c) => c.status === 'In Progress').length,
+    not_started: counted.filter((c) => c.status === 'Not Started').length,
+    rate: counted.length ? round((completed / counted.length) * 100) : 0,
+    rows
+  };
+}
+
+export function deploymentStats(date, userId = null) {
+  const rows = userId
+    ? all(`SELECT d.*, p.name AS project_name, u.name AS user_name FROM deployments d
+             LEFT JOIN projects p ON p.id = d.project_id LEFT JOIN users u ON u.id = d.user_id
+            WHERE d.deploy_date = ? AND d.user_id = ? ORDER BY d.id`, date, userId)
+    : all(`SELECT d.*, p.name AS project_name, u.name AS user_name FROM deployments d
+             LEFT JOIN projects p ON p.id = d.project_id LEFT JOIN users u ON u.id = d.user_id
+            WHERE d.deploy_date = ? ORDER BY d.id`, date);
+  const byKind = (k) => rows.filter((r) => r.kind === k).length;
+  return {
+    total: rows.length,
+    features: byKind('Feature'),
+    automations: byKind('Automation'),
+    systems: byKind('System Launch'),
+    fixes: byKind('Fix'),
+    rows
+  };
+}
+
+export function blockerStats(date, userId = null) {
+  const settings = getSettings();
+  const alertAfter = Number(settings.blocker_age_alert_days || 1);
+  const params = [date];
+  let sql = `SELECT b.*, p.name AS project_name, u.name AS owner_name FROM blockers b
+               LEFT JOIN projects p ON p.id = b.project_id
+               LEFT JOIN users u ON u.id = b.owner_id
+              WHERE b.date_reported <= ?
+                AND (b.status IN ('Open','Waiting','Escalated') OR b.resolved_date >= ?)`;
+  params.push(date);
+  if (userId) { sql += ' AND b.owner_id = ?'; params.push(userId); }
+  sql += ' ORDER BY b.date_reported';
+
+  const rows = all(sql, ...params).map((b) => {
+    const endDate = b.status === 'Resolved' && b.resolved_date ? b.resolved_date : date;
+    const days = D.businessDaysBetween(b.date_reported, endDate);
+    return { ...b, days_blocked: days, age_band: ageBand(days), aging: days > alertAfter };
+  });
+
+  const open = rows.filter((b) => b.status !== 'Resolved');
+  return {
+    open: open.length,
+    aging: open.filter((b) => b.aging).length,
+    escalated: open.filter((b) => b.status === 'Escalated').length,
+    created_today: rows.filter((b) => b.date_reported === date).length,
+    resolved_today: rows.filter((b) => b.status === 'Resolved' && b.resolved_date === date).length,
+    rows,
+    open_rows: open
+  };
+}
+
+const ageBand = (days) => (days <= 0 ? 'Same Day' : days === 1 ? '1 Day' : days === 2 ? '2 Days' : '3+ Days');
+
+export function productionStats(date, userId = null) {
+  const params = [date, date];
+  let sql = `SELECT i.*, s.name AS system_name, p.name AS project_name, u.name AS reporter_name
+               FROM incidents i
+               LEFT JOIN production_systems s ON s.id = i.system_id
+               LEFT JOIN projects p ON p.id = i.project_id
+               LEFT JOIN users u ON u.id = i.reported_by
+              WHERE i.reported_date <= ?
+                AND (i.status != 'Resolved' OR i.resolved_date >= ?)`;
+  if (userId) { sql += ' AND (i.reported_by = ? OR s.owner_id = ?)'; params.push(userId, userId); }
+  sql += " ORDER BY CASE i.severity WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END";
+
+  const rows = all(sql, ...params);
+  const openRows = rows.filter((i) => i.status !== 'Resolved');
+  const bySeverity = (s) => openRows.filter((i) => i.severity === s).length;
+
+  const systems = all(
+    `SELECT s.*, u.name AS owner_name FROM production_systems s
+       LEFT JOIN users u ON u.id = s.owner_id ${userId ? 'WHERE s.owner_id = ?' : ''} ORDER BY s.name`,
+    ...(userId ? [userId] : [])
+  ).map((s) => {
+    const total = (s.successful_runs || 0) + (s.failed_runs || 0);
+    return { ...s, total_runs: total, success_rate: total ? round((s.successful_runs / total) * 100) : 100 };
+  });
+
+  const totalRuns = systems.reduce((a, s) => a + s.total_runs, 0);
+  const okRuns = systems.reduce((a, s) => a + (s.successful_runs || 0), 0);
+
+  return {
+    open: openRows.length,
+    critical: bySeverity('Critical'),
+    high: bySeverity('High'),
+    medium: bySeverity('Medium'),
+    low: bySeverity('Low'),
+    resolved_today: rows.filter((i) => i.status === 'Resolved' && i.resolved_date === date).length,
+    rows,
+    open_rows: openRows,
+    systems,
+    unhealthy: systems.filter((s) => s.status !== 'Healthy'),
+    overall_success_rate: totalRuns ? round((okRuns / totalRuns) * 100) : 100
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Daily execution score (0-100), fully itemised                       */
+/* ------------------------------------------------------------------ */
+
+export function dailyScore({ commitments, projects, production, blockers }) {
+  const lines = [];
+
+  // 50 pts - daily commitment completion
+  let commitPts = 0;
+  if (commitments.total === 0) {
+    lines.push({ label: 'Daily commitment completion', points: 0, max: 50, detail: 'No commitments were logged for this day.' });
+  } else {
+    commitPts = (commitments.completed / commitments.total) * 50;
+    lines.push({
+      label: 'Daily commitment completion', points: round(commitPts), max: 50,
+      detail: `${commitments.completed} of ${commitments.total} completed (${commitments.rate}%)`
+    });
+  }
+
+  // 25 pts - active projects progressed
+  let projectPts = 0;
+  if (projects.active === 0) {
+    projectPts = 25;
+    lines.push({ label: 'Active projects progressed', points: 25, max: 25, detail: 'No active projects.' });
+  } else {
+    projectPts = (projects.progressed / projects.active) * 25;
+    lines.push({
+      label: 'Active projects progressed', points: round(projectPts), max: 25,
+      detail: `${projects.progressed} of ${projects.active} projects showed measurable progress`
+    });
+  }
+
+  // 15 pts - production quality.
+  // A system that is Degraded *because* of an open incident must not be
+  // penalised twice, so each system contributes the worse of the two signals.
+  let deduction = 0;
+  const notes = [];
+  const openIssues = production.open_rows || [];
+  const seen = new Set();
+  for (const sys of production.systems || []) {
+    const issues = openIssues.filter((i) => i.system_id === sys.id);
+    issues.forEach((i) => seen.add(i.id));
+    const issueWeight = issues.reduce((a, i) => a + (SEVERITY_WEIGHT[i.severity] || 0), 0);
+    const statusWeight = SYSTEM_STATUS_WEIGHT[sys.status] || 0;
+    const worst = Math.max(issueWeight, statusWeight);
+    if (worst > 0) {
+      deduction += worst;
+      notes.push(issueWeight >= statusWeight && issues.length
+        ? `${sys.name}: ${issues.map((i) => i.severity.toLowerCase()).join(', ')} issue (-${worst})`
+        : `${sys.name} is ${sys.status} (-${worst})`);
+    }
+  }
+  for (const i of openIssues.filter((i) => !seen.has(i.id))) {
+    const w = SEVERITY_WEIGHT[i.severity] || 0;
+    if (w) { deduction += w; notes.push(`${i.title} (${i.severity.toLowerCase()}) (-${w})`); }
+  }
+  const qualityPts = Math.max(0, 15 - deduction);
+  lines.push({
+    label: 'Production quality', points: round(qualityPts), max: 15,
+    detail: notes.length ? notes.join(', ') : 'No open production issues.'
+  });
+
+  // 10 pts - blocker management
+  let blockerPts = 10;
+  const bNotes = [];
+  const stale = blockers.open_rows.filter((b) => b.aging && b.status !== 'Escalated');
+  const unrouted = blockers.open_rows.filter((b) => !b.person_needed);
+  if (stale.length) { blockerPts -= stale.length * 4; bNotes.push(`${stale.length} blocker(s) aging without escalation (-${stale.length * 4})`); }
+  if (unrouted.length) { blockerPts -= unrouted.length * 2; bNotes.push(`${unrouted.length} blocker(s) with nobody assigned (-${unrouted.length * 2})`); }
+  if (blockers.resolved_today) { blockerPts += blockers.resolved_today * 2; bNotes.push(`${blockers.resolved_today} blocker(s) resolved today (+${blockers.resolved_today * 2})`); }
+  blockerPts = Math.max(0, Math.min(10, blockerPts));
+  lines.push({
+    label: 'Blocker management', points: round(blockerPts), max: 10,
+    detail: bNotes.length ? bNotes.join(', ') : 'No open blockers.'
+  });
+
+  const total = round(commitPts + projectPts + qualityPts + blockerPts);
+  return { total, grade: grade(total), lines };
+}
+
+const grade = (s) => (s >= 90 ? 'Excellent' : s >= 80 ? 'On Track' : s >= 65 ? 'Watch' : s >= 40 ? 'Behind' : 'At Risk');
+
+/* ------------------------------------------------------------------ */
+/* Assembled views                                                     */
+/* ------------------------------------------------------------------ */
+
+export function dashboard(date) {
+  const settings = getSettings();
+  const projects = activeProjects().map((p) => projectDay(p, date));
+  const progressed = projects.filter((p) => p.progressed);
+  const commitments = commitmentStats(date);
+  const deployments = deploymentStats(date);
+  const blockers = blockerStats(date);
+  const production = productionStats(date);
+
+  const projectSummary = {
+    active: projects.length,
+    progressed: progressed.length,
+    rate: projects.length ? round((progressed.length / projects.length) * 100) : 0,
+    avg_progress: projects.length ? round(projects.reduce((a, p) => a + p.progress_today, 0) / projects.length) : 0
+  };
+
+  const score = dailyScore({ commitments, projects: projectSummary, production, blockers });
+
+  return {
+    date,
+    day_name: D.dayName(date),
+    date_label: D.formatLong(date),
+    is_business_day: D.isBusinessDay(date),
+    settings,
+    kpis: {
+      commitments: { ...commitments, target: Number(settings.commitment_target) },
+      projects: { ...projectSummary, target: Number(settings.progressed_target) },
+      deployments,
+      blockers,
+      production: { ...production, target: Number(settings.critical_issue_target) }
+    },
+    score,
+    projects,
+    scorecards: scorecards(date, projects),
+    stagnant: stagnantProjects(date, projects),
+    priorities: nextDayPriorities(date, projects)
+  };
+}
+
+export function scorecards(date, projectsPre = null) {
+  const projects = projectsPre || activeProjects().map((p) => projectDay(p, date));
+  // Managers are viewers, not contributors, so they never appear as a scorecard.
+  const users = all('SELECT * FROM users WHERE active = 1 AND is_manager = 0 ORDER BY sort_order, id');
+
+  return users.map((u) => {
+    const commitments = commitmentStats(date, u.id);
+    const mine = projects.filter((p) => p.owner_id === u.id || p.secondary_owner_id === u.id);
+    const myProgressed = mine.filter((p) => p.progressed);
+    const deployments = deploymentStats(date, u.id);
+    const blockers = blockerStats(date, u.id);
+    const production = productionStats(date, u.id);
+    const summary = {
+      active: mine.length,
+      progressed: myProgressed.length,
+      rate: mine.length ? round((myProgressed.length / mine.length) * 100) : 0,
+      avg_progress: mine.length ? round(mine.reduce((a, p) => a + p.progress_today, 0) / mine.length) : 0
+    };
+    return {
+      user: u,
+      commitments,
+      projects: summary,
+      project_rows: mine,
+      deployments,
+      blockers,
+      production,
+      score: dailyScore({ commitments, projects: summary, production, blockers })
+    };
+  });
+}
+
+export function stagnantProjects(date, projectsPre = null) {
+  const limit = Number(getSettings().stagnation_days || 2);
+  const projects = projectsPre || activeProjects().map((p) => projectDay(p, date));
+  return projects
+    .filter((p) => p.days_since_progress === null || p.days_since_progress >= limit)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      owner_name: p.owner_name,
+      status: p.status,
+      priority: p.priority,
+      completion_pct: p.today_pct,
+      last_progress_date: p.last_progress_date,
+      days_since_progress: p.days_since_progress,
+      blocker: p.blocker_summary,
+      next_step: p.next_step,
+      message: p.last_progress_date
+        ? `No measurable progress for ${p.days_since_progress} business day${p.days_since_progress === 1 ? '' : 's'}`
+        : 'No measurable progress recorded yet'
+    }))
+    .sort((a, b) => (b.days_since_progress ?? 99) - (a.days_since_progress ?? 99));
+}
+
+/** Suggestions only — the team decides. Ordered by the six rules in the spec. */
+export function nextDayPriorities(date, projectsPre = null) {
+  const projects = projectsPre || activeProjects().map((p) => projectDay(p, date));
+  const out = [];
+  const push = (category, item) => out.push({ category, ...item });
+
+  // 1. Unfinished P1/P2 commitments
+  const unfinished = all(
+    `SELECT c.*, u.name AS user_name, p.name AS project_name FROM commitments c
+       LEFT JOIN users u ON u.id = c.user_id LEFT JOIN projects p ON p.id = c.project_id
+      WHERE c.commit_date = ? AND c.status NOT IN ('Completed','Cancelled')
+        AND c.priority IN ('P1','P2')
+      ORDER BY c.priority`,
+    date
+  );
+  for (const c of unfinished) {
+    push('Unfinished priority work', {
+      title: c.task, owner: c.user_name, project: c.project_name, priority: c.priority,
+      detail: `${c.priority} · left ${c.status.toLowerCase()} today${c.carryover_reason ? ` · ${c.carryover_reason}` : ''}`
+    });
+  }
+
+  // 2. Blockers that cleared today
+  for (const b of all(
+    `SELECT b.*, p.name AS project_name, u.name AS owner_name FROM blockers b
+       LEFT JOIN projects p ON p.id = b.project_id LEFT JOIN users u ON u.id = b.owner_id
+      WHERE b.status = 'Resolved' AND b.resolved_date = ?`, date)) {
+    push('Newly unblocked', {
+      title: b.title, owner: b.owner_name, project: b.project_name, priority: b.priority,
+      detail: `Unblocked today — ${b.resolution || 'resume this work'}`
+    });
+  }
+
+  // 3. Projects closest to deployment
+  for (const p of projects.filter((p) => p.today_pct >= 75 && !['Production', 'Monitoring'].includes(p.status))
+    .sort((a, b) => b.today_pct - a.today_pct)) {
+    push('Closest to deployment', {
+      title: p.name, owner: p.owner_name, project: p.name, priority: p.priority,
+      detail: `${p.today_pct}% complete · ${p.status} · next: ${p.next_step || 'set a next step'}`
+    });
+  }
+
+  // 4. Deadlines approaching or passed
+  for (const p of projects.filter((p) => p.target_date && D.businessDaysBetween(date, p.target_date) <= 3)) {
+    const overdue = p.target_date < date;
+    push('Deadline approaching', {
+      title: p.name, owner: p.owner_name, project: p.name, priority: p.priority,
+      detail: overdue
+        ? `Target date ${D.formatShort(p.target_date)} has passed · ${p.today_pct}% complete`
+        : `Due ${D.formatShort(p.target_date)} · ${p.today_pct}% complete`
+    });
+  }
+
+  // 5. Open production issues
+  for (const i of productionStats(date).open_rows) {
+    push('Production issue', {
+      title: i.title, owner: i.reporter_name, project: i.project_name || i.system_name, priority: i.severity,
+      detail: `${i.severity} · ${i.system_name || 'system'} · open since ${D.formatShort(i.reported_date)}`
+    });
+  }
+
+  // 6. Stagnant projects
+  for (const s of stagnantProjects(date, projects)) {
+    push('Not moving', {
+      title: s.name, owner: s.owner_name, project: s.name, priority: s.priority,
+      detail: `${s.message}${s.blocker ? ` · blocked by ${s.blocker}` : ''}`
+    });
+  }
+
+  return out.map((item, i) => ({ rank: i + 1, ...item }));
+}
+
+/* ------------------------------------------------------------------ */
+/* Weekly rollup                                                       */
+/* ------------------------------------------------------------------ */
+
+export function weekly(date) {
+  const days = D.weekDays(date);
+  const rows = days.map((d) => {
+    const c = commitmentStats(d);
+    const projects = activeProjects().map((p) => projectDay(p, d));
+    const progressed = projects.filter((p) => p.progressed).length;
+    const dep = deploymentStats(d);
+    const b = blockerStats(d);
+    const prod = productionStats(d);
+    const completed = all(
+      `SELECT COUNT(*) AS n FROM project_snapshots ps
+        JOIN projects p ON p.id = ps.project_id
+       WHERE ps.snapshot_date = ? AND ps.completion_pct >= 100
+         AND NOT EXISTS (SELECT 1 FROM project_snapshots q
+                          WHERE q.project_id = ps.project_id AND q.snapshot_date < ? AND q.completion_pct >= 100)`,
+      d, d
+    )[0].n;
+    const summary = { active: projects.length, progressed, rate: projects.length ? round((progressed / projects.length) * 100) : 0 };
+    return {
+      date: d,
+      day: D.dayName(d),
+      label: D.formatShort(d),
+      commitments_total: c.total,
+      commitments_completed: c.completed,
+      completion_rate: c.rate,
+      projects_active: projects.length,
+      projects_progressed: progressed,
+      projects_progressed_rate: summary.rate,
+      avg_project_progress: projects.length ? round(projects.reduce((a, p) => a + p.progress_today, 0) / projects.length) : 0,
+      deployments: dep.total,
+      blockers_created: b.created_today,
+      blockers_resolved: b.resolved_today,
+      blockers_open: b.open,
+      incidents: prod.rows.filter((i) => i.reported_date === d).length,
+      critical_issues: prod.critical,
+      projects_completed: completed,
+      score: dailyScore({ commitments: c, projects: summary, production: prod, blockers: b }).total
+    };
+  });
+
+  const sum = (k) => rows.reduce((a, r) => a + (r[k] || 0), 0);
+  const withData = rows.filter((r) => r.commitments_total > 0);
+  return {
+    week_start: days[0],
+    week_end: days[4],
+    days: rows,
+    totals: {
+      commitments_total: sum('commitments_total'),
+      commitments_completed: sum('commitments_completed'),
+      completion_rate: sum('commitments_total') ? round((sum('commitments_completed') / sum('commitments_total')) * 100) : 0,
+      deployments: sum('deployments'),
+      blockers_created: sum('blockers_created'),
+      blockers_resolved: sum('blockers_resolved'),
+      incidents: sum('incidents'),
+      projects_completed: sum('projects_completed'),
+      avg_progressed_rate: withData.length ? round(withData.reduce((a, r) => a + r.projects_progressed_rate, 0) / withData.length) : 0,
+      avg_score: withData.length ? round(withData.reduce((a, r) => a + r.score, 0) / withData.length) : 0
+    }
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Business impact (reporting only — never affects the daily score)    */
+/* ------------------------------------------------------------------ */
+
+export function businessImpact() {
+  const rows = all(
+    `SELECT bi.*, p.name AS project_name, p.status AS project_status, u.name AS owner_name
+       FROM business_impact bi
+       LEFT JOIN projects p ON p.id = bi.project_id
+       LEFT JOIN users u ON u.id = p.owner_id
+      ORDER BY p.name`
+  ).map((r) => {
+    const hoursWeek = round(((r.minutes_per_run || 0) * (r.runs_per_week || 0)) / 60);
+    const hoursMonth = round(hoursWeek * 4.33);
+    return {
+      ...r,
+      hours_saved_week: hoursWeek,
+      hours_saved_month: hoursMonth,
+      monthly_savings: round(hoursMonth * (r.hourly_cost || 0))
+    };
+  });
+  const sum = (k) => round(rows.reduce((a, r) => a + (r[k] || 0), 0));
+  return {
+    rows,
+    totals: {
+      hours_saved_week: sum('hours_saved_week'),
+      hours_saved_month: sum('hours_saved_month'),
+      monthly_savings: sum('monthly_savings'),
+      annual_savings: round(sum('monthly_savings') * 12),
+      revenue_supported: sum('revenue_supported'),
+      leads_processed: sum('leads_processed'),
+      errors_prevented: sum('errors_prevented')
+    }
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Persisted daily snapshot (history is never overwritten by a new day)*/
+/* ------------------------------------------------------------------ */
+
+export function persistDailySnapshot(date) {
+  const data = dashboard(date);
+  const write = (userId, c, proj, dep, blk, prod, score) => {
+    run(
+      `INSERT INTO daily_kpi_snapshots
+         (snapshot_date, user_id, commitments_total, commitments_completed, completion_rate,
+          projects_active, projects_progressed, avg_progress_pct, deployments, blockers_open,
+          blockers_created, blockers_resolved, critical_issues, open_issues, daily_score, breakdown_json)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       ON CONFLICT(snapshot_date, IFNULL(user_id, -1)) DO UPDATE SET
+         commitments_total = excluded.commitments_total,
+         commitments_completed = excluded.commitments_completed,
+         completion_rate = excluded.completion_rate,
+         projects_active = excluded.projects_active,
+         projects_progressed = excluded.projects_progressed,
+         avg_progress_pct = excluded.avg_progress_pct,
+         deployments = excluded.deployments,
+         blockers_open = excluded.blockers_open,
+         blockers_created = excluded.blockers_created,
+         blockers_resolved = excluded.blockers_resolved,
+         critical_issues = excluded.critical_issues,
+         open_issues = excluded.open_issues,
+         daily_score = excluded.daily_score,
+         breakdown_json = excluded.breakdown_json`,
+      date, userId, c.total, c.completed, c.rate, proj.active, proj.progressed, proj.avg_progress,
+      dep.total, blk.open, blk.created_today, blk.resolved_today, prod.critical, prod.open,
+      score.total, JSON.stringify(score.lines)
+    );
+  };
+
+  const k = data.kpis;
+  write(null, k.commitments, k.projects, k.deployments, k.blockers, k.production, data.score);
+  for (const sc of data.scorecards) {
+    write(sc.user.id, sc.commitments, sc.projects, sc.deployments, sc.blockers, sc.production, sc.score);
+  }
+  return data;
+}
+
+export function round(n) {
+  return Math.round((Number(n) || 0) * 10) / 10;
+}

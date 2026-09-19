@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# The Python template's `lib/` rule would swallow this project's server/lib sources.
+!server/lib/
+!server/lib/**
+
+# Application data (SQLite)
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+node_modules/

@@ -1,0 +1,16 @@
+{
+  "name": "ai-systems-daily-kpi-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI & Systems Daily KPI Dashboard - daily execution tracking for a small AI/Systems team",
+  "type": "module",
+  "engines": { "node": ">=22.5.0" },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "seed": "node server/seed.js",
+    "reset": "node server/seed.js --reset"
+  },
+  "keywords": ["kpi", "dashboard", "daily", "operations"],
+  "license": "MIT"
+}

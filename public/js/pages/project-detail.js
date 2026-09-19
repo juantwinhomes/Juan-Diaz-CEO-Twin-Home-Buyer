@@ -1,0 +1,227 @@
+import { api } from '../api.js';
+import * as U from '../ui.js';
+import { state, refresh, go } from '../app.js';
+import { projectForm, progressForm, blockerForm, deploymentForm, impactForm } from './forms.js';
+
+export async function page(ctx) {
+  const p = await api.get(`/projects/${ctx.param}`, { date: state.date });
+  const overdue = p.target_date && p.target_date < state.date && p.status !== 'Completed';
+
+  const html = `
+    <div class="section">
+      <a href="#/projects" class="small muted">← All projects</a>
+    </div>
+
+    <div class="section grid grid-2" style="align-items:start">
+      <div class="card">
+        <div class="card-head">
+          <h2>Progress</h2>
+          <span class="spacer"></span>
+          ${U.priority(p.priority)} ${U.badge(p.status)}
+        </div>
+        <div class="card-body">
+          <div class="row" style="align-items:baseline;gap:10px">
+            <span style="font-size:36px;font-weight:650;letter-spacing:-.03em;line-height:1">${p.today_pct}%</span>
+            ${U.fmt.delta(p.progress_today)}
+            <span class="spacer"></span>
+            <span class="small muted">Yesterday ${p.previous_pct}%</span>
+          </div>
+          <div style="margin-top:12px">${U.progressBar(p.previous_pct, p.today_pct, false)}</div>
+          <div class="small ${p.progressed ? '' : 'muted'}" style="margin-top:9px;${p.progressed ? 'color:var(--green)' : ''}">
+            ${p.progressed
+              ? `${U.icon('check', 12)} ${U.esc(p.evidence.join(' · '))}`
+              : `<span style="color:var(--orange)">${U.icon('alert', 12)} No measurable progress recorded on ${U.fmt.date(state.date)}</span>`}
+          </div>
+          ${p.rejected_logs.length ? `<div class="callout warn" style="margin-top:11px">${U.icon('alert', 15)}
+            <div><b>${p.rejected_logs.length} entr${p.rejected_logs.length === 1 ? 'y' : 'ies'} did not count as progress.</b>
+            <p style="margin-top:3px">${p.rejected_logs.map((l) => U.esc(`"${l.completed_text}"`)).join(', ')} — describe the measurable output.</p>
+            </div></div>` : ''}
+          <div class="divider"></div>
+          <div class="row">
+            <button class="btn btn-primary btn-sm" data-action="log">${U.icon('plus', 13)} Log progress</button>
+            <button class="btn btn-sm" data-action="deploy">${U.icon('rocket', 13)} Log deployment</button>
+            <button class="btn btn-sm" data-action="block">${U.icon('blockers', 13)} Report blocker</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Milestones</h2><span class="sub">Progress framework</span></div>
+        <div class="card-body tight">
+          ${p.milestones.map((m) => `
+            <div class="row" style="padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:nowrap">
+              <button class="check-mark" data-milestone="${m.id}" data-done="${m.completed}"
+                      title="${m.completed ? 'Mark not reached' : 'Mark reached'}"
+                      style="${m.completed ? 'background:var(--green);border-color:var(--green);color:#fff' : ''}">
+                ${m.completed ? U.icon('check', 12) : ''}</button>
+              <span style="flex:1;min-width:0;${m.completed ? '' : 'color:var(--text-2)'}">${U.esc(m.name)}</span>
+              <span class="small muted nowrap">${m.target_pct}%</span>
+              ${m.completed_date ? `<span class="chip nowrap">${U.fmt.date(m.completed_date)}</span>` : ''}
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="section grid grid-2" style="align-items:start">
+      <div class="card">
+        <div class="card-head"><h2>Details</h2><span class="spacer"></span>
+          <button class="btn btn-sm" data-action="edit">${U.icon('edit', 13)} Edit</button></div>
+        <div class="card-body">
+          <dl style="display:grid;grid-template-columns:auto 1fr;gap:9px 14px;margin:0;font-size:13px">
+            ${row('Owner', p.owner_name || 'Unassigned')}
+            ${row('Secondary owner', p.secondary_name || '—')}
+            ${row('Requester / department', [p.requester, p.department].filter(Boolean).join(' · ') || '—')}
+            ${row('Start date', U.fmt.date(p.start_date))}
+            ${row('Target completion', `${U.fmt.date(p.target_date)}${overdue ? ' <span style="color:var(--red)">(passed)</span>' : ''}`, true)}
+            ${row('Current phase', p.current_phase || '—')}
+            ${row('Next step', p.next_step || 'Not set')}
+            ${row('Business objective', p.business_objective || '—')}
+            ${row('Expected impact', p.expected_impact || '—')}
+            ${row('Production link', p.production_url
+              ? `<a href="${U.esc(p.production_url)}" target="_blank" rel="noopener">${U.esc(p.production_url)} ${U.icon('link', 11)}</a>`
+              : '—', true)}
+            ${row('Notes', p.notes || '—')}
+          </dl>
+          <div class="divider"></div>
+          <div class="row">
+            <button class="btn btn-sm" data-action="archive">${U.icon(p.archived ? 'refresh' : 'inbox', 13)} ${p.archived ? 'Restore' : 'Archive'}</button>
+            <span class="spacer"></span>
+            <button class="btn btn-sm btn-danger" data-action="delete">${U.icon('trash', 13)} Remove project</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card">
+          <div class="card-head"><h2>Blockers</h2><span class="spacer"></span>
+            <span class="badge ${p.blockers.length ? 'orange' : 'green'}">${p.blockers.length} open</span></div>
+          ${p.all_blockers.length ? `<div class="card-body tight">
+            ${p.all_blockers.map((b) => `
+              <div style="padding:9px 0;border-bottom:1px solid var(--border)">
+                <div class="row" style="flex-wrap:nowrap;gap:8px">
+                  <span style="flex:1;min-width:0;font-weight:500">${U.esc(b.title)}</span>
+                  ${U.badge(b.status)}
+                  <button class="icon-btn" data-blocker="${b.id}" title="Edit">${U.icon('edit', 14)}</button>
+                </div>
+                <div class="small muted">${U.esc(b.reason)} · reported ${U.fmt.date(b.date_reported)}${b.person_needed ? ` · needs ${U.esc(b.person_needed)}` : ''}</div>
+              </div>`).join('')}
+          </div>` : U.empty('Nothing blocked', 'No blockers have been reported for this project.')}
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Deployments</h2><span class="spacer"></span>
+            <span class="badge gray">${p.deployment_history.length}</span></div>
+          ${p.deployment_history.length ? `<div class="card-body tight">
+            ${p.deployment_history.map((d) => `
+              <div class="row" style="padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:nowrap;gap:8px">
+                <span style="flex:1;min-width:0">${U.esc(d.title)}</span>
+                ${U.badge(d.kind, d.kind === 'Fix' ? 'orange' : 'blue')}
+                <span class="small muted nowrap">${U.fmt.date(d.deploy_date)}</span>
+              </div>`).join('')}
+          </div>` : U.empty('Nothing deployed yet', '')}
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Business impact</h2><span class="sub">Not part of the daily score</span>
+            <span class="spacer"></span>
+            <button class="btn btn-sm" data-action="impact">${U.icon(p.impact ? 'edit' : 'plus', 13)} ${p.impact ? 'Edit' : 'Add'}</button></div>
+          <div class="card-body">
+            ${p.impact ? `<dl style="display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:0;font-size:13px">
+              ${row('Manual process replaced', p.impact.manual_process || '—')}
+              ${row('Minutes per run', p.impact.minutes_per_run)}
+              ${row('Runs per week', p.impact.runs_per_week)}
+              ${row('Hours saved / week', U.fmt.num((p.impact.minutes_per_run * p.impact.runs_per_week) / 60))}
+              ${row('Monthly saving', U.fmt.money((p.impact.minutes_per_run * p.impact.runs_per_week / 60) * 4.33 * p.impact.hourly_cost, state.settings.currency))}
+            </dl>` : `<p class="small muted">No impact recorded. Add it once the system is live.</p>`}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Daily progress log</h2>
+        <span class="sub">Every entry, newest first</span>
+        <span class="spacer"></span>
+        <button class="btn btn-sm btn-primary" data-action="log">${U.icon('plus', 13)} Add entry</button></div>
+      <div class="card">
+        ${U.table(
+          ['Date', 'Person', 'Previous', 'New', 'Change', 'What was completed', 'What is next', 'Blocker', ''],
+          p.history,
+          (l) => `<tr${l.counts_as_progress ? '' : ' class="row-warn"'}>
+            <td class="nowrap">${U.fmt.date(l.log_date)}</td>
+            <td class="nowrap">${U.esc(l.user_name || '—')}</td>
+            <td class="num muted">${l.previous_pct}%</td>
+            <td class="num"><b>${l.new_pct}%</b></td>
+            <td class="num">${U.fmt.delta(l.new_pct - l.previous_pct)}</td>
+            <td>${U.esc(l.completed_text)}
+              ${l.counts_as_progress ? '' : `<div class="small" style="color:var(--orange)">
+                ${U.icon('alert', 10)} Activity, not a measurable result — did not count as progress</div>`}</td>
+            <td class="muted">${U.esc(l.next_text || '—')}</td>
+            <td class="muted">${U.esc(l.blocker_text || '—')}</td>
+            ${U.rowActions(l.id)}
+          </tr>`,
+          'No progress has been logged for this project yet.'
+        )}
+      </div>
+    </div>`;
+
+  return {
+    title: p.name,
+    subtitle: `${p.owner_name || 'Unassigned'} · ${p.status} · ${p.today_pct}% complete`,
+    html,
+    mount(root) {
+      root.addEventListener('click', async (e) => {
+        const action = e.target.closest('[data-action]')?.dataset.action;
+        const editLog = e.target.closest('[data-edit]')?.dataset.edit;
+        const removeLog = e.target.closest('[data-remove]')?.dataset.remove;
+        const milestone = e.target.closest('[data-milestone]');
+        const blocker = e.target.closest('[data-blocker]')?.dataset.blocker;
+
+        if (action === 'log') progressForm({ project_id: p.id, log_date: state.date, user_id: state.currentUserId });
+        if (action === 'deploy') deploymentForm({ project_id: p.id, deploy_date: state.date, user_id: state.currentUserId });
+        if (action === 'block') blockerForm({ project_id: p.id, date_reported: state.date, owner_id: p.owner_id });
+        if (action === 'edit') projectForm(p);
+        if (action === 'impact') impactForm(p.impact || { project_id: p.id });
+        if (action === 'archive') {
+          await api.post(`/projects/${p.id}/archive`, { archived: !p.archived });
+          U.toast(p.archived ? 'Project restored' : 'Project archived');
+          refresh();
+        }
+        if (action === 'delete') {
+          U.confirmRemove({
+            title: 'Remove project',
+            message: `Permanently remove "${p.name}"?`,
+            detail: `${p.history.length} progress entries, ${p.all_blockers.length} blockers and ${p.deployment_history.length} deployments are removed with it. Archive instead to keep the history.`,
+            confirmLabel: 'Remove permanently',
+            async onConfirm() {
+              await api.del(`/projects/${p.id}`);
+              const { reloadBootstrap } = await import('../app.js');
+              await reloadBootstrap();
+              U.toast(`${p.name} removed`);
+              go('#/projects');
+            }
+          });
+        }
+        if (editLog) progressForm(p.history.find((l) => l.id === Number(editLog)));
+        if (removeLog) {
+          const l = p.history.find((x) => x.id === Number(removeLog));
+          U.confirmRemove({
+            title: 'Remove progress entry',
+            message: `Remove the entry from ${U.fmt.date(l.log_date)}?`,
+            detail: "The project's completion % is recalculated from the entries that remain.",
+            async onConfirm() { await api.del(`/progress/${l.id}`); U.toast('Entry removed'); refresh(); }
+          });
+        }
+        if (milestone) {
+          const done = milestone.dataset.done === '1';
+          await api.patch(`/milestones/${milestone.dataset.milestone}`, { completed: !done, completed_date: state.date });
+          refresh();
+        }
+        if (blocker) blockerForm(p.all_blockers.find((b) => b.id === Number(blocker)));
+      });
+    }
+  };
+}
+
+const row = (label, value, raw = false) =>
+  `<dt class="muted nowrap">${U.esc(label)}</dt><dd style="margin:0">${raw ? value : U.esc(value)}</dd>`;
