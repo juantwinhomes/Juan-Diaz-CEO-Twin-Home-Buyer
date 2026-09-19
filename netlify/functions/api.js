@@ -14,7 +14,17 @@ let ready = null;
 const ensureReady = () => (ready ||= init());
 
 export default async (request) => {
-  await ensureReady();
+  try {
+    await ensureReady();
+  } catch (err) {
+    // A failure here is nearly always configuration, so say which.
+    ready = null;
+    console.error('[startup]', err);
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' }
+    });
+  }
 
   const url = new URL(request.url);
   const headers = Object.fromEntries(request.headers.entries());

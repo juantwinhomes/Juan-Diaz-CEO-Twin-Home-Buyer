@@ -21,6 +21,11 @@ const DATABASE_URL = process.env.DATABASE_URL || '';
 
 let client = null;
 
+const isServerless = () => Boolean(
+  process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME
+  || process.env.VERCEL || process.env.FUNCTIONS_WORKER_RUNTIME
+);
+
 /** Rewrite `?` to `$n`, leaving anything inside quoted strings alone. */
 export function toPgPlaceholders(sql) {
   let out = '';
@@ -49,8 +54,7 @@ async function connect() {
     // Serverless runs many short-lived instances, each with its own pool, so a
     // large pool per instance is how you exhaust the database's connection
     // limit. One connection per instance, and let the provider's pooler fan out.
-    const serverless = Boolean(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME
-      || process.env.VERCEL || process.env.FUNCTIONS_WORKER_RUNTIME);
+    const serverless = isServerless();
     const pool = new pg.Pool({
       connectionString: DATABASE_URL,
       ssl: DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
@@ -65,6 +69,14 @@ async function connect() {
       close: () => pool.end()
     };
   } else {
+    // The embedded database writes to disk, which a serverless function does not
+    // durably have. Failing here with an explanation beats a bare 502.
+    if (isServerless()) {
+      throw new Error(
+        'DATABASE_URL is not set. Add your Supabase connection string to this site\'s ' +
+        'environment variables and redeploy — environment variables only take effect on a new build.'
+      );
+    }
     const { PGlite } = await import('@electric-sql/pglite');
     const dir = join(ROOT, 'data', 'pgdata');
     mkdirSync(dirname(dir), { recursive: true });

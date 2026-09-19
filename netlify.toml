@@ -16,7 +16,9 @@
 [functions]
   node_bundler = "esbuild"
   # pg ships optional native extras that esbuild should leave alone.
-  external_node_modules = ["pg", "pg-native"]
+  # pg ships optional native extras, and pglite is a local-development-only WASM
+  # database that must never be pulled into the serverless bundle.
+  external_node_modules = ["pg", "pg-native", "@electric-sql/pglite"]
 
 [[headers]]
   for = "/*"
