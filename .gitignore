@@ -234,3 +234,6 @@ data/pgdata/
 
 # Generated import files
 import.sql
+
+# Vercel CLI project link
+.vercel/

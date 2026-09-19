@@ -79,7 +79,11 @@ async function connect() {
         'environment variables and redeploy — environment variables only take effect on a new build.'
       );
     }
-    const { PGlite } = await import('@electric-sql/pglite');
+    // The specifier is a variable on purpose: bundlers and file tracers cannot
+    // follow it, so the 26MB local-only database never ends up inside a
+    // serverless deploy. Locally it imports exactly as before.
+    const pglitePackage = '@electric-sql/pglite';
+    const { PGlite } = await import(pglitePackage);
     const dir = join(ROOT, 'data', 'pgdata');
     mkdirSync(dirname(dir), { recursive: true });
     const lite = await PGlite.create(dir);

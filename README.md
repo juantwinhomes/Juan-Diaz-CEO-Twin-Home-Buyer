@@ -53,12 +53,14 @@ To start empty, use **Settings → Remove data → Everything**, or delete `data
 Running locally puts the database on one machine. To have the team working against the
 same data, deploy it. **[deploy/DEPLOY.md](deploy/DEPLOY.md) is a step-by-step guide**
 written for someone who has never deployed anything: Supabase for the database and
-Netlify for the app, neither of which asks for a credit card.
+Vercel for the app, neither of which asks for a credit card.
 
 The request handling lives in `server/handler.js`, which takes a plain request and
 returns a plain response. `server/index.js` wraps it in a Node server for local use,
-Docker and any VM; `netlify/functions/api.js` wraps the same module for Netlify's
-serverless runtime. One set of routing, auth and KPI logic behind both.
+Docker and any VM; `api/index.js` wraps the same module for Vercel, and
+`netlify/functions/api.js` for Netlify. One set of routing, auth and KPI logic behind all
+of them — changing host means writing one small adapter, not touching the app.
+`npm run check:vercel` drives the Vercel adapter end to end before anything is deployed.
 
 ### Environment variables
 
@@ -260,6 +262,8 @@ server/
     reports.js      The seven report builders
     dates.js        Business-day arithmetic
     enums.js        Every dropdown, shared by the API and the UI
+api/
+  index.js          Vercel serverless wrapper around the same handler
 netlify/
   functions/api.js  Netlify serverless wrapper around the same handler
 scripts/
@@ -267,6 +271,7 @@ scripts/
   check-queries.mjs       Query budget for the pages people open constantly (npm run check:queries)
   check-progress-link.mjs Commitment -> progress behaviour, end to end (npm run check:progress)
   check-schema.mjs        The database can be built from nothing (npm run check:schema)
+  check-vercel.mjs        The Vercel adapter, driven end to end (npm run check:vercel)
   import-directory.mjs    Turns the Tools and Artifact Directory CSV into SQL
 public/
   index.html        App shell

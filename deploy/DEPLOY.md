@@ -8,15 +8,20 @@ Two free accounts do the job:
 | Piece | Service | What it does |
 | --- | --- | --- |
 | Database | **Supabase** | Stores your data |
-| The app | **Netlify** | Serves the web pages |
+| The app | **Vercel** | Serves the web pages |
 
 ---
 
 ## Before you start: the honest trade-off
 
-**Netlify does not make you wait.** The app's pages come off their CDN instantly, and the
-part that talks to the database wakes in about a second. There is no 30–60 second startup
-to sit through, which is why this is the recommended setup.
+**Vercel does not make you wait, and does not charge per deploy.** The app's pages come
+off their CDN instantly and the part that talks to the database wakes in well under a
+second. Pushing a change costs nothing extra, which is the reason it replaced Netlify as
+the recommended host — see *Alternative: Netlify* at the end for what went wrong there.
+
+**Vercel's free plan is for non-commercial use** under their terms. A small internal
+team tool is the grey area everyone lives in; if they ever object, their paid plan is
+$20 a month and nothing about the setup changes.
 
 **Supabase pauses the database after about a week with no activity.** You restore it with
 one click in their dashboard, but somebody has to go and do it. If you use the dashboard
@@ -50,14 +55,14 @@ plain Node, so nothing here locks you in — but keep the backups running.
 
 You do not need to create any tables. The app builds them on first run.
 
-## Step 2 — Deploy the app (Netlify)
+## Step 2 — Deploy the app (Vercel)
 
-1. Go to [netlify.com](https://netlify.com) and sign up with GitHub. No card required.
-2. Click **Add new site → Import an existing project**, choose GitHub, and pick this
-   repository.
-3. Netlify reads `netlify.toml`, so the build settings fill themselves in. Leave them.
-4. Before deploying, open **Add environment variables** (or set them afterwards under
-   **Site configuration → Environment variables**):
+1. Go to [vercel.com](https://vercel.com) and sign up with GitHub. No card required.
+2. Click **Add New → Project** and import this repository.
+3. Under **Framework Preset** choose **Other**. Leave the build settings alone —
+   `vercel.json` in the repository already says where the pages are and how `/api`
+   and `/login` reach the function.
+4. Open **Environment Variables** on that same screen and add:
 
    | Key | Value |
    | --- | --- |
@@ -65,12 +70,16 @@ You do not need to create any tables. The app builds them on first run.
    | `APP_PASSWORD` | a password your team will share to sign in — you choose it |
    | `SESSION_SECRET` | any long random text, 30+ characters |
 
-5. Click **Deploy**. The first build takes a couple of minutes.
+5. Click **Deploy**. The first one takes about a minute.
 
-Netlify gives you an address like `https://something-random-123.netlify.app`. Rename it
-under **Site configuration → Change site name** to something like `kpi-twinhome`.
+Vercel gives you an address like `https://kpi-dashboard-abc123.vercel.app`. The project
+name sets it; rename under **Settings → General** if you want something tidier.
 
 Open it, enter your `APP_PASSWORD`, and you are in.
+
+From now on every push to your production branch deploys automatically, and unlike
+Netlify that costs you nothing. Changing an environment variable needs a redeploy to take
+effect: **Deployments → ⋯ on the latest → Redeploy**.
 
 > **Use the transaction pooler connection string.** Supabase offers several; the pooled
 > one (usually port `6543`) is designed for exactly this kind of hosting. The direct
@@ -88,8 +97,8 @@ That is it. Share the address and the password with your team.
 
 ## Step 4 — Your own domain (optional)
 
-In Netlify: **Domain management → Add a domain**, enter `kpi.yourcompany.com`. Netlify
-shows a DNS record to create with whoever manages your domain. HTTPS is automatic.
+In Vercel: **Settings → Domains → Add**, enter `kpi.yourcompany.com`. Vercel shows a
+DNS record to create with whoever manages your domain. HTTPS is automatic.
 
 ---
 
@@ -127,12 +136,13 @@ monthly means the worst case is losing a few weeks, not everything.
 ## If something goes wrong
 
 **A page loads but no data appears** — the function cannot reach the database. Check
-`DATABASE_URL` under Site configuration → Environment variables, and look at
-**Logs → Functions** in Netlify for the actual error.
+`DATABASE_URL` under **Settings → Environment Variables**, and look at **Logs** on the
+project for the actual error. A start-up problem shows as a 503 whose message says
+what is missing.
 
 **Login page appears but the password is refused** — `APP_PASSWORD` differs from what you
-are typing. Check it under Site configuration → Environment variables. Remember that
-changing a variable needs a redeploy to take effect (**Deploys → Trigger deploy**).
+are typing. Check it under Settings → Environment Variables. Remember that changing a
+variable needs a redeploy to take effect (**Deployments → ⋯ → Redeploy**).
 
 **Errors mentioning the database** — `DATABASE_URL` is wrong. The usual cause is not
 replacing `[YOUR-PASSWORD]` with the real password.
@@ -141,6 +151,16 @@ replacing `[YOUR-PASSWORD]` with the real password.
 after a quiet week. Open the Supabase dashboard and click Restore.
 
 ---
+
+## Alternative: Netlify
+
+`netlify.toml` and `netlify/functions/api.js` still work, and the app ran there first.
+It was dropped as the recommendation because of how Netlify's free plan is billed:
+**300 credits a month, and every production deploy costs 15 of them**. That is twenty
+deploys a month with the site being used costing almost nothing — and when the credits
+run out, the site itself goes offline until the next billing cycle, not just the deploy
+button. If you do use it, turn off automatic builds (**Build settings → Build status →
+Stopped**) and deploy deliberately, in batches.
 
 ## Alternative: Render
 
