@@ -14,7 +14,8 @@
     "reset": "node server/seed.js --reset",
     "export": "node server/export.js",
     "check:bundle": "node scripts/check-bundle.mjs",
-    "check:queries": "node scripts/check-queries.mjs"
+    "check:queries": "node scripts/check-queries.mjs",
+    "check:progress": "node scripts/check-progress-link.mjs"
   },
   "keywords": [
     "kpi",

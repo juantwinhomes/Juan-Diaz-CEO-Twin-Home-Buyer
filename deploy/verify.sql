@@ -36,6 +36,15 @@ UNION ALL SELECT 'projects', COUNT(*)::text || ' rows', CASE WHEN COUNT(*) > 0 T
 UNION ALL SELECT 'milestones', COUNT(*)::text || ' rows', CASE WHEN COUNT(*) > 0 THEN 'OK' ELSE 'empty - run import.sql' END FROM project_milestones
 
 UNION ALL
+SELECT 'columns added after the first release',
+       COUNT(*)::text || ' of 2',
+       CASE WHEN COUNT(*) = 2 THEN 'OK' ELSE 'deploy the latest code - the app adds these when it starts' END
+  FROM information_schema.columns
+ WHERE table_schema = 'public'
+   AND ((table_name = 'projects'      AND column_name = 'project_type')
+     OR (table_name = 'progress_logs' AND column_name = 'commitment_id'))
+
+UNION ALL
 SELECT 'row level security',
        COUNT(*) FILTER (WHERE rowsecurity)::text || ' of ' || COUNT(*)::text || ' tables protected',
        CASE WHEN COUNT(*) FILTER (WHERE NOT rowsecurity) = 0 THEN 'OK'

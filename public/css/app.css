@@ -380,6 +380,7 @@ table.data .muted { color: var(--text-3); }
 }
 @keyframes slidein { from { opacity: 0; transform: translateY(8px); } }
 .toast.error { background: var(--red); }
+.toast.warn { background: var(--orange); }
 .toast.success { background: var(--green); }
 
 /* --------------------------------------------------------- Misc helpers */

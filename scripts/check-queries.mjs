@@ -9,7 +9,7 @@
  *
  *   npm run check:queries
  */
-import { init, exec, stats, resetStats } from '../server/db.js';
+import { init, exec, stats, resetStats, closeDb } from '../server/db.js';
 import { match } from '../server/api.js';
 
 // Budgets are deliberately close to current counts so a regression trips them.
@@ -46,4 +46,7 @@ for (const [method, path, budget] of BUDGETS) {
 console.log(failed
   ? `\n  ${failed} endpoint(s) over budget — look for a query inside a loop.\n`
   : '\n  All endpoints within budget.\n');
+// Close the embedded database before leaving, or it keeps its lock file and the
+// next thing to open it waits forever.
+await closeDb();
 process.exit(failed ? 1 : 0);

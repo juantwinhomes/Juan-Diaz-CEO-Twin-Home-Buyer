@@ -518,7 +518,7 @@ export async function scorecards(date, projectsPre = null, teamPre = null) {
 }
 
 export async function stagnantProjects(date, projectsPre = null) {
-  const limit = Number(await getSettings().stagnation_days || 2);
+  const limit = Number((await getSettings()).stagnation_days || 2);
   const projects = projectsPre || await activeProjectsWithDay(date);
   return projects
     .filter((p) => p.days_since_progress === null || p.days_since_progress >= limit)

@@ -141,6 +141,29 @@ Looked into issue       Reduced workflow from 8 steps to 3
 The check runs server-side (`server/lib/quality.js`) and is the single source of truth —
 the commitment and progress forms call it live as you type, so you get feedback before saving.
 
+### Finishing a commitment records the progress
+
+A commitment is a promise; a progress entry is the delivery. They used to be typed
+separately, which meant writing the same sentence twice. Now, ticking a commitment
+complete writes the progress entry for you, on the project the commitment belongs to:
+
+- the entry carries the commitment's own wording, and is checked by the same rule — a
+  commitment that names no result is recorded but still does not count as progress
+- the **percentage is left where it was**. Finishing one deliverable does not say how far
+  along the project now is, so the bar only moves when a person says how far — from the
+  project page, or by editing the entry
+- taking the tick back removes the entry again, so a mis-click leaves nothing behind. Once
+  someone edits that entry it is theirs, and an undo leaves it alone
+- a commitment with no project has nowhere to record progress, so it logs nothing. The
+  Today page shows a **Link a project** button on those
+- Settings → *Ticking a commitment complete logs it as progress on its project* turns the
+  whole thing off
+
+Note that a finished commitment then counts in two parts of the daily score: commitment
+completion (50) and, if the wording names a result, projects progressed (25). That is
+deliberate — the same event genuinely answers both questions — but it does make the score
+move faster than it did when the two were typed separately.
+
 Unfinished commitments never disappear silently. Closing out a day requires a reason for
 every incomplete item — *continue tomorrow*, *blocked*, *cancelled* or *changed priority* —
 and anything marked "continue tomorrow" is carried to the next business day.
@@ -226,7 +249,7 @@ server/
   index.js          Node server wrapper for local, Docker and VM use
   api.js            REST API — every entity supports create, update and delete
   db.js             Postgres access, settings, insert/update/remove helpers
-  schema.sql        13 relational tables
+  schema.js         13 relational tables, plus migrations for databases that already exist
   seed.js           Demo data across six days
   export.js         Whole-database JSON export
   lib/
@@ -237,6 +260,11 @@ server/
     enums.js        Every dropdown, shared by the API and the UI
 netlify/
   functions/api.js  Netlify serverless wrapper around the same handler
+scripts/
+  check-bundle.mjs        Builds the serverless bundle and runs it (npm run check:bundle)
+  check-queries.mjs       Query budget for the pages people open constantly (npm run check:queries)
+  check-progress-link.mjs Commitment -> progress behaviour, end to end (npm run check:progress)
+  import-directory.mjs    Turns the Tools and Artifact Directory CSV into SQL
 public/
   index.html        App shell
   css/app.css       Design system

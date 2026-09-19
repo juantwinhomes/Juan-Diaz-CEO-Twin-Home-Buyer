@@ -46,11 +46,28 @@ export function commitmentForm(values = {}) {
         ? await api.patch(`/commitments/${values.id}`, data)
         : await api.post('/commitments', data);
       close();
+      // Both can be true at once: over the daily limit, and already complete.
       if (result.warning) U.toast(result.warning, 'error');
-      else U.toast(values.id ? 'Commitment updated' : 'Commitment added', 'success');
+      if (result.progress || !result.warning) {
+        U.toast(...commitmentFeedback(result, values.id ? 'Commitment updated' : 'Commitment added'));
+      }
       refresh();
     }
   });
+}
+
+/**
+ * Ticking a commitment complete writes its own progress entry on the project it
+ * belongs to. Say where it landed — and say when the wording kept it from
+ * counting, rather than letting it quietly not count.
+ */
+export function commitmentFeedback(result, fallback = 'Marked complete') {
+  const p = result && result.progress;
+  if (!p) return [fallback, 'success'];
+  if (!p.counts_as_progress && state.settings.show_progress_warnings !== '0') {
+    return [`Logged on ${p.project_name}. It counts as progress once the wording names what changed.`, 'warn'];
+  }
+  return [`${fallback} — progress logged on ${p.project_name}`, 'success'];
 }
 
 /* ------------------------------------------------------------ Progress */

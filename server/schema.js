@@ -97,6 +97,9 @@ CREATE TABLE IF NOT EXISTS progress_logs (
   blocker_text       TEXT,
   notes              TEXT,
   milestone_id       INTEGER REFERENCES project_milestones(id) ON DELETE SET NULL,
+  -- Set when the entry was created by ticking a daily commitment complete, so
+  -- taking the tick back can take the entry with it.
+  commitment_id      INTEGER REFERENCES commitments(id) ON DELETE SET NULL,
   counts_as_progress INTEGER NOT NULL DEFAULT 1,
   quality_score      INTEGER NOT NULL DEFAULT 0,
   created_at         TEXT    NOT NULL DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
@@ -257,5 +260,6 @@ CREATE TABLE IF NOT EXISTS settings (
  * the first release belongs here. Every statement must be safe to run repeatedly.
  */
 export const MIGRATIONS = [
-  'ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_type TEXT'
+  'ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_type TEXT',
+  'ALTER TABLE progress_logs ADD COLUMN IF NOT EXISTS commitment_id INTEGER'
 ];

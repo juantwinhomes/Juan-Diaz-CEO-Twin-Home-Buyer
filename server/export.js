@@ -10,7 +10,7 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { init, all } from './db.js';
+import { init, all, closeDb } from './db.js';
 import { today } from './lib/dates.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -34,4 +34,5 @@ writeFileSync(target, JSON.stringify(data, null, 2));
 
 const kb = (JSON.stringify(data).length / 1024).toFixed(0);
 console.log(`Exported ${rows} rows across ${TABLES.length} tables -> ${target} (${kb} KB)`);
+await closeDb();
 process.exit(0);

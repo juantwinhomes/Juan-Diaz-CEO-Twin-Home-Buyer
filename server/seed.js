@@ -5,7 +5,7 @@
  *   node server/seed.js           # seed only if the database is empty
  *   node server/seed.js --reset   # wipe and reseed
  */
-import { init, all, get, run, insert, update, setSettings } from './db.js';
+import { init, all, get, run, insert, update, setSettings, closeDb } from './db.js';
 import * as D from './lib/dates.js';
 import { ensureSnapshot } from './lib/kpi.js';
 import { scoreText } from './lib/quality.js';
@@ -361,3 +361,8 @@ for (const d of DAYS) await persistDailySnapshot(d);
 console.log(`Seeded ${DAYS.length} days: ${DAYS[0]} → ${DAYS[DAYS.length - 1]}`);
 console.log(`  ${(await all('SELECT id FROM users')).length} users, ${(await all('SELECT id FROM projects')).length} projects, ` +
   `${(await all('SELECT id FROM commitments')).length} commitments, ${(await all('SELECT id FROM progress_logs')).length} progress entries`);
+
+// The embedded database holds the process open and keeps its lock file, so an
+// unclosed seed looks finished but never returns the prompt — and the next
+// thing to open the database waits on it.
+await closeDb();

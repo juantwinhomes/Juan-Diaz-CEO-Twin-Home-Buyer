@@ -161,6 +161,7 @@ export async function page(ctx) {
             <td class="num"><b>${l.new_pct}%</b></td>
             <td class="num">${U.fmt.delta(l.new_pct - l.previous_pct)}</td>
             <td>${U.esc(l.completed_text)}
+              ${l.commitment_id ? ` <span class="badge gray" title="Recorded when the daily commitment was ticked complete">${U.icon('check', 9)} From a commitment</span>` : ''}
               ${l.counts_as_progress ? '' : `<div class="small" style="color:var(--orange)">
                 ${U.icon('alert', 10)} Activity, not a measurable result — did not count as progress</div>`}</td>
             <td class="muted">${U.esc(l.next_text || '—')}</td>

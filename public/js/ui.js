@@ -159,7 +159,7 @@ export const rowActions = (id, { edit = true, remove = true, extra = '' } = {}) 
 
 /* ------------------------------------------------------------ Toasts */
 export function toast(message, type = '') {
-  const el = h(`<div class="toast ${type}">${icon(type === 'error' ? 'alert' : 'check', 15)}<span>${esc(message)}</span></div>`);
+  const el = h(`<div class="toast ${type}">${icon(type === 'error' || type === 'warn' ? 'alert' : 'check', 15)}<span>${esc(message)}</span></div>`);
   document.getElementById('toasts').appendChild(el);
   setTimeout(() => {
     el.style.transition = 'opacity .25s, transform .25s';

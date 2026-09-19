@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import * as U from '../ui.js';
 import { state, refresh, go, activeUsers, setCurrentUser, isToday, dateNote } from '../app.js';
-import { commitmentForm, progressForm, deploymentForm, blockerForm, incidentForm } from './forms.js';
+import { commitmentForm, progressForm, deploymentForm, blockerForm, incidentForm, commitmentFeedback } from './forms.js';
 
 export async function page(ctx) {
   const users = activeUsers();
@@ -164,8 +164,8 @@ export async function page(ctx) {
           const c = commitments.find((x) => x.id === Number(toggleId));
           if (c.status === 'Completed') setStatus(c, true);
           else {
-            await api.patch(`/commitments/${c.id}`, { status: 'Completed' });
-            U.toast('Marked complete', 'success');
+            const res = await api.patch(`/commitments/${c.id}`, { status: 'Completed' });
+            U.toast(...commitmentFeedback(res));
             refresh();
           }
         }
@@ -195,7 +195,9 @@ function checkItem(c) {
       <div class="check-task">${U.esc(c.task)}</div>
       <div class="check-meta">
         ${U.priority(c.priority)}
-        ${c.project_name ? `<span class="chip">${U.esc(c.project_name)}</span>` : ''}
+        ${c.project_name
+          ? `<span class="chip">${U.esc(c.project_name)}</span>`
+          : `<button class="badge gray" data-edit="${c.id}" style="cursor:pointer;border:0" title="Link a project so finishing this records progress">${U.icon('plus', 9)} Link a project</button>`}
         ${done ? U.badge('Completed') : U.badge(c.status)}
         ${!done && c.carryover_reason ? `<span class="badge ${c.carryover_reason === 'Blocked' ? 'orange' : 'gray'}">${U.esc(c.carryover_reason)}</span>` : ''}
         ${needsReason ? `<button class="badge red" data-status="${c.id}" style="cursor:pointer;border:0">${U.icon('alert', 10)} Add a reason</button>` : ''}
@@ -246,9 +248,9 @@ function setStatus(c, forceReason = false) {
         const body = { status, notes: modal.querySelector('#nt').value };
         if (status !== 'Completed') body.carryover_reason = modal.querySelector('#rs').value;
         try {
-          await api.patch(`/commitments/${c.id}`, body);
+          const res = await api.patch(`/commitments/${c.id}`, body);
           close();
-          U.toast('Commitment updated', 'success');
+          U.toast(...commitmentFeedback(res, 'Commitment updated'));
           refresh();
         } catch (err) { U.toast(err.message, 'error'); }
       });

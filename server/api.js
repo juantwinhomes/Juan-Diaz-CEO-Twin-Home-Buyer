@@ -296,7 +296,7 @@ POST('/api/commitments', async (_p, _q, body) => {
   const existing = (await get(
     "SELECT COUNT(*) AS n FROM commitments WHERE user_id = ? AND commit_date = ? AND status != 'Cancelled'",
     body.user_id, date)).n;
-  const max = Number(await getSettings().max_commitments || 5);
+  const max = Number((await getSettings()).max_commitments || 5);
   const id = await insert('commitments', {
     user_id: int(body.user_id),
     project_id: int(body.project_id),
@@ -306,11 +306,14 @@ POST('/api/commitments', async (_p, _q, body) => {
     expected_today: body.expected_today === false ? 0 : 1,
     status: body.status || 'Not Started',
     notes: body.notes,
+    completed_at: body.status === 'Completed' ? new Date().toISOString() : null,
     quality_score: quality.score
   });
+  const created = await get('SELECT * FROM commitments WHERE id = ?', id);
   return {
-    ...(await get('SELECT * FROM commitments WHERE id = ?', id)),
+    ...created,
     quality,
+    progress: created.status === 'Completed' ? await logCommitmentProgress(created) : null,
     warning: existing >= max ? `That is more than the recommended ${max} commitments for one day.` : null
   };
 });
@@ -331,14 +334,100 @@ PATCH('/api/commitments/:id', async (p, _q, body) => {
   }
   if ('project_id' in body) body.project_id = int(body.project_id);
   await update('commitments', p.id, body);
-  return await get('SELECT * FROM commitments WHERE id = ?', p.id);
+  const next = await get('SELECT * FROM commitments WHERE id = ?', p.id);
+
+  // Finishing a commitment writes the progress entry; un-finishing it, or
+  // moving it to another project, takes that entry back.
+  let progress = null;
+  if (next.status === 'Completed' && (c.status !== 'Completed' || next.project_id !== c.project_id)) {
+    if (next.project_id !== c.project_id) await unlogCommitmentProgress(p.id);
+    progress = await logCommitmentProgress(next);
+  } else if (next.status !== 'Completed' && c.status === 'Completed') {
+    await unlogCommitmentProgress(p.id);
+  } else if (next.status === 'Completed' && next.task !== c.task) {
+    // Rewording a finished commitment rewords the entry it created, as long as
+    // nobody has taken that entry over.
+    const linked = await get('SELECT id FROM progress_logs WHERE commitment_id = ?', p.id);
+    if (linked) {
+      const q = scoreText(next.task, { kind: 'progress' });
+      await update('progress_logs', linked.id,
+        { completed_text: next.task, counts_as_progress: q.measurable ? 1 : 0, quality_score: q.score });
+    }
+  }
+  return { ...next, progress };
 });
 
 DELETE('/api/commitments/:id', async (p) => {
   const c = await get('SELECT * FROM commitments WHERE id = ?', p.id) || notFound('Commitment not found');
+  await unlogCommitmentProgress(p.id);
   await remove('commitments', p.id);
   return { deleted: true, id: Number(p.id), task: c.task };
 });
+
+/* ------------------------------------------------------------------ */
+/* Commitments that finish become progress                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A finished commitment is already a delivered result, so nobody should have to
+ * type it twice. Ticking one complete records it as progress on the project it
+ * belongs to.
+ *
+ * The percentage is left where it already stood. Completing one deliverable
+ * does not tell us how far along the project now is, and a number nobody chose
+ * is worse than no number — the entry proves the work moved, and the bar moves
+ * when someone says how far. The wording is still checked the same way a typed
+ * entry is: a commitment that names no result is recorded but does not count
+ * towards projects progressed.
+ */
+async function logCommitmentProgress(c) {
+  if (!c.project_id) return null;
+  if ((await getSettings()).auto_progress_from_commitments === '0') return null;
+  const project = await get('SELECT * FROM projects WHERE id = ?', c.project_id);
+  if (!project) return null;
+
+  const date = c.commit_date || D.today();
+  // Never log the same thing twice, whether from this commitment or because the
+  // person already wrote it up by hand.
+  const already = await get(
+    'SELECT id FROM progress_logs WHERE commitment_id = ? OR (project_id = ? AND log_date = ? AND completed_text = ?)',
+    c.id, project.id, date, c.task);
+  if (already) return null;
+
+  const quality = scoreText(c.task, { kind: 'progress' });
+  const pct = await K.pctOn(project.id, date, project.completion_pct);
+  const previous = await K.previousPct(project.id, date);
+
+  return await transaction(async () => {
+    const id = await insert('progress_logs', {
+      project_id: project.id,
+      user_id: c.user_id,
+      commitment_id: c.id,
+      log_date: date,
+      previous_pct: previous,
+      new_pct: pct,
+      completed_text: c.task,
+      counts_as_progress: quality.measurable ? 1 : 0,
+      quality_score: quality.score
+    });
+    await K.ensureSnapshot(project.id, date, pct, project.status);
+    await update('projects', project.id, { updated_at: new Date().toISOString() });
+    return { ...(await get('SELECT * FROM progress_logs WHERE id = ?', id)), project_name: project.name, quality };
+  });
+}
+
+/**
+ * Taking the tick back takes the automatic entry with it, so an accidental
+ * click leaves nothing behind. An entry someone has since edited is theirs —
+ * editing clears the link, and this leaves it alone.
+ */
+async function unlogCommitmentProgress(commitmentId) {
+  const log = await get('SELECT * FROM progress_logs WHERE commitment_id = ?', commitmentId);
+  if (!log) return null;
+  await remove('progress_logs', log.id);
+  await recomputeProject(log.project_id, log.log_date);
+  return log;
+}
 
 /** Close out a day: everything unfinished needs a reason. */
 POST('/api/commitments/close-day', async (_p, _q, body) => {
@@ -456,6 +545,9 @@ PATCH('/api/progress/:id', async (p, _q, body) => {
     body.quality_score = quality.score;
   }
   if ('new_pct' in body) body.new_pct = Math.max(0, Math.min(100, Number(body.new_pct)));
+  // Once a person edits an entry the commitment created, it is theirs: un-ticking
+  // the commitment must not delete what they wrote.
+  if (log.commitment_id) body.commitment_id = null;
   await update('progress_logs', p.id, body);
   await recomputeProject(log.project_id, log.log_date);
   return await get('SELECT * FROM progress_logs WHERE id = ?', p.id);
@@ -521,7 +613,7 @@ GET('/api/blockers', async (_p, q) => {
   if (q.owner_id) { where.push('b.owner_id = ?'); args.push(q.owner_id); }
   if (q.priority) { where.push('b.priority = ?'); args.push(q.priority); }
   if (q.reason) { where.push('b.reason = ?'); args.push(q.reason); }
-  const alertAfter = Number(await getSettings().blocker_age_alert_days || 1);
+  const alertAfter = Number((await getSettings()).blocker_age_alert_days || 1);
   return (await all(
     `SELECT b.*, p.name AS project_name, u.name AS owner_name, u.color AS owner_color
        FROM blockers b LEFT JOIN projects p ON p.id = b.project_id LEFT JOIN users u ON u.id = b.owner_id
