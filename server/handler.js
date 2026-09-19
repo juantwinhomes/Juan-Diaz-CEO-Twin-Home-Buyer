@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url';
 import { match, HttpError } from './api.js';
 import { authEnabled, isAuthed, login, logout, LOGIN_PAGE } from './auth.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-export const PUBLIC_DIR = join(__dirname, '..', 'public');
+const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
+export const PUBLIC_DIR = join(MODULE_DIR, '..', 'public');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',

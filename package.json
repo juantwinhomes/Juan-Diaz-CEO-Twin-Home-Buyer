@@ -12,7 +12,8 @@
     "dev": "node --watch server/index.js",
     "seed": "node server/seed.js",
     "reset": "node server/seed.js --reset",
-    "export": "node server/export.js"
+    "export": "node server/export.js",
+    "check:bundle": "node scripts/check-bundle.mjs"
   },
   "keywords": [
     "kpi",
@@ -24,5 +25,8 @@
   "dependencies": {
     "pg": "^8.13.1",
     "@electric-sql/pglite": "^0.5.8"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
   }
 }
