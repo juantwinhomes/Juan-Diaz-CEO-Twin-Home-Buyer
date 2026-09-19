@@ -67,6 +67,20 @@ persistent disk.
 Blueprint**, point it at this repository, then set `APP_PASSWORD` when prompted. It provisions
 the web service, the 1 GB disk at `/data`, and generates `SESSION_SECRET` for you.
 
+### A free always-on server (no monthly cost)
+
+`deploy/DEPLOY.md` is a step-by-step guide, written for someone with no server experience,
+covering Google Cloud's and Oracle Cloud's permanently-free virtual machines. On a fresh
+Ubuntu VM the whole install is one command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/juantwinhomes/Juan-Diaz-CEO-Twin-Home-Buyer/claude/festive-wozniak-iednog/deploy/setup.sh | sudo bash -s -- kpi.example.com
+```
+
+It installs Node, fetches the app, generates a team password, configures automatic HTTPS,
+sets the service to start on boot and restart on failure, opens the firewall, and schedules
+nightly backups.
+
 ### Anywhere else
 
 `Dockerfile` builds the whole app and works on Railway, Fly.io, a VPS or any container host.
