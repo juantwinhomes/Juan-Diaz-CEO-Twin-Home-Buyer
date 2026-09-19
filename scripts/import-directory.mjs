@@ -71,6 +71,13 @@ const SECTIONS = ['Report Tracker ONLY', 'Guides and Handbooks', 'New Projects -
   'Active Projects', 'Review and Approval', 'Published/Operational'];
 
 /**
+ * Sections the dashboard does not track. One-off reports and reference
+ * documents are finished artefacts, not work that moves day to day, so they
+ * only pad the project list. They stay in the directory spreadsheet.
+ */
+const SKIP_SECTIONS = ['Report Tracker ONLY', 'Guides and Handbooks'];
+
+/**
  * Best guess at System / Automation / Report from the directory section and
  * wording. The directory has no type column, so this is inference, not data —
  * anything it gets wrong is a dropdown away from being fixed in the app.
@@ -106,6 +113,7 @@ for (const r of rows) {
   if (maybeSection) { section = maybeSection; continue; }
   if (first === 'Name') continue;                       // per-section header row
   if (!section) continue;                               // title/blurb lines above the first section
+  if (SKIP_SECTIONS.includes(section)) continue;        // reports and handbooks are not tracked
 
   const [name, , purpose, builtBy, status, publication, link, docs, , maintenance, health] = r;
   const owners = clean(builtBy).split(',').map((x) => x.trim()).filter(Boolean);
