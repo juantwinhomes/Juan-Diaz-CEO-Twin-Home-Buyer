@@ -31,16 +31,32 @@ const OUTCOME_PATTERNS = [
   /\bupgrad(e|ed)\b/, /\bremov(e|ed)\b/, /\bcut\b/, /\brestor(e|ed)\b/, /\bswitch(ed)?\b/
 ];
 
+/**
+ * Completed work is often described as the new state rather than the action:
+ * "transfer calls are now recorded", "leads no longer drop off", "cut from 8
+ * steps to 3". These are results, so they count - but only alongside a named
+ * artifact, which keeps "now looking into it" out.
+ */
+const STATE_CHANGE_PATTERNS = [
+  /\bnow\s+\w+/, /\bno longer\b/, /\bfrom\s+[^.]{1,40}\s+to\s+/, /\bstay(s)?\s+\w+/,
+  /\bare\s+(?:recorded|captured|tracked|scored|logged|excluded|included|attached|routed)\b/
+];
+
 /** Concrete nouns that suggest a real artifact was touched. */
 const ARTIFACT_PATTERNS = [
-  /\bapi\b/, /\bwebhook\b/, /\bendpoint\b/, /\bintegration\b/, /\bautomation\b/, /\bscript\b/, /\bworkflow\b/,
-  /\bdashboard\b/, /\bpage\b/, /\bform\b/, /\breport\b/, /\btest\s*cases?\b/, /\btests?\b/, /\bbug\b/,
-  /\broute|routing\b/, /\blogin\b/, /\bdatabase\b/, /\btable\b/, /\bsheet\b/, /\bagent\b/, /\bprompt\b/,
-  /\bschema\b/, /\bcrm\b/, /\bsync\b/, /\bnotification\b/, /\bpipeline\b/, /\btrigger\b/, /\bfield\b/,
-  /\bscenario\b/, /\bmilestone\b/, /\bfeature\b/, /\bmodule\b/, /\bscreen\b/, /\bexport\b/, /\bimport\b/,
-  /\bdocs?\b/, /\btransfer\b/, /\bcall\b/, /\blead\b/, /\bpayroll\b/, /\bui\b/, /\bqueue\b/, /\bjob\b/,
-  /\bsystem\b/, /\btesting\b/, /\bdocumentation\b/, /\bdeployment\b/, /\benvironment\b/, /\bcredentials?\b/,
-  /\bintegrations?\b/, /\bwebhooks?\b/, /\bdashboards?\b/, /\bautomations?\b/, /\bsheets?\b/, /\bapp\b/
+  /\bapis?\b/, /\bwebhooks?\b/, /\bendpoints?\b/, /\bintegrations?\b/, /\bautomations?\b/,
+  /\bscripts?\b/, /\bworkflows?\b/, /\bdashboards?\b/, /\bpages?\b/, /\bforms?\b/,
+  /\breports?\b/, /\btests?\b/, /\btest\s*cases?\b/, /\bbugs?\b/, /\broutes?|routing\b/,
+  /\blogins?\b/, /\bdatabases?\b/, /\btables?\b/, /\bsheets?\b/, /\bagents?\b/, /\bprompts?\b/,
+  /\bschemas?\b/, /\bcrm\b/, /\bsyncs?\b/, /\bnotifications?\b/, /\bpipelines?\b/, /\btriggers?\b/,
+  /\bfields?\b/, /\bscenarios?\b/, /\bmilestones?\b/, /\bfeatures?\b/, /\bmodules?\b/,
+  /\bscreens?\b/, /\bexports?\b/, /\bimports?\b/, /\bdocs?\b/, /\btransfers?\b/,
+  /\bcalls?\b|\bcalled\b/, /\bleads?\b/, /\bpayroll\b/, /\bui\b/, /\bqueues?\b/, /\bjobs?\b/,
+  /\bsystems?\b/, /\btesting\b/, /\bdocumentation\b/, /\bdeployments?\b/, /\benvironments?\b/,
+  /\bcredentials?\b/, /\bapps?\b/,
+  // Domain nouns this team actually writes about
+  /\bcampaigns?\b/, /\bsellers?\b/, /\breps?\b/, /\bcallers?\b/, /\bnumbers?\b/,
+  /\bscores?\b/, /\boutcomes?\b/, /\bappointments?\b/, /\brecordings?\b/, /\bcontacts?\b/
 ];
 
 /** Numeric evidence: "3 of 4", "18/20", "40%", "8 steps to 3". */
@@ -61,6 +77,7 @@ export function scoreText(rawText, { kind = 'progress' } = {}) {
   const words = lower.split(/\s+/).filter(Boolean);
   const vagueHits = VAGUE_PATTERNS.filter((re) => re.test(lower));
   const hasOutcome = OUTCOME_PATTERNS.some((re) => re.test(lower));
+  const hasStateChange = STATE_CHANGE_PATTERNS.some((re) => re.test(lower));
   const hasArtifact = ARTIFACT_PATTERNS.some((re) => re.test(lower));
   const hasQuantity = QUANTITY_PATTERN.test(lower);
 
@@ -71,7 +88,10 @@ export function scoreText(rawText, { kind = 'progress' } = {}) {
   const vagueOnly = vagueHits.length > 0 && residue.length < 12 && !hasQuantity;
 
   let score = 0;
-  if (hasOutcome) score += 35; else reasons.push('No completed outcome — say what was finished, not what was touched.');
+  const statesResult = hasOutcome || (hasStateChange && hasArtifact);
+  if (hasOutcome) score += 35;
+  else if (statesResult) score += 28;
+  else reasons.push('No completed outcome — say what was finished, not what was touched.');
   if (hasQuantity) score += 25;
   if (hasArtifact) score += 20; else reasons.push('No specific system, feature or file named.');
   if (words.length >= 5) score += 12;
@@ -84,7 +104,7 @@ export function scoreText(rawText, { kind = 'progress' } = {}) {
   }
   score = Math.max(0, Math.min(100, score));
 
-  const measurable = !vagueOnly && hasOutcome && score >= 50;
+  const measurable = !vagueOnly && statesResult && score >= 50;
   const level = measurable ? (score >= 75 ? 'strong' : 'ok') : 'weak';
   if (!measurable) hints.push(...hintsFor(kind));
 
