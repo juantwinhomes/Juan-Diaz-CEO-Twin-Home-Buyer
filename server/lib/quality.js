@@ -39,7 +39,9 @@ const OUTCOME_PATTERNS = [
  */
 const STATE_CHANGE_PATTERNS = [
   /\bnow\s+\w+/, /\bno longer\b/, /\bfrom\s+[^.]{1,40}\s+to\s+/, /\bstay(s)?\s+\w+/,
-  /\bare\s+(?:recorded|captured|tracked|scored|logged|excluded|included|attached|routed)\b/
+  /\bare\s+(?:recorded|captured|tracked|scored|logged|excluded|included|attached|routed)\b/,
+  /\b(?:is|are|went|gone)\s+live\b/, /\bcan\s+(?:now\s+)?be\s+\w+/, /\bcan\s+now\s+\w+/,
+  /\b(?:sees?|reaches?|shows?|receives?)\s+the\b/, /\ball\s+corrected\b/
 ];
 
 /** Concrete nouns that suggest a real artifact was touched. */

@@ -36,6 +36,11 @@ export async function page() {
               <div class="field"><label>Currency symbol</label>
                 <input class="input" name="currency" value="${U.esc(s.currency)}"></div>
             </div>
+            <label class="checkbox" style="margin:4px 0 14px">
+              <input type="checkbox" name="show_progress_warnings" value="1"
+                     ${s.show_progress_warnings !== '0' ? 'checked' : ''}>
+              Warn when a progress entry does not read as a measurable result
+            </label>
             <button type="submit" class="btn btn-primary">Save settings</button>
           </form>
         </div>
@@ -81,6 +86,17 @@ export async function page() {
             <button class="btn" id="snapshot">${U.icon('refresh', 14)} Rebuild snapshot for ${U.fmt.date(state.date)}</button>
           </div>
         </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Re-check progress entries</h2></div>
+          <div class="card-body">
+            <p class="small muted" style="margin-bottom:11px">
+              The rules for what reads as a measurable result get refined as real wording comes in.
+              Entries scored under older rules keep their old verdict — this re-checks them all against
+              the current rules.</p>
+            <button class="btn" id="rescore">${U.icon('refresh', 14)} Re-check all entries</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -114,9 +130,20 @@ export async function page() {
       root.querySelector('#settingsForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target).entries());
+        data.show_progress_warnings = data.show_progress_warnings ? '1' : '0';
         await api.patch('/settings', data);
         await reloadBootstrap();
         U.toast('Settings saved', 'success');
+        refresh();
+      });
+
+      root.querySelector('#rescore').addEventListener('click', async (e) => {
+        e.target.disabled = true;
+        const result = await api.post('/progress/rescore', {});
+        U.toast(result.changed
+          ? `${result.changed} of ${result.checked} entries changed verdict`
+          : `Checked ${result.checked} entries — no changes`, 'success');
+        e.target.disabled = false;
         refresh();
       });
 

@@ -419,7 +419,9 @@ POST('/api/progress', async (_p, _q, body) => {
       blocker_text: body.blocker_text,
       notes: body.notes,
       milestone_id: int(body.milestone_id),
-      counts_as_progress: quality.measurable ? 1 : 0,
+      // The rules are a good default, not an authority. Someone who knows the
+      // work can say it counts regardless of how the wording scored.
+      counts_as_progress: body.counts_as_progress ? 1 : (quality.measurable ? 1 : 0),
       quality_score: quality.score
     });
 
@@ -449,7 +451,8 @@ PATCH('/api/progress/:id', async (p, _q, body) => {
   const log = await get('SELECT * FROM progress_logs WHERE id = ?', p.id) || notFound('Progress entry not found');
   if ('completed_text' in body && body.completed_text) {
     const quality = scoreText(body.completed_text, { kind: 'progress' });
-    body.counts_as_progress = quality.measurable ? 1 : 0;
+    const override = body.counts_as_progress === true || body.counts_as_progress === 1;
+    body.counts_as_progress = override ? 1 : (quality.measurable ? 1 : 0);
     body.quality_score = quality.score;
   }
   if ('new_pct' in body) body.new_pct = Math.max(0, Math.min(100, Number(body.new_pct)));
@@ -482,6 +485,28 @@ async function recomputeProject(projectId, date) {
   await update('projects', projectId, { completion_pct: pct, updated_at: new Date().toISOString() });
   await syncMilestones(projectId, pct, date);
 }
+
+/**
+ * Re-check every progress entry against the current rules.
+ *
+ * The measurable-progress rules get refined as real wording comes in, and
+ * entries scored under older rules keep their old verdict. This re-scores them
+ * so an entry that reads as a result today is treated as one.
+ */
+POST('/api/progress/rescore', async () => {
+  const logs = await all('SELECT id, completed_text, counts_as_progress FROM progress_logs');
+  let changed = 0;
+  for (const log of logs) {
+    const quality = scoreText(log.completed_text, { kind: 'progress' });
+    const counts = quality.measurable ? 1 : 0;
+    // Only ever promotes, so a human override is never undone.
+    if (counts === 1 && log.counts_as_progress === 0) {
+      await update('progress_logs', log.id, { counts_as_progress: counts, quality_score: quality.score });
+      changed++;
+    }
+  }
+  return { checked: logs.length, changed };
+});
 
 /* ================================================================== */
 /* Blockers                                                            */

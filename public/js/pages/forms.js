@@ -80,6 +80,8 @@ export async function progressForm(values = {}) {
     fields: [
       { name: 'completed_text', label: 'What was completed', type: 'textarea', required: true, rows: 3,
         quality: 'progress', placeholder: 'e.g. Passed 18 of 20 transfer test cases and fixed the after-hours route' },
+      { name: 'counts_as_progress', label: 'Count this as progress even if the wording is flagged', type: 'checkbox',
+        help: 'The rules are a good default, not the last word. Tick this when you know the work moved.' },
       ...(milestoneOptions.length ? [{
         name: 'milestone_id', label: 'Milestone reached', type: 'select', options: milestoneOptions,
         placeholder: 'None — I will set the % myself',

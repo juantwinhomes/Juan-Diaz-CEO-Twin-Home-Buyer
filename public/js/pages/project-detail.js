@@ -20,21 +20,27 @@ export async function page(ctx) {
           ${U.priority(p.priority)} ${U.badge(p.status)} ${p.project_type ? U.typeBadge(p.project_type) : ''}
         </div>
         <div class="card-body">
-          <div class="row" style="align-items:baseline;gap:10px">
+          <div class="row" style="align-items:baseline;gap:8px">
             <span style="font-size:36px;font-weight:650;letter-spacing:-.03em;line-height:1">${p.today_pct}%</span>
-            ${U.fmt.delta(p.progress_today)}
+            <span class="small muted">complete</span>
             <span class="spacer"></span>
-            <span class="small muted">Yesterday ${p.previous_pct}%</span>
+            <span class="small">${p.progress_today > 0
+              ? `${U.fmt.delta(p.progress_today)} <span class="muted">today</span>`
+              : p.progress_today < 0
+                ? `${U.fmt.delta(p.progress_today)} <span class="muted">today</span>`
+                : '<span class="muted">no change today</span>'}</span>
           </div>
           <div style="margin-top:12px">${U.progressBar(p.previous_pct, p.today_pct, false)}</div>
+          <div class="small muted" style="margin-top:6px">Was ${p.previous_pct}% at the start of the day</div>
           <div class="small ${p.progressed ? '' : 'muted'}" style="margin-top:9px;${p.progressed ? 'color:var(--green)' : ''}">
             ${p.progressed
               ? `${U.icon('check', 12)} ${U.esc(p.evidence.join(' · '))}`
               : `<span style="color:var(--orange)">${U.icon('alert', 12)} No measurable progress recorded on ${U.fmt.date(state.date)}</span>`}
           </div>
-          ${p.rejected_logs.length ? `<div class="callout warn" style="margin-top:11px">${U.icon('alert', 15)}
+          ${state.settings.show_progress_warnings !== '0' && p.rejected_logs.length ? `<div class="callout warn" style="margin-top:11px">${U.icon('alert', 15)}
             <div><b>${p.rejected_logs.length} entr${p.rejected_logs.length === 1 ? 'y' : 'ies'} did not count as progress.</b>
-            <p style="margin-top:3px">${p.rejected_logs.map((l) => U.esc(`"${l.completed_text}"`)).join(', ')} — describe the measurable output.</p>
+            <p style="margin-top:3px">${p.rejected_logs.map((l) => U.esc(`"${l.completed_text.slice(0, 90)}"`)).join(', ')} — describe the measurable output.</p>
+            <p style="margin-top:5px" class="small">Turn these off under Settings, or re-check entries there if the rules have since changed.</p>
             </div></div>` : ''}
           <div class="divider"></div>
           <div class="row">
