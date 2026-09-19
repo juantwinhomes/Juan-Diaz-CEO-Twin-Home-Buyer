@@ -107,6 +107,13 @@ export async function query(sql, params = []) {
   }
 }
 
+/** Run multi-statement SQL (migrations, imports). No parameters: the extended
+ *  protocol that carries them only accepts a single statement. */
+export async function exec(sql) {
+  const c = await connect();
+  return c.exec(sql);
+}
+
 export const all = async (sql, ...params) => (await query(sql, params)).rows;
 export const get = async (sql, ...params) => (await query(sql, params)).rows[0] ?? undefined;
 export const run = async (sql, ...params) => {
