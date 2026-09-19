@@ -70,10 +70,6 @@ export const activeProjects = async () =>
   );
 
 /**
- * Evidence that a project moved today. A percentage bump on its own is not
- * enough: the log entry has to pass the measurable-progress check.
- */
-/**
  * Everything the project cards need for one date, in a fixed number of queries
  * regardless of how many projects there are.
  *
@@ -82,7 +78,7 @@ export const activeProjects = async () =>
  * slow one. Loading once and grouping in memory keeps it flat.
  */
 export async function loadDayContext(date) {
-  const [todaySnaps, prevSnaps, logs, deployments, milestones, incidents, blockers, lastProgress] =
+  const [todaySnaps, prevSnaps, logs, deployments, milestones, incidents, blockers, lastProgress, todos] =
     await Promise.all([
       all('SELECT project_id, completion_pct FROM project_snapshots WHERE snapshot_date = ?', date),
       all(`SELECT DISTINCT ON (project_id) project_id, completion_pct
@@ -99,7 +95,7 @@ export async function loadDayContext(date) {
             ORDER BY date_reported`, date),
       all(`SELECT project_id, MAX(d) AS d FROM (
              SELECT project_id, MAX(log_date)      AS d FROM progress_logs
-              WHERE log_date <= ? AND counts_as_progress = 1 GROUP BY project_id
+              WHERE log_date <= ? GROUP BY project_id
              UNION ALL
              SELECT project_id, MAX(deploy_date)   AS d FROM deployments
               WHERE deploy_date <= ? GROUP BY project_id
@@ -109,7 +105,13 @@ export async function loadDayContext(date) {
              UNION ALL
              SELECT project_id, MAX(resolved_date) AS d FROM incidents
               WHERE resolved_date <= ? GROUP BY project_id
-           ) x WHERE project_id IS NOT NULL GROUP BY project_id`, date, date, date, date)
+           ) x WHERE project_id IS NOT NULL GROUP BY project_id`, date, date, date, date),
+      // The to-do count behind each project's percentage.
+      all(`SELECT project_id, COUNT(DISTINCT task) AS total,
+                  COUNT(DISTINCT task) FILTER (WHERE status = 'Completed') AS done
+             FROM commitments
+            WHERE project_id IS NOT NULL AND status != 'Cancelled'
+            GROUP BY project_id`)
     ]);
 
   const byProject = (rows) => {
@@ -132,7 +134,8 @@ export async function loadDayContext(date) {
     milestones: byProject(milestones),
     incidents: byProject(incidents),
     blockers: byProject(blockers),
-    lastProgress: new Map(lastProgress.map((r) => [r.project_id, r.d]))
+    lastProgress: new Map(lastProgress.map((r) => [r.project_id, r.d])),
+    todos: new Map(todos.map((r) => [r.project_id, { done: Number(r.done), total: Number(r.total) }]))
   };
 }
 
@@ -143,8 +146,8 @@ export async function activeProjectsWithDay(date) {
 }
 
 /**
- * Evidence that a project moved on `date`. A percentage bump on its own is not
- * enough: the log entry has to pass the measurable-progress check.
+ * Evidence that a project moved on `date`: what was logged, deployed, finished
+ * or resolved that day.
  *
  * Pass a context from loadDayContext to avoid per-project queries.
  */
@@ -162,14 +165,12 @@ export async function projectDay(project, date, ctx = null) {
   const fixedIncidents = context.incidents.get(project.id) || [];
   const openBlockers = context.blockers.get(project.id) || [];
 
-  const measurableLogs = logs.filter((l) => l.counts_as_progress === 1);
   const evidence = [];
-  if (measurableLogs.length) evidence.push(...measurableLogs.map((l) => l.completed_text));
+  if (logs.length) evidence.push(...logs.map((l) => l.completed_text));
   if (deployments.length) evidence.push(...deployments.map((d) => `Deployed: ${d.title}`));
   if (milestones.length) evidence.push(...milestones.map((m) => `Milestone: ${m.name}`));
   if (fixedIncidents.length) evidence.push(...fixedIncidents.map((i) => `Resolved: ${i.title}`));
 
-  const rejected = logs.filter((l) => l.counts_as_progress === 0);
   const lastProgress = context.lastProgress.get(project.id) || null;
 
   return {
@@ -180,12 +181,12 @@ export async function projectDay(project, date, ctx = null) {
     progressed: evidence.length > 0,
     evidence,
     logs,
-    rejected_logs: rejected,
     deployments,
     milestones_completed: milestones,
     incidents_resolved: fixedIncidents,
     blockers: openBlockers,
     blocker_summary: openBlockers.length ? openBlockers.map((b) => b.title).join('; ') : null,
+    todo: context.todos.get(project.id) || { done: 0, total: 0 },
     last_progress_date: lastProgress,
     days_since_progress: lastProgress ? D.businessDaysBetween(lastProgress, date) : null
   };
@@ -195,7 +196,7 @@ export async function projectDay(project, date, ctx = null) {
 export async function lastProgressDate(projectId, date) {
   const candidates = (await Promise.all([
     get(`SELECT MAX(log_date) AS d FROM progress_logs
-          WHERE project_id = ? AND log_date <= ? AND counts_as_progress = 1`, projectId, date),
+          WHERE project_id = ? AND log_date <= ?`, projectId, date),
     get('SELECT MAX(deploy_date) AS d FROM deployments WHERE project_id = ? AND deploy_date <= ?', projectId, date),
     get(`SELECT MAX(completed_date) AS d FROM project_milestones
           WHERE project_id = ? AND completed = 1 AND completed_date <= ?`, projectId, date),
@@ -356,7 +357,7 @@ export function dailyScore({ commitments, projects, production, blockers }) {
     projectPts = (projects.progressed / projects.active) * 25;
     lines.push({
       label: 'Active projects progressed', points: round(projectPts), max: 25,
-      detail: `${projects.progressed} of ${projects.active} projects showed measurable progress`
+      detail: `${projects.progressed} of ${projects.active} projects moved forward`
     });
   }
 
@@ -534,8 +535,8 @@ export async function stagnantProjects(date, projectsPre = null) {
       blocker: p.blocker_summary,
       next_step: p.next_step,
       message: p.last_progress_date
-        ? `No measurable progress for ${p.days_since_progress} business day${p.days_since_progress === 1 ? '' : 's'}`
-        : 'No measurable progress recorded yet'
+        ? `Nothing logged for ${p.days_since_progress} business day${p.days_since_progress === 1 ? '' : 's'}`
+        : 'Nothing logged yet'
     }))
     .sort((a, b) => (b.days_since_progress ?? 99) - (a.days_since_progress ?? 99));
 }

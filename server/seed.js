@@ -177,7 +177,7 @@ for (const plan of PLAN) {
         project_id: id, user_id: entry.u, log_date: d,
         previous_pct: previous, new_pct: pct,
         completed_text: entry.text, next_text: entry.next,
-        counts_as_progress: quality.measurable ? 1 : 0, quality_score: quality.score
+        quality_score: quality.score
       });
     }
     for (const m of await all('SELECT * FROM project_milestones WHERE project_id = ? AND completed = 0', id)) {
@@ -353,6 +353,21 @@ for (const [project, manual, minutes, runs, cost, revenue, leads, errors, notes]
 }
 
 await setSettings({ team_name: 'AI & Systems', max_commitments: '5' });
+
+/* ---- Percentages follow the to-do list -------------------------------- */
+// The demo history stays as it is; today's figure is what the commitments say,
+// the same rule the app applies from here on.
+for (const id of Object.values(ids)) {
+  const counts = await get(
+    `SELECT COUNT(DISTINCT task) AS total,
+            COUNT(DISTINCT task) FILTER (WHERE status = 'Completed') AS done
+       FROM commitments WHERE project_id = ? AND status != 'Cancelled'`, id);
+  const total = Number(counts.total) || 0;
+  if (!total) continue;
+  const pct = Math.round((Number(counts.done) / total) * 100);
+  await update('projects', id, { completion_pct: pct });
+  await ensureSnapshot(id, TODAY, pct, null);
+}
 
 /* ---- Historical KPI snapshots --------------------------------------- */
 const { persistDailySnapshot } = await import('./lib/kpi.js');

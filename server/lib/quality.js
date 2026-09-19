@@ -1,11 +1,11 @@
 /**
- * Measurable-progress rule engine.
+ * Wording score, kept as metadata.
  *
- * The dashboard must not reward activity. "Worked on Retell" is an activity;
- * "Completed Retell webhook integration and passed all transfer tests" is a
- * measurable result. Everything written into a commitment or a progress log is
- * scored here, and progress logs that fail the check do NOT count the project
- * as having progressed.
+ * This used to decide whether an entry counted as progress: "Worked on Retell"
+ * was rejected, "Completed Retell webhook integration and passed all transfer
+ * tests" was not. The team asked for that judgement to go, so nothing is
+ * rejected now — every entry counts. The score is still stored on each row, and
+ * the examples below are what the forms and the Settings page show as advice.
  */
 
 /** Phrases that describe activity rather than an outcome. */
@@ -134,7 +134,7 @@ function hintsFor(kind) {
 }
 
 export const HELPER_MESSAGE =
-  'A daily commitment should describe a measurable result, not just an activity.';
+  'One line per deliverable: what you expect to have finished by the end of the day.';
 
 export const NON_PROGRESS_EXAMPLES = [
   'Worked on it', 'Researched', 'Checked system', 'Continued coding', 'Had meeting', 'Looked into issue'

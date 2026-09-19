@@ -215,7 +215,7 @@ export function closeModal() {
 /* -------------------------------------------------------- Form modal */
 /**
  * Field: { name, label, type, options, required, help, placeholder,
- *          full, quality: 'commitment'|'progress', min, max, step, rows }
+ *          full, min, max, step, rows }
  */
 export function openForm({ title, subtitle, fields, values = {}, submitLabel = 'Save', wide = false, note = '', onSubmit, onReady }) {
   const body = `<form id="entityForm" novalidate>${note}${renderFields(fields, values)}</form>`;
@@ -226,7 +226,6 @@ export function openForm({ title, subtitle, fields, values = {}, submitLabel = '
 
   return openModal({ title, subtitle, body, footer, wide, onMount(modal, close) {
     const form = modal.querySelector('#entityForm');
-    wireQuality(form, fields);
     if (onReady) onReady(form, modal);
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -279,7 +278,6 @@ function renderFields(fields, values) {
       <label for="${f.name}">${esc(f.label)}${req}</label>
       ${control}
       ${f.help ? `<p class="hint">${esc(f.help)}</p>` : ''}
-      ${f.quality ? `<div class="quality" data-quality-for="${f.name}" hidden></div>` : ''}
     </div>`;
   };
 
@@ -308,32 +306,6 @@ function collect(form, fields) {
     else data[f.name] = el.value;
   }
   return data;
-}
-
-/** Live "is this measurable?" feedback, scored by the server. */
-function wireQuality(form, fields) {
-  for (const f of fields.filter((x) => x.quality)) {
-    const input = form.elements[f.name];
-    const box = form.querySelector(`[data-quality-for="${f.name}"]`);
-    if (!input || !box) continue;
-    let timer;
-    const check = async () => {
-      const text = input.value.trim();
-      if (text.length < 3) { box.hidden = true; return; }
-      try {
-        const { api } = await import('./api.js');
-        const r = await api.post('/quality-check', { text, kind: f.quality });
-        box.hidden = false;
-        box.className = `quality ${r.level}`;
-        box.innerHTML = r.measurable
-          ? `${icon('check', 14)}<div><b>${r.level === 'strong' ? 'Clear, measurable result.' : 'Measurable — good enough to track.'}</b></div>`
-          : `${icon('alert', 14)}<div><b>This reads as activity, not a result.</b>
-             <ul>${[...r.reasons, ...r.hints].map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>`;
-      } catch { box.hidden = true; }
-    };
-    input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(check, 350); });
-    if (input.value.trim()) check();
-  }
 }
 
 /* ------------------------------------------------------ Confirm remove */

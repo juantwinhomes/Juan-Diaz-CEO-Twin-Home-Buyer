@@ -37,11 +37,12 @@ UNION ALL SELECT 'milestones', COUNT(*)::text || ' rows', CASE WHEN COUNT(*) > 0
 
 UNION ALL
 SELECT 'columns added after the first release',
-       COUNT(*)::text || ' of 2',
-       CASE WHEN COUNT(*) = 2 THEN 'OK' ELSE 'deploy the latest code - the app adds these when it starts' END
+       COUNT(*)::text || ' of 3',
+       CASE WHEN COUNT(*) = 3 THEN 'OK' ELSE 'deploy the latest code - the app adds these when it starts' END
   FROM information_schema.columns
  WHERE table_schema = 'public'
    AND ((table_name = 'projects'      AND column_name = 'project_type')
+     OR (table_name = 'projects'      AND column_name = 'pct_from_commitments')
      OR (table_name = 'progress_logs' AND column_name = 'commitment_id'))
 
 UNION ALL

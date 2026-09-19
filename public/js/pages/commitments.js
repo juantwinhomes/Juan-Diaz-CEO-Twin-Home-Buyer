@@ -62,7 +62,6 @@ export async function page() {
             <td class="nowrap">${U.fmt.date(c.commit_date)}</td>
             <td class="nowrap">${U.esc(c.user_name || '—')}</td>
             <td>${U.esc(c.task)}
-              ${c.quality_score < 50 ? `<div class="small" style="color:var(--yellow)">${U.icon('alert', 10)} Vague — describe a measurable result</div>` : ''}
               ${c.notes ? `<div class="small muted">${U.esc(c.notes)}</div>` : ''}</td>
             <td class="nowrap muted">${U.esc(c.project_name || '—')}</td>
             <td>${U.priority(c.priority)}</td>
@@ -104,7 +103,7 @@ export async function page() {
             title: 'Remove commitment',
             message: `Remove "${c.task}"?`,
             detail: 'If the work simply did not happen, set a reason instead so it stays on the record.',
-            async onConfirm() { await api.del(`/commitments/${c.id}`); U.toast('Commitment removed'); refresh(); }
+            async onConfirm() { await api.del(`/commitments/${c.id}`, { date: state.date }); U.toast('Commitment removed'); refresh(); }
           });
         }
       });

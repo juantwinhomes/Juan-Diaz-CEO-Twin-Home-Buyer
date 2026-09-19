@@ -25,12 +25,12 @@ export function commitmentForm(values = {}) {
     title: values.id ? 'Edit commitment' : 'Add a daily commitment',
     subtitle: values.id ? null : 'One concrete deliverable you expect to finish today',
     note: `<div class="callout info" style="margin-bottom:15px">${U.icon('target', 16)}
-      <div><b>${U.esc(state.guidance.helper || '')}</b>
-      <p style="margin-top:4px"><b>Weak:</b> "Work on Retell" &nbsp;·&nbsp;
-      <b>Strong:</b> "Complete Retell webhook integration and pass all transfer test cases."</p></div></div>`,
+      <div><b>Write it the way you would tell someone it is done.</b>
+      <p style="margin-top:4px">"Complete Retell webhook integration and pass all transfer test cases"
+      tells the team more than "Work on Retell" — but it is your call.</p></div></div>`,
     fields: [
       { name: 'task', label: 'Task / deliverable', type: 'textarea', required: true, rows: 2,
-        quality: 'commitment', placeholder: 'Describe the finished result, not the activity' },
+        placeholder: 'What you expect to have finished' },
       { name: 'project_id', label: 'Project', type: 'select', options: projectOptions(), placeholder: 'No project', half: true },
       { name: 'priority', label: 'Priority', type: 'select', options: e.priorities, default: 'P3', half: true },
       { name: 'user_id', label: 'Team member', type: 'select', options: userOptions(), required: true, half: true },
@@ -43,7 +43,7 @@ export function commitmentForm(values = {}) {
     submitLabel: values.id ? 'Save changes' : 'Add commitment',
     async onSubmit(data, close) {
       const result = values.id
-        ? await api.patch(`/commitments/${values.id}`, data)
+        ? await api.patch(`/commitments/${values.id}`, data, { date: data.commit_date || today() })
         : await api.post('/commitments', data);
       close();
       // Both can be true at once: over the daily limit, and already complete.
@@ -58,15 +58,11 @@ export function commitmentForm(values = {}) {
 
 /**
  * Ticking a commitment complete writes its own progress entry on the project it
- * belongs to. Say where it landed — and say when the wording kept it from
- * counting, rather than letting it quietly not count.
+ * belongs to. Say where it landed, so it is never a surprise.
  */
 export function commitmentFeedback(result, fallback = 'Marked complete') {
   const p = result && result.progress;
   if (!p) return [fallback, 'success'];
-  if (!p.counts_as_progress && state.settings.show_progress_warnings !== '0') {
-    return [`Logged on ${p.project_name}. It counts as progress once the wording names what changed.`, 'warn'];
-  }
   return [`${fallback} — progress logged on ${p.project_name}`, 'success'];
 }
 
@@ -74,12 +70,15 @@ export function commitmentFeedback(result, fallback = 'Marked complete') {
 export async function progressForm(values = {}) {
   const project = state.projects.find((p) => p.id === Number(values.project_id));
   const e = state.enums;
+  // Where the to-dos decide the percentage, offering a box to type one in is an
+  // invitation to a number that will be overwritten.
+  const byTodos = !!project && project.pct_from_commitments !== 0 && Number(project.todo_total || 0) > 0;
 
   // The milestone framework already carries the percentage for each stage, so
   // picking the stage you reached sets the number for you. Typing a figure by
   // hand still works when the move does not line up with a milestone.
   let milestones = [];
-  if (values.project_id) {
+  if (values.project_id && !byTodos) {
     try { milestones = await api.get('/milestones', { project_id: values.project_id }); } catch { /* fall back to manual */ }
   }
   const milestoneOptions = milestones.map((m) => ({
@@ -89,23 +88,22 @@ export async function progressForm(values = {}) {
 
   U.openForm({
     title: values.id ? 'Edit progress entry' : `Log progress${project ? ` — ${project.name}` : ''}`,
-    subtitle: 'What measurably changed today?',
+    subtitle: 'What changed today?',
     note: `<div class="callout info" style="margin-bottom:15px">${U.icon('target', 16)}
-      <div><b>Activity does not count as progress.</b>
-      <p style="margin-top:4px">"Worked on it", "researched", "checked system" and "had meeting" are not progress
-      unless you name the measurable output. "Fixed 3 of 4 routing scenarios" is.</p></div></div>`,
+      <div><b>Say what moved, so the entry still means something next month.</b>
+      <p style="margin-top:4px">${byTodos
+        ? `${U.esc(project.name)} counts its percentage from its to-dos (${project.todo_done} of ${project.todo_total} done), so this entry records the work without changing the number. Tick the to-do off to move the bar.`
+        : '"Fixed 3 of 4 routing scenarios" reads better in a report than "worked on it".'}</p></div></div>`,
     fields: [
       { name: 'completed_text', label: 'What was completed', type: 'textarea', required: true, rows: 3,
-        quality: 'progress', placeholder: 'e.g. Passed 18 of 20 transfer test cases and fixed the after-hours route' },
-      { name: 'counts_as_progress', label: 'Count this as progress even if the wording is flagged', type: 'checkbox',
-        help: 'The rules are a good default, not the last word. Tick this when you know the work moved.' },
+        placeholder: 'e.g. Passed 18 of 20 transfer test cases and fixed the after-hours route' },
       ...(milestoneOptions.length ? [{
         name: 'milestone_id', label: 'Milestone reached', type: 'select', options: milestoneOptions,
         placeholder: 'None — I will set the % myself',
         help: 'Choosing one fills in the completion % below and ticks the milestone off'
       }] : []),
-      { name: 'new_pct', label: 'New completion %', type: 'number', min: 0, max: 100, step: 1, half: true,
-        help: project ? `Currently ${project.completion_pct}%` : '' },
+      ...(byTodos ? [] : [{ name: 'new_pct', label: 'New completion %', type: 'number', min: 0, max: 100, step: 1, half: true,
+        help: project ? `Currently ${project.completion_pct}%` : '' }]),
       { name: 'status', label: 'Project status', type: 'select', options: e.project_statuses, half: true,
         placeholder: 'Leave unchanged' },
       { name: 'next_text', label: 'What is next', type: 'textarea', rows: 2, placeholder: 'The next concrete step' },
@@ -120,7 +118,7 @@ export async function progressForm(values = {}) {
     values: {
       log_date: today(),
       user_id: state.currentUserId,
-      new_pct: project ? project.completion_pct : '',
+      ...(byTodos ? {} : { new_pct: project ? project.completion_pct : '' }),
       ...values
     },
     submitLabel: values.id ? 'Save changes' : 'Log progress',
@@ -141,9 +139,7 @@ export async function progressForm(values = {}) {
         ? await api.patch(`/progress/${values.id}`, data)
         : await api.post('/progress', data);
       close();
-      if (result.quality && !result.quality.measurable) {
-        U.toast('Logged, but it does not count as measurable progress.', 'error');
-      } else U.toast('Progress logged', 'success');
+      U.toast('Progress logged', 'success');
       refresh();
     }
   });
@@ -166,8 +162,11 @@ export function projectForm(values = {}) {
       { name: 'target_date', label: 'Target completion date', type: 'date', half: true },
       { name: 'priority', label: 'Priority', type: 'select', options: e.priorities, default: 'P3', half: true },
       { name: 'status', label: 'Status', type: 'select', options: e.project_statuses, default: 'Backlog', half: true },
+      { name: 'pct_from_commitments', label: 'Count the completion % from this project\'s to-dos', type: 'checkbox',
+        default: true,
+        help: 'On: the bar is how many of its commitments are done. Off: whatever you type below stands, however many are open.' },
       { name: 'completion_pct', label: 'Completion %', type: 'number', min: 0, max: 100, step: 1, default: 0, half: true,
-        help: 'Milestones tick automatically as this rises' },
+        help: 'Used when the to-do count above is switched off' },
       { name: 'current_phase', label: 'Current phase', type: 'select', options: e.project_phases, placeholder: 'Not set', half: true },
       { name: 'next_step', label: 'Next step', type: 'text', placeholder: 'The next concrete deliverable' },
       { name: 'business_objective', label: 'Business objective', type: 'textarea', rows: 2 },
@@ -175,7 +174,12 @@ export function projectForm(values = {}) {
       { name: 'production_url', label: 'Production URL or system link', type: 'text', placeholder: 'https://' },
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
     ],
-    values: { start_date: today(), completion_pct: 0, ...values },
+    values: {
+      start_date: today(),
+      completion_pct: 0,
+      ...values,
+      pct_from_commitments: values.pct_from_commitments !== 0
+    },
     submitLabel: values.id ? 'Save changes' : 'Create project',
     async onSubmit(data, close) {
       await save('/projects', data, values.id, values.id ? 'Project updated' : 'Project created');

@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import * as U from '../ui.js';
 import { state, refresh, go } from '../app.js';
-import { projectForm, progressForm, blockerForm, deploymentForm, impactForm } from './forms.js';
+import { projectForm, progressForm, blockerForm, deploymentForm, impactForm, commitmentForm } from './forms.js';
 
 export async function page(ctx) {
   const p = await api.get(`/projects/${ctx.param}`, { date: state.date });
@@ -31,17 +31,16 @@ export async function page(ctx) {
                 : '<span class="muted">no change today</span>'}</span>
           </div>
           <div style="margin-top:12px">${U.progressBar(p.previous_pct, p.today_pct, false)}</div>
-          <div class="small muted" style="margin-top:6px">Was ${p.previous_pct}% at the start of the day</div>
+          <div class="small muted" style="margin-top:6px">
+            ${countsFromTodos(p)
+              ? `${p.commitment_progress.done} of ${p.commitment_progress.total} to-dos done · was ${p.previous_pct}% at the start of the day`
+              : `Set by hand · was ${p.previous_pct}% at the start of the day`}
+          </div>
           <div class="small ${p.progressed ? '' : 'muted'}" style="margin-top:9px;${p.progressed ? 'color:var(--green)' : ''}">
             ${p.progressed
               ? `${U.icon('check', 12)} ${U.esc(p.evidence.join(' · '))}`
-              : `<span style="color:var(--orange)">${U.icon('alert', 12)} No measurable progress recorded on ${U.fmt.date(state.date)}</span>`}
+              : `<span style="color:var(--orange)">${U.icon('alert', 12)} Nothing logged on ${U.fmt.date(state.date)}</span>`}
           </div>
-          ${state.settings.show_progress_warnings !== '0' && p.rejected_logs.length ? `<div class="callout warn" style="margin-top:11px">${U.icon('alert', 15)}
-            <div><b>${p.rejected_logs.length} entr${p.rejected_logs.length === 1 ? 'y' : 'ies'} did not count as progress.</b>
-            <p style="margin-top:3px">${p.rejected_logs.map((l) => U.esc(`"${l.completed_text.slice(0, 90)}"`)).join(', ')} — describe the measurable output.</p>
-            <p style="margin-top:5px" class="small">Turn these off under Settings, or re-check entries there if the rules have since changed.</p>
-            </div></div>` : ''}
           <div class="divider"></div>
           <div class="row">
             <button class="btn btn-primary btn-sm" data-action="log">${U.icon('plus', 13)} Log progress</button>
@@ -68,6 +67,25 @@ export async function page(ctx) {
       </div>
     </div>
 
+    <div class="section">
+      <div class="card">
+        <div class="card-head">
+          <h2>To-dos</h2>
+          <span class="sub">${countsFromTodos(p)
+            ? 'Ticking these is what moves the percentage'
+            : 'This project\'s percentage is set by hand, so these do not move it'}</span>
+          <span class="spacer"></span>
+          <span class="badge ${p.commitment_progress.total && p.commitment_progress.done === p.commitment_progress.total ? 'green' : 'gray'}">
+            ${p.commitment_progress.done} of ${p.commitment_progress.total} done</span>
+          <button class="btn btn-sm btn-primary" data-action="add-todo">${U.icon('plus', 13)} Add to-do</button>
+        </div>
+        ${p.commitments.length ? `<div class="card-body tight">
+          <div class="check-list">${p.commitments.map(todoItem).join('')}</div>
+        </div>` : `<div class="card-body">${U.empty('No to-dos yet',
+          'Add what has to be finished for this project. The percentage counts them.')}</div>`}
+      </div>
+    </div>
+
     <div class="section grid grid-2" style="align-items:start">
       <div class="card">
         <div class="card-head"><h2>Details</h2><span class="spacer"></span>
@@ -80,6 +98,9 @@ export async function page(ctx) {
             ${row('Requester / department', [p.requester, p.department].filter(Boolean).join(' · ') || '—')}
             ${row('Start date', U.fmt.date(p.start_date))}
             ${row('Target completion', `${U.fmt.date(p.target_date)}${overdue ? ' <span style="color:var(--red)">(passed)</span>' : ''}`, true)}
+            ${row('Completion %', countsFromTodos(p)
+              ? `Counted from ${p.commitment_progress.total} to-do${p.commitment_progress.total === 1 ? '' : 's'}`
+              : 'Set by hand')}
             ${row('Current phase', p.current_phase || '—')}
             ${row('Next step', p.next_step || 'Not set')}
             ${row('Business objective', p.business_objective || '—')}
@@ -154,16 +175,14 @@ export async function page(ctx) {
         ${U.table(
           ['Date', 'Person', 'Previous', 'New', 'Change', 'What was completed', 'What is next', 'Blocker', ''],
           p.history,
-          (l) => `<tr${l.counts_as_progress ? '' : ' class="row-warn"'}>
+          (l) => `<tr>
             <td class="nowrap">${U.fmt.date(l.log_date)}</td>
             <td class="nowrap">${U.esc(l.user_name || '—')}</td>
             <td class="num muted">${l.previous_pct}%</td>
             <td class="num"><b>${l.new_pct}%</b></td>
             <td class="num">${U.fmt.delta(l.new_pct - l.previous_pct)}</td>
             <td>${U.esc(l.completed_text)}
-              ${l.commitment_id ? ` <span class="badge gray" title="Recorded when the daily commitment was ticked complete">${U.icon('check', 9)} From a commitment</span>` : ''}
-              ${l.counts_as_progress ? '' : `<div class="small" style="color:var(--orange)">
-                ${U.icon('alert', 10)} Activity, not a measurable result — did not count as progress</div>`}</td>
+              ${l.commitment_id ? ` <span class="badge gray" title="Recorded when the daily commitment was ticked complete">${U.icon('check', 9)} From a commitment</span>` : ''}</td>
             <td class="muted">${U.esc(l.next_text || '—')}</td>
             <td class="muted">${U.esc(l.blocker_text || '—')}</td>
             ${U.rowActions(l.id)}
@@ -184,11 +203,34 @@ export async function page(ctx) {
         const removeLog = e.target.closest('[data-remove]')?.dataset.remove;
         const milestone = e.target.closest('[data-milestone]');
         const blocker = e.target.closest('[data-blocker]')?.dataset.blocker;
+        const todo = e.target.closest('[data-todo]')?.dataset.todo;
+        const todoEdit = e.target.closest('[data-todo-edit]')?.dataset.todoEdit;
+        const todoRemove = e.target.closest('[data-todo-remove]')?.dataset.todoRemove;
 
         if (action === 'log') progressForm({ project_id: p.id, log_date: state.date, user_id: state.currentUserId });
         if (action === 'deploy') deploymentForm({ project_id: p.id, deploy_date: state.date, user_id: state.currentUserId });
         if (action === 'block') blockerForm({ project_id: p.id, date_reported: state.date, owner_id: p.owner_id });
         if (action === 'edit') projectForm(p);
+        if (action === 'add-todo') {
+          commitmentForm({ project_id: p.id, user_id: state.currentUserId || p.owner_id, commit_date: state.date });
+        }
+        if (todo) {
+          const c = p.commitments.find((x) => x.id === Number(todo));
+          const next = c.status === 'Completed' ? 'In Progress' : 'Completed';
+          await api.patch(`/commitments/${c.id}`, { status: next }, { date: state.date });
+          U.toast(next === 'Completed' ? 'Ticked off' : 'Put back on the list', 'success');
+          refresh();
+        }
+        if (todoEdit) commitmentForm(p.commitments.find((x) => x.id === Number(todoEdit)));
+        if (todoRemove) {
+          const c = p.commitments.find((x) => x.id === Number(todoRemove));
+          U.confirmRemove({
+            title: 'Remove to-do',
+            message: `Remove "${c.task}"?`,
+            detail: "It stops counting towards this project's percentage.",
+            async onConfirm() { await api.del(`/commitments/${c.id}`, { date: state.date }); U.toast('To-do removed'); refresh(); }
+          });
+        }
         if (action === 'impact') impactForm(p.impact || { project_id: p.id });
         if (action === 'archive') {
           await api.post(`/projects/${p.id}/archive`, { archived: !p.archived });
@@ -229,6 +271,33 @@ export async function page(ctx) {
       });
     }
   };
+}
+
+/** True when this project's percentage is counted from its to-dos. */
+const countsFromTodos = (p) => p.pct_from_commitments !== 0 && p.commitment_progress.total > 0;
+
+/** One to-do: the same tick box as the Today page, in the project's own list. */
+function todoItem(c) {
+  const done = c.status === 'Completed';
+  const cls = done ? 'done' : c.status === 'Blocked' ? 'blocked' : c.status === 'Cancelled' ? 'cancelled' : '';
+  return `<div class="check-item ${cls}">
+    <button class="check-mark" data-todo="${c.id}" aria-label="${done ? 'Mark not done' : 'Mark done'}">
+      ${done ? U.icon('check', 12) : c.status === 'Blocked' ? U.icon('alert', 11) : c.status === 'Cancelled' ? U.icon('x', 11) : ''}
+    </button>
+    <div class="check-main">
+      <div class="check-task">${U.esc(c.task)}</div>
+      <div class="check-meta">
+        ${U.priority(c.priority)}
+        ${U.badge(c.status)}
+        <span class="chip">${U.fmt.date(c.commit_date)}</span>
+        ${c.user_name ? `<span class="chip">${U.esc(c.user_name)}</span>` : ''}
+      </div>
+    </div>
+    <div class="check-actions">
+      <button class="icon-btn" data-todo-edit="${c.id}" title="Edit">${U.icon('edit', 15)}</button>
+      <button class="icon-btn danger" data-todo-remove="${c.id}" title="Remove">${U.icon('trash', 15)}</button>
+    </div>
+  </div>`;
 }
 
 const row = (label, value, raw = false) =>

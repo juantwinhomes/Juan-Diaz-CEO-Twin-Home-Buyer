@@ -205,7 +205,7 @@ function stagnationSection(stagnant) {
       <div class="card-head" style="background:var(--orange-bg);border-radius:12px 12px 0 0">
         <span style="color:var(--orange)">${U.icon('alert', 17)}</span>
         <h2>Projects not moving</h2>
-        <span class="sub">No measurable progress recorded</span>
+        <span class="sub">Nothing logged</span>
       </div>
       ${U.table(
         ['Project', 'Owner', 'Last progress', 'Current blocker', 'Next step'],
@@ -267,7 +267,7 @@ function scorecard(sc) {
             <div class="small ${p.progressed ? 'muted' : ''}" style="margin-top:5px;${p.progressed ? '' : 'color:var(--orange)'}">
               ${p.progressed
                 ? U.esc(p.evidence.join(' · '))
-                : `${U.icon('alert', 11)} No measurable progress recorded today`}
+                : `${U.icon('alert', 11)} Nothing logged today`}
             </div>
           </div>`).join('')}
       </div>` : ''}

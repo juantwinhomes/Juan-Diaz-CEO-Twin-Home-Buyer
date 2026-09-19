@@ -48,16 +48,22 @@ GET('/api/bootstrap', async (_p, q) => ({
   today: D.today(),
   date: dateOr(q),
   users: await all('SELECT * FROM users ORDER BY sort_order, id'),
-  projects: await all(`SELECT p.*, u.name AS owner_name FROM projects p
-                   LEFT JOIN users u ON u.id = p.owner_id
-                  WHERE p.archived = 0 ORDER BY p.name`),
+  // The to-do counts ride along so a form can say where a percentage comes from
+  // without a second request.
+  projects: await all(`SELECT p.*, u.name AS owner_name,
+                              COALESCE(c.total, 0) AS todo_total, COALESCE(c.done, 0) AS todo_done
+                         FROM projects p
+                    LEFT JOIN users u ON u.id = p.owner_id
+                    LEFT JOIN (SELECT project_id, COUNT(DISTINCT task) AS total,
+                                      COUNT(DISTINCT task) FILTER (WHERE status = 'Completed') AS done
+                                 FROM commitments WHERE status != 'Cancelled' GROUP BY project_id) c
+                           ON c.project_id = p.id
+                        WHERE p.archived = 0 ORDER BY p.name`),
   settings: await getSettings(),
   enums: ENUMS,
   guidance: { helper: HELPER_MESSAGE, good: PROGRESS_EXAMPLES, bad: NON_PROGRESS_EXAMPLES },
   auth: { enabled: authEnabled() }
 }));
-
-POST('/api/quality-check', async (_p, _q, body) => scoreText(body.text, { kind: body.kind || 'progress' }));
 
 /* ================================================================== */
 /* Users                                                               */
@@ -144,6 +150,17 @@ GET('/api/projects/:id', async (p, q) => {
   return {
     ...(await K.projectDay(project, date)),
     milestones: await all('SELECT * FROM project_milestones WHERE project_id = ? ORDER BY sort_order, target_pct', p.id),
+    // One line per task: a carried-over copy is the same to-do, not a new one.
+    commitments: await all(
+      `SELECT * FROM (
+         SELECT DISTINCT ON (c.task) c.*, u.name AS user_name, u.color AS user_color
+           FROM commitments c LEFT JOIN users u ON u.id = c.user_id
+          WHERE c.project_id = ?
+          ORDER BY c.task, CASE c.status WHEN 'Completed' THEN 0 ELSE 1 END, c.commit_date DESC
+       ) t
+        ORDER BY CASE t.status WHEN 'Completed' THEN 2 WHEN 'Cancelled' THEN 3 ELSE 1 END,
+                 t.commit_date DESC, t.id`, p.id),
+    commitment_progress: await commitmentProgress(p.id),
     history: await all(
       `SELECT pl.*, u.name AS user_name FROM progress_logs pl
          LEFT JOIN users u ON u.id = pl.user_id
@@ -175,6 +192,7 @@ POST('/api/projects', async (_p, _q, body) => {
       priority: body.priority || 'P3',
       status: body.status || 'Backlog',
       completion_pct: Number(body.completion_pct) || 0,
+      pct_from_commitments: body.pct_from_commitments === false || body.pct_from_commitments === 0 ? 0 : 1,
       current_phase: body.current_phase,
       next_step: body.next_step,
       business_objective: body.business_objective,
@@ -199,6 +217,10 @@ PATCH('/api/projects/:id', async (p, q, body) => {
   const date = q.date || D.today();
   body.updated_at = new Date().toISOString();
   for (const key of ['owner_id', 'secondary_owner_id']) if (key in body) body[key] = int(body[key]);
+  // Typing a percentage is how someone takes the number back off the checklist.
+  if ('pct_from_commitments' in body) {
+    body.pct_from_commitments = body.pct_from_commitments === false || body.pct_from_commitments === 0 ? 0 : 1;
+  }
   await update('projects', p.id, body);
 
   if ('completion_pct' in body || 'status' in body) {
@@ -206,6 +228,8 @@ PATCH('/api/projects/:id', async (p, q, body) => {
     await K.ensureSnapshot(p.id, date, next.completion_pct, next.status);
     await syncMilestones(p.id, next.completion_pct, date);
   }
+  // Switched back to counting the commitments? Recount now.
+  if (body.pct_from_commitments === 1) await applyCommitmentPct(p.id, date);
   return await K.projectDay(await get('SELECT * FROM projects WHERE id = ?', p.id), date);
 });
 
@@ -310,6 +334,8 @@ POST('/api/commitments', async (_p, _q, body) => {
     quality_score: quality.score
   });
   const created = await get('SELECT * FROM commitments WHERE id = ?', id);
+  // One more thing on the list changes how far along the project is.
+  await applyCommitmentPct(created.project_id, date);
   return {
     ...created,
     quality,
@@ -318,8 +344,11 @@ POST('/api/commitments', async (_p, _q, body) => {
   };
 });
 
-PATCH('/api/commitments/:id', async (p, _q, body) => {
+PATCH('/api/commitments/:id', async (p, q, body) => {
   const c = await get('SELECT * FROM commitments WHERE id = ?', p.id) || notFound('Commitment not found');
+  // Ticking something off moves the project today, not on the day it was
+  // promised — unless the person is deliberately working on a past date.
+  const when = q.date || D.today();
   if ('task' in body && body.task) body.quality_score = scoreText(body.task, { kind: 'commitment' }).score;
   if ('status' in body) {
     if (body.status === 'Completed') {
@@ -341,9 +370,13 @@ PATCH('/api/commitments/:id', async (p, _q, body) => {
   let progress = null;
   if (next.status === 'Completed' && (c.status !== 'Completed' || next.project_id !== c.project_id)) {
     if (next.project_id !== c.project_id) await unlogCommitmentProgress(p.id);
-    progress = await logCommitmentProgress(next);
+    await applyCommitmentPct(c.project_id, when);
+    await applyCommitmentPct(next.project_id, when);
+    progress = await logCommitmentProgress(next, when);
   } else if (next.status !== 'Completed' && c.status === 'Completed') {
     await unlogCommitmentProgress(p.id);
+    await applyCommitmentPct(c.project_id, when);
+    await applyCommitmentPct(next.project_id, when);
   } else if (next.status === 'Completed' && next.task !== c.task) {
     // Rewording a finished commitment rewords the entry it created, as long as
     // nobody has taken that entry over.
@@ -351,18 +384,58 @@ PATCH('/api/commitments/:id', async (p, _q, body) => {
     if (linked) {
       const q = scoreText(next.task, { kind: 'progress' });
       await update('progress_logs', linked.id,
-        { completed_text: next.task, counts_as_progress: q.measurable ? 1 : 0, quality_score: q.score });
+        { completed_text: next.task, quality_score: q.score });
     }
+  } else if (next.project_id !== c.project_id || next.status !== c.status) {
+    await applyCommitmentPct(c.project_id, when);
+    await applyCommitmentPct(next.project_id, when);
   }
-  return { ...next, progress };
+  return { ...next, progress, project_progress: await commitmentProgress(next.project_id) };
 });
 
-DELETE('/api/commitments/:id', async (p) => {
+DELETE('/api/commitments/:id', async (p, q) => {
   const c = await get('SELECT * FROM commitments WHERE id = ?', p.id) || notFound('Commitment not found');
   await unlogCommitmentProgress(p.id);
   await remove('commitments', p.id);
+  await applyCommitmentPct(c.project_id, q.date || D.today());
   return { deleted: true, id: Number(p.id), task: c.task };
 });
+
+/**
+ * A project's commitments are its to-do list, so its completion is simply how
+ * many of them are done. Ticking one moves the bar up; adding an unfinished one
+ * moves it down, which is the point — a project cannot read as finished while
+ * work is still listed against it.
+ *
+ * Two escapes: a project with no commitments keeps whatever figure was set by
+ * hand, and anyone can switch a project to a hand-set figure for good by
+ * clearing `pct_from_commitments`.
+ */
+export async function commitmentProgress(projectId) {
+  // Counted by task, not by row: work carried to the next day is the same item
+  // on the list, and counting both copies would quietly shrink the percentage
+  // every time something rolls over.
+  const row = await get(
+    `SELECT COUNT(DISTINCT task) AS total,
+            COUNT(DISTINCT task) FILTER (WHERE status = 'Completed') AS done
+       FROM commitments WHERE project_id = ? AND status != 'Cancelled'`, projectId);
+  const total = Number(row && row.total) || 0;
+  const done = Number(row && row.done) || 0;
+  return { total, done, pct: total ? Math.round((done / total) * 100) : null };
+}
+
+/** Write that percentage onto the project and the day. Null if it does not apply. */
+async function applyCommitmentPct(projectId, date) {
+  if (!projectId) return null;
+  const project = await get('SELECT * FROM projects WHERE id = ?', projectId);
+  if (!project || project.pct_from_commitments === 0) return null;
+  const { pct } = await commitmentProgress(projectId);
+  if (pct === null) return null;
+  await update('projects', projectId, { completion_pct: pct, updated_at: new Date().toISOString() });
+  await K.ensureSnapshot(projectId, date, pct, project.status);
+  await syncMilestones(projectId, pct, date);
+  return pct;
+}
 
 /* ------------------------------------------------------------------ */
 /* Commitments that finish become progress                             */
@@ -376,17 +449,15 @@ DELETE('/api/commitments/:id', async (p) => {
  * The percentage is left where it already stood. Completing one deliverable
  * does not tell us how far along the project now is, and a number nobody chose
  * is worse than no number — the entry proves the work moved, and the bar moves
- * when someone says how far. The wording is still checked the same way a typed
- * entry is: a commitment that names no result is recorded but does not count
- * towards projects progressed.
+ * when someone says how far.
  */
-async function logCommitmentProgress(c) {
+async function logCommitmentProgress(c, when = null) {
   if (!c.project_id) return null;
   if ((await getSettings()).auto_progress_from_commitments === '0') return null;
   const project = await get('SELECT * FROM projects WHERE id = ?', c.project_id);
   if (!project) return null;
 
-  const date = c.commit_date || D.today();
+  const date = when || c.commit_date || D.today();
   // Never log the same thing twice, whether from this commitment or because the
   // person already wrote it up by hand.
   const already = await get(
@@ -407,7 +478,6 @@ async function logCommitmentProgress(c) {
       previous_pct: previous,
       new_pct: pct,
       completed_text: c.task,
-      counts_as_progress: quality.measurable ? 1 : 0,
       quality_score: quality.score
     });
     await K.ensureSnapshot(project.id, date, pct, project.status);
@@ -449,6 +519,9 @@ POST('/api/commitments/close-day', async (_p, _q, body) => {
           priority: c.priority, status: 'Not Started', notes: `Carried over from ${date}`,
           quality_score: c.quality_score
         });
+        // Carrying work forward leaves the same item open on the list twice, so
+        // the project's count has to be redone.
+        await applyCommitmentPct(c.project_id, next);
       }
     }
   }
@@ -492,9 +565,14 @@ POST('/api/progress', async (_p, _q, body) => {
   const project = await get('SELECT * FROM projects WHERE id = ?', body.project_id) || notFound('Project not found');
   const quality = scoreText(body.completed_text, { kind: 'progress' });
   const previous = await K.previousPct(project.id, date);
-  const newPct = body.new_pct === undefined || body.new_pct === null || body.new_pct === ''
-    ? await K.pctOn(project.id, date, project.completion_pct)
-    : Math.max(0, Math.min(100, Number(body.new_pct)));
+  // When the commitments decide the percentage, a written entry records what
+  // happened but does not move the number — the tick boxes do that.
+  const counted = project.pct_from_commitments === 0 ? null : (await commitmentProgress(project.id)).pct;
+  const newPct = counted !== null
+    ? counted
+    : body.new_pct === undefined || body.new_pct === null || body.new_pct === ''
+      ? await K.pctOn(project.id, date, project.completion_pct)
+      : Math.max(0, Math.min(100, Number(body.new_pct)));
 
   return await transaction(async () => {
     const id = await insert('progress_logs', {
@@ -508,9 +586,6 @@ POST('/api/progress', async (_p, _q, body) => {
       blocker_text: body.blocker_text,
       notes: body.notes,
       milestone_id: int(body.milestone_id),
-      // The rules are a good default, not an authority. Someone who knows the
-      // work can say it counts regardless of how the wording scored.
-      counts_as_progress: body.counts_as_progress ? 1 : (quality.measurable ? 1 : 0),
       quality_score: quality.score
     });
 
@@ -539,10 +614,7 @@ POST('/api/progress', async (_p, _q, body) => {
 PATCH('/api/progress/:id', async (p, _q, body) => {
   const log = await get('SELECT * FROM progress_logs WHERE id = ?', p.id) || notFound('Progress entry not found');
   if ('completed_text' in body && body.completed_text) {
-    const quality = scoreText(body.completed_text, { kind: 'progress' });
-    const override = body.counts_as_progress === true || body.counts_as_progress === 1;
-    body.counts_as_progress = override ? 1 : (quality.measurable ? 1 : 0);
-    body.quality_score = quality.score;
+    body.quality_score = scoreText(body.completed_text, { kind: 'progress' }).score;
   }
   if ('new_pct' in body) body.new_pct = Math.max(0, Math.min(100, Number(body.new_pct)));
   // Once a person edits an entry the commitment created, it is theirs: un-ticking
@@ -562,6 +634,8 @@ DELETE('/api/progress/:id', async (p) => {
 
 /** After an edit or delete, rebuild that day's snapshot from what remains. */
 async function recomputeProject(projectId, date) {
+  // The checklist is the authority where it applies; nothing to rebuild.
+  if (await applyCommitmentPct(projectId, date) !== null) return;
   const latest = await get(
     'SELECT new_pct FROM progress_logs WHERE project_id = ? AND log_date = ? ORDER BY id DESC LIMIT 1',
     projectId, date);
@@ -577,28 +651,6 @@ async function recomputeProject(projectId, date) {
   await update('projects', projectId, { completion_pct: pct, updated_at: new Date().toISOString() });
   await syncMilestones(projectId, pct, date);
 }
-
-/**
- * Re-check every progress entry against the current rules.
- *
- * The measurable-progress rules get refined as real wording comes in, and
- * entries scored under older rules keep their old verdict. This re-scores them
- * so an entry that reads as a result today is treated as one.
- */
-POST('/api/progress/rescore', async () => {
-  const logs = await all('SELECT id, completed_text, counts_as_progress FROM progress_logs');
-  let changed = 0;
-  for (const log of logs) {
-    const quality = scoreText(log.completed_text, { kind: 'progress' });
-    const counts = quality.measurable ? 1 : 0;
-    // Only ever promotes, so a human override is never undone.
-    if (counts === 1 && log.counts_as_progress === 0) {
-      await update('progress_logs', log.id, { counts_as_progress: counts, quality_score: quality.score });
-      changed++;
-    }
-  }
-  return { checked: logs.length, changed };
-});
 
 /* ================================================================== */
 /* Blockers                                                            */

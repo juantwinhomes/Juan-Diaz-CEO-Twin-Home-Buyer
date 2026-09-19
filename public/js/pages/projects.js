@@ -135,7 +135,9 @@ function card(p) {
     </div>
     <div class="card-body">
       <div class="row" style="justify-content:space-between;margin-bottom:5px">
-        <span class="small muted">Yesterday ${p.previous_pct}%</span>
+        <span class="small muted">${p.pct_from_commitments !== 0 && p.todo.total
+          ? `${p.todo.done} of ${p.todo.total} to-dos done`
+          : `Yesterday ${p.previous_pct}%`}</span>
         ${U.fmt.delta(p.progress_today)}
       </div>
       ${U.progressBar(p.previous_pct, p.today_pct)}
@@ -143,8 +145,8 @@ function card(p) {
         ${U.icon('check', 11)} Milestone reached: ${U.esc(p.milestones_completed.map((m) => m.name).join(', '))}</div>` : ''}
       ${stale ? `<div class="small" style="color:var(--orange);margin-top:7px">${U.icon('alert', 11)}
         ${p.last_progress_date
-          ? `No measurable progress for ${p.days_since_progress} business day${p.days_since_progress === 1 ? '' : 's'}`
-          : 'No measurable progress recorded yet'}</div>` : ''}
+          ? `Nothing logged for ${p.days_since_progress} business day${p.days_since_progress === 1 ? '' : 's'}`
+          : 'Nothing logged yet'}</div>` : ''}
 
       <div class="divider"></div>
       <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:12.5px">

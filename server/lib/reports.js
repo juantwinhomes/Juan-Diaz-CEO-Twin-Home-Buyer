@@ -35,7 +35,7 @@ export async function dailyTeamReport(date) {
     const lines = [];
     lines.push(['Commitments', `${sc.commitments.completed} / ${sc.commitments.total} completed`, pct(sc.commitments.rate)]);
     for (const p of sc.project_rows) {
-      const evidence = p.evidence.length ? p.evidence.join('; ') : 'No measurable progress logged';
+      const evidence = p.evidence.length ? p.evidence.join('; ') : 'Nothing logged';
       lines.push([p.name, `${p.previous_pct}% → ${p.today_pct}% (${delta(p.progress_today)})`, evidence]);
       if (p.next_step) lines.push(['  Next', p.next_step, '']);
       if (p.blocker_summary) lines.push(['  Blocker', p.blocker_summary, '']);
@@ -107,7 +107,7 @@ export async function individualDailyReport(date, userId) {
       heading: 'PROJECTS',
       rows: sc.project_rows.flatMap((p) => {
         const rows = [[p.name, `${p.previous_pct}% → ${p.today_pct}% (${delta(p.progress_today)})`,
-          p.evidence.length ? p.evidence.join('; ') : 'No measurable progress']];
+          p.evidence.length ? p.evidence.join('; ') : 'Nothing logged']];
         if (p.next_step) rows.push(['  Next', p.next_step, '']);
         return rows;
       })

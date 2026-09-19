@@ -50,11 +50,11 @@ try {
   let log = await linkedLog(c.id);
   ok('the entry lands on the right project', !!log && log.project_id === project.id);
   ok('the entry carries the commitment wording', log && log.completed_text === MEASURABLE);
-  ok('measurable wording counts as progress', log && log.counts_as_progress === 1);
-  ok('the percentage stays where it was', log && Number(log.new_pct) === startPct, `new_pct ${log && log.new_pct}`);
+  ok('the entry counts as progress', log && log.counts_as_progress === 1);
+  ok('one of one to-do done reads as 100%', log && Number(log.new_pct) === 100, `new_pct ${log && log.new_pct}`);
 
   let proj = await get('SELECT completion_pct FROM projects WHERE id = ?', project.id);
-  ok('the project bar does not move on its own', Number(proj.completion_pct) === startPct, `now ${proj.completion_pct}`);
+  ok('the project bar follows the to-dos', Number(proj.completion_pct) === 100, `now ${proj.completion_pct}`);
 
   const day = await call('GET', `/api/projects/${project.id}`);
   ok('the project reads as progressed today', day.progressed === true);
@@ -74,29 +74,26 @@ try {
   await call('PATCH', `/api/commitments/${c.id}`, { status: 'In Progress', carryover_reason: 'Continue tomorrow' });
   ok('un-ticking removes the automatic entry', !(await linkedLog(c.id)));
   proj = await get('SELECT completion_pct FROM projects WHERE id = ?', project.id);
-  ok('the bar is unchanged after an undo', Number(proj.completion_pct) === startPct, `now ${proj.completion_pct}`);
+  ok('the bar drops back when the tick is taken away', Number(proj.completion_pct) === 0, `now ${proj.completion_pct}`);
 
   res = await call('PATCH', `/api/commitments/${c.id}`, { status: 'Completed' });
   log = await linkedLog(c.id);
   ok('re-ticking logs it again', !!log);
 
   /* Once a person edits the entry it is theirs, and an undo must not eat it. */
-  await call('PATCH', `/api/progress/${log.id}`, { new_pct: 55 });
+  await call('PATCH', `/api/progress/${log.id}`, { notes: 'checked by hand' });
   log = await get('SELECT * FROM progress_logs WHERE id = ?', log.id);
   ok('editing the entry clears the link', log.commitment_id === null);
   await call('PATCH', `/api/commitments/${c.id}`, { status: 'In Progress', carryover_reason: 'Continue tomorrow' });
   ok('un-ticking leaves an edited entry alone', !!(await get('SELECT id FROM progress_logs WHERE id = ?', log.id)));
-  proj = await get('SELECT completion_pct FROM projects WHERE id = ?', project.id);
-  ok('a percentage a person set survives an undo', Number(proj.completion_pct) === 55, `now ${proj.completion_pct}`);
   await run('DELETE FROM progress_logs WHERE id = ?', log.id);
-  await call('PATCH', `/api/projects/${project.id}`, { completion_pct: startPct });
 
-  /* Activity is recorded but still does not count. */
+  /* Wording is nobody's business but the person writing it: it all counts. */
   const vague = await call('POST', '/api/commitments', { user_id: user.id, project_id: project.id, task: VAGUE });
   await call('PATCH', `/api/commitments/${vague.id}`, { status: 'Completed' });
   log = await linkedLog(vague.id);
-  ok('vague wording is still recorded', !!log);
-  ok('vague wording does not count as progress', log && log.counts_as_progress === 0);
+  ok('plainly worded work is recorded', !!log);
+  ok('it counts as progress like any other entry', log && log.counts_as_progress === 1);
 
   /* Nothing to log against. */
   const loose = await call('POST', '/api/commitments', { user_id: user.id, task: `${MEASURABLE} (no project)` });
@@ -129,6 +126,71 @@ try {
   await call('POST', '/api/progress', { project_id: project.id, user_id: user.id, completed_text: typed, log_date: today });
   res = await call('PATCH', `/api/commitments/${manual.id}`, { status: 'Completed' });
   ok('an entry the person already wrote is not duplicated', res.progress === null);
+
+  /* ---- the percentage is the to-do list ------------------------------- */
+  const board = await call('POST', '/api/projects', {
+    name: `Checklist Project ${stamp}`, owner_id: user.id, status: 'Building',
+    completion_pct: 40, start_date: '2026-01-01', priority: 'P2'
+  });
+  const pctOf = async () => Number((await get('SELECT completion_pct FROM projects WHERE id = ?', board.id)).completion_pct);
+  ok('a project with no to-dos keeps the figure it was given', await pctOf() === 40, `is ${await pctOf()}`);
+
+  const todos = [];
+  for (let i = 1; i <= 4; i++) {
+    todos.push(await call('POST', '/api/commitments', {
+      user_id: user.id, project_id: board.id, task: `Checklist item ${i} for ${stamp}`
+    }));
+  }
+  ok('four open to-dos read as 0%', await pctOf() === 0, `is ${await pctOf()}`);
+
+  await call('PATCH', `/api/commitments/${todos[0].id}`, { status: 'Completed' });
+  ok('one of four done reads as 25%', await pctOf() === 25, `is ${await pctOf()}`);
+
+  await call('PATCH', `/api/commitments/${todos[1].id}`, { status: 'In Progress' });
+  ok('in progress is not done', await pctOf() === 25, `is ${await pctOf()}`);
+
+  for (const t of todos.slice(1)) await call('PATCH', `/api/commitments/${t.id}`, { status: 'Completed' });
+  ok('all four done reads as 100%', await pctOf() === 100, `is ${await pctOf()}`);
+
+  const late = await call('POST', '/api/commitments', {
+    user_id: user.id, project_id: board.id, task: `One more thing for ${stamp}`
+  });
+  ok('a new to-do stops it reading as finished', await pctOf() === 80, `is ${await pctOf()}`);
+
+  await call('DELETE', `/api/commitments/${late.id}`);
+  ok('removing that to-do puts it back to 100%', await pctOf() === 100, `is ${await pctOf()}`);
+
+  await call('PATCH', `/api/commitments/${todos[0].id}`, { status: 'Cancelled' });
+  ok('a cancelled to-do is not counted', await pctOf() === 100, `is ${await pctOf()}`);
+  await call('PATCH', `/api/commitments/${todos[0].id}`, { status: 'Completed' });
+
+  /* ---- and a person can always overrule it ---------------------------- */
+  await call('POST', '/api/commitments', { user_id: user.id, project_id: board.id, task: `Open item for ${stamp}` });
+  ok('back below 100 with one open', await pctOf() === 80, `is ${await pctOf()}`);
+  await call('PATCH', `/api/projects/${board.id}`, { pct_from_commitments: false, completion_pct: 100 });
+  ok('a person can call it complete anyway', await pctOf() === 100, `is ${await pctOf()}`);
+  await call('POST', '/api/commitments', { user_id: user.id, project_id: board.id, task: `Another open item for ${stamp}` });
+  ok('to-dos no longer move a hand-set figure', await pctOf() === 100, `is ${await pctOf()}`);
+  await call('PATCH', `/api/projects/${board.id}`, { pct_from_commitments: true });
+  ok('switching back recounts straight away', await pctOf() === 67, `is ${await pctOf()}`);
+
+  /* ---- work carried to the next day is still one item ----------------- */
+  const carried = await call('POST', '/api/projects', {
+    name: `Carry Over Project ${stamp}`, owner_id: user.id, status: 'Building', start_date: '2026-01-01'
+  });
+  const carriedPct = async () => Number((await get('SELECT completion_pct FROM projects WHERE id = ?', carried.id)).completion_pct);
+  const a = await call('POST', '/api/commitments', { user_id: user.id, project_id: carried.id, task: `Carry me ${stamp}` });
+  await call('POST', '/api/commitments', { user_id: user.id, project_id: carried.id, task: `Stay put ${stamp}` });
+  await call('PATCH', `/api/commitments/${a.id}`, { status: 'In Progress', carryover_reason: 'Continue tomorrow' });
+  await call('POST', '/api/commitments/close-day', { date: today, force: true, carry_forward: true });
+  ok('carrying an item forward does not add a to-do', await carriedPct() === 0, `is ${await carriedPct()}`);
+  const copy = await get(
+    'SELECT id FROM commitments WHERE project_id = ? AND task = ? ORDER BY commit_date DESC LIMIT 1', carried.id, `Carry me ${stamp}`);
+  await call('PATCH', `/api/commitments/${copy.id}`, { status: 'Completed' });
+  ok('finishing the carried copy finishes the item', await carriedPct() === 50, `is ${await carriedPct()}`);
+  await call('DELETE', `/api/projects/${carried.id}`);
+
+  await call('DELETE', `/api/projects/${board.id}`);
 } finally {
   await call('DELETE', `/api/projects/${project.id}`);
   await call('DELETE', `/api/users/${user.id}`);

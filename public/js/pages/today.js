@@ -95,10 +95,13 @@ export async function page(ctx) {
                   <button class="btn btn-sm" data-log="${p.id}">Log</button>
                 </div>
                 ${U.progressBar(p.previous_pct, p.today_pct)}
+                ${p.pct_from_commitments !== 0 && p.todo.total
+                  ? `<div class="small muted" style="margin-top:3px">${p.todo.done} of ${p.todo.total} to-dos done</div>`
+                  : ''}
                 <div class="small muted clamp2" style="margin-top:4px">
                   ${p.progressed
                     ? `${U.icon('check', 11)} ${U.esc(p.evidence.join(' · '))}`
-                    : `<span style="color:var(--orange)">${U.icon('alert', 11)} Nothing measurable logged yet</span>`}
+                    : `<span style="color:var(--orange)">${U.icon('alert', 11)} Nothing logged yet</span>`}
                 </div>
               </div>`).join('')
             : U.empty('No projects assigned', 'Assign yourself as owner on the Projects page.')}
@@ -164,7 +167,7 @@ export async function page(ctx) {
           const c = commitments.find((x) => x.id === Number(toggleId));
           if (c.status === 'Completed') setStatus(c, true);
           else {
-            const res = await api.patch(`/commitments/${c.id}`, { status: 'Completed' });
+            const res = await api.patch(`/commitments/${c.id}`, { status: 'Completed' }, { date: state.date });
             U.toast(...commitmentFeedback(res));
             refresh();
           }
@@ -175,7 +178,7 @@ export async function page(ctx) {
             title: 'Remove commitment',
             message: `Remove "${c.task}"?`,
             detail: 'It disappears from today\'s score. If the work simply did not happen, set a reason instead so it stays on the record.',
-            onConfirm: async () => { await api.del(`/commitments/${c.id}`); U.toast('Commitment removed'); refresh(); }
+            onConfirm: async () => { await api.del(`/commitments/${c.id}`, { date: state.date }); U.toast('Commitment removed'); refresh(); }
           });
         }
       });
@@ -248,7 +251,7 @@ function setStatus(c, forceReason = false) {
         const body = { status, notes: modal.querySelector('#nt').value };
         if (status !== 'Completed') body.carryover_reason = modal.querySelector('#rs').value;
         try {
-          const res = await api.patch(`/commitments/${c.id}`, body);
+          const res = await api.patch(`/commitments/${c.id}`, body, { date: state.date });
           close();
           U.toast(...commitmentFeedback(res, 'Commitment updated'));
           refresh();

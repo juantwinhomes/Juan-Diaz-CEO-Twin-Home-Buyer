@@ -45,6 +45,9 @@ CREATE TABLE IF NOT EXISTS projects (
   priority           TEXT    NOT NULL DEFAULT 'P3',
   status             TEXT    NOT NULL DEFAULT 'Backlog',
   completion_pct     DOUBLE PRECISION NOT NULL DEFAULT 0,
+  -- How that percentage is decided: 1 = count the project's commitments,
+  -- 0 = whatever a person typed. See commitmentProgress() in server/api.js.
+  pct_from_commitments INTEGER NOT NULL DEFAULT 1,
   current_phase      TEXT,
   next_step          TEXT,
   business_objective TEXT,
@@ -261,5 +264,9 @@ CREATE TABLE IF NOT EXISTS settings (
  */
 export const MIGRATIONS = [
   'ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_type TEXT',
-  'ALTER TABLE progress_logs ADD COLUMN IF NOT EXISTS commitment_id INTEGER'
+  'ALTER TABLE progress_logs ADD COLUMN IF NOT EXISTS commitment_id INTEGER',
+  // Every entry counts now. Entries written while the wording check was on
+  // still carry its verdict, so clear it rather than leave them flagged.
+  'UPDATE progress_logs SET counts_as_progress = 1 WHERE counts_as_progress = 0',
+  'ALTER TABLE projects ADD COLUMN IF NOT EXISTS pct_from_commitments INTEGER NOT NULL DEFAULT 1'
 ];

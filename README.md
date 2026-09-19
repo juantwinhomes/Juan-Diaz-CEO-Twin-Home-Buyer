@@ -113,56 +113,58 @@ backup history, so schedule this and keep the files somewhere safe.
 
 ---
 
-## The rule that makes it work
+## How a project's percentage works
 
-Activity is not progress. A project only counts as **progressed** when there is
-concrete evidence on that date:
-
-- a progress log entry that passes the measurable-result check, **or**
-- a deployment, **or**
-- a completed milestone, **or**
-- a resolved production issue
-
-A percentage bump on its own is deliberately *not* enough. If someone writes
-*"worked on it"* and moves the bar from 70% to 80%, the entry is stored and shown —
-flagged, and not counted.
+A project's to-do list is its commitments, and its completion percentage is simply
+how many of them are done:
 
 ```
-Does not count          Counts
--------------------     ------------------------------------------
-Worked on it            Completed webhook integration
-Researched              Fixed 3 of 4 routing scenarios
-Checked system          Passed 18 of 20 test cases
-Continued coding        Connected Google Sheets API
-Had meeting             Deployed automation to production
-Looked into issue       Reduced workflow from 8 steps to 3
+completion % = commitments completed ÷ every commitment on the project
 ```
 
-The check runs server-side (`server/lib/quality.js`) and is the single source of truth —
-the commitment and progress forms call it live as you type, so you get feedback before saving.
+- Tick one off and the bar goes up. Four to-dos, one done, 25%.
+- Add one that is not done and the bar eases back, so a project can never read as
+  finished while work is still listed against it.
+- Cancelled commitments count on neither side.
+- A project with **no** commitments keeps whatever figure was set by hand — which is
+  what an imported project shows until its first to-do is added.
+
+**Anyone can overrule it.** Edit the project and untick *Count the completion % from
+this project's to-dos*: the figure you type then stands, however many to-dos are open.
+Tick it back on and it recounts immediately. The project page says which of the two
+is deciding the number.
+
+The first to-do added to a project hands the percentage over to the checklist, so an
+imported figure is replaced at that point. That is the trade for a number nobody has
+to maintain by hand.
 
 ### Finishing a commitment records the progress
 
 A commitment is a promise; a progress entry is the delivery. They used to be typed
 separately, which meant writing the same sentence twice. Now, ticking a commitment
-complete writes the progress entry for you, on the project the commitment belongs to:
+complete writes the progress entry for you, on the project the commitment belongs to,
+in the commitment's own words:
 
-- the entry carries the commitment's own wording, and is checked by the same rule — a
-  commitment that names no result is recorded but still does not count as progress
-- the **percentage is left where it was**. Finishing one deliverable does not say how far
-  along the project now is, so the bar only moves when a person says how far — from the
-  project page, or by editing the entry
-- taking the tick back removes the entry again, so a mis-click leaves nothing behind. Once
-  someone edits that entry it is theirs, and an undo leaves it alone
+- taking the tick back removes the entry again, so a mis-click leaves nothing behind.
+  Once someone edits that entry it is theirs, and an undo leaves it alone
 - a commitment with no project has nowhere to record progress, so it logs nothing. The
   Today page shows a **Link a project** button on those
-- Settings → *Ticking a commitment complete logs it as progress on its project* turns the
-  whole thing off
+- Settings → *Ticking a commitment complete logs it as progress on its project* turns
+  the automatic entry off. The percentage still counts the to-dos
 
-Note that a finished commitment then counts in two parts of the daily score: commitment
-completion (50) and, if the wording names a result, projects progressed (25). That is
-deliberate — the same event genuinely answers both questions — but it does make the score
-move faster than it did when the two were typed separately.
+Note that a finished commitment counts in two parts of the daily score: commitment
+completion (50) and projects progressed (25). That is deliberate — the same event
+answers both questions — but it does make the score move faster than it did when the
+two were typed separately.
+
+### What counts as progress
+
+A project counts as **progressed** on a date when anything was recorded against it that
+day: a progress entry, a deployment, a completed milestone, or a resolved production
+issue. Nothing grades the wording. An earlier version of this app rejected entries like
+*"worked on it"* and refused to count them; the team asked for that judgement to go, so
+what gets written is what gets counted. The forms still show examples of wording that
+reads well in a report — as advice, not a gate.
 
 Unfinished commitments never disappear silently. Closing out a day requires a reason for
 every incomplete item — *continue tomorrow*, *blocked*, *cancelled* or *changed priority* —
@@ -177,7 +179,7 @@ A transparent 0–100 score. Every line shows its own maths on the dashboard.
 | Weight | Component | How points are lost |
 | --- | --- | --- |
 | 50 | Daily commitment completion | Completed ÷ total commitments |
-| 25 | Active projects progressed | Projects with evidence ÷ active projects |
+| 25 | Active projects progressed | Projects with something recorded ÷ active projects |
 | 15 | Production quality | Open issues by severity, unhealthy systems |
 | 10 | Blocker management | Aging or unassigned blockers; resolving one earns points back |
 
@@ -254,7 +256,7 @@ server/
   export.js         Whole-database JSON export
   lib/
     kpi.js          All KPI maths: progress detection, score, weekly, stagnation, priorities
-    quality.js      The measurable-result rule engine
+    quality.js      Wording examples and the score kept alongside each entry
     reports.js      The seven report builders
     dates.js        Business-day arithmetic
     enums.js        Every dropdown, shared by the API and the UI
