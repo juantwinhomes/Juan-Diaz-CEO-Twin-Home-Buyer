@@ -93,6 +93,25 @@ shows a DNS record to create with whoever manages your domain. HTTPS is automati
 
 ---
 
+## Checking it worked
+
+`deploy/verify.sql` prints a checklist of everything the app needs. Paste it into the
+Supabase SQL Editor and run it — tables, indexes, seeded settings, whether any data has
+been loaded, and whether row level security is on. Every row should say OK.
+
+Run it whenever something looks wrong; it answers "is the database set up correctly?"
+without guesswork.
+
+## Row level security
+
+Supabase exposes your tables over a public web API protected by a key that is designed to
+be public. Without row level security, anyone holding that key can read and write every
+table.
+
+Enable RLS on all tables and add **no policies**. The dashboard connects as the role that
+owns the tables, which bypasses RLS, so the API is locked out and the app is unaffected.
+`deploy/verify.sql` reports whether this is done.
+
 ## Backups
 
 Supabase's free tier keeps little backup history, so keep your own copies. From your own
