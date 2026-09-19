@@ -11,9 +11,10 @@
  * rewritten to Postgres `$1, $2 …` on the way out, which keeps the query
  * strings throughout the app unchanged.
  */
-import { readFileSync, mkdirSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SCHEMA } from './schema.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -129,8 +130,7 @@ export const DEFAULT_SETTINGS = {
 /** Create the schema and seed default settings. Safe to run repeatedly. */
 export async function init() {
   const c = await connect();
-  const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf8');
-  await c.exec(schema);
+  await c.exec(SCHEMA);
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
     await run('INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', key, value);
   }

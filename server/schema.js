@@ -1,3 +1,12 @@
+/**
+ * Database schema.
+ *
+ * This lives in JavaScript rather than a .sql file on purpose: serverless
+ * bundlers package JavaScript and leave loose files behind, so reading the
+ * schema from disk works locally and fails in production. Keeping it here
+ * means the schema travels with the code everywhere it runs.
+ */
+export const SCHEMA = `
 -- =====================================================================
 -- AI & Systems Daily KPI Dashboard — PostgreSQL schema
 -- Historical rows are never overwritten; each day is stored separately.
@@ -239,3 +248,4 @@ CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,
   value TEXT
 );
+`;
