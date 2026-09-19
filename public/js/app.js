@@ -160,6 +160,22 @@ const scrim = () => document.getElementById('scrim');
 function openDrawer() { sidebar().classList.add('open'); scrim().hidden = false; }
 function closeDrawer() { sidebar().classList.remove('open'); scrim().hidden = true; }
 
+/* On a phone the navigation is a drawer over the page. On a desktop it is a
+   column that can be put away to give the page the width — and it stays put
+   away, across visits, until it is asked back. */
+const PHONE = '(max-width: 1024px)';
+function applyNavPreference() {
+  const collapsed = store.get('kpi.nav', 'open') === 'collapsed';
+  document.body.classList.toggle('nav-collapsed', collapsed);
+  document.getElementById('menuBtn').setAttribute('aria-label', collapsed ? 'Show navigation' : 'Hide navigation');
+}
+function toggleNav() {
+  if (window.matchMedia(PHONE).matches) { openDrawer(); return; }
+  const collapsed = !document.body.classList.contains('nav-collapsed');
+  store.set('kpi.nav', collapsed ? 'collapsed' : 'open');
+  applyNavPreference();
+}
+
 export async function reloadBootstrap() {
   const data = await api.get('/bootstrap', { date: state.date || undefined });
   state.today = data.today;
@@ -214,7 +230,8 @@ export const isToday = () => state.date === state.today;
 
 /* ---------------------------------------------------------- Bootstrap */
 (async function init() {
-  document.getElementById('menuBtn').addEventListener('click', openDrawer);
+  applyNavPreference();
+  document.getElementById('menuBtn').addEventListener('click', toggleNav);
   document.getElementById('scrim').addEventListener('click', closeDrawer);
   document.getElementById('globalDate').addEventListener('change', (e) => {
     if (e.target.value) setDate(e.target.value);

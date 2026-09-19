@@ -905,9 +905,49 @@ GET('/api/scorecards', async (_p, q) => await K.scorecards(dateOr(q)));
 GET('/api/stagnant', async (_p, q) => await K.stagnantProjects(dateOr(q)));
 GET('/api/priorities', async (_p, q) => await K.nextDayPriorities(dateOr(q)));
 
+/**
+ * Unfinished work follows the person to the next day on its own.
+ *
+ * Closing the day used to be the only thing that carried it, and a day that was
+ * never closed took its open items with it — they sat on yesterday's date where
+ * nobody looks, which is exactly the "it just disappears" this app exists to
+ * prevent. Opening Today now brings every still-open item forward once, keeps a
+ * blocked item blocked, and marks the original as continued so yesterday's
+ * record explains itself. Only the real today gathers items; browsing back or
+ * forward through the calendar changes nothing.
+ */
+async function carryForwardUnfinished(userId, date) {
+  if (!userId || date !== D.today()) return 0;
+  // One entry per task, from the most recent day it was still open, so an item
+  // continued for a week is carried once and not once per day it sat there.
+  const open = await all(
+    `SELECT DISTINCT ON (task) * FROM commitments
+      WHERE user_id = ? AND commit_date < ? AND status NOT IN ('Completed', 'Cancelled')
+      ORDER BY task, commit_date DESC`, userId, date);
+  if (!open.length) return 0;
+  const planned = new Set((await all(
+    'SELECT task FROM commitments WHERE user_id = ? AND commit_date >= ?', userId, date)).map((r) => r.task));
+
+  let carried = 0;
+  for (const c of open) {
+    if (planned.has(c.task)) continue;
+    const stillBlocked = c.status === 'Blocked';
+    await insert('commitments', {
+      user_id: c.user_id, project_id: c.project_id, commit_date: date, task: c.task,
+      priority: c.priority, status: stillBlocked ? 'Blocked' : c.status === 'In Progress' ? 'In Progress' : 'Not Started',
+      carryover_reason: stillBlocked ? 'Blocked' : null,
+      notes: `Carried over from ${c.commit_date}`, quality_score: c.quality_score
+    });
+    if (!c.carryover_reason) await update('commitments', c.id, { carryover_reason: 'Continue tomorrow' });
+    carried++;
+  }
+  return carried;
+}
+
 GET('/api/today', async (_p, q) => {
   const date = dateOr(q);
   const userId = q.user_id ? Number(q.user_id) : null;
+  await carryForwardUnfinished(userId, date);
   const d = await K.dashboard(date);
   const card = userId ? d.scorecards.find((s) => s.user.id === userId) : null;
   return {

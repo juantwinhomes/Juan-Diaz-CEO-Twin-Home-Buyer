@@ -34,7 +34,7 @@ export async function page(ctx) {
     <div class="section">
       <div class="section-head">
         <h2>${projects.length} project${projects.length === 1 ? '' : 's'}</h2>
-        <span class="sub">${progressed} moved measurably on ${U.fmt.date(state.date)}</span>
+        <span class="sub">${progressed} moved on ${U.fmt.date(state.date)}</span>
       </div>
       ${projects.length
         ? `<div class="grid grid-3">${projects.map(card).join('')}</div>`

@@ -24,7 +24,7 @@ export async function page(ctx) {
       label: 'Projects Progressed',
       value: U.fmt.pct(k.projects.rate),
       meta: `${k.projects.progressed} / ${k.projects.active} active projects`,
-      foot: `<span class="muted">Measurable progress only</span>`,
+      foot: `<span class="muted">Logged, deployed or resolved today</span>`,
       accent: progressMet ? 'green' : k.projects.rate >= 60 ? 'yellow' : 'orange',
       iconName: 'projects',
       action: 'view-projects'
@@ -140,7 +140,7 @@ function scoreCard(score, settings) {
   return `<div class="card">
     <div class="card-head">
       <h2>Daily Execution Score</h2>
-      <span class="sub">Delivery, not activity</span>
+      <span class="sub">What got done today</span>
       <span class="spacer"></span>
       <span class="badge ${met ? 'green' : score.total >= 65 ? 'yellow' : 'orange'}">${U.esc(score.grade)}</span>
     </div>

@@ -168,9 +168,14 @@ issue. Nothing grades the wording. An earlier version of this app rejected entri
 what gets written is what gets counted. The forms still show examples of wording that
 reads well in a report — as advice, not a gate.
 
-Unfinished commitments never disappear silently. Closing out a day requires a reason for
-every incomplete item — *continue tomorrow*, *blocked*, *cancelled* or *changed priority* —
-and anything marked "continue tomorrow" is carried to the next business day.
+Unfinished commitments never disappear silently. Anything still open from an earlier day is
+brought onto today's list the moment Today is opened — once, labelled with the day it came
+from, and a blocked item stays blocked. Yesterday's copy is marked *continue tomorrow* so
+that day's record explains itself. Closing out a day still asks for a reason for every
+incomplete item — *continue tomorrow*, *blocked*, *cancelled* or *changed priority*.
+
+The sidebar can be put away with the menu button to give a page the full width; the choice
+is remembered on that browser. On a phone the same button opens the navigation drawer.
 
 ---
 

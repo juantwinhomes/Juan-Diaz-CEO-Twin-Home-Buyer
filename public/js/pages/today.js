@@ -289,7 +289,9 @@ function checkItem(c) {
         ${!done && c.carryover_reason ? `<span class="badge ${c.carryover_reason === 'Blocked' ? 'orange' : 'gray'}">${U.esc(c.carryover_reason)}</span>` : ''}
         ${needsReason ? `<button class="badge red" data-status="${c.id}" style="cursor:pointer;border:0">${U.icon('alert', 10)} Add a reason</button>` : ''}
       </div>
-      ${c.notes ? `<div class="small muted" style="margin-top:4px">${U.esc(c.notes)}</div>` : ''}
+      ${carriedFrom(c)
+        ? `<div class="small muted" style="margin-top:4px">${U.icon('clock', 10)} Carried over from ${U.fmt.date(carriedFrom(c))}</div>`
+        : c.notes ? `<div class="small muted" style="margin-top:4px">${U.esc(c.notes)}</div>` : ''}
     </div>
     <div class="check-actions">
       <button class="icon-btn" data-status="${c.id}" title="Change status">${U.icon('clock', 15)}</button>
@@ -298,6 +300,9 @@ function checkItem(c) {
     </div>
   </div>`;
 }
+
+/** The date an item was carried forward from, if that is what its note says. */
+const carriedFrom = (c) => (c.notes || '').match(/^Carried over from (\d{4}-\d{2}-\d{2})$/)?.[1] || null;
 
 function projectRows(projects) {
   if (!projects.length) return U.empty('No projects assigned', 'Assign yourself as owner on the Projects page.');

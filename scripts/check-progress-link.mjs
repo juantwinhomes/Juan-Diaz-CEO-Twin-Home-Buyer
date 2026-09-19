@@ -190,6 +190,35 @@ try {
   ok('finishing the carried copy finishes the item', await carriedPct() === 50, `is ${await carriedPct()}`);
   await call('DELETE', `/api/projects/${carried.id}`);
 
+  /* ---- unfinished work follows you onto today ------------------------- */
+  const yesterday = D.addDays(today, -1);
+  const T = (name) => `${name} yesterday ${stamp}`;
+  const left = await call('POST', '/api/commitments', { user_id: user.id, project_id: project.id, task: T('Left open'), commit_date: yesterday });
+  await call('POST', '/api/commitments', { user_id: user.id, task: T('Finished'), commit_date: yesterday, status: 'Completed' });
+  await call('POST', '/api/commitments', { user_id: user.id, task: T('Dropped'), commit_date: yesterday, status: 'Cancelled' });
+  await call('POST', '/api/commitments', { user_id: user.id, task: T('Stuck'), commit_date: yesterday, status: 'Blocked' });
+  const todosBefore = (await call('GET', `/api/projects/${project.id}`)).commitment_progress.total;
+
+  let todayView = await call('GET', '/api/today', {}, { date: today, user_id: String(user.id) });
+  const tasksToday = todayView.commitments.map((c) => c.task);
+  ok('an item left open yesterday shows up today', tasksToday.includes(T('Left open')));
+  ok('a blocked item comes along, still blocked',
+    todayView.commitments.some((c) => c.task === T('Stuck') && c.status === 'Blocked' && c.carryover_reason === 'Blocked'));
+  ok('a finished item stays on its day', !tasksToday.includes(T('Finished')));
+  ok('a cancelled item stays on its day', !tasksToday.includes(T('Dropped')));
+  ok('the carried copy says where it came from',
+    todayView.commitments.find((c) => c.task === T('Left open'))?.notes === `Carried over from ${yesterday}`);
+  const original = await get('SELECT carryover_reason FROM commitments WHERE id = ?', left.id);
+  ok("yesterday's copy is marked as continued", original.carryover_reason === 'Continue tomorrow');
+
+  todayView = await call('GET', '/api/today', {}, { date: today, user_id: String(user.id) });
+  ok('opening Today again does not carry it twice', todayView.commitments.filter((c) => c.task === T('Left open')).length === 1);
+  const todosAfter = (await call('GET', `/api/projects/${project.id}`)).commitment_progress.total;
+  ok('the project still counts it as one to-do', todosAfter === todosBefore, `${todosBefore} -> ${todosAfter}`);
+
+  const past = await call('GET', '/api/today', {}, { date: yesterday, user_id: String(user.id) });
+  ok('looking back at yesterday does not create anything', past.commitments.filter((c) => c.task === T('Left open')).length === 1);
+
   await call('DELETE', `/api/projects/${board.id}`);
 } finally {
   await call('DELETE', `/api/projects/${project.id}`);
