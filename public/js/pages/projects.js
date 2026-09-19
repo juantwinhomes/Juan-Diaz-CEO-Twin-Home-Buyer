@@ -3,7 +3,7 @@ import * as U from '../ui.js';
 import { state, refresh, go, activeUsers, dateNote } from '../app.js';
 import { projectForm, progressForm, removeEntity } from './forms.js';
 
-const filters = { owner_id: '', status: '', priority: '', department: '', blocked: '', search: '', include_archived: '' };
+const filters = { owner_id: '', status: '', priority: '', department: '', project_type: '', blocked: '', search: '', include_archived: '' };
 
 export async function page(ctx) {
   const projects = await api.get('/projects', { date: state.date, ...filters });
@@ -19,6 +19,7 @@ export async function page(ctx) {
           ${sel('f-owner_id', 'All owners', activeUsers().map((u) => ({ value: u.id, label: u.name })), filters.owner_id)}
           ${sel('f-status', 'All statuses', state.enums.project_statuses, filters.status)}
           ${sel('f-priority', 'All priorities', state.enums.priorities, filters.priority)}
+          ${sel('f-project_type', 'All types', state.enums.project_types, filters.project_type)}
           ${departments.length ? sel('f-department', 'All departments', departments, filters.department) : ''}
           ${sel('f-blocked', 'Blocked & not blocked', [{ value: '1', label: 'Blocked only' }, { value: '0', label: 'Not blocked' }], filters.blocked)}
           <label class="checkbox" style="margin-left:4px">
@@ -54,6 +55,7 @@ export async function page(ctx) {
         });
       };
       bind('f-owner_id', 'owner_id'); bind('f-status', 'status'); bind('f-priority', 'priority');
+      bind('f-project_type', 'project_type');
       bind('f-department', 'department'); bind('f-blocked', 'blocked'); bind('f-archived', 'include_archived');
 
       const search = root.querySelector('#f-search');
@@ -126,6 +128,7 @@ function card(p) {
         <a href="#/project/${p.id}" style="font-weight:650;font-size:14.5px">${U.esc(p.name)}</a>
         <div class="row small muted" style="gap:6px;margin-top:4px">
           ${U.priority(p.priority)} ${U.badge(p.status)}
+          ${p.project_type ? U.typeBadge(p.project_type) : ''}
           ${p.archived ? U.badge('Archived', 'gray') : ''}
         </div>
       </div>
@@ -150,6 +153,7 @@ function card(p) {
         <dt class="muted">Deadline</dt><dd style="margin:0${overdue ? ';color:var(--red);font-weight:600' : ''}">${U.fmt.date(p.target_date)}${overdue ? ' (passed)' : ''}</dd>
         <dt class="muted">Next</dt><dd style="margin:0">${U.esc(p.next_step || 'Not set')}</dd>
         ${p.blocker_summary ? `<dt class="muted">Blocked</dt><dd style="margin:0;color:var(--orange)">${U.esc(p.blocker_summary)}</dd>` : ''}
+        ${p.project_type ? `<dt class="muted">Type</dt><dd style="margin:0">${U.esc(p.project_type)}</dd>` : ''}
         ${p.department ? `<dt class="muted">Dept</dt><dd style="margin:0">${U.esc(p.department)}</dd>` : ''}
       </dl>
     </div>

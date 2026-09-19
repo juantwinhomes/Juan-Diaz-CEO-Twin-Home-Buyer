@@ -113,6 +113,7 @@ GET('/api/projects', async (_p, q) => {
   if (q.status) { where.push('p.status = ?'); args.push(q.status); }
   if (q.priority) { where.push('p.priority = ?'); args.push(q.priority); }
   if (q.department) { where.push('p.department = ?'); args.push(q.department); }
+  if (q.project_type) { where.push('p.project_type = ?'); args.push(q.project_type); }
   if (q.search) { where.push('LOWER(p.name) LIKE ?'); args.push(`%${q.search.toLowerCase()}%`); }
 
   const found = await all(
@@ -168,6 +169,7 @@ POST('/api/projects', async (_p, _q, body) => {
       secondary_owner_id: int(body.secondary_owner_id),
       requester: body.requester,
       department: body.department,
+      project_type: body.project_type,
       start_date: body.start_date || today,
       target_date: body.target_date,
       priority: body.priority || 'P3',

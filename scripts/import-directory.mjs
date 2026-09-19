@@ -70,6 +70,20 @@ function mapStatus(status, publication) {
 const SECTIONS = ['Report Tracker ONLY', 'Guides and Handbooks', 'New Projects - Not Yet Started',
   'Active Projects', 'Review and Approval', 'Published/Operational'];
 
+/**
+ * Best guess at System / Automation / Report from the directory section and
+ * wording. The directory has no type column, so this is inference, not data —
+ * anything it gets wrong is a dropdown away from being fixed in the app.
+ */
+function guessType(section, name, purpose) {
+  const text = `${name} ${purpose}`.toLowerCase();
+  if (section === 'Report Tracker ONLY') return 'Report';
+  if (section === 'Guides and Handbooks') return 'Report';   // reference material
+  if (/\breport\b|\bmemo\b|\bhandbook\b|\bassessment\b|\btraining\b|\bexam\b/.test(text)) return 'Report';
+  if (/automat|auto-correct|\bscript\b|\btriage\b|\bsync\b|at scale/.test(text)) return 'Automation';
+  return 'System';
+}
+
 const PALETTE = ['#2563eb', '#7c3aed', '#0891b2', '#c2410c', '#15803d', '#be123c', '#4338ca', '#0f766e'];
 
 /* -------------------------------------------------------------- Parse --- */
@@ -105,6 +119,7 @@ for (const r of rows) {
 
   projects.push({
     name: clean(name),
+    project_type: guessType(section, clean(name), clean(purpose)),
     owner: personId(owners[0]),
     secondary: personId(owners[1]),
     department: section,
@@ -119,6 +134,21 @@ for (const r of rows) {
 const q = (v) => (v === null || v === undefined || v === '' ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`);
 const today = new Date().toISOString().slice(0, 10);
 
+/**
+ * The import is history, not today's work, so it is dated yesterday.
+ *
+ * Dated today, the opening snapshot would give every project a jump from 0% to
+ * its current figure, and every milestone would carry today's date - so the
+ * dashboard would report the entire back catalogue as completed this morning
+ * and every project as having progressed. Dated yesterday, today opens at 0%
+ * progress with nothing falsely counted, which is the truth.
+ */
+const asOf = (() => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+})();
+
 const lines = [];
 lines.push('-- People referenced by the directory');
 for (const p of people.values()) {
@@ -130,12 +160,12 @@ for (const p of people.values()) {
 lines.push('', '-- Projects');
 for (const p of projects) {
   lines.push(`INSERT INTO projects
-  (name, owner_id, secondary_owner_id, department, start_date, priority, status,
+  (name, owner_id, secondary_owner_id, department, project_type, start_date, priority, status,
    completion_pct, current_phase, business_objective, production_url, notes, archived, updated_at)
  SELECT ${q(p.name)},
    (SELECT id FROM users WHERE name = ${q(p.owner)}),
    ${p.secondary ? `(SELECT id FROM users WHERE name = ${q(p.secondary)})` : 'NULL'},
-   ${q(p.department)}, ${q(today)}, 'P3', ${q(p.status)}, ${p.pct}, ${q(p.phase)},
+   ${q(p.department)}, ${q(p.project_type)}, ${q(today)}, 'P3', ${q(p.status)}, ${p.pct}, ${q(p.phase)},
    ${q(p.business_objective)}, ${q(p.production_url)}, ${q(p.notes)}, 0, now()::text
  WHERE NOT EXISTS (SELECT 1 FROM projects WHERE name = ${q(p.name)});`);
 }
@@ -146,14 +176,21 @@ for (const m of ENUMS.milestone_framework) {
   lines.push(`INSERT INTO project_milestones (project_id, name, target_pct, sort_order, completed, completed_date)
  SELECT p.id, ${q(m.name)}, ${m.target_pct}, ${i},
         CASE WHEN p.completion_pct >= ${m.target_pct} THEN 1 ELSE 0 END,
-        CASE WHEN p.completion_pct >= ${m.target_pct} THEN ${q(today)} ELSE NULL END
+        CASE WHEN p.completion_pct >= ${m.target_pct} THEN ${q(asOf)} ELSE NULL END
    FROM projects p
   WHERE NOT EXISTS (SELECT 1 FROM project_milestones m WHERE m.project_id = p.id AND m.name = ${q(m.name)});`);
 }
 
-lines.push('', '-- Opening completion snapshot, so progress is measured from here on');
+lines.push('', '-- Fill in the type for projects imported before this column existed.');
+lines.push('-- Only touches blanks, so a type chosen in the app is never overwritten.');
+for (const p of projects) {
+  lines.push(`UPDATE projects SET project_type = ${q(p.project_type)}
+ WHERE name = ${q(p.name)} AND project_type IS NULL;`);
+}
+
+lines.push('', `-- Opening snapshot dated ${asOf}, so today starts at zero progress`);
 lines.push(`INSERT INTO project_snapshots (project_id, snapshot_date, completion_pct, status)
- SELECT id, ${q(today)}, completion_pct, status FROM projects
+ SELECT id, ${q(asOf)}, completion_pct, status FROM projects
  ON CONFLICT (project_id, snapshot_date) DO UPDATE SET completion_pct = EXCLUDED.completion_pct;`);
 
 

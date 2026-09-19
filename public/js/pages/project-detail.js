@@ -17,7 +17,7 @@ export async function page(ctx) {
         <div class="card-head">
           <h2>Progress</h2>
           <span class="spacer"></span>
-          ${U.priority(p.priority)} ${U.badge(p.status)}
+          ${U.priority(p.priority)} ${U.badge(p.status)} ${p.project_type ? U.typeBadge(p.project_type) : ''}
         </div>
         <div class="card-body">
           <div class="row" style="align-items:baseline;gap:10px">
@@ -70,6 +70,7 @@ export async function page(ctx) {
           <dl style="display:grid;grid-template-columns:auto 1fr;gap:9px 14px;margin:0;font-size:13px">
             ${row('Owner', p.owner_name || 'Unassigned')}
             ${row('Secondary owner', p.secondary_name || '—')}
+            ${row('Type', p.project_type || '—')}
             ${row('Requester / department', [p.requester, p.department].filter(Boolean).join(' · ') || '—')}
             ${row('Start date', U.fmt.date(p.start_date))}
             ${row('Target completion', `${U.fmt.date(p.target_date)}${overdue ? ' <span style="color:var(--red)">(passed)</span>' : ''}`, true)}

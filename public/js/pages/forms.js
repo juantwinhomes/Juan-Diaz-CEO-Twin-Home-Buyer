@@ -110,6 +110,7 @@ export function projectForm(values = {}) {
       { name: 'name', label: 'Project name', type: 'text', required: true },
       { name: 'owner_id', label: 'Project owner', type: 'select', options: userOptions(), placeholder: 'Unassigned', half: true },
       { name: 'secondary_owner_id', label: 'Secondary owner', type: 'select', options: userOptions(), placeholder: 'None', half: true },
+      { name: 'project_type', label: 'Type', type: 'select', options: e.project_types, placeholder: 'Not set', half: true },
       { name: 'requester', label: 'Requester', type: 'text', placeholder: 'Who asked for this?', half: true },
       { name: 'department', label: 'Department', type: 'text', placeholder: 'e.g. Sales, Finance', half: true },
       { name: 'start_date', label: 'Start date', type: 'date', default: today(), half: true },

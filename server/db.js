@@ -14,7 +14,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SCHEMA } from './schema.js';
+import { SCHEMA, MIGRATIONS } from './schema.js';
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(MODULE_DIR, '..');
@@ -138,6 +138,7 @@ export const DEFAULT_SETTINGS = {
 export async function init() {
   const c = await connect();
   await c.exec(SCHEMA);
+  for (const statement of MIGRATIONS) await c.exec(statement);
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
     await run('INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', key, value);
   }

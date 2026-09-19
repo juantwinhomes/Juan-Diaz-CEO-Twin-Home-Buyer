@@ -82,6 +82,11 @@ const STATUS_COLOR = {
 export const statusColor = (value) => STATUS_COLOR[value] || 'gray';
 export const badge = (value, color) =>
   value ? `<span class="badge ${color || statusColor(value)}"><i class="dot"></i>${esc(value)}</span>` : '';
+/** Project type reads as a neutral tag, so it is not mistaken for a status. */
+const TYPE_COLOR = { System: 'blue', Automation: 'green', Report: 'gray' };
+export const typeBadge = (t) =>
+  t ? `<span class="badge ${TYPE_COLOR[t] || 'gray'}" title="Project type">${esc(t)}</span>` : '';
+
 export const priority = (p) => (p ? `<span class="pri ${esc(p)}">${esc(p)}</span>` : '');
 
 export function avatar(user, size = '') {

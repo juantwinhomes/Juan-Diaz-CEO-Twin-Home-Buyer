@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS projects (
   secondary_owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   requester          TEXT,
   department         TEXT,
+  project_type       TEXT,
   start_date         TEXT,
   target_date        TEXT,
   priority           TEXT    NOT NULL DEFAULT 'P3',
@@ -249,3 +250,12 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT
 );
 `;
+
+/**
+ * Changes applied to databases that already exist. CREATE TABLE IF NOT EXISTS
+ * cannot add a column to a table that is already there, so anything added after
+ * the first release belongs here. Every statement must be safe to run repeatedly.
+ */
+export const MIGRATIONS = [
+  'ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_type TEXT'
+];

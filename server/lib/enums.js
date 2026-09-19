@@ -8,6 +8,7 @@ export const ENUMS = {
   ],
   commitment_statuses: ['Not Started', 'In Progress', 'Completed', 'Blocked', 'Cancelled'],
   carryover_reasons: ['Continue tomorrow', 'Blocked', 'Cancelled', 'Changed priority'],
+  project_types: ['System', 'Automation', 'Report'],
   project_statuses: [
     'Backlog', 'Requirements', 'Building', 'Internal Testing', 'User Testing',
     'Ready for Deployment', 'Production', 'Monitoring', 'Blocked', 'Completed', 'Cancelled'
