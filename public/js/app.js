@@ -162,11 +162,29 @@ export async function reloadBootstrap() {
   state.settings = data.settings;
   state.enums = data.enums;
   state.guidance = data.guidance;
+  state.auth = data.auth || { enabled: false };
+  renderSignOut();
   const saved = Number(store.get('kpi.user', 0));
   const contributors = data.users.filter((u) => !u.is_manager && u.active);
   state.currentUserId = contributors.some((u) => u.id === saved) ? saved : (contributors[0]?.id ?? null);
   document.getElementById('globalDate').value = state.date;
   document.getElementById('globalDate').max = data.today;
+}
+
+function renderSignOut() {
+  const foot = document.querySelector('.sidebar-foot');
+  if (!foot || foot.querySelector('#signOut')) return;
+  if (!state.auth?.enabled) return;
+  const btn = document.createElement('button');
+  btn.id = 'signOut';
+  btn.className = 'btn btn-sm';
+  btn.style.cssText = 'width:100%;margin-bottom:12px';
+  btn.textContent = 'Sign out';
+  btn.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    location.href = '/';
+  });
+  foot.prepend(btn);
 }
 
 export function setDate(date) {

@@ -36,6 +36,63 @@ then use **Settings → Remove data → Everything**, or just delete `data/kpi.d
 
 ---
 
+## Deploying it (shared database)
+
+Running locally puts the database on one laptop. To have both people working against the
+same data, deploy it — the app is packaged for that and needs no code changes.
+
+### Before you deploy
+
+Set these two environment variables on the host:
+
+| Variable | Value | Why |
+| --- | --- | --- |
+| `APP_PASSWORD` | A shared team password | Without it the URL is public to anyone who finds it |
+| `SESSION_SECRET` | A long random string | Keeps people signed in across restarts |
+| `KPI_DB_PATH` | `/data/kpi.db` | Puts the database on the mounted disk, not the container |
+
+`APP_PASSWORD` is what turns the password gate on. Leave it unset and the app stays open,
+which is what you want locally and never what you want on a public URL.
+
+### The disk matters
+
+The database is a file. Most hosts give containers a **temporary** filesystem that is wiped
+on every redeploy, which would erase your data. The host must provide a **persistent disk
+(volume)** mounted at `/data`. On Render that means a paid instance — free instances have no
+persistent disk.
+
+### Render
+
+`render.yaml` in this repo is a ready-made blueprint. In the Render dashboard: **New →
+Blueprint**, point it at this repository, then set `APP_PASSWORD` when prompted. It provisions
+the web service, the 1 GB disk at `/data`, and generates `SESSION_SECRET` for you.
+
+### Anywhere else
+
+`Dockerfile` builds the whole app and works on Railway, Fly.io, a VPS or any container host.
+Mount a volume at `/data` and set the three variables above.
+
+```bash
+docker build -t kpi-dashboard .
+docker run -p 4000:4000 -v kpi-data:/data \
+  -e APP_PASSWORD='your-team-password' \
+  -e SESSION_SECRET='a-long-random-string' \
+  kpi-dashboard
+```
+
+### After it is live
+
+A deployed instance starts **empty** — no demo data. Add your team on the **Team** page, then
+your projects on **Projects**, and you are running. If you want the demo data to look around
+first, run `npm run seed` against it via the host's shell.
+
+### Backups
+
+The whole database is the single file at `/data/kpi.db`. Copy that file somewhere safe on a
+schedule and you have a complete backup.
+
+---
+
 ## What it answers every day
 
 | Question | Where |

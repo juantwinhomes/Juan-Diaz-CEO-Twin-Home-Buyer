@@ -5,6 +5,7 @@ import * as K from './lib/kpi.js';
 import { ENUMS } from './lib/enums.js';
 import { scoreText, HELPER_MESSAGE, PROGRESS_EXAMPLES, NON_PROGRESS_EXAMPLES } from './lib/quality.js';
 import { buildReport } from './lib/reports.js';
+import { authEnabled } from './auth.js';
 
 const routes = [];
 const route = (method, path, handler) =>
@@ -52,7 +53,8 @@ GET('/api/bootstrap', (_p, q) => ({
                   WHERE p.archived = 0 ORDER BY p.name`),
   settings: getSettings(),
   enums: ENUMS,
-  guidance: { helper: HELPER_MESSAGE, good: PROGRESS_EXAMPLES, bad: NON_PROGRESS_EXAMPLES }
+  guidance: { helper: HELPER_MESSAGE, good: PROGRESS_EXAMPLES, bad: NON_PROGRESS_EXAMPLES },
+  auth: { enabled: authEnabled() }
 }));
 
 POST('/api/quality-check', (_p, _q, body) => scoreText(body.text, { kind: body.kind || 'progress' }));

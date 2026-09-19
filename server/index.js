@@ -4,6 +4,7 @@ import { join, extname, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { match, HttpError } from './api.js';
+import { authEnabled, isAuthed, login, logout, LOGIN_PAGE } from './auth.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dirname, '..', 'public');
@@ -49,6 +50,23 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = decodeURIComponent(url.pathname);
 
+  // ---- Password gate (only active when APP_PASSWORD is set) ----------------
+  if (pathname === '/api/login' && req.method === 'POST') {
+    const body = await readBody(req).catch(() => ({}));
+    return login(req, res, body.password);
+  }
+  if (pathname === '/api/logout' && req.method === 'POST') return logout(req, res);
+
+  if (authEnabled() && !isAuthed(req)) {
+    if (pathname.startsWith('/api/')) return json(res, 401, { error: 'Not signed in' });
+    res.writeHead(pathname === '/login' ? 200 : 401, { 'Content-Type': 'text/html; charset=utf-8' });
+    return res.end(LOGIN_PAGE);
+  }
+  if (pathname === '/login') {
+    res.writeHead(302, { Location: '/' });
+    return res.end();
+  }
+
   if (pathname.startsWith('/api/')) {
     try {
       const hit = match(req.method, pathname);
@@ -90,5 +108,8 @@ const server = createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`\n  AI & Systems Daily KPI Dashboard`);
-  console.log(`  ➜  http://localhost:${PORT}\n`);
+  console.log(`  ➜  http://localhost:${PORT}`);
+  console.log(authEnabled()
+    ? '  ➜  Password protection is ON\n'
+    : '  ➜  No password set (fine locally; set APP_PASSWORD before deploying)\n');
 });
