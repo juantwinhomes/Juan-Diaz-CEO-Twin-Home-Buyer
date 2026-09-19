@@ -36,7 +36,15 @@ function parseCsv(text) {
 }
 
 // The export mangles em dashes; restore them rather than leaving replacement marks.
-const clean = (s) => String(s || '').replace(/�/g, '—').replace(/\s+/g, ' ').trim();
+const clean = (s) => String(s || '')
+  .replace(/\uFFFD/g, '-')                  // the CSV export mangles em dashes
+  .replace(/[\u2010-\u2015]/g, '-')         // en/em dashes
+  .replace(/[\u2018\u2019]/g, "'")          // curly apostrophes
+  .replace(/[\u201C\u201D]/g, '"')          // curly quotes
+  .replace(/[\u00B7\u2022]/g, '|')          // middle dot, bullet
+  .replace(/[^\x20-\x7E]/g, '')             // anything else non-ASCII
+  .replace(/\s+/g, ' ')
+  .trim();
 
 /* ------------------------------------------------------- Field mapping --- */
 // Directory status + publication -> the dashboard's project lifecycle.
@@ -93,7 +101,7 @@ for (const r of rows) {
     clean(docs) && clean(docs).startsWith('http') ? `Docs: ${clean(docs)}` : clean(docs),
     clean(maintenance) && clean(maintenance) !== 'TBD' ? `Maintenance: ${clean(maintenance)}` : '',
     clean(health) ? `Health: ${clean(health)}` : ''
-  ].filter(Boolean).join(' · ');
+  ].filter(Boolean).join(' | ');
 
   projects.push({
     name: clean(name),
@@ -102,7 +110,7 @@ for (const r of rows) {
     department: section,
     business_objective: clean(purpose),
     production_url: clean(link).startsWith('http') ? clean(link) : null,
-    notes: [notes, clean(link) && !clean(link).startsWith('http') ? `Access: ${clean(link)}` : ''].filter(Boolean).join(' · '),
+    notes: [notes, clean(link) && !clean(link).startsWith('http') ? `Access: ${clean(link)}` : ''].filter(Boolean).join(' | '),
     ...mapped
   });
 }
@@ -111,7 +119,7 @@ for (const r of rows) {
 const q = (v) => (v === null || v === undefined || v === '' ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`);
 const today = new Date().toISOString().slice(0, 10);
 
-const lines = ['BEGIN;', ''];
+const lines = [];
 lines.push('-- People referenced by the directory');
 for (const p of people.values()) {
   lines.push(
@@ -143,11 +151,11 @@ for (const m of ENUMS.milestone_framework) {
   WHERE NOT EXISTS (SELECT 1 FROM project_milestones m WHERE m.project_id = p.id AND m.name = ${q(m.name)});`);
 }
 
-lines.push('', '-- Today\'s completion snapshot, so progress is measured from here on');
+lines.push('', '-- Opening completion snapshot, so progress is measured from here on');
 lines.push(`INSERT INTO project_snapshots (project_id, snapshot_date, completion_pct, status)
  SELECT id, ${q(today)}, completion_pct, status FROM projects
  ON CONFLICT (project_id, snapshot_date) DO UPDATE SET completion_pct = EXCLUDED.completion_pct;`);
-lines.push('', 'COMMIT;');
+
 
 const sql = lines.join('\n') + '\n';
 
