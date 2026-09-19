@@ -72,9 +72,20 @@ async function connect() {
   return client;
 }
 
+/** Query counter. Each query is a network round-trip once the database is
+ *  remote, so the count per request matters far more than local timing. */
+export const stats = { queries: 0, ms: 0 };
+export const resetStats = () => { stats.queries = 0; stats.ms = 0; };
+
 export async function query(sql, params = []) {
   const c = await connect();
-  return c.query(toPgPlaceholders(sql), params);
+  const started = Date.now();
+  try {
+    return await c.query(toPgPlaceholders(sql), params);
+  } finally {
+    stats.queries++;
+    stats.ms += Date.now() - started;
+  }
 }
 
 export const all = async (sql, ...params) => (await query(sql, params)).rows;
@@ -106,16 +117,24 @@ export async function init() {
     await run('INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', key, value);
   }
   columnCache.clear();
+  settingsCache = null;
   return c;
 }
 
+// Settings are read on nearly every KPI call but change rarely, and each read
+// is a network round-trip once the database is remote.
+let settingsCache = null;
+
 export async function getSettings() {
+  if (settingsCache) return settingsCache;
   const out = { ...DEFAULT_SETTINGS };
   for (const row of await all('SELECT key, value FROM settings')) out[row.key] = row.value;
+  settingsCache = out;
   return out;
 }
 
 export async function setSettings(patch) {
+  settingsCache = null;
   for (const [key, value] of Object.entries(patch)) {
     await run(
       'INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',

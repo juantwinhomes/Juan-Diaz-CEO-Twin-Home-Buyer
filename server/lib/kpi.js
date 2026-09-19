@@ -73,26 +73,94 @@ export const activeProjects = async () =>
  * Evidence that a project moved today. A percentage bump on its own is not
  * enough: the log entry has to pass the measurable-progress check.
  */
-export async function projectDay(project, date) {
-  const prev = await previousPct(project.id, date);
-  const today = await pctOn(project.id, date, project.completion_pct);
+/**
+ * Everything the project cards need for one date, in a fixed number of queries
+ * regardless of how many projects there are.
+ *
+ * This matters because the database is remote: each query is a network
+ * round-trip, so querying per project inside a loop turns a fast page into a
+ * slow one. Loading once and grouping in memory keeps it flat.
+ */
+export async function loadDayContext(date) {
+  const [todaySnaps, prevSnaps, logs, deployments, milestones, incidents, blockers, lastProgress] =
+    await Promise.all([
+      all('SELECT project_id, completion_pct FROM project_snapshots WHERE snapshot_date = ?', date),
+      all(`SELECT DISTINCT ON (project_id) project_id, completion_pct
+             FROM project_snapshots WHERE snapshot_date < ?
+            ORDER BY project_id, snapshot_date DESC`, date),
+      all(`SELECT pl.*, u.name AS user_name FROM progress_logs pl
+             LEFT JOIN users u ON u.id = pl.user_id
+            WHERE pl.log_date = ? ORDER BY pl.project_id, pl.id`, date),
+      all('SELECT * FROM deployments WHERE deploy_date = ?', date),
+      all('SELECT * FROM project_milestones WHERE completed = 1 AND completed_date = ?', date),
+      all('SELECT * FROM incidents WHERE resolved_date = ?', date),
+      all(`SELECT * FROM blockers
+            WHERE status IN ('Open','Waiting','Escalated') AND date_reported <= ?
+            ORDER BY date_reported`, date),
+      all(`SELECT project_id, MAX(d) AS d FROM (
+             SELECT project_id, MAX(log_date)      AS d FROM progress_logs
+              WHERE log_date <= ? AND counts_as_progress = 1 GROUP BY project_id
+             UNION ALL
+             SELECT project_id, MAX(deploy_date)   AS d FROM deployments
+              WHERE deploy_date <= ? GROUP BY project_id
+             UNION ALL
+             SELECT project_id, MAX(completed_date) AS d FROM project_milestones
+              WHERE completed = 1 AND completed_date <= ? GROUP BY project_id
+             UNION ALL
+             SELECT project_id, MAX(resolved_date) AS d FROM incidents
+              WHERE resolved_date <= ? GROUP BY project_id
+           ) x WHERE project_id IS NOT NULL GROUP BY project_id`, date, date, date, date)
+    ]);
 
-  const logs = await all(
-    `SELECT pl.*, u.name AS user_name FROM progress_logs pl
-       LEFT JOIN users u ON u.id = pl.user_id
-      WHERE pl.project_id = ? AND pl.log_date = ? ORDER BY pl.id`,
-    project.id, date
-  );
-  const deployments = await all(
-    'SELECT * FROM deployments WHERE project_id = ? AND deploy_date = ?', project.id, date
-  );
-  const milestones = await all(
-    'SELECT * FROM project_milestones WHERE project_id = ? AND completed = 1 AND completed_date = ?',
-    project.id, date
-  );
-  const fixedIncidents = await all(
-    'SELECT * FROM incidents WHERE project_id = ? AND resolved_date = ?', project.id, date
-  );
+  const byProject = (rows) => {
+    const map = new Map();
+    for (const r of rows) {
+      if (r.project_id === null || r.project_id === undefined) continue;
+      if (!map.has(r.project_id)) map.set(r.project_id, []);
+      map.get(r.project_id).push(r);
+    }
+    return map;
+  };
+  const pctMap = (rows) => new Map(rows.map((r) => [r.project_id, Number(r.completion_pct)]));
+
+  return {
+    date,
+    todayPct: pctMap(todaySnaps),
+    prevPct: pctMap(prevSnaps),
+    logs: byProject(logs),
+    deployments: byProject(deployments),
+    milestones: byProject(milestones),
+    incidents: byProject(incidents),
+    blockers: byProject(blockers),
+    lastProgress: new Map(lastProgress.map((r) => [r.project_id, r.d]))
+  };
+}
+
+/** Active projects for a date, with their day data, in a flat set of queries. */
+export async function activeProjectsWithDay(date) {
+  const [projects, ctx] = await Promise.all([activeProjects(), loadDayContext(date)]);
+  return Promise.all(projects.map((p) => projectDay(p, date, ctx)));
+}
+
+/**
+ * Evidence that a project moved on `date`. A percentage bump on its own is not
+ * enough: the log entry has to pass the measurable-progress check.
+ *
+ * Pass a context from loadDayContext to avoid per-project queries.
+ */
+export async function projectDay(project, date, ctx = null) {
+  const context = ctx || await loadDayContext(date);
+
+  const prev = context.prevPct.get(project.id) ?? 0;
+  const today = context.todayPct.get(project.id)
+    ?? context.prevPct.get(project.id)
+    ?? (Number(project.completion_pct) || 0);
+
+  const logs = context.logs.get(project.id) || [];
+  const deployments = context.deployments.get(project.id) || [];
+  const milestones = context.milestones.get(project.id) || [];
+  const fixedIncidents = context.incidents.get(project.id) || [];
+  const openBlockers = context.blockers.get(project.id) || [];
 
   const measurableLogs = logs.filter((l) => l.counts_as_progress === 1);
   const evidence = [];
@@ -101,15 +169,8 @@ export async function projectDay(project, date) {
   if (milestones.length) evidence.push(...milestones.map((m) => `Milestone: ${m.name}`));
   if (fixedIncidents.length) evidence.push(...fixedIncidents.map((i) => `Resolved: ${i.title}`));
 
-  const openBlockers = await all(
-    `SELECT * FROM blockers
-      WHERE project_id = ? AND status IN ('Open','Waiting','Escalated') AND date_reported <= ?
-      ORDER BY date_reported`,
-    project.id, date
-  );
-
   const rejected = logs.filter((l) => l.counts_as_progress === 0);
-  const lastProgress = await lastProgressDate(project.id, date);
+  const lastProgress = context.lastProgress.get(project.id) || null;
 
   return {
     ...project,
@@ -348,7 +409,7 @@ const grade = (s) => (s >= 90 ? 'Excellent' : s >= 80 ? 'On Track' : s >= 65 ? '
 
 export async function dashboard(date) {
   const settings = await getSettings();
-  const projects = await Promise.all((await activeProjects()).map((p) => projectDay(p, date)));
+  const projects = await activeProjectsWithDay(date);
   const progressed = projects.filter((p) => p.progressed);
   const commitments = await commitmentStats(date);
   const deployments = await deploymentStats(date);
@@ -386,7 +447,7 @@ export async function dashboard(date) {
 }
 
 export async function scorecards(date, projectsPre = null) {
-  const projects = projectsPre || await Promise.all((await activeProjects()).map((p) => projectDay(p, date)));
+  const projects = projectsPre || await activeProjectsWithDay(date);
   // Managers are viewers, not contributors, so they never appear as a scorecard.
   const users = await all('SELECT * FROM users WHERE active = 1 AND is_manager = 0 ORDER BY sort_order, id');
 
@@ -418,7 +479,7 @@ export async function scorecards(date, projectsPre = null) {
 
 export async function stagnantProjects(date, projectsPre = null) {
   const limit = Number(await getSettings().stagnation_days || 2);
-  const projects = projectsPre || await Promise.all((await activeProjects()).map((p) => projectDay(p, date)));
+  const projects = projectsPre || await activeProjectsWithDay(date);
   return projects
     .filter((p) => p.days_since_progress === null || p.days_since_progress >= limit)
     .map((p) => ({
@@ -441,7 +502,7 @@ export async function stagnantProjects(date, projectsPre = null) {
 
 /** Suggestions only — the team decides. Ordered by the six rules in the spec. */
 export async function nextDayPriorities(date, projectsPre = null) {
-  const projects = projectsPre || await Promise.all((await activeProjects()).map((p) => projectDay(p, date)));
+  const projects = projectsPre || await activeProjectsWithDay(date);
   const out = [];
   const push = (category, item) => out.push({ category, ...item });
 
@@ -519,7 +580,7 @@ export async function weekly(date) {
   const days = D.weekDays(date);
   const rows = await Promise.all(days.map(async (d) => {
     const c = await commitmentStats(d);
-    const projects = await Promise.all((await activeProjects()).map((p) => projectDay(p, d)));
+    const projects = await activeProjectsWithDay(d);
     const progressed = projects.filter((p) => p.progressed).length;
     const dep = await deploymentStats(d);
     const b = await blockerStats(d);
