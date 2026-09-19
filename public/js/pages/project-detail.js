@@ -20,27 +20,7 @@ export async function page(ctx) {
           ${U.priority(p.priority)} ${U.badge(p.status)} ${p.project_type ? U.typeBadge(p.project_type) : ''}
         </div>
         <div class="card-body">
-          <div class="row" style="align-items:baseline;gap:8px">
-            <span style="font-size:36px;font-weight:650;letter-spacing:-.03em;line-height:1">${p.today_pct}%</span>
-            <span class="small muted">complete</span>
-            <span class="spacer"></span>
-            <span class="small">${p.progress_today > 0
-              ? `${U.fmt.delta(p.progress_today)} <span class="muted">today</span>`
-              : p.progress_today < 0
-                ? `${U.fmt.delta(p.progress_today)} <span class="muted">today</span>`
-                : '<span class="muted">no change today</span>'}</span>
-          </div>
-          <div style="margin-top:12px">${U.progressBar(p.previous_pct, p.today_pct, false)}</div>
-          <div class="small muted" style="margin-top:6px">
-            ${countsFromTodos(p)
-              ? `${p.commitment_progress.done} of ${p.commitment_progress.total} to-dos done · was ${p.previous_pct}% at the start of the day`
-              : `Set by hand · was ${p.previous_pct}% at the start of the day`}
-          </div>
-          <div class="small ${p.progressed ? '' : 'muted'}" style="margin-top:9px;${p.progressed ? 'color:var(--green)' : ''}">
-            ${p.progressed
-              ? `${U.icon('check', 12)} ${U.esc(p.evidence.join(' · '))}`
-              : `<span style="color:var(--orange)">${U.icon('alert', 12)} Nothing logged on ${U.fmt.date(state.date)}</span>`}
-          </div>
+          <div id="pctBlock">${pctBlock(p)}</div>
           <div class="divider"></div>
           <div class="row">
             <button class="btn btn-primary btn-sm" data-action="log">${U.icon('plus', 13)} Log progress</button>
@@ -75,8 +55,8 @@ export async function page(ctx) {
             ? 'Ticking these is what moves the percentage'
             : 'This project\'s percentage is set by hand, so these do not move it'}</span>
           <span class="spacer"></span>
-          <span class="badge ${p.commitment_progress.total && p.commitment_progress.done === p.commitment_progress.total ? 'green' : 'gray'}">
-            ${p.commitment_progress.done} of ${p.commitment_progress.total} done</span>
+          <span class="badge ${p.commitment_progress.total && p.commitment_progress.done === p.commitment_progress.total ? 'green' : 'gray'}"
+                id="todoCount">${p.commitment_progress.done} of ${p.commitment_progress.total} done</span>
           <button class="btn btn-sm btn-primary" data-action="add-todo">${U.icon('plus', 13)} Add to-do</button>
         </div>
         ${p.commitments.length ? `<div class="card-body tight">
@@ -197,6 +177,28 @@ export async function page(ctx) {
     subtitle: `${p.owner_name || 'Unassigned'} · ${p.status} · ${p.today_pct}% complete`,
     html,
     mount(root) {
+      // Ticking to-dos should feel like ticking a list, not like reloading a
+      // page. The percentage, the bar and the counter settle once the ticking
+      // stops rather than after every box.
+      let settleTimer = null;
+      const settle = () => {
+        clearTimeout(settleTimer);
+        settleTimer = setTimeout(async () => {
+          try {
+            const fresh = await api.get(`/projects/${p.id}`, { date: state.date });
+            Object.assign(p, fresh);
+            const block = root.querySelector('#pctBlock');
+            if (block) block.innerHTML = pctBlock(fresh);
+            const count = root.querySelector('#todoCount');
+            if (count) {
+              count.textContent = `${fresh.commitment_progress.done} of ${fresh.commitment_progress.total} done`;
+              const all = fresh.commitment_progress.total && fresh.commitment_progress.done === fresh.commitment_progress.total;
+              count.className = `badge ${all ? 'green' : 'gray'}`;
+            }
+          } catch { /* the numbers catch up on the next action */ }
+        }, 800);
+      };
+
       root.addEventListener('click', async (e) => {
         const action = e.target.closest('[data-action]')?.dataset.action;
         const editLog = e.target.closest('[data-edit]')?.dataset.edit;
@@ -216,10 +218,22 @@ export async function page(ctx) {
         }
         if (todo) {
           const c = p.commitments.find((x) => x.id === Number(todo));
-          const next = c.status === 'Completed' ? 'In Progress' : 'Completed';
-          await api.patch(`/commitments/${c.id}`, { status: next }, { date: state.date });
-          U.toast(next === 'Completed' ? 'Ticked off' : 'Put back on the list', 'success');
-          refresh();
+          const before = { ...c };
+          // Redraw the one line now; the percentage above catches up once the
+          // ticking stops, so a run of them does not reload the page each time.
+          c.status = c.status === 'Completed' ? 'In Progress' : 'Completed';
+          redrawTodo(root, c);
+          try {
+            const res = await api.patch(`/commitments/${c.id}`, { status: c.status }, { date: state.date });
+            Object.assign(c, res);
+            redrawTodo(root, c);
+            U.toast(c.status === 'Completed' ? 'Ticked off' : 'Put back on the list', 'success');
+            settle();
+          } catch (err) {
+            Object.assign(c, before);
+            redrawTodo(root, c);
+            U.toast(err.message, 'error');
+          }
         }
         if (todoEdit) commitmentForm(p.commitments.find((x) => x.id === Number(todoEdit)));
         if (todoRemove) {
@@ -273,14 +287,44 @@ export async function page(ctx) {
   };
 }
 
+/** The part of the page a tick changes, so ticking can redraw only this. */
+function pctBlock(p) {
+  return `
+    <div class="row" style="align-items:baseline;gap:8px">
+      <span style="font-size:36px;font-weight:650;letter-spacing:-.03em;line-height:1">${p.today_pct}%</span>
+      <span class="small muted">complete</span>
+      <span class="spacer"></span>
+      <span class="small">${p.progress_today
+        ? `${U.fmt.delta(p.progress_today)} <span class="muted">today</span>`
+        : '<span class="muted">no change today</span>'}</span>
+    </div>
+    <div style="margin-top:12px">${U.progressBar(p.previous_pct, p.today_pct, false)}</div>
+    <div class="small muted" style="margin-top:6px">
+      ${countsFromTodos(p)
+        ? `${p.commitment_progress.done} of ${p.commitment_progress.total} to-dos done · was ${p.previous_pct}% at the start of the day`
+        : `Set by hand · was ${p.previous_pct}% at the start of the day`}
+    </div>
+    <div class="small ${p.progressed ? '' : 'muted'}" style="margin-top:9px;${p.progressed ? 'color:var(--green)' : ''}">
+      ${p.progressed
+        ? `${U.icon('check', 12)} ${U.esc(p.evidence.join(' · '))}`
+        : `<span style="color:var(--orange)">${U.icon('alert', 12)} Nothing logged on ${U.fmt.date(state.date)}</span>`}
+    </div>`;
+}
+
 /** True when this project's percentage is counted from its to-dos. */
 const countsFromTodos = (p) => p.pct_from_commitments !== 0 && p.commitment_progress.total > 0;
+
+/** Redraw one to-do in place, leaving the rest of the page where it is. */
+function redrawTodo(root, c) {
+  const el = root.querySelector(`.check-item[data-id="${c.id}"]`);
+  if (el) el.outerHTML = todoItem(c);
+}
 
 /** One to-do: the same tick box as the Today page, in the project's own list. */
 function todoItem(c) {
   const done = c.status === 'Completed';
   const cls = done ? 'done' : c.status === 'Blocked' ? 'blocked' : c.status === 'Cancelled' ? 'cancelled' : '';
-  return `<div class="check-item ${cls}">
+  return `<div class="check-item ${cls}" data-id="${c.id}">
     <button class="check-mark" data-todo="${c.id}" aria-label="${done ? 'Mark not done' : 'Mark done'}">
       ${done ? U.icon('check', 12) : c.status === 'Blocked' ? U.icon('alert', 11) : c.status === 'Cancelled' ? U.icon('x', 11) : ''}
     </button>
