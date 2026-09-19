@@ -266,6 +266,7 @@ scripts/
   check-bundle.mjs        Builds the serverless bundle and runs it (npm run check:bundle)
   check-queries.mjs       Query budget for the pages people open constantly (npm run check:queries)
   check-progress-link.mjs Commitment -> progress behaviour, end to end (npm run check:progress)
+  check-schema.mjs        The database can be built from nothing (npm run check:schema)
   import-directory.mjs    Turns the Tools and Artifact Directory CSV into SQL
 public/
   index.html        App shell

@@ -86,6 +86,27 @@ CREATE TABLE IF NOT EXISTS project_milestones (
 CREATE INDEX IF NOT EXISTS idx_milestones_project ON project_milestones(project_id);
 
 -- ------------------------------------------------------------------ --
+-- Daily commitments (1-5 concrete deliverables per person per day)
+-- ------------------------------------------------------------------ --
+CREATE TABLE IF NOT EXISTS commitments (
+  id                 INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id            INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  project_id         INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+  commit_date        TEXT    NOT NULL,
+  task               TEXT    NOT NULL,
+  priority           TEXT    NOT NULL DEFAULT 'P3',
+  expected_today     INTEGER NOT NULL DEFAULT 1,
+  status             TEXT    NOT NULL DEFAULT 'Not Started',
+  carryover_reason   TEXT,
+  notes              TEXT,
+  quality_score      INTEGER NOT NULL DEFAULT 0,
+  completed_at       TEXT,
+  created_at         TEXT    NOT NULL DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+);
+CREATE INDEX IF NOT EXISTS idx_commit_date ON commitments(commit_date);
+CREATE INDEX IF NOT EXISTS idx_commit_user ON commitments(user_id, commit_date);
+
+-- ------------------------------------------------------------------ --
 -- Daily progress log (one entry per project per person per update)
 -- ------------------------------------------------------------------ --
 CREATE TABLE IF NOT EXISTS progress_logs (
@@ -109,27 +130,6 @@ CREATE TABLE IF NOT EXISTS progress_logs (
 );
 CREATE INDEX IF NOT EXISTS idx_progress_date    ON progress_logs(log_date);
 CREATE INDEX IF NOT EXISTS idx_progress_project ON progress_logs(project_id);
-
--- ------------------------------------------------------------------ --
--- Daily commitments (1-5 concrete deliverables per person per day)
--- ------------------------------------------------------------------ --
-CREATE TABLE IF NOT EXISTS commitments (
-  id                 INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id            INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  project_id         INTEGER REFERENCES projects(id) ON DELETE SET NULL,
-  commit_date        TEXT    NOT NULL,
-  task               TEXT    NOT NULL,
-  priority           TEXT    NOT NULL DEFAULT 'P3',
-  expected_today     INTEGER NOT NULL DEFAULT 1,
-  status             TEXT    NOT NULL DEFAULT 'Not Started',
-  carryover_reason   TEXT,
-  notes              TEXT,
-  quality_score      INTEGER NOT NULL DEFAULT 0,
-  completed_at       TEXT,
-  created_at         TEXT    NOT NULL DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
-);
-CREATE INDEX IF NOT EXISTS idx_commit_date ON commitments(commit_date);
-CREATE INDEX IF NOT EXISTS idx_commit_user ON commitments(user_id, commit_date);
 
 -- ------------------------------------------------------------------ --
 -- Blockers

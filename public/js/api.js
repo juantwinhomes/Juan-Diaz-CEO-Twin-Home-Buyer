@@ -3,7 +3,14 @@ const qs = (params = {}) => {
   return usable.length ? `?${new URLSearchParams(Object.fromEntries(usable))}` : '';
 };
 
+// Anything that writes should be reflected in the shell's counters; anything
+// that only reads should not cost extra requests. This says which just happened.
+let wrote = false;
+/** True once if something has been written since the last check. */
+export const tookAWrite = () => { const was = wrote; wrote = false; return was; };
+
 async function request(method, path, { params, body } = {}) {
+  if (method !== 'GET') wrote = true;
   const res = await fetch(`/api${path}${qs(params)}`, {
     method,
     headers: body ? { 'Content-Type': 'application/json' } : undefined,

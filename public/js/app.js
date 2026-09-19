@@ -1,4 +1,4 @@
-import { api } from './api.js';
+import { api, tookAWrite } from './api.js';
 import { icon, esc, loading, toast, closeModal, fmt } from './ui.js';
 
 /* ------------------------------------------------------------- State */
@@ -70,7 +70,15 @@ function renderNav(active) {
     </div>`).join('');
 }
 
-async function refreshBadges() {
+let badgesAt = 0;
+/**
+ * Two small numbers in the sidebar are not worth two requests on every page
+ * view — on a hosted setup that is two serverless invocations each time someone
+ * clicks anything. They refresh after a write, and otherwise once a minute.
+ */
+async function refreshBadges(force = false) {
+  if (!force && Date.now() - badgesAt < 60000) return;
+  badgesAt = Date.now();
   try {
     const [blockers, incidents] = await Promise.all([
       api.get('/blockers', { open: '1' }),
@@ -78,7 +86,7 @@ async function refreshBadges() {
     ]);
     setBadge('blockers', blockers.length);
     setBadge('issues', incidents.length);
-  } catch { /* badges are cosmetic */ }
+  } catch { badgesAt = 0; /* badges are cosmetic — try again next time */ }
 }
 function setBadge(name, count) {
   const el = document.querySelector(`[data-badge="${name}"]`);
@@ -140,7 +148,7 @@ async function router() {
       <div style="margin-top:12px"><button class="btn" onclick="location.reload()">Reload</button></div>
     </div></div>`;
   }
-  refreshBadges();
+  refreshBadges(tookAWrite());
   closeDrawer();
 }
 

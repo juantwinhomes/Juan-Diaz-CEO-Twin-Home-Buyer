@@ -11,6 +11,7 @@
  * rewritten to Postgres `$1, $2 …` on the way out, which keeps the query
  * strings throughout the app unchanged.
  */
+import { createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -135,14 +136,40 @@ export const DEFAULT_SETTINGS = {
   currency: '$'
 };
 
-/** Create the schema and seed default settings. Safe to run repeatedly. */
+/**
+ * A fingerprint of everything init() would apply. Change the schema, a
+ * migration or the default settings and it changes with them.
+ */
+const SETUP_STAMP = createHash('sha1')
+  .update(SCHEMA + MIGRATIONS.join(';') + Object.keys(DEFAULT_SETTINGS).join(','))
+  .digest('hex')
+  .slice(0, 12);
+
+/**
+ * Create the schema and seed default settings. Safe to run repeatedly.
+ *
+ * Every serverless cold start calls this, and each statement is a network
+ * round-trip to a database that may be on another continent — applying the
+ * schema, four migrations and eleven settings blindly cost about fifteen
+ * round-trips before the actual request even started, on every cold start.
+ * So ask one question first: if the database already carries this exact
+ * fingerprint, there is nothing to do.
+ */
 export async function init() {
   const c = await connect();
+  try {
+    const row = await get('SELECT value FROM settings WHERE key = ?', 'setup_stamp');
+    if (row && row.value === SETUP_STAMP) return c;
+  } catch { /* no settings table yet — fall through and build everything */ }
+
   await c.exec(SCHEMA);
   for (const statement of MIGRATIONS) await c.exec(statement);
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
     await run('INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', key, value);
   }
+  await run(
+    'INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+    'setup_stamp', SETUP_STAMP);
   columnCache.clear();
   settingsCache = null;
   return c;
