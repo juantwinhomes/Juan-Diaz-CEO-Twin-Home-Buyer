@@ -4,6 +4,7 @@ import { join, extname, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { match, HttpError } from './api.js';
+import { init } from './db.js';
 import { authEnabled, isAuthed, login, logout, LOGIN_PAGE } from './auth.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -105,6 +106,8 @@ const server = createServer(async (req, res) => {
     res.end('Not found');
   }
 });
+
+await init();
 
 server.listen(PORT, HOST, () => {
   console.log(`\n  AI & Systems Daily KPI Dashboard`);

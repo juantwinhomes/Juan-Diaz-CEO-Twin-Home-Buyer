@@ -1,158 +1,125 @@
 # Putting the dashboard online
 
-This guide assumes no server experience. It takes about 30 minutes, costs nothing,
-and gives you a normal website address your whole team can use from anywhere.
+Written for someone who has never deployed anything. About 30 minutes, and **neither
+service asks for a credit card**, so there is no way to be billed by surprise.
 
-**What you are doing:** renting a small computer that lives in a data centre and stays
-switched on permanently, then running the dashboard on it. It behaves exactly like a
-computer in your office that nobody turns off — except it is already on the internet,
-so people in other locations reach it like any website.
+Two free accounts do the job:
 
----
-
-## Before you start
-
-You need:
-
-- A credit or debit card. **It is used to verify you are a real person, not to charge you.**
-  Cloud providers all require this. The resources in this guide are free permanently — but
-  read the warning below carefully, because it is possible to create the *wrong* thing and
-  be charged for it.
-- A domain name, if you want a proper address like `kpi.yourcompany.com`. Optional — you can
-  start with just a numeric address and add the domain later.
-
----
-
-## ⚠️ The one thing that could cost you money
-
-Cloud providers offer two different things that are easy to confuse:
-
-| | What it is | Cost |
+| Piece | Service | What it does |
 | --- | --- | --- |
-| **Free trial credit** | A pot of money (often $300) that expires after 90 days | Free until it runs out, then charged |
-| **Always Free tier** | Specific small resources that are free forever | £0, permanently |
-
-**You want the Always Free tier.** It is free because of *what you create*, not because of any
-trial. Create the wrong size of machine, or put it in the wrong location, and it is billed
-normally — the free trial credit quietly absorbs the cost until it expires, and then you get
-a bill.
-
-Two rules keep you safe:
-
-1. Create **exactly** the machine type and region named below. Not "similar". Exactly.
-2. Set a **budget alert** (step 6) so you are emailed immediately if anything is ever charged.
+| Database | **Supabase** | Stores your data |
+| The app | **Render** | Serves the web pages |
 
 ---
 
-## Option A — Google Cloud (try this first)
+## Before you start: the honest trade-off
 
-Signup is usually smoother than Oracle's.
+Both free tiers **go to sleep when nobody is using them.**
 
-### 1. Create the account
-Go to [cloud.google.com](https://cloud.google.com) and click **Get started for free**. Sign in
-with a Google account and add your card when asked.
+- **Render** shuts the app down after ~15 minutes of quiet. The next person to open it
+  waits **30–60 seconds** while it starts up. Expect this several times a day — first
+  thing in the morning, after lunch, whenever there has been a gap.
+- **Supabase** pauses the database after about a week with no activity. You restore it
+  with one click in their dashboard, but somebody has to go and do it.
 
-### 2. Create the virtual machine
-In the search bar at the top, type **VM instances** and open it. You may be asked to enable
-the "Compute Engine API" — click enable and wait a minute.
-
-Click **Create instance**, then set these exactly:
-
-| Setting | Value | Why it matters |
-| --- | --- | --- |
-| Name | `kpi-dashboard` | Any name is fine |
-| Region | **`us-west1`**, `us-central1` or `us-east1` | **Only these are free.** Any other region is billed |
-| Machine type | **`e2-micro`** | **Only this size is free.** Anything larger is billed |
-| Boot disk | Ubuntu 24.04 LTS, 30 GB Standard persistent disk | Larger disks are billed |
-| Firewall | Tick **Allow HTTP traffic** and **Allow HTTPS traffic** | Without these nobody can reach it |
-
-Click **Create**. It takes about a minute.
-
-> The `e2-micro` is a small machine. That is fine — this app is light, and your database grows
-> by about 6 MB a year.
-
-### 3. Connect to it
-In the VM list, click the **SSH** button next to your machine. A black terminal window opens
-in your browser. That is the computer's command line — you do not need to install anything.
-
-### 4. Install the dashboard
-Paste this in and press Enter (replace the domain with yours, or leave it off entirely):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/juantwinhomes/Juan-Diaz-CEO-Twin-Home-Buyer/claude/festive-wozniak-iednog/deploy/setup.sh | sudo bash -s -- kpi.yourcompany.com
-```
-
-It takes a few minutes and prints everything it is doing. At the end it shows your web
-address and a generated team password.
-
-**Copy that password somewhere safe.** It is what your team uses to sign in.
-
-### 5. Point your domain at it (skip if you did not use a domain)
-Copy the machine's **External IP** from the VM list. In whoever manages your DNS, add:
-
-| Type | Name | Value |
-| --- | --- | --- |
-| A | `kpi` | the External IP you copied |
-
-Wait a few minutes, then open `https://kpi.yourcompany.com`. The secure padlock appears
-automatically — the setup script obtains the certificate for you.
-
-### 6. Set a budget alert (do not skip this)
-Search for **Budgets & alerts**, click **Create budget**, set the amount to **$1**, and tick
-the alert thresholds. If anything ever starts costing money you find out immediately instead
-of at the end of the month.
+Neither is a fault; it is what free costs. If the morning wait becomes intolerable, the
+fix is a paid Render instance (~$7/month) with nothing else changing — same code, same
+database, same everything.
 
 ---
 
-## Option B — Oracle Cloud (if Google does not work out)
+## Step 1 — Create the database (Supabase)
 
-Oracle's free machine is considerably more powerful, but free capacity is frequently
-exhausted and you may have to retry over several days.
+1. Go to [supabase.com](https://supabase.com) and sign up. No card required.
+2. Click **New project**.
+   - Name: `kpi-dashboard`
+   - **Database password**: click Generate, then **save it somewhere safe** — you cannot
+     see it again and you need it in a moment
+   - Region: pick the one nearest your team
+3. Wait a couple of minutes while it sets up.
+4. Go to **Project Settings → Database → Connection string** and choose the **URI** tab.
+   Copy it. It looks like:
 
-1. Sign up at [oracle.com/cloud/free](https://www.oracle.com/cloud/free/)
-2. Create a **VM instance** with an **Always Free eligible** shape (the console labels them)
-   and the Ubuntu 24.04 image
-3. Under the networking section, allow ports 80 and 443
-4. Connect with SSH and run the same install command as step 4 above
+   ```
+   postgresql://postgres.abcdefgh:[YOUR-PASSWORD]@aws-0-us-west-1.pooler.supabase.com:5432/postgres
+   ```
 
-If you see "Out of host capacity", that is Oracle being full — try a different availability
-domain, or try again the next day.
+5. **Replace `[YOUR-PASSWORD]`** with the password from step 2, brackets and all. Keep
+   this finished string safe — it is the `DATABASE_URL` below.
+
+> Use the **Session pooler** or **Transaction pooler** string if offered. Either works.
+
+You do not need to create any tables. The app builds them on first run.
+
+## Step 2 — Deploy the app (Render)
+
+1. Go to [render.com](https://render.com) and sign up with GitHub. No card required.
+2. Click **New → Web Service** and connect this repository.
+3. Render reads `render.yaml` and fills in most settings. Check:
+   - Runtime: **Docker**
+   - Plan: **Free**
+4. Add the environment variables:
+
+   | Key | Value |
+   | --- | --- |
+   | `DATABASE_URL` | the finished connection string from step 1 |
+   | `APP_PASSWORD` | a password your team will share to sign in — you choose it |
+   | `SESSION_SECRET` | click Generate, or paste any long random text |
+
+5. Click **Create Web Service**. The first build takes a few minutes.
+
+When it finishes, Render gives you an address like `https://kpi-dashboard.onrender.com`.
+Open it, enter your `APP_PASSWORD`, and you are in.
+
+## Step 3 — Set it up
+
+The dashboard starts **empty** — no demo data on a real deployment.
+
+1. **Team** → add yourself and your teammate
+2. **Projects** → add your live projects
+3. **Today** → each person enters their commitments
+
+That is it. Share the address and the password with your team.
+
+## Step 4 — Your own domain (optional)
+
+In Render: **Settings → Custom Domains → Add**, enter `kpi.yourcompany.com`. Render shows
+a DNS record to create with whoever manages your domain. HTTPS is set up automatically.
 
 ---
 
-## Afterwards
+## Backups
 
-**Adding your team.** The dashboard starts empty. Open it, go to **Team**, and add each
-person. Then add your projects under **Projects**. There is no demo data on a real install.
+Supabase's free tier keeps little backup history, so keep your own copies. From your own
+computer, with `DATABASE_URL` set to the same connection string:
 
-**Changing the password.**
 ```bash
-sudo nano /etc/kpi-dashboard.env      # edit the APP_PASSWORD line, Ctrl+O then Ctrl+X to save
-sudo systemctl restart kpi-dashboard
+npm run export
 ```
 
-**Updating to a newer version.** Re-run the install command from step 4. Your data and
-password are kept.
+That writes everything to one JSON file under `backups/`. Put it in Drive. Doing this
+monthly means the worst case is losing a few weeks, not everything.
 
-**Backups.** A copy is saved every night at 01:30 to `/var/backups/kpi-dashboard`, and 30 days
-are kept. To download one to your own computer:
-```bash
-gcloud compute scp kpi-dashboard:/var/backups/kpi-dashboard/kpi-2026-01-15.db.gz .
-```
-To copy backups automatically to Google Drive, install `rclone`, run `rclone config` to connect
-your Drive, then add `KPI_RCLONE_REMOTE=gdrive:kpi-backups` to `/etc/kpi-dashboard.env`.
+## If something goes wrong
 
-**If something breaks.**
-```bash
-sudo systemctl status kpi-dashboard     # is it running?
-sudo journalctl -u kpi-dashboard -n 50  # what went wrong?
-sudo systemctl restart kpi-dashboard    # turn it off and on again
-```
+**"Application failed to respond"** — usually just Render waking up. Wait a minute and
+reload. If it persists, check the **Logs** tab in Render.
+
+**Login page appears but the password is refused** — `APP_PASSWORD` differs from what you
+are typing. Check it under Environment in Render.
+
+**Errors mentioning the database** — `DATABASE_URL` is wrong. The usual cause is not
+replacing `[YOUR-PASSWORD]` with the real password.
+
+**Everything was fine, now it will not load** — Supabase has probably paused the project
+after a quiet week. Open the Supabase dashboard and click Restore.
 
 ---
 
-## What this costs
+## Alternative: a free always-on server
 
-Nothing, provided you created the machine exactly as specified. The machine is free forever
-under the Always Free tier, the HTTPS certificate is free, and the app has no paid services
-behind it. The budget alert in step 6 is your safety net.
+If the morning wait becomes a problem and you still cannot pay, a permanently-free cloud
+VM never sleeps and runs the app and the database together on one machine.
+`deploy/setup.sh` installs the whole thing in one command. Be aware those providers
+require a card for identity verification, and creating the wrong size of machine is
+billed normally — which is why this is not the recommended route.

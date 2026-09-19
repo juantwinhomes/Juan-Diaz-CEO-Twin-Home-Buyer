@@ -4,13 +4,25 @@
   "private": true,
   "description": "AI & Systems Daily KPI Dashboard - daily execution tracking for a small AI/Systems team",
   "type": "module",
-  "engines": { "node": ">=22.5.0" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
     "seed": "node server/seed.js",
-    "reset": "node server/seed.js --reset"
+    "reset": "node server/seed.js --reset",
+    "export": "node server/export.js"
   },
-  "keywords": ["kpi", "dashboard", "daily", "operations"],
-  "license": "MIT"
+  "keywords": [
+    "kpi",
+    "dashboard",
+    "daily",
+    "operations"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "pg": "^8.13.1",
+    "@electric-sql/pglite": "^0.5.8"
+  }
 }

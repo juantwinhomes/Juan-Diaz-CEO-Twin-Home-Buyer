@@ -1,26 +1,24 @@
 #!/usr/bin/env bash
-# Nightly database backup. Keeps 30 days of snapshots.
-#
-# The database is one file, so a backup is one file. sqlite3's .backup command
-# copies it safely while the app is running, which a plain cp cannot guarantee.
+# Nightly database backup. Keeps 30 days of JSON exports.
 set -euo pipefail
 
-DB="${KPI_DB_PATH:-/var/lib/kpi-dashboard/kpi.db}"
+APP_DIR="${KPI_APP_DIR:-/opt/kpi-dashboard}"
 DEST="${KPI_BACKUP_DIR:-/var/backups/kpi-dashboard}"
 KEEP_DAYS=30
 
-[ -f "$DB" ] || { echo "$(date -Is)  no database at $DB"; exit 0; }
 mkdir -p "$DEST"
-
 STAMP="$(date +%Y-%m-%d)"
-sqlite3 "$DB" ".backup '$DEST/kpi-$STAMP.db'"
-gzip -f "$DEST/kpi-$STAMP.db"
+OUT="$DEST/kpi-$STAMP.json"
 
-find "$DEST" -name 'kpi-*.db.gz' -mtime "+$KEEP_DAYS" -delete
-echo "$(date -Is)  backed up to $DEST/kpi-$STAMP.db.gz ($(du -h "$DEST/kpi-$STAMP.db.gz" | cut -f1))"
+# Export every table to JSON. Works against any Postgres the app can reach.
+(cd "$APP_DIR" && node server/export.js "$OUT")
+gzip -f "$OUT"
+
+find "$DEST" -name 'kpi-*.json.gz' -mtime "+$KEEP_DAYS" -delete
+echo "$(date -Is)  backed up to $OUT.gz ($(du -h "$OUT.gz" | cut -f1))"
 
 # Optional off-site copy: install rclone, run `rclone config` to connect Google
 # Drive, then set KPI_RCLONE_REMOTE=gdrive:kpi-backups in /etc/kpi-dashboard.env
 if [ -n "${KPI_RCLONE_REMOTE:-}" ] && command -v rclone >/dev/null; then
-  rclone copy "$DEST/kpi-$STAMP.db.gz" "$KPI_RCLONE_REMOTE" && echo "$(date -Is)  copied off-site"
+  rclone copy "$OUT.gz" "$KPI_RCLONE_REMOTE" && echo "$(date -Is)  copied off-site"
 fi

@@ -1,18 +1,18 @@
-# One-click blueprint for Render. See the Deploying section of README.md.
+# One-click blueprint for Render. See deploy/DEPLOY.md.
+#
+# The database lives in Supabase, so this service needs no persistent disk and
+# runs on the free plan. Free instances sleep after ~15 minutes of inactivity
+# and take 30-60 seconds to wake.
 services:
   - type: web
     name: kpi-dashboard
     runtime: docker
-    plan: starter          # needs a paid instance: free instances have no persistent disk
+    plan: free
     healthCheckPath: /login
-    disk:
-      name: kpi-data       # the SQLite file lives here and survives redeploys
-      mountPath: /data
-      sizeGB: 1
     envVars:
-      - key: KPI_DB_PATH
-        value: /data/kpi.db
-      - key: APP_PASSWORD  # set this in the Render dashboard — the shared team password
+      - key: DATABASE_URL   # Supabase -> Project Settings -> Database -> Connection string
+        sync: false
+      - key: APP_PASSWORD   # the shared password your team signs in with
         sync: false
       - key: SESSION_SECRET
         generateValue: true

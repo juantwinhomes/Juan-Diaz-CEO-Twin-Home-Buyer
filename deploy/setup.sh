@@ -24,7 +24,7 @@ die() { printf '\n\033[1;31mError:\033[0m %s\n' "$1" >&2; exit 1; }
 log "Installing system packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq curl ca-certificates gnupg git sqlite3 >/dev/null
+apt-get install -y -qq curl ca-certificates gnupg git >/dev/null
 
 log "Installing Node.js 24"
 if ! command -v node >/dev/null || [ "$(node -v | cut -c2- | cut -d. -f1)" -lt 22 ]; then
@@ -45,6 +45,7 @@ if [ -d "$APP_DIR/.git" ]; then
 else
   git clone --quiet --branch "$BRANCH" "$REPO" "$APP_DIR"
 fi
+(cd "$APP_DIR" && npm install --omit=dev --no-audit --no-fund >/dev/null)
 chown -R "$APP_USER:$APP_USER" "$APP_DIR" "$DATA_DIR"
 
 # Generate the team password and session secret once, then keep them across
@@ -56,9 +57,12 @@ if [ ! -f "$ENV_FILE" ]; then
   cat > "$ENV_FILE" <<EOF
 PORT=4000
 HOST=127.0.0.1
-KPI_DB_PATH=$DATA_DIR/kpi.db
 APP_PASSWORD=$APP_PASSWORD
 SESSION_SECRET=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+# Point at a managed Postgres (e.g. Supabase) to keep the data off this machine.
+# Left unset, the app stores its database under $DATA_DIR on this server.
+DATABASE_URL=${DATABASE_URL:-}
+PGDATA_DIR=$DATA_DIR
 EOF
   chmod 600 "$ENV_FILE"
   NEW_PASSWORD=1

@@ -19,8 +19,8 @@ export const SYSTEM_STATUS_WEIGHT = { Down: 10, Degraded: 5, Warning: 2, Healthy
 /* ------------------------------------------------------------------ */
 
 /** Record a project's completion % for a day (idempotent per project/day). */
-export function ensureSnapshot(projectId, date, pct, status) {
-  run(
+export async function ensureSnapshot(projectId, date, pct, status) {
+  await run(
     `INSERT INTO project_snapshots (project_id, snapshot_date, completion_pct, status)
      VALUES (?, ?, ?, ?)
      ON CONFLICT(project_id, snapshot_date)
@@ -29,8 +29,8 @@ export function ensureSnapshot(projectId, date, pct, status) {
   );
 }
 
-export function previousPct(projectId, date) {
-  const row = get(
+export async function previousPct(projectId, date) {
+  const row = await get(
     `SELECT completion_pct FROM project_snapshots
       WHERE project_id = ? AND snapshot_date < ?
       ORDER BY snapshot_date DESC LIMIT 1`,
@@ -39,13 +39,13 @@ export function previousPct(projectId, date) {
   return row ? Number(row.completion_pct) : 0;
 }
 
-export function pctOn(projectId, date, fallback = 0) {
-  const exact = get(
+export async function pctOn(projectId, date, fallback = 0) {
+  const exact = await get(
     'SELECT completion_pct FROM project_snapshots WHERE project_id = ? AND snapshot_date = ?',
     projectId, date
   );
   if (exact) return Number(exact.completion_pct);
-  const before = get(
+  const before = await get(
     `SELECT completion_pct FROM project_snapshots
       WHERE project_id = ? AND snapshot_date < ?
       ORDER BY snapshot_date DESC LIMIT 1`,
@@ -58,8 +58,8 @@ export function pctOn(projectId, date, fallback = 0) {
 /* Projects                                                            */
 /* ------------------------------------------------------------------ */
 
-export const activeProjects = () =>
-  all(
+export const activeProjects = async () =>
+  await all(
     `SELECT p.*, o.name AS owner_name, o.color AS owner_color, s.name AS secondary_name
        FROM projects p
        LEFT JOIN users o ON o.id = p.owner_id
@@ -73,24 +73,24 @@ export const activeProjects = () =>
  * Evidence that a project moved today. A percentage bump on its own is not
  * enough: the log entry has to pass the measurable-progress check.
  */
-export function projectDay(project, date) {
-  const prev = previousPct(project.id, date);
-  const today = pctOn(project.id, date, project.completion_pct);
+export async function projectDay(project, date) {
+  const prev = await previousPct(project.id, date);
+  const today = await pctOn(project.id, date, project.completion_pct);
 
-  const logs = all(
+  const logs = await all(
     `SELECT pl.*, u.name AS user_name FROM progress_logs pl
        LEFT JOIN users u ON u.id = pl.user_id
       WHERE pl.project_id = ? AND pl.log_date = ? ORDER BY pl.id`,
     project.id, date
   );
-  const deployments = all(
+  const deployments = await all(
     'SELECT * FROM deployments WHERE project_id = ? AND deploy_date = ?', project.id, date
   );
-  const milestones = all(
+  const milestones = await all(
     'SELECT * FROM project_milestones WHERE project_id = ? AND completed = 1 AND completed_date = ?',
     project.id, date
   );
-  const fixedIncidents = all(
+  const fixedIncidents = await all(
     'SELECT * FROM incidents WHERE project_id = ? AND resolved_date = ?', project.id, date
   );
 
@@ -101,7 +101,7 @@ export function projectDay(project, date) {
   if (milestones.length) evidence.push(...milestones.map((m) => `Milestone: ${m.name}`));
   if (fixedIncidents.length) evidence.push(...fixedIncidents.map((i) => `Resolved: ${i.title}`));
 
-  const openBlockers = all(
+  const openBlockers = await all(
     `SELECT * FROM blockers
       WHERE project_id = ? AND status IN ('Open','Waiting','Escalated') AND date_reported <= ?
       ORDER BY date_reported`,
@@ -109,6 +109,7 @@ export function projectDay(project, date) {
   );
 
   const rejected = logs.filter((l) => l.counts_as_progress === 0);
+  const lastProgress = await lastProgressDate(project.id, date);
 
   return {
     ...project,
@@ -124,24 +125,21 @@ export function projectDay(project, date) {
     incidents_resolved: fixedIncidents,
     blockers: openBlockers,
     blocker_summary: openBlockers.length ? openBlockers.map((b) => b.title).join('; ') : null,
-    last_progress_date: lastProgressDate(project.id, date),
-    days_since_progress: (() => {
-      const lp = lastProgressDate(project.id, date);
-      return lp ? D.businessDaysBetween(lp, date) : null;
-    })()
+    last_progress_date: lastProgress,
+    days_since_progress: lastProgress ? D.businessDaysBetween(lastProgress, date) : null
   };
 }
 
 /** Last date (on or before `date`) with real, evidenced progress. */
-export function lastProgressDate(projectId, date) {
-  const candidates = [
+export async function lastProgressDate(projectId, date) {
+  const candidates = (await Promise.all([
     get(`SELECT MAX(log_date) AS d FROM progress_logs
           WHERE project_id = ? AND log_date <= ? AND counts_as_progress = 1`, projectId, date),
     get('SELECT MAX(deploy_date) AS d FROM deployments WHERE project_id = ? AND deploy_date <= ?', projectId, date),
     get(`SELECT MAX(completed_date) AS d FROM project_milestones
           WHERE project_id = ? AND completed = 1 AND completed_date <= ?`, projectId, date),
     get('SELECT MAX(resolved_date) AS d FROM incidents WHERE project_id = ? AND resolved_date <= ?', projectId, date)
-  ].map((r) => r && r.d).filter(Boolean);
+  ])).map((r) => r && r.d).filter(Boolean);
   return candidates.length ? candidates.sort().pop() : null;
 }
 
@@ -149,10 +147,10 @@ export function lastProgressDate(projectId, date) {
 /* Component metrics                                                   */
 /* ------------------------------------------------------------------ */
 
-export function commitmentStats(date, userId = null) {
+export async function commitmentStats(date, userId = null) {
   const rows = userId
-    ? all('SELECT * FROM commitments WHERE commit_date = ? AND user_id = ?', date, userId)
-    : all('SELECT * FROM commitments WHERE commit_date = ?', date);
+    ? await all('SELECT * FROM commitments WHERE commit_date = ? AND user_id = ?', date, userId)
+    : await all('SELECT * FROM commitments WHERE commit_date = ?', date);
   const counted = rows.filter((c) => c.status !== 'Cancelled');
   const completed = counted.filter((c) => c.status === 'Completed').length;
   return {
@@ -167,12 +165,12 @@ export function commitmentStats(date, userId = null) {
   };
 }
 
-export function deploymentStats(date, userId = null) {
+export async function deploymentStats(date, userId = null) {
   const rows = userId
-    ? all(`SELECT d.*, p.name AS project_name, u.name AS user_name FROM deployments d
+    ? await all(`SELECT d.*, p.name AS project_name, u.name AS user_name FROM deployments d
              LEFT JOIN projects p ON p.id = d.project_id LEFT JOIN users u ON u.id = d.user_id
             WHERE d.deploy_date = ? AND d.user_id = ? ORDER BY d.id`, date, userId)
-    : all(`SELECT d.*, p.name AS project_name, u.name AS user_name FROM deployments d
+    : await all(`SELECT d.*, p.name AS project_name, u.name AS user_name FROM deployments d
              LEFT JOIN projects p ON p.id = d.project_id LEFT JOIN users u ON u.id = d.user_id
             WHERE d.deploy_date = ? ORDER BY d.id`, date);
   const byKind = (k) => rows.filter((r) => r.kind === k).length;
@@ -186,8 +184,8 @@ export function deploymentStats(date, userId = null) {
   };
 }
 
-export function blockerStats(date, userId = null) {
-  const settings = getSettings();
+export async function blockerStats(date, userId = null) {
+  const settings = await getSettings();
   const alertAfter = Number(settings.blocker_age_alert_days || 1);
   const params = [date];
   let sql = `SELECT b.*, p.name AS project_name, u.name AS owner_name FROM blockers b
@@ -199,7 +197,7 @@ export function blockerStats(date, userId = null) {
   if (userId) { sql += ' AND b.owner_id = ?'; params.push(userId); }
   sql += ' ORDER BY b.date_reported';
 
-  const rows = all(sql, ...params).map((b) => {
+  const rows = (await all(sql, ...params)).map((b) => {
     const endDate = b.status === 'Resolved' && b.resolved_date ? b.resolved_date : date;
     const days = D.businessDaysBetween(b.date_reported, endDate);
     return { ...b, days_blocked: days, age_band: ageBand(days), aging: days > alertAfter };
@@ -219,7 +217,7 @@ export function blockerStats(date, userId = null) {
 
 const ageBand = (days) => (days <= 0 ? 'Same Day' : days === 1 ? '1 Day' : days === 2 ? '2 Days' : '3+ Days');
 
-export function productionStats(date, userId = null) {
+export async function productionStats(date, userId = null) {
   const params = [date, date];
   let sql = `SELECT i.*, s.name AS system_name, p.name AS project_name, u.name AS reporter_name
                FROM incidents i
@@ -231,15 +229,15 @@ export function productionStats(date, userId = null) {
   if (userId) { sql += ' AND (i.reported_by = ? OR s.owner_id = ?)'; params.push(userId, userId); }
   sql += " ORDER BY CASE i.severity WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END";
 
-  const rows = all(sql, ...params);
+  const rows = await all(sql, ...params);
   const openRows = rows.filter((i) => i.status !== 'Resolved');
   const bySeverity = (s) => openRows.filter((i) => i.severity === s).length;
 
-  const systems = all(
+  const systems = (await all(
     `SELECT s.*, u.name AS owner_name FROM production_systems s
        LEFT JOIN users u ON u.id = s.owner_id ${userId ? 'WHERE s.owner_id = ?' : ''} ORDER BY s.name`,
     ...(userId ? [userId] : [])
-  ).map((s) => {
+  )).map((s) => {
     const total = (s.successful_runs || 0) + (s.failed_runs || 0);
     return { ...s, total_runs: total, success_rate: total ? round((s.successful_runs / total) * 100) : 100 };
   });
@@ -348,14 +346,14 @@ const grade = (s) => (s >= 90 ? 'Excellent' : s >= 80 ? 'On Track' : s >= 65 ? '
 /* Assembled views                                                     */
 /* ------------------------------------------------------------------ */
 
-export function dashboard(date) {
-  const settings = getSettings();
-  const projects = activeProjects().map((p) => projectDay(p, date));
+export async function dashboard(date) {
+  const settings = await getSettings();
+  const projects = await Promise.all((await activeProjects()).map((p) => projectDay(p, date)));
   const progressed = projects.filter((p) => p.progressed);
-  const commitments = commitmentStats(date);
-  const deployments = deploymentStats(date);
-  const blockers = blockerStats(date);
-  const production = productionStats(date);
+  const commitments = await commitmentStats(date);
+  const deployments = await deploymentStats(date);
+  const blockers = await blockerStats(date);
+  const production = await productionStats(date);
 
   const projectSummary = {
     active: projects.length,
@@ -381,24 +379,24 @@ export function dashboard(date) {
     },
     score,
     projects,
-    scorecards: scorecards(date, projects),
-    stagnant: stagnantProjects(date, projects),
-    priorities: nextDayPriorities(date, projects)
+    scorecards: await scorecards(date, projects),
+    stagnant: await stagnantProjects(date, projects),
+    priorities: await nextDayPriorities(date, projects)
   };
 }
 
-export function scorecards(date, projectsPre = null) {
-  const projects = projectsPre || activeProjects().map((p) => projectDay(p, date));
+export async function scorecards(date, projectsPre = null) {
+  const projects = projectsPre || await Promise.all((await activeProjects()).map((p) => projectDay(p, date)));
   // Managers are viewers, not contributors, so they never appear as a scorecard.
-  const users = all('SELECT * FROM users WHERE active = 1 AND is_manager = 0 ORDER BY sort_order, id');
+  const users = await all('SELECT * FROM users WHERE active = 1 AND is_manager = 0 ORDER BY sort_order, id');
 
-  return users.map((u) => {
-    const commitments = commitmentStats(date, u.id);
+  return Promise.all(users.map(async (u) => {
+    const commitments = await commitmentStats(date, u.id);
     const mine = projects.filter((p) => p.owner_id === u.id || p.secondary_owner_id === u.id);
     const myProgressed = mine.filter((p) => p.progressed);
-    const deployments = deploymentStats(date, u.id);
-    const blockers = blockerStats(date, u.id);
-    const production = productionStats(date, u.id);
+    const deployments = await deploymentStats(date, u.id);
+    const blockers = await blockerStats(date, u.id);
+    const production = await productionStats(date, u.id);
     const summary = {
       active: mine.length,
       progressed: myProgressed.length,
@@ -415,12 +413,12 @@ export function scorecards(date, projectsPre = null) {
       production,
       score: dailyScore({ commitments, projects: summary, production, blockers })
     };
-  });
+  }));
 }
 
-export function stagnantProjects(date, projectsPre = null) {
-  const limit = Number(getSettings().stagnation_days || 2);
-  const projects = projectsPre || activeProjects().map((p) => projectDay(p, date));
+export async function stagnantProjects(date, projectsPre = null) {
+  const limit = Number(await getSettings().stagnation_days || 2);
+  const projects = projectsPre || await Promise.all((await activeProjects()).map((p) => projectDay(p, date)));
   return projects
     .filter((p) => p.days_since_progress === null || p.days_since_progress >= limit)
     .map((p) => ({
@@ -442,13 +440,13 @@ export function stagnantProjects(date, projectsPre = null) {
 }
 
 /** Suggestions only — the team decides. Ordered by the six rules in the spec. */
-export function nextDayPriorities(date, projectsPre = null) {
-  const projects = projectsPre || activeProjects().map((p) => projectDay(p, date));
+export async function nextDayPriorities(date, projectsPre = null) {
+  const projects = projectsPre || await Promise.all((await activeProjects()).map((p) => projectDay(p, date)));
   const out = [];
   const push = (category, item) => out.push({ category, ...item });
 
   // 1. Unfinished P1/P2 commitments
-  const unfinished = all(
+  const unfinished = await all(
     `SELECT c.*, u.name AS user_name, p.name AS project_name FROM commitments c
        LEFT JOIN users u ON u.id = c.user_id LEFT JOIN projects p ON p.id = c.project_id
       WHERE c.commit_date = ? AND c.status NOT IN ('Completed','Cancelled')
@@ -464,7 +462,7 @@ export function nextDayPriorities(date, projectsPre = null) {
   }
 
   // 2. Blockers that cleared today
-  for (const b of all(
+  for (const b of await all(
     `SELECT b.*, p.name AS project_name, u.name AS owner_name FROM blockers b
        LEFT JOIN projects p ON p.id = b.project_id LEFT JOIN users u ON u.id = b.owner_id
       WHERE b.status = 'Resolved' AND b.resolved_date = ?`, date)) {
@@ -495,7 +493,7 @@ export function nextDayPriorities(date, projectsPre = null) {
   }
 
   // 5. Open production issues
-  for (const i of productionStats(date).open_rows) {
+  for (const i of (await productionStats(date)).open_rows) {
     push('Production issue', {
       title: i.title, owner: i.reporter_name, project: i.project_name || i.system_name, priority: i.severity,
       detail: `${i.severity} · ${i.system_name || 'system'} · open since ${D.formatShort(i.reported_date)}`
@@ -503,7 +501,7 @@ export function nextDayPriorities(date, projectsPre = null) {
   }
 
   // 6. Stagnant projects
-  for (const s of stagnantProjects(date, projects)) {
+  for (const s of await stagnantProjects(date, projects)) {
     push('Not moving', {
       title: s.name, owner: s.owner_name, project: s.name, priority: s.priority,
       detail: `${s.message}${s.blocker ? ` · blocked by ${s.blocker}` : ''}`
@@ -517,23 +515,23 @@ export function nextDayPriorities(date, projectsPre = null) {
 /* Weekly rollup                                                       */
 /* ------------------------------------------------------------------ */
 
-export function weekly(date) {
+export async function weekly(date) {
   const days = D.weekDays(date);
-  const rows = days.map((d) => {
-    const c = commitmentStats(d);
-    const projects = activeProjects().map((p) => projectDay(p, d));
+  const rows = await Promise.all(days.map(async (d) => {
+    const c = await commitmentStats(d);
+    const projects = await Promise.all((await activeProjects()).map((p) => projectDay(p, d)));
     const progressed = projects.filter((p) => p.progressed).length;
-    const dep = deploymentStats(d);
-    const b = blockerStats(d);
-    const prod = productionStats(d);
-    const completed = all(
+    const dep = await deploymentStats(d);
+    const b = await blockerStats(d);
+    const prod = await productionStats(d);
+    const completed = (await get(
       `SELECT COUNT(*) AS n FROM project_snapshots ps
         JOIN projects p ON p.id = ps.project_id
        WHERE ps.snapshot_date = ? AND ps.completion_pct >= 100
          AND NOT EXISTS (SELECT 1 FROM project_snapshots q
                           WHERE q.project_id = ps.project_id AND q.snapshot_date < ? AND q.completion_pct >= 100)`,
       d, d
-    )[0].n;
+    )).n;
     const summary = { active: projects.length, progressed, rate: projects.length ? round((progressed / projects.length) * 100) : 0 };
     return {
       date: d,
@@ -555,7 +553,7 @@ export function weekly(date) {
       projects_completed: completed,
       score: dailyScore({ commitments: c, projects: summary, production: prod, blockers: b }).total
     };
-  });
+  }));
 
   const sum = (k) => rows.reduce((a, r) => a + (r[k] || 0), 0);
   const withData = rows.filter((r) => r.commitments_total > 0);
@@ -582,14 +580,14 @@ export function weekly(date) {
 /* Business impact (reporting only — never affects the daily score)    */
 /* ------------------------------------------------------------------ */
 
-export function businessImpact() {
-  const rows = all(
+export async function businessImpact() {
+  const rows = (await all(
     `SELECT bi.*, p.name AS project_name, p.status AS project_status, u.name AS owner_name
        FROM business_impact bi
        LEFT JOIN projects p ON p.id = bi.project_id
        LEFT JOIN users u ON u.id = p.owner_id
       ORDER BY p.name`
-  ).map((r) => {
+  )).map((r) => {
     const hoursWeek = round(((r.minutes_per_run || 0) * (r.runs_per_week || 0)) / 60);
     const hoursMonth = round(hoursWeek * 4.33);
     return {
@@ -618,16 +616,16 @@ export function businessImpact() {
 /* Persisted daily snapshot (history is never overwritten by a new day)*/
 /* ------------------------------------------------------------------ */
 
-export function persistDailySnapshot(date) {
-  const data = dashboard(date);
-  const write = (userId, c, proj, dep, blk, prod, score) => {
-    run(
+export async function persistDailySnapshot(date) {
+  const data = await dashboard(date);
+  const write = async (userId, c, proj, dep, blk, prod, score) => {
+    await run(
       `INSERT INTO daily_kpi_snapshots
          (snapshot_date, user_id, commitments_total, commitments_completed, completion_rate,
           projects_active, projects_progressed, avg_progress_pct, deployments, blockers_open,
           blockers_created, blockers_resolved, critical_issues, open_issues, daily_score, breakdown_json)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-       ON CONFLICT(snapshot_date, IFNULL(user_id, -1)) DO UPDATE SET
+       ON CONFLICT(snapshot_date, COALESCE(user_id, -1)) DO UPDATE SET
          commitments_total = excluded.commitments_total,
          commitments_completed = excluded.commitments_completed,
          completion_rate = excluded.completion_rate,
@@ -649,9 +647,9 @@ export function persistDailySnapshot(date) {
   };
 
   const k = data.kpis;
-  write(null, k.commitments, k.projects, k.deployments, k.blockers, k.production, data.score);
+  await write(null, k.commitments, k.projects, k.deployments, k.blockers, k.production, data.score);
   for (const sc of data.scorecards) {
-    write(sc.user.id, sc.commitments, sc.projects, sc.deployments, sc.blockers, sc.production, sc.score);
+    await write(sc.user.id, sc.commitments, sc.projects, sc.deployments, sc.blockers, sc.production, sc.score);
   }
   return data;
 }

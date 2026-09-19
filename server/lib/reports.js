@@ -12,9 +12,9 @@ const delta = (n) => `${n > 0 ? '+' : ''}${K.round(n)}%`;
 /* ---------------------------------------------------------------- */
 /* End of day / daily team report                                    */
 /* ---------------------------------------------------------------- */
-export function dailyTeamReport(date) {
-  const d = K.dashboard(date);
-  const s = getSettings();
+export async function dailyTeamReport(date) {
+  const d = await K.dashboard(date);
+  const s = await getSettings();
   const k = d.kpis;
 
   const sections = [];
@@ -76,8 +76,8 @@ export function dailyTeamReport(date) {
 }
 
 /* ---------------------------------------------------------------- */
-export function individualDailyReport(date, userId) {
-  const d = K.dashboard(date);
+export async function individualDailyReport(date, userId) {
+  const d = await K.dashboard(date);
   const sc = d.scorecards.find((x) => x.user.id === Number(userId));
   if (!sc) return null;
 
@@ -131,9 +131,9 @@ export function individualDailyReport(date, userId) {
 }
 
 /* ---------------------------------------------------------------- */
-export function weeklyTeamReport(date) {
-  const w = K.weekly(date);
-  const s = getSettings();
+export async function weeklyTeamReport(date) {
+  const w = await K.weekly(date);
+  const s = await getSettings();
   const sections = [
     {
       heading: 'DAILY COMMITMENT COMPLETION',
@@ -180,8 +180,8 @@ export function weeklyTeamReport(date) {
 }
 
 /* ---------------------------------------------------------------- */
-export function projectStatusReport(date) {
-  const projects = K.activeProjects().map((p) => K.projectDay(p, date));
+export async function projectStatusReport(date) {
+  const projects = await Promise.all((await K.activeProjects()).map((p) => K.projectDay(p, date)));
   const sections = [{
     heading: 'ACTIVE PROJECTS',
     rows: projects.map((p) => [
@@ -190,7 +190,7 @@ export function projectStatusReport(date) {
       `Due ${p.target_date ? D.formatShort(p.target_date) : 'n/a'} · Next: ${p.next_step || 'not set'}${p.blocker_summary ? ` · Blocked: ${p.blocker_summary}` : ''}`
     ])
   }];
-  const done = all("SELECT p.*, u.name AS owner_name FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.status = 'Completed' AND p.archived = 0");
+  const done = await all("SELECT p.*, u.name AS owner_name FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.status = 'Completed' AND p.archived = 0");
   if (done.length) {
     sections.push({ heading: 'COMPLETED', rows: done.map((p) => [p.name, p.owner_name || '', `${K.round(p.completion_pct)}%`]) });
   }
@@ -204,8 +204,8 @@ export function projectStatusReport(date) {
 }
 
 /* ---------------------------------------------------------------- */
-export function blockerReport(date) {
-  const b = K.blockerStats(date);
+export async function blockerReport(date) {
+  const b = await K.blockerStats(date);
   const sections = [
     {
       heading: `OPEN BLOCKERS (${b.open})`,
@@ -230,9 +230,9 @@ export function blockerReport(date) {
 }
 
 /* ---------------------------------------------------------------- */
-export function productionHealthReport(date) {
-  const p = K.productionStats(date);
-  const s = getSettings();
+export async function productionHealthReport(date) {
+  const p = await K.productionStats(date);
+  const s = await getSettings();
   const sections = [
     {
       heading: 'SYSTEMS',
@@ -263,9 +263,9 @@ export function productionHealthReport(date) {
 }
 
 /* ---------------------------------------------------------------- */
-export function businessImpactReport(date) {
-  const bi = K.businessImpact();
-  const s = getSettings();
+export async function businessImpactReport(date) {
+  const bi = await K.businessImpact();
+  const s = await getSettings();
   const cur = s.currency || '$';
   const sections = [
     {
@@ -298,15 +298,15 @@ export function businessImpactReport(date) {
 }
 
 /* ---------------------------------------------------------------- */
-export function buildReport(type, { date, userId }) {
+export async function buildReport(type, { date, userId }) {
   switch (type) {
-    case 'daily-team': return dailyTeamReport(date);
-    case 'daily-individual': return individualDailyReport(date, userId);
-    case 'weekly-team': return weeklyTeamReport(date);
-    case 'project-status': return projectStatusReport(date);
-    case 'blockers': return blockerReport(date);
-    case 'production-health': return productionHealthReport(date);
-    case 'business-impact': return businessImpactReport(date);
+    case 'daily-team': return await dailyTeamReport(date);
+    case 'daily-individual': return await individualDailyReport(date, userId);
+    case 'weekly-team': return await weeklyTeamReport(date);
+    case 'project-status': return await projectStatusReport(date);
+    case 'blockers': return await blockerReport(date);
+    case 'production-health': return await productionHealthReport(date);
+    case 'business-impact': return await businessImpactReport(date);
     default: return null;
   }
 }

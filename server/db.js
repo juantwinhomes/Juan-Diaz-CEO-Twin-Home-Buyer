@@ -1,18 +1,88 @@
-import { DatabaseSync } from 'node:sqlite';
+/**
+ * PostgreSQL data layer.
+ *
+ *   DATABASE_URL set   -> a real Postgres server (Supabase in production)
+ *   DATABASE_URL unset -> an embedded Postgres stored under data/, so the app
+ *                         still runs locally with no database to install
+ *
+ * Both are genuine PostgreSQL, so local behaviour matches production.
+ *
+ * Every query here is async. SQL is written with `?` placeholders as before and
+ * rewritten to Postgres `$1, $2 …` on the way out, which keeps the query
+ * strings throughout the app unchanged.
+ */
 import { readFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-const DB_PATH = process.env.KPI_DB_PATH || join(ROOT, 'data', 'kpi.db');
+const DATABASE_URL = process.env.DATABASE_URL || '';
 
-mkdirSync(dirname(DB_PATH), { recursive: true });
+let client = null;
 
-export const db = new DatabaseSync(DB_PATH);
-db.exec('PRAGMA journal_mode = WAL');
-db.exec('PRAGMA foreign_keys = ON');
-db.exec(readFileSync(join(__dirname, 'schema.sql'), 'utf8'));
+/** Rewrite `?` to `$n`, leaving anything inside quoted strings alone. */
+export function toPgPlaceholders(sql) {
+  let out = '';
+  let n = 0;
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < sql.length; i++) {
+    const c = sql[i];
+    if (c === "'" && !inDouble) inSingle = !inSingle;
+    else if (c === '"' && !inSingle) inDouble = !inDouble;
+    if (c === '?' && !inSingle && !inDouble) out += `$${++n}`;
+    else out += c;
+  }
+  return out;
+}
+
+async function connect() {
+  if (client) return client;
+
+  if (DATABASE_URL) {
+    const pg = (await import('pg')).default;
+    // int8 and numeric arrive as strings by default, which would break every
+    // COUNT and percentage comparison in the KPI code.
+    pg.types.setTypeParser(20, (v) => (v === null ? null : Number(v)));
+    pg.types.setTypeParser(1700, (v) => (v === null ? null : Number(v)));
+    const pool = new pg.Pool({
+      connectionString: DATABASE_URL,
+      ssl: DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
+      max: 5,
+      idleTimeoutMillis: 30_000
+    });
+    client = {
+      query: (text, params) => pool.query(text, params),
+      // Multi-statement SQL needs the simple protocol, i.e. no parameters.
+      exec: (text) => pool.query(text),
+      close: () => pool.end()
+    };
+  } else {
+    const { PGlite } = await import('@electric-sql/pglite');
+    const dir = join(ROOT, 'data', 'pgdata');
+    mkdirSync(dirname(dir), { recursive: true });
+    const lite = await PGlite.create(dir);
+    client = {
+      query: (text, params) => lite.query(text, params),
+      exec: (text) => lite.exec(text),
+      close: () => lite.close()
+    };
+  }
+  return client;
+}
+
+export async function query(sql, params = []) {
+  const c = await connect();
+  return c.query(toPgPlaceholders(sql), params);
+}
+
+export const all = async (sql, ...params) => (await query(sql, params)).rows;
+export const get = async (sql, ...params) => (await query(sql, params)).rows[0] ?? undefined;
+export const run = async (sql, ...params) => {
+  const r = await query(sql, params);
+  return { changes: r.rowCount ?? 0, rows: r.rows };
+};
 
 export const DEFAULT_SETTINGS = {
   commitment_target: '80',
@@ -22,69 +92,79 @@ export const DEFAULT_SETTINGS = {
   daily_score_target: '80',
   stagnation_days: '2',
   blocker_age_alert_days: '1',
+  max_commitments: '5',
   team_name: 'AI & Systems',
   currency: '$'
 };
 
-for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
-  db.prepare('INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)').run(key, value);
+/** Create the schema and seed default settings. Safe to run repeatedly. */
+export async function init() {
+  const c = await connect();
+  const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf8');
+  await c.exec(schema);
+  for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
+    await run('INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', key, value);
+  }
+  columnCache.clear();
+  return c;
 }
 
-/** Rows come back with a null prototype; normalise to plain objects. */
-const plain = (row) => (row ? { ...row } : row);
-
-export const all = (sql, ...params) => db.prepare(sql).all(...params).map(plain);
-export const get = (sql, ...params) => plain(db.prepare(sql).get(...params));
-export const run = (sql, ...params) => db.prepare(sql).run(...params);
-
-export function getSettings() {
+export async function getSettings() {
   const out = { ...DEFAULT_SETTINGS };
-  for (const row of all('SELECT key, value FROM settings')) out[row.key] = row.value;
+  for (const row of await all('SELECT key, value FROM settings')) out[row.key] = row.value;
   return out;
 }
 
-export function setSettings(patch) {
-  const stmt = db.prepare(
-    'INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
-  );
-  for (const [key, value] of Object.entries(patch)) stmt.run(key, String(value));
+export async function setSettings(patch) {
+  for (const [key, value] of Object.entries(patch)) {
+    await run(
+      'INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+      key, String(value)
+    );
+  }
   return getSettings();
 }
 
 /**
- * Insert helper: only writes columns that actually exist on the table, so the
- * API can accept partial payloads without hand-writing every INSERT.
+ * Writes only columns that exist on the table, so the API can accept partial
+ * payloads without hand-writing every INSERT.
  */
-export function insert(table, data) {
-  const cols = tableColumns(table).filter((c) => c !== 'id' && c in data);
+export async function insert(table, data) {
+  const cols = (await tableColumns(table)).filter((c) => c !== 'id' && c in data);
   if (!cols.length) throw new Error(`No writable fields provided for ${table}`);
-  const sql = `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`;
-  const info = db.prepare(sql).run(...cols.map((c) => normalise(data[c])));
-  return Number(info.lastInsertRowid);
+  const sql = `INSERT INTO ${table} (${cols.join(', ')})
+               VALUES (${cols.map(() => '?').join(', ')}) RETURNING id`;
+  const r = await query(sql, cols.map((c) => normalise(data[c])));
+  return r.rows[0]?.id;
 }
 
-export function update(table, id, data) {
-  const cols = tableColumns(table).filter((c) => c !== 'id' && c in data);
+export async function update(table, id, data) {
+  const cols = (await tableColumns(table)).filter((c) => c !== 'id' && c in data);
   if (!cols.length) return 0;
   const sql = `UPDATE ${table} SET ${cols.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`;
-  const info = db.prepare(sql).run(...cols.map((c) => normalise(data[c])), id);
-  return info.changes;
+  const r = await query(sql, [...cols.map((c) => normalise(data[c])), id]);
+  return r.rowCount ?? 0;
 }
 
-export function remove(table, id) {
-  return db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id).changes;
+export async function remove(table, id) {
+  const r = await query(`DELETE FROM ${table} WHERE id = ?`, [id]);
+  return r.rowCount ?? 0;
 }
 
 const columnCache = new Map();
-export function tableColumns(table) {
+export async function tableColumns(table) {
   if (!columnCache.has(table)) {
     if (!/^[a-z_]+$/.test(table)) throw new Error(`Unsafe table name: ${table}`);
-    columnCache.set(table, db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name));
+    const rows = await all(
+      'SELECT column_name FROM information_schema.columns WHERE table_schema = ? AND table_name = ?',
+      'public', table
+    );
+    columnCache.set(table, rows.map((r) => r.column_name));
   }
   return columnCache.get(table);
 }
 
-/** SQLite has no boolean/undefined; coerce to storable primitives. */
+/** Postgres has no untyped columns, so coerce to storable primitives. */
 function normalise(value) {
   if (value === undefined || value === '') return null;
   if (typeof value === 'boolean') return value ? 1 : 0;
@@ -92,14 +172,16 @@ function normalise(value) {
   return value;
 }
 
-export function transaction(fn) {
-  db.exec('BEGIN');
+export async function transaction(fn) {
+  await run('BEGIN');
   try {
-    const result = fn();
-    db.exec('COMMIT');
+    const result = await fn();
+    await run('COMMIT');
     return result;
   } catch (err) {
-    db.exec('ROLLBACK');
+    await run('ROLLBACK');
     throw err;
   }
 }
+
+export const closeDb = async () => { if (client) { await client.close(); client = null; } };

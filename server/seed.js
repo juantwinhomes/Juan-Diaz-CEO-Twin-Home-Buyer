@@ -5,7 +5,7 @@
  *   node server/seed.js           # seed only if the database is empty
  *   node server/seed.js --reset   # wipe and reseed
  */
-import { db, all, get, run, insert, update, setSettings } from './db.js';
+import { init, all, get, run, insert, update, setSettings } from './db.js';
 import * as D from './lib/dates.js';
 import { ensureSnapshot } from './lib/kpi.js';
 import { scoreText } from './lib/quality.js';
@@ -17,13 +17,13 @@ const TABLES = ['daily_kpi_snapshots', 'business_impact', 'incidents', 'producti
   'deployments', 'blockers', 'progress_logs', 'project_snapshots', 'project_milestones',
   'commitments', 'projects', 'users'];
 
+await init();
+
 if (RESET) {
-  db.exec('PRAGMA foreign_keys = OFF');
-  for (const t of TABLES) run(`DELETE FROM ${t}`);
-  run("DELETE FROM sqlite_sequence WHERE name IN ('" + TABLES.join("','") + "')");
-  db.exec('PRAGMA foreign_keys = ON');
+  // TRUNCATE ... CASCADE clears the lot and resets the identity counters.
+  await run(`TRUNCATE ${TABLES.join(', ')} RESTART IDENTITY CASCADE`);
   console.log('Cleared existing data.');
-} else if (get('SELECT COUNT(*) AS n FROM users').n > 0) {
+} else if ((await get('SELECT COUNT(*) AS n FROM users')).n > 0) {
   console.log('Database already has data. Use `npm run reset` to wipe and reseed.');
   process.exit(0);
 }
@@ -44,15 +44,15 @@ const forward = (n) => {
 };
 
 /* ---- Users -------------------------------------------------------- */
-const lawrence = insert('users', {
+const lawrence = await insert('users', {
   name: 'Lawrence', role: 'AI / Systems Engineer', email: 'lawrence@example.com',
   initials: 'L', color: '#2563eb', is_manager: 0, active: 1, sort_order: 1
 });
-const member2 = insert('users', {
+const member2 = await insert('users', {
   name: 'Team Member 2', role: 'AI / Systems Engineer', email: 'member2@example.com',
   initials: 'T2', color: '#7c3aed', is_manager: 0, active: 1, sort_order: 2
 });
-const manager = insert('users', {
+const manager = await insert('users', {
   name: 'Operations Manager', role: 'Manager', email: 'manager@example.com',
   initials: 'OM', color: '#0f172a', is_manager: 1, active: 1, sort_order: 3
 });
@@ -151,7 +151,7 @@ const PLAN = [
 
 const ids = {};
 for (const plan of PLAN) {
-  const id = insert('projects', {
+  const id = await insert('projects', {
     name: plan.name, owner_id: plan.owner, secondary_owner_id: plan.secondary,
     requester: plan.requester, department: plan.department,
     start_date: day(0), target_date: plan.target, priority: plan.priority,
@@ -161,29 +161,30 @@ for (const plan of PLAN) {
     production_url: plan.url, notes: null, archived: 0, updated_at: new Date().toISOString()
   });
   ids[plan.name] = id;
-  ENUMS.milestone_framework.forEach((m, i) =>
-    insert('project_milestones', { project_id: id, name: m.name, target_pct: m.target_pct, sort_order: i }));
+  for (const [i, m] of ENUMS.milestone_framework.entries()) {
+    await insert('project_milestones', { project_id: id, name: m.name, target_pct: m.target_pct, sort_order: i });
+  }
 
   // Replay the week day by day so history, snapshots and milestones line up.
   let previous = 0;
-  DAYS.forEach((d, i) => {
+  for (const [i, d] of DAYS.entries()) {
     const pct = plan.series[i];
     const entry = plan.logs[i];
-    ensureSnapshot(id, d, pct, plan.status);
+    await ensureSnapshot(id, d, pct, plan.status);
     if (entry) {
       const quality = scoreText(entry.text, { kind: 'progress' });
-      insert('progress_logs', {
+      await insert('progress_logs', {
         project_id: id, user_id: entry.u, log_date: d,
         previous_pct: previous, new_pct: pct,
         completed_text: entry.text, next_text: entry.next,
         counts_as_progress: quality.measurable ? 1 : 0, quality_score: quality.score
       });
     }
-    for (const m of all('SELECT * FROM project_milestones WHERE project_id = ? AND completed = 0', id)) {
-      if (pct >= m.target_pct) update('project_milestones', m.id, { completed: 1, completed_date: d });
+    for (const m of await all('SELECT * FROM project_milestones WHERE project_id = ? AND completed = 0', id)) {
+      if (pct >= m.target_pct) await update('project_milestones', m.id, { completed: 1, completed_date: d });
     }
     previous = pct;
-  });
+  }
 }
 
 /* ---- Daily commitments -------------------------------------------- */
@@ -244,7 +245,7 @@ const COMMITMENTS = {
 for (const [index, rows] of Object.entries(COMMITMENTS)) {
   const d = day(Number(index));
   for (const [user, project, priority, task, status, carryover] of rows) {
-    insert('commitments', {
+    await insert('commitments', {
       user_id: user, project_id: ids[project] || null, commit_date: d, task,
       priority, expected_today: 1, status,
       carryover_reason: carryover || null,
@@ -264,26 +265,26 @@ const DEPLOYMENTS = [
   [5, 'Client Onboarding Bot', member2, 'Feature', 'Onboarding bot greeting flow', 'Rewritten greeting flow deployed to production.']
 ];
 for (const [i, project, user, kind, title, description] of DEPLOYMENTS) {
-  insert('deployments', {
+  await insert('deployments', {
     project_id: ids[project], user_id: user, deploy_date: day(i), kind, title, description,
     url: 'https://deploy.internal.example.com'
   });
 }
 
 /* ---- Blockers ------------------------------------------------------ */
-insert('blockers', {
+await insert('blockers', {
   title: 'Waiting for CRM production credentials',
   project_id: ids['CRM Automation'], owner_id: member2, date_reported: day(3),
   person_needed: 'IT / Ops — Maria', reason: 'Waiting for credentials', priority: 'P1',
   status: 'Waiting', notes: 'Requested via the IT ticket queue. Production integration cannot start without it.'
 });
-insert('blockers', {
+await insert('blockers', {
   title: 'Payroll export spec not signed off by Finance',
   project_id: ids['Payroll Automation'], owner_id: member2, date_reported: day(0),
   person_needed: 'Finance — David', reason: 'Missing requirements', priority: 'P2',
   status: 'Escalated', notes: 'Escalated to the Finance lead. Project cannot leave requirements without it.'
 });
-insert('blockers', {
+await insert('blockers', {
   title: 'Retell vendor API rate limit hit during load test',
   project_id: ids['Retell Voice AI'], owner_id: lawrence, date_reported: day(3),
   person_needed: 'Retell support', reason: 'Waiting for vendor', priority: 'P2',
@@ -302,7 +303,7 @@ const SYSTEMS = [
 ];
 const sysIds = {};
 for (const [name, owner, project, type, status, ok, failed, notes] of SYSTEMS) {
-  sysIds[name] = insert('production_systems', {
+  sysIds[name] = await insert('production_systems', {
     name, owner_id: owner, project_id: project ? ids[project] : null, system_type: type,
     status, last_checked: TODAY, successful_runs: ok, failed_runs: failed,
     url: 'https://status.internal.example.com', notes
@@ -310,19 +311,19 @@ for (const [name, owner, project, type, status, ok, failed, notes] of SYSTEMS) {
 }
 
 /* ---- Incidents ------------------------------------------------------ */
-insert('incidents', {
+await insert('incidents', {
   title: 'Payroll export failed on the scheduled run',
   system_id: sysIds['Payroll Export Script'], project_id: ids['Payroll Automation'],
   reported_by: member2, category: 'Failed automation', severity: 'Medium', status: 'Open',
   reported_date: day(4), description: 'Export job exits before writing the file. Reproduced twice.'
 });
-insert('incidents', {
+await insert('incidents', {
   title: 'CRM sync dropped 3 contact records',
   system_id: sysIds['CRM Contact Sync'], project_id: ids['CRM Automation'],
   reported_by: member2, category: 'Bug', severity: 'Low', status: 'Investigating',
   reported_date: TODAY, description: 'Three records missing after the overnight sandbox sync.'
 });
-insert('incidents', {
+await insert('incidents', {
   title: 'Call transfer returned 500 on after-hours calls',
   system_id: sysIds['Retell Voice AI Agent'], project_id: ids['Retell Voice AI'],
   reported_by: lawrence, category: 'Critical issue', severity: 'Critical', status: 'Resolved',
@@ -330,9 +331,9 @@ insert('incidents', {
   description: 'After-hours transfers failed with a 500 from the routing webhook.',
   resolution: 'Business-hours routing rewritten; all after-hours calls now reach the SAS queue.'
 });
-update('production_systems', sysIds['Payroll Export Script'], { last_incident_date: day(4) });
-update('production_systems', sysIds['Retell Voice AI Agent'], { last_incident_date: day(4) });
-update('production_systems', sysIds['CRM Contact Sync'], { last_incident_date: TODAY });
+await update('production_systems', sysIds['Payroll Export Script'], { last_incident_date: day(4) });
+await update('production_systems', sysIds['Retell Voice AI Agent'], { last_incident_date: day(4) });
+await update('production_systems', sysIds['CRM Contact Sync'], { last_incident_date: TODAY });
 
 /* ---- Business impact ------------------------------------------------ */
 const IMPACT = [
@@ -344,19 +345,19 @@ const IMPACT = [
     'Cuts roughly a day off the onboarding cycle.']
 ];
 for (const [project, manual, minutes, runs, cost, revenue, leads, errors, notes] of IMPACT) {
-  insert('business_impact', {
+  await insert('business_impact', {
     project_id: ids[project], manual_process: manual, minutes_per_run: minutes,
     runs_per_week: runs, hourly_cost: cost, revenue_supported: revenue,
     leads_processed: leads, errors_prevented: errors, notes
   });
 }
 
-setSettings({ team_name: 'AI & Systems', max_commitments: '5' });
+await setSettings({ team_name: 'AI & Systems', max_commitments: '5' });
 
 /* ---- Historical KPI snapshots --------------------------------------- */
 const { persistDailySnapshot } = await import('./lib/kpi.js');
-for (const d of DAYS) persistDailySnapshot(d);
+for (const d of DAYS) await persistDailySnapshot(d);
 
 console.log(`Seeded ${DAYS.length} days: ${DAYS[0]} → ${DAYS[DAYS.length - 1]}`);
-console.log(`  ${all('SELECT id FROM users').length} users, ${all('SELECT id FROM projects').length} projects, ` +
-  `${all('SELECT id FROM commitments').length} commitments, ${all('SELECT id FROM progress_logs').length} progress entries`);
+console.log(`  ${(await all('SELECT id FROM users')).length} users, ${(await all('SELECT id FROM projects')).length} projects, ` +
+  `${(await all('SELECT id FROM commitments')).length} commitments, ${(await all('SELECT id FROM progress_logs')).length} progress entries`);

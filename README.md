@@ -16,13 +16,17 @@ Monthly — is what we're shipping valuable?
 
 ## Running it
 
-Requires **Node.js 22.5 or newer**. There are no dependencies to install — the server uses
-Node's built-in `node:sqlite` and `node:http`.
+Requires **Node.js 20 or newer**.
 
 ```bash
-npm run seed     # create the database and load the demo data
-npm start        # http://localhost:4000
+npm install     # installs the Postgres driver
+npm run seed    # creates the tables and loads the demo data
+npm start       # http://localhost:4000
 ```
+
+There is no database to install. With no `DATABASE_URL` set the app runs an embedded
+PostgreSQL stored under `data/`, so local development needs no setup. Set `DATABASE_URL`
+and it uses that server instead — the same code either way, real Postgres both times.
 
 | Command | What it does |
 | --- | --- |
@@ -30,80 +34,61 @@ npm start        # http://localhost:4000
 | `npm run dev` | Same, restarting on file changes |
 | `npm run seed` | Seed demo data (skips if the database already has data) |
 | `npm run reset` | Wipe everything and reseed |
+| `npm run export` | Write the whole database to one JSON file under `backups/` |
 
-The database lives at `data/kpi.db` and is git-ignored. To start empty, run `npm run seed`
-then use **Settings → Remove data → Everything**, or just delete `data/kpi.db`.
+The embedded database is single-process, so stop the server before running `seed`.
+
+--- | --- |
+| `npm start` | Start the app on port 4000 (`PORT=8080 npm start` to change it) |
+| `npm run dev` | Same, restarting on file changes |
+| `npm run seed` | Seed demo data (skips if the database already has data) |
+| `npm run reset` | Wipe everything and reseed |
+
+To start empty, use **Settings → Remove data → Everything**, or delete `data/pgdata`.
 
 ---
 
 ## Deploying it (shared database)
 
-Running locally puts the database on one laptop. To have both people working against the
-same data, deploy it — the app is packaged for that and needs no code changes.
+Running locally puts the database on one machine. To have the team working against the
+same data, deploy it. **[deploy/DEPLOY.md](deploy/DEPLOY.md) is a step-by-step guide**
+written for someone who has never deployed anything: Supabase for the database and Render
+for the app, neither of which asks for a credit card.
 
-### Before you deploy
-
-Set these two environment variables on the host:
+### Environment variables
 
 | Variable | Value | Why |
 | --- | --- | --- |
+| `DATABASE_URL` | Postgres connection string | Without it the database is stored in the container and lost on redeploy |
 | `APP_PASSWORD` | A shared team password | Without it the URL is public to anyone who finds it |
 | `SESSION_SECRET` | A long random string | Keeps people signed in across restarts |
-| `KPI_DB_PATH` | `/data/kpi.db` | Puts the database on the mounted disk, not the container |
 
-`APP_PASSWORD` is what turns the password gate on. Leave it unset and the app stays open,
-which is what you want locally and never what you want on a public URL.
-
-### The disk matters
-
-The database is a file. Most hosts give containers a **temporary** filesystem that is wiped
-on every redeploy, which would erase your data. The host must provide a **persistent disk
-(volume)** mounted at `/data`. On Render that means a paid instance — free instances have no
-persistent disk.
-
-### Render
-
-`render.yaml` in this repo is a ready-made blueprint. In the Render dashboard: **New →
-Blueprint**, point it at this repository, then set `APP_PASSWORD` when prompted. It provisions
-the web service, the 1 GB disk at `/data`, and generates `SESSION_SECRET` for you.
-
-### A free always-on server (no monthly cost)
-
-`deploy/DEPLOY.md` is a step-by-step guide, written for someone with no server experience,
-covering Google Cloud's and Oracle Cloud's permanently-free virtual machines. On a fresh
-Ubuntu VM the whole install is one command:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/juantwinhomes/Juan-Diaz-CEO-Twin-Home-Buyer/claude/festive-wozniak-iednog/deploy/setup.sh | sudo bash -s -- kpi.example.com
-```
-
-It installs Node, fetches the app, generates a team password, configures automatic HTTPS,
-sets the service to start on boot and restart on failure, opens the firewall, and schedules
-nightly backups.
+`APP_PASSWORD` is what turns the password gate on. Unset, the app stays open — which is
+what you want locally and never what you want on a public URL.
 
 ### Anywhere else
 
-`Dockerfile` builds the whole app and works on Railway, Fly.io, a VPS or any container host.
-Mount a volume at `/data` and set the three variables above.
+`Dockerfile` builds the whole app and runs on Railway, Fly.io, a VPS or any container
+host. No persistent disk is needed, because the data lives in Postgres.
 
 ```bash
 docker build -t kpi-dashboard .
-docker run -p 4000:4000 -v kpi-data:/data \
+docker run -p 4000:4000 \
+  -e DATABASE_URL='postgresql://…' \
   -e APP_PASSWORD='your-team-password' \
   -e SESSION_SECRET='a-long-random-string' \
   kpi-dashboard
 ```
 
-### After it is live
+### A free always-on server
 
-A deployed instance starts **empty** — no demo data. Add your team on the **Team** page, then
-your projects on **Projects**, and you are running. If you want the demo data to look around
-first, run `npm run seed` against it via the host's shell.
+`deploy/setup.sh` installs everything on a fresh Ubuntu VM in one command — useful if you
+want to avoid the cold starts free container hosts have. See `deploy/DEPLOY.md`.
 
 ### Backups
 
-The whole database is the single file at `/data/kpi.db`. Copy that file somewhere safe on a
-schedule and you have a complete backup.
+`npm run export` writes every table to a single JSON file. Free database tiers keep little
+backup history, so schedule this and keep the files somewhere safe.
 
 ---
 
@@ -234,9 +219,10 @@ one day old on Monday, not three.
 server/
   index.js          HTTP server (node:http) + static file serving
   api.js            REST API — every entity supports create, update and delete
-  db.js             SQLite access (node:sqlite), settings, insert/update/remove helpers
-  schema.sql        11 relational tables
+  db.js             Postgres access, settings, insert/update/remove helpers
+  schema.sql        13 relational tables
   seed.js           Demo data across six days
+  export.js         Whole-database JSON export
   lib/
     kpi.js          All KPI maths: progress detection, score, weekly, stagnation, priorities
     quality.js      The measurable-result rule engine
