@@ -177,6 +177,10 @@ incomplete item — *continue tomorrow*, *blocked*, *cancelled* or *changed prio
 The sidebar can be put away with the menu button to give a page the full width; the choice
 is remembered on that browser. On a phone the same button opens the navigation drawer.
 
+Any dropdown with more than eight entries — the project picker above all — opens a list you
+can type into, so a long list is a few keystrokes rather than a scroll. Shorter lists stay as
+the browser's own control, which is better on a phone.
+
 There is a dark mode. Out of the box the app follows the device's own light or dark setting;
 the moon button in the top bar switches between the two outright, and *Settings → Appearance*
 hands the choice back to the device. Like the sidebar, it is a choice each browser keeps,

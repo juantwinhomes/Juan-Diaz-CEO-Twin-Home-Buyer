@@ -1,5 +1,5 @@
 import { api, tookAWrite } from './api.js';
-import { icon, esc, loading, toast, closeModal, fmt } from './ui.js';
+import { icon, esc, loading, toast, closeModal, fmt, enhanceSelects } from './ui.js';
 
 /* ------------------------------------------------------------- State */
 export const state = {
@@ -136,6 +136,7 @@ async function router() {
     container.innerHTML = result.html;
     view.appendChild(container);
     if (result.mount) result.mount(container, ctx);
+    enhanceSelects(container);
     view.scrollTop = 0;
     window.scrollTo(0, 0);
   } catch (err) {

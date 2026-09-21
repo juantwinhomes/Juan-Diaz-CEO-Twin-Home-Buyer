@@ -419,8 +419,53 @@ table.data .muted { color: var(--text-3); }
 .checkbox { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
 .checkbox input { width: 16px; height: 16px; accent-color: var(--blue); }
 
+/* ------------------------------------------------- Searchable select */
+/* A list too long to scroll becomes a button that opens a list you can type
+   into. The <select> is still there, still holding the value — just not shown. */
+.combo { position: relative; }
+.combo select { display: none; }
+.combo-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 8px 11px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong); background: var(--surface);
+  color: var(--text); font-size: 13.5px; text-align: left; cursor: pointer;
+  transition: border-color .12s, box-shadow .12s;
+}
+.combo-btn:hover { background: var(--surface-2); }
+.combo-btn:focus-visible,
+.combo-btn[aria-expanded="true"] { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--focus-ring); }
+.combo-btn > svg { flex: 0 0 auto; color: var(--text-3); }
+.combo-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.combo-value.is-placeholder { color: var(--text-3); }
+
+.combo-pop {
+  position: fixed; z-index: 95; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-lg);
+}
+.combo-pop[hidden] { display: none; }
+.combo-search {
+  display: flex; align-items: center; gap: 8px; flex: 0 0 auto;
+  padding: 9px 11px; border-bottom: 1px solid var(--border); background: var(--surface-2);
+}
+.combo-search svg { flex: 0 0 auto; color: var(--text-3); }
+.combo-input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 13.5px; color: var(--text); }
+.combo-list { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 5px; }
+.combo-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 9px; border-radius: 6px; font-size: 13.5px; cursor: pointer;
+}
+.combo-opt span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.combo-opt b { font-weight: 700; color: var(--blue); }
+.combo-opt svg { flex: 0 0 auto; color: var(--blue); }
+.combo-opt.is-active { background: var(--gray-bg); }
+.combo-opt.is-on { color: var(--blue); font-weight: 600; }
+.combo-none { padding: 16px 12px; text-align: center; font-size: 12.5px; color: var(--text-3); }
+.combo-none b { color: var(--text-2); }
+
 .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .filters .select, .filters .input { width: auto; min-width: 128px; padding: 6px 28px 6px 10px; font-size: 12.5px; }
+.filters .combo-btn { min-width: 150px; padding: 6px 10px; font-size: 12.5px; }
 .filters .input { padding-right: 10px; }
 
 /* ---------------------------------------------------------------- Modal */
@@ -527,7 +572,7 @@ table.data .muted { color: var(--text-3); }
 
 /* --------------------------------------------------------------- Print */
 @media print {
-  .sidebar, .topbar, .scrim, .toasts, .no-print, .btn, .icon-btn { display: none !important; }
+  .sidebar, .topbar, .scrim, .toasts, .no-print, .btn, .icon-btn, .combo-pop { display: none !important; }
   .main { margin-left: 0; }
   .content { padding: 0; max-width: none; }
   body { background: #fff; font-size: 11.5px; }

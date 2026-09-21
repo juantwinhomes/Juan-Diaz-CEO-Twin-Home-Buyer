@@ -39,7 +39,9 @@ const ICONS = {
   refresh: '<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>',
   inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>',
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
-  chevron: '<path d="M9 18l6-6-6-6"/>'
+  chevron: '<path d="M9 18l6-6-6-6"/>',
+  caret: '<path d="M6 9l6 6 6-6"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>'
 };
 
 export const icon = (name, size = 17) =>
@@ -196,7 +198,9 @@ export function openModal({ title, subtitle, body, footer = '', wide = false, on
   document.addEventListener('keydown', onEsc);
   const modal = root.querySelector('.modal');
   if (onMount) onMount(modal, close);
-  const focusable = modal.querySelector('input, select, textarea, button:not([data-close])');
+  enhanceSelects(modal);
+  // The search box of a closed list is not the field to land on.
+  const focusable = modal.querySelector('input:not(.combo-input), select:not([hidden]), textarea, button:not([data-close])');
   if (focusable) setTimeout(() => focusable.focus(), 40);
   return { close, modal };
 }
@@ -234,8 +238,7 @@ export function openForm({ title, subtitle, fields, values = {}, submitLabel = '
       const missing = fields.filter((f) => f.required && !String(data[f.name] ?? '').trim());
       if (missing.length) {
         toast(`${missing[0].label} is required`, 'error');
-        const el = form.elements[missing[0].name];
-        if (el) el.focus();
+        focusField(form, missing[0].name);
         return;
       }
       btn.disabled = true;
@@ -352,3 +355,192 @@ export const loading = () => `<div class="loading"><div class="spinner"></div>Lo
 
 export const selectOptions = (items, labelKey = 'name', valueKey = 'id') =>
   items.map((i) => ({ value: i[valueKey], label: i[labelKey] }));
+
+/* A field that is now a search box is focused by its button, not its select. */
+function focusField(form, name) {
+  const el = form.elements[name];
+  if (!el) return;
+  (el.closest?.('.combo')?.querySelector('.combo-btn') || el).focus();
+}
+
+/* ------------------------------------------------ Searchable selects */
+/**
+ * A long list is quicker to type into than to scroll through, so any list past
+ * SEARCH_FROM entries gets a search box. Shorter ones are left as the browser's
+ * own control, which behaves better on a phone than anything we could build.
+ *
+ * The <select> stays in the page and stays the value: everything that reads
+ * form.elements[name], assigns .value or listens for "change" keeps working,
+ * which is why this can be switched on everywhere without touching the pages.
+ */
+const SEARCH_FROM = 8;
+let openCombo = null;
+let comboSeq = 0;
+
+export function enhanceSelects(root) {
+  for (const select of (root || document).querySelectorAll('select.select')) {
+    if (select.multiple || select.disabled) continue;
+    if (select.closest('.combo')) continue;            // already done
+    if (select.options.length <= SEARCH_FROM) continue;
+    searchable(select);
+  }
+}
+
+function searchable(select) {
+  const listId = `comboList${++comboSeq}`;
+  const wrap = document.createElement('div');
+  wrap.className = 'combo';
+  select.parentNode.insertBefore(wrap, select);
+  wrap.appendChild(select);
+  // Hidden, not disabled: it still carries the value and still submits.
+  select.hidden = true;
+  select.tabIndex = -1;
+  wrap.insertAdjacentHTML('beforeend', `
+    <button type="button" class="combo-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="${listId}">
+      <span class="combo-value"></span>${icon('caret', 13)}
+    </button>
+    <div class="combo-pop" hidden>
+      <div class="combo-search">${icon('search', 14)}
+        <input type="text" class="combo-input" placeholder="Search…" aria-label="Search this list"
+               role="combobox" aria-expanded="true" aria-controls="${listId}" aria-autocomplete="list"
+               autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="combo-list" id="${listId}" role="listbox"></div>
+    </div>`);
+
+  const button = wrap.querySelector('.combo-btn');
+  const shown = wrap.querySelector('.combo-value');
+  const pop = wrap.querySelector('.combo-pop');
+  const input = wrap.querySelector('.combo-input');
+  const list = wrap.querySelector('.combo-list');
+  let matches = [];
+  let active = -1;
+
+  /** The button always reads as the select does, including changes made in code. */
+  const paint = () => {
+    const chosen = select.selectedOptions[0];
+    shown.textContent = chosen ? chosen.text : '';
+    shown.classList.toggle('is-placeholder', !select.value);
+  };
+  select.addEventListener('change', paint);
+  paint();
+
+  const draw = () => {
+    const query = input.value.trim().toLowerCase();
+    matches = [...select.options].filter((o) => o.text.toLowerCase().includes(query));
+    list.innerHTML = matches.length
+      ? matches.map((o, i) => `<div class="combo-opt${o.value === select.value ? ' is-on' : ''}"
+           role="option" id="${listId}-${i}" aria-selected="${o.value === select.value}" data-i="${i}">
+           <span>${highlight(o.text, query)}</span>${o.value === select.value ? icon('check', 13) : ''}</div>`).join('')
+      : `<p class="combo-none">Nothing matches <b>${esc(input.value.trim())}</b></p>`;
+    // Typing aims at the best match; with an empty box the current choice is the mark.
+    active = query ? (matches.length ? 0 : -1) : matches.findIndex((o) => o.value === select.value);
+    mark(false);
+  };
+
+  const mark = (scroll = true) => {
+    const nodes = [...list.children];
+    nodes.forEach((n, i) => n.classList.toggle('is-active', i === active));
+    const node = nodes[active];
+    input.setAttribute('aria-activedescendant', node ? node.id : '');
+    if (node && scroll) node.scrollIntoView({ block: 'nearest' });
+  };
+
+  const move = (step) => {
+    if (!matches.length) return;
+    active = (active + step + matches.length) % matches.length;
+    mark();
+  };
+
+  const place = () => {
+    const r = button.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > window.innerHeight) { close(); return; }   // scrolled out of sight
+    const width = Math.min(Math.max(r.width, 230), window.innerWidth - 24);
+    const below = window.innerHeight - r.bottom;
+    const above = r.top;
+    const up = below < 200 && above > below;
+    pop.style.width = `${width}px`;
+    pop.style.left = `${Math.round(Math.max(12, Math.min(r.left, window.innerWidth - width - 12)))}px`;
+    pop.style.top = up ? 'auto' : `${Math.round(r.bottom + 5)}px`;
+    pop.style.bottom = up ? `${Math.round(window.innerHeight - r.top + 5)}px` : 'auto';
+    pop.style.maxHeight = `${Math.round(Math.min(340, (up ? above : below) - 16))}px`;
+  };
+
+  const onDown = (e) => { if (!wrap.contains(e.target)) close(); };
+
+  function open() {
+    if (openCombo === close) return;
+    openCombo?.();
+    openCombo = close;
+    pop.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+    input.value = '';
+    draw();
+    place();
+    input.focus();
+    mark();
+    document.addEventListener('mousedown', onDown, true);
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);   // the modal body scrolls too
+  }
+
+  function close(focusButton = false) {
+    if (openCombo === close) openCombo = null;
+    pop.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('mousedown', onDown, true);
+    window.removeEventListener('resize', place);
+    window.removeEventListener('scroll', place, true);
+    if (focusButton && wrap.isConnected) button.focus();
+  }
+
+  function choose(i) {
+    const option = matches[i];
+    if (!option) return;
+    // Close before telling the page, since a listener may rebuild it from scratch.
+    close();
+    const changed = select.value !== option.value;
+    select.value = option.value;
+    paint();
+    if (changed) select.dispatchEvent(new Event('change', { bubbles: true }));
+    if (wrap.isConnected) button.focus();
+  }
+
+  button.addEventListener('click', () => (pop.hidden ? open() : close(true)));
+  input.addEventListener('input', () => { draw(); place(); });
+  list.addEventListener('mousedown', (e) => e.preventDefault());   // keep the search box focused
+  list.addEventListener('click', (e) => {
+    const option = e.target.closest('[data-i]');
+    if (option) choose(Number(option.dataset.i));
+  });
+  list.addEventListener('mousemove', (e) => {
+    const option = e.target.closest('[data-i]');
+    if (option && Number(option.dataset.i) !== active) { active = Number(option.dataset.i); mark(false); }
+  });
+
+  wrap.addEventListener('keydown', (e) => {
+    if (pop.hidden) {
+      // Typing a letter on the button opens the list with that letter searched.
+      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+      else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        open(); input.value = e.key; draw(); place(); e.preventDefault();
+      }
+      return;
+    }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); }   // the modal stays open
+    else if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+    else if (e.key === 'Home') { e.preventDefault(); active = 0; mark(); }
+    else if (e.key === 'End') { e.preventDefault(); active = matches.length - 1; mark(); }
+    else if (e.key === 'Enter') { e.preventDefault(); choose(active); }   // never submits the form
+    else if (e.key === 'Tab') close();
+  });
+}
+
+/** Show which part of a name the search matched. */
+function highlight(text, query) {
+  if (!query) return esc(text);
+  const at = text.toLowerCase().indexOf(query);
+  if (at < 0) return esc(text);
+  return `${esc(text.slice(0, at))}<b>${esc(text.slice(at, at + query.length))}</b>${esc(text.slice(at + query.length))}`;
+}
