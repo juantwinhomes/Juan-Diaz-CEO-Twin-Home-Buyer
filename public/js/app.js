@@ -176,6 +176,37 @@ function toggleNav() {
   applyNavPreference();
 }
 
+/* --------------------------------------------------------- Appearance */
+/* Dark mode is a choice each browser keeps, not a team setting. "system" follows
+   the device; the topbar button flips between light and dark outright. A script
+   in <head> applies the saved choice before the first paint — this is the same
+   rule, kept current while the page is open. */
+export const THEMES = ['system', 'light', 'dark'];
+const darkMedia = window.matchMedia('(prefers-color-scheme: dark)');
+export function themePreference() {
+  const saved = store.get('kpi.theme', 'system');
+  return THEMES.includes(saved) ? saved : 'system';
+}
+export const resolvedTheme = () => {
+  const preference = themePreference();
+  return preference === 'system' ? (darkMedia.matches ? 'dark' : 'light') : preference;
+};
+export function applyTheme() {
+  const theme = resolvedTheme();
+  document.documentElement.dataset.theme = theme;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#121826' : '#ffffff');
+  const btn = document.getElementById('themeBtn');
+  if (btn) {
+    const label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
+  }
+}
+export function setTheme(preference) {
+  store.set('kpi.theme', THEMES.includes(preference) ? preference : 'system');
+  applyTheme();
+}
+
 export async function reloadBootstrap() {
   const data = await api.get('/bootstrap', { date: state.date || undefined });
   state.today = data.today;
@@ -230,7 +261,12 @@ export const isToday = () => state.date === state.today;
 
 /* ---------------------------------------------------------- Bootstrap */
 (async function init() {
+  applyTheme();
   applyNavPreference();
+  document.getElementById('themeBtn').addEventListener('click', () => setTheme(resolvedTheme() === 'dark' ? 'light' : 'dark'));
+  darkMedia.addEventListener('change', applyTheme);
+  // A choice made in another tab of this browser applies here too.
+  window.addEventListener('storage', (e) => { if (e.key === 'kpi.theme') applyTheme(); });
   document.getElementById('menuBtn').addEventListener('click', toggleNav);
   document.getElementById('scrim').addEventListener('click', closeDrawer);
   document.getElementById('globalDate').addEventListener('change', (e) => {

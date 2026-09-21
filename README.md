@@ -177,6 +177,11 @@ incomplete item — *continue tomorrow*, *blocked*, *cancelled* or *changed prio
 The sidebar can be put away with the menu button to give a page the full width; the choice
 is remembered on that browser. On a phone the same button opens the navigation drawer.
 
+There is a dark mode. Out of the box the app follows the device's own light or dark setting;
+the moon button in the top bar switches between the two outright, and *Settings → Appearance*
+hands the choice back to the device. Like the sidebar, it is a choice each browser keeps,
+not a team setting. Printing is always light.
+
 ---
 
 ## Daily Execution Score

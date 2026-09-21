@@ -1,9 +1,10 @@
 /* =====================================================================
    AI & Systems Daily KPI Dashboard — design system
-   Light, minimal, operations-dashboard styling.
+   Minimal operations-dashboard styling, in light and in dark.
    ===================================================================== */
 
 :root {
+  color-scheme: light;
   --bg:        #f5f6f8;
   --surface:   #ffffff;
   --surface-2: #fafbfc;
@@ -13,12 +14,24 @@
   --text-2:    #475467;
   --text-3:    #98a2b3;
 
+  /* Accents read as text or an icon, usually on their own tint. */
   --green:  #16a34a;  --green-bg:  #ecfdf3;  --green-bd:  #abefc6;
   --blue:   #2563eb;  --blue-bg:   #eff6ff;  --blue-bd:   #b2ccff;
   --yellow: #ca8a04;  --yellow-bg: #fefbe8;  --yellow-bd: #fbe38a;
   --orange: #ea580c;  --orange-bg: #fff4ed;  --orange-bd: #fdc9a4;
   --red:    #d92d20;  --red-bg:    #fef3f2;  --red-bd:    #fecdc9;
   --gray:   #667085;  --gray-bg:   #f2f4f7;  --gray-bd:   #e4e7ec;
+  /* Fills carry white text — buttons, ticks, avatars — so they stay saturated in the dark. */
+  --green-fill: #16a34a; --blue-fill: #2563eb; --blue-fill-hover: #1d4ed8;
+  --orange-fill: #ea580c; --red-fill: #d92d20; --red-fill-hover: #b42318; --gray-fill: #667085;
+  --info-fg: #1e40af; --warn-fg: #9a3412; --danger-fg: #912018;
+  --bar-prev: #c7d7fe;
+  --orange-bg-hover: #ffedde;
+  --overlay: rgba(16,24,40,.45);
+  --topbar-bg: rgba(255,255,255,.88);
+  --toast-bg: #101828; --toast-fg: #ffffff;
+  --focus-ring: rgba(37,99,235,.12);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 
   --radius:    12px;
   --radius-sm: 8px;
@@ -28,6 +41,43 @@
   --sidebar-w: 236px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* Dark mode. A script in <head> sets data-theme from the choice saved in this
+   browser (or, failing that, the device) before the first paint, and app.js
+   keeps it current. Screen only: paper stays light. */
+@media screen {
+  html[data-theme="dark"] {
+    color-scheme: dark;
+    --bg:        #0b1019;
+    --surface:   #121826;
+    --surface-2: #182033;
+    --border:    #242d40;
+    --border-strong: #344058;
+    --text:      #eef1f6;
+    --text-2:    #b7c0d0;
+    --text-3:    #8591a6;
+
+    --green:  #4ade80;  --green-bg:  #0e2a1b;  --green-bd:  #1f5a37;
+    --blue:   #6ea8fe;  --blue-bg:   #132241;  --blue-bd:   #274a8c;
+    --yellow: #facc15;  --yellow-bg: #2b2409;  --yellow-bd: #7a5a10;
+    --orange: #fb923c;  --orange-bg: #2f1a0b;  --orange-bd: #8a3d12;
+    --red:    #f87171;  --red-bg:    #2e1314;  --red-bd:    #8f2a2a;
+    --gray:   #9aa4b8;  --gray-bg:   #1b2334;  --gray-bd:   #2e384c;
+    --green-fill: #16a34a; --blue-fill: #2563eb; --blue-fill-hover: #3b82f6;
+    --orange-fill: #ea580c; --red-fill: #dc2626; --red-fill-hover: #ef4444; --gray-fill: #64748b;
+    --info-fg: #bcd3ff; --warn-fg: #fdc9a4; --danger-fg: #fecdc9;
+    --bar-prev: #3b5aa6;
+    --orange-bg-hover: #3b2210;
+    --overlay: rgba(0,0,0,.6);
+    --topbar-bg: rgba(18,24,38,.86);
+    --toast-bg: #eef1f6; --toast-fg: #101828;
+    --focus-ring: rgba(110,168,254,.25);
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa4b8' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    --shadow:    0 1px 2px rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.4);
+    --shadow-md: 0 4px 8px -2px rgba(0,0,0,.45), 0 2px 4px -2px rgba(0,0,0,.3);
+    --shadow-lg: 0 12px 20px -4px rgba(0,0,0,.55), 0 4px 6px -2px rgba(0,0,0,.35);
+  }
 }
 
 * { box-sizing: border-box; }
@@ -92,13 +142,13 @@ input, select, textarea { font: inherit; color: inherit; }
 .philosophy { font-size: 11.5px; color: var(--text-3); line-height: 1.7; }
 .philosophy b { color: var(--text-2); }
 
-.scrim { position: fixed; inset: 0; background: rgba(16,24,40,.4); z-index: 55; }
+.scrim { position: fixed; inset: 0; background: var(--overlay); z-index: 55; }
 
 .main { flex: 1; min-width: 0; margin-left: var(--sidebar-w); display: flex; flex-direction: column; }
 
 .topbar {
   position: sticky; top: 0; z-index: 40;
-  background: rgba(255,255,255,.88);
+  background: var(--topbar-bg);
   backdrop-filter: saturate(160%) blur(10px);
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; gap: 14px;
@@ -130,10 +180,10 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .btn:hover { background: var(--surface-2); }
 .btn:active { transform: translateY(.5px); }
-.btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
-.btn-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
-.btn-danger { background: var(--red); border-color: var(--red); color: #fff; }
-.btn-danger:hover { background: #b42318; border-color: #b42318; }
+.btn-primary { background: var(--blue-fill); border-color: var(--blue-fill); color: #fff; }
+.btn-primary:hover { background: var(--blue-fill-hover); border-color: var(--blue-fill-hover); }
+.btn-danger { background: var(--red-fill); border-color: var(--red-fill); color: #fff; }
+.btn-danger:hover { background: var(--red-fill-hover); border-color: var(--red-fill-hover); }
 .btn-ghost { border-color: transparent; background: transparent; color: var(--text-2); }
 .btn-ghost:hover { background: var(--gray-bg); }
 .btn-sm { padding: 5px 9px; font-size: 12.5px; }
@@ -146,6 +196,21 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .icon-btn:hover { background: var(--gray-bg); color: var(--text); }
 .icon-btn.danger:hover { background: var(--red-bg); color: var(--red); }
+
+/* The topbar button shows the mode it would switch to: a moon by day, a sun by night. */
+.theme-btn .when-dark { display: none; }
+html[data-theme="dark"] .theme-btn .when-dark { display: inline; }
+html[data-theme="dark"] .theme-btn .when-light { display: none; }
+
+/* A row of choices where exactly one is on, such as the appearance setting. */
+.seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); }
+.seg button {
+  padding: 6px 14px; border: 0; background: transparent; color: var(--text-2);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--border-strong); }
+.seg button:hover { background: var(--surface-2); color: var(--text); }
+.seg button[aria-checked="true"] { background: var(--blue-bg); color: var(--blue); font-weight: 600; }
 
 /* ----------------------------------------------------------------- Cards */
 .card {
@@ -209,7 +274,7 @@ button.kpi:hover { box-shadow: var(--shadow-md); border-color: var(--border-stro
 /* -------------------------------------------------------------- Progress */
 .bar { height: 7px; border-radius: 99px; background: var(--gray-bg); overflow: hidden; display: flex; }
 .bar-fill { background: var(--blue); border-radius: 99px; transition: width .35s ease; }
-.bar-fill.prev { background: #c7d7fe; }
+.bar-fill.prev { background: var(--bar-prev); }
 .bar-fill.gain { background: var(--green); }
 .bar.lg { height: 9px; }
 .bar.sm { height: 5px; }
@@ -246,7 +311,7 @@ button.kpi:hover { box-shadow: var(--shadow-md); border-color: var(--border-stro
 .avatar {
   width: 32px; height: 32px; border-radius: 99px; flex: 0 0 auto;
   display: grid; place-items: center; color: #fff; font-weight: 650; font-size: 12px;
-  background: var(--blue); object-fit: cover; letter-spacing: .01em;
+  background: var(--blue-fill); object-fit: cover; letter-spacing: .01em;
 }
 .avatar.sm { width: 24px; height: 24px; font-size: 10.5px; }
 .avatar.lg { width: 42px; height: 42px; font-size: 15px; }
@@ -269,7 +334,7 @@ table.data td.num { font-variant-numeric: tabular-nums; text-align: right; white
 table.data td.actions { text-align: right; white-space: nowrap; width: 1%; }
 table.data .muted { color: var(--text-3); }
 .row-warn { background: var(--orange-bg) !important; }
-.row-warn:hover { background: #ffedde !important; }
+.row-warn:hover { background: var(--orange-bg-hover) !important; }
 
 /* ---------------------------------------------------------- Scorecards */
 .scorecard-head { display: flex; align-items: center; gap: 11px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
@@ -303,7 +368,7 @@ table.data .muted { color: var(--text-3); }
   display: flex; align-items: center; gap: 8px;
   padding: 10px 16px 2px; font-size: 12px; font-weight: 600;
 }
-.check-group-head a { color: var(--text-1); text-decoration: none; }
+.check-group-head a { color: var(--text); text-decoration: none; }
 .check-group-head a:hover { color: var(--blue); }
 .check-group .check-item:last-child { border-bottom: 0; }
 .check-item {
@@ -318,9 +383,9 @@ table.data .muted { color: var(--text-3); }
   background: var(--surface); cursor: pointer; color: transparent; padding: 0;
 }
 .check-mark:hover { border-color: var(--blue); }
-.check-item.done .check-mark { background: var(--green); border-color: var(--green); color: #fff; }
-.check-item.blocked .check-mark { background: var(--orange); border-color: var(--orange); color: #fff; }
-.check-item.cancelled .check-mark { background: var(--gray); border-color: var(--gray); color: #fff; }
+.check-item.done .check-mark { background: var(--green-fill); border-color: var(--green-fill); color: #fff; }
+.check-item.blocked .check-mark { background: var(--orange-fill); border-color: var(--orange-fill); color: #fff; }
+.check-item.cancelled .check-mark { background: var(--gray-fill); border-color: var(--gray-fill); color: #fff; }
 .check-main { flex: 1; min-width: 0; }
 .check-task { font-weight: 500; overflow-wrap: anywhere; }
 .check-item.done .check-task { color: var(--text-2); text-decoration: line-through; text-decoration-color: var(--text-3); }
@@ -333,9 +398,9 @@ table.data .muted { color: var(--text-3); }
   display: flex; gap: 10px; padding: 11px 13px; border-radius: var(--radius-sm);
   border: 1px solid var(--border); background: var(--surface-2); font-size: 12.5px; color: var(--text-2);
 }
-.callout.info   { background: var(--blue-bg);   border-color: var(--blue-bd);   color: #1e40af; }
-.callout.warn   { background: var(--orange-bg); border-color: var(--orange-bd); color: #9a3412; }
-.callout.danger { background: var(--red-bg);    border-color: var(--red-bd);    color: #912018; }
+.callout.info   { background: var(--blue-bg);   border-color: var(--blue-bd);   color: var(--info-fg); }
+.callout.warn   { background: var(--orange-bg); border-color: var(--orange-bd); color: var(--warn-fg); }
+.callout.danger { background: var(--red-bg);    border-color: var(--red-bd);    color: var(--danger-fg); }
 .callout svg { flex: 0 0 16px; margin-top: 1px; }
 
 /* ---------------------------------------------------------------- Forms */
@@ -347,9 +412,9 @@ table.data .muted { color: var(--text-3); }
   border: 1px solid var(--border-strong); background: var(--surface);
   font-size: 13.5px; outline: none; transition: border-color .12s, box-shadow .12s;
 }
-.input:focus, .select:focus, .textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+.input:focus, .select:focus, .textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--focus-ring); }
 .textarea { min-height: 74px; resize: vertical; line-height: 1.5; font-family: inherit; }
-.select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; }
+.select { appearance: none; background-image: var(--select-arrow); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .checkbox { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
 .checkbox input { width: 16px; height: 16px; accent-color: var(--blue); }
@@ -363,7 +428,7 @@ table.data .muted { color: var(--text-3); }
 /* An author `display` beats the UA sheet's [hidden] rule, so hide these explicitly
    — otherwise the invisible overlay swallows every click in the app. */
 .modal-root[hidden], .scrim[hidden] { display: none; }
-.modal-backdrop { position: absolute; inset: 0; background: rgba(16,24,40,.45); }
+.modal-backdrop { position: absolute; inset: 0; background: var(--overlay); }
 .modal {
   position: relative; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow-lg);
   width: min(620px, 100%); max-height: min(88vh, 900px); display: flex; flex-direction: column;
@@ -381,14 +446,14 @@ table.data .muted { color: var(--text-3); }
 /* --------------------------------------------------------------- Toasts */
 .toasts { position: fixed; bottom: 18px; right: 18px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
 .toast {
-  background: #101828; color: #fff; padding: 10px 14px; border-radius: var(--radius-sm);
+  background: var(--toast-bg); color: var(--toast-fg); padding: 10px 14px; border-radius: var(--radius-sm);
   box-shadow: var(--shadow-lg); font-size: 13px; max-width: 360px;
   display: flex; align-items: center; gap: 9px; animation: slidein .18s ease-out;
 }
 @keyframes slidein { from { opacity: 0; transform: translateY(8px); } }
-.toast.error { background: var(--red); }
-.toast.warn { background: var(--orange); }
-.toast.success { background: var(--green); }
+.toast.error { background: var(--red-fill); color: #fff; }
+.toast.warn { background: var(--orange-fill); color: #fff; }
+.toast.success { background: var(--green-fill); color: #fff; }
 
 /* --------------------------------------------------------- Misc helpers */
 .empty { padding: 34px 20px; text-align: center; color: var(--text-3); }

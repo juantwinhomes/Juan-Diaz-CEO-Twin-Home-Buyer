@@ -37,7 +37,7 @@ export async function page(ctx) {
             <div class="row" style="padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:nowrap">
               <button class="check-mark" data-milestone="${m.id}" data-done="${m.completed}"
                       title="${m.completed ? 'Mark not reached' : 'Mark reached'}"
-                      style="${m.completed ? 'background:var(--green);border-color:var(--green);color:#fff' : ''}">
+                      style="${m.completed ? 'background:var(--green-fill);border-color:var(--green-fill);color:#fff' : ''}">
                 ${m.completed ? U.icon('check', 12) : ''}</button>
               <span style="flex:1;min-width:0;${m.completed ? '' : 'color:var(--text-2)'}">${U.esc(m.name)}</span>
               <span class="small muted nowrap">${m.target_pct}%</span>

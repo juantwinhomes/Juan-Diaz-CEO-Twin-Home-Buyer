@@ -106,8 +106,14 @@ export const LOGIN_PAGE = `<!doctype html>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in — AI &amp; Systems</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232563eb'/><rect x='7' y='16' width='4' height='9' rx='1.4' fill='white'/><rect x='14' y='11' width='4' height='14' rx='1.4' fill='white'/><rect x='21' y='7' width='4' height='18' rx='1.4' fill='white'/></svg>">
+<script>
+// The same appearance the app uses, applied before the first paint.
+var t=null;try{t=localStorage.getItem('kpi.theme')}catch(e){}
+document.documentElement.dataset.theme=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+</script>
 <style>
 *{box-sizing:border-box}
+html{color-scheme:light}
 body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:#f5f6f8;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;color:#101828}
 .box{background:#fff;border:1px solid #e4e7ec;border-radius:14px;padding:30px;width:100%;max-width:370px;
@@ -124,6 +130,15 @@ button:hover{background:#1d4ed8}
 button[disabled]{opacity:.6;cursor:not-allowed}
 .err{margin-top:12px;padding:9px 11px;border-radius:8px;background:#fef3f2;border:1px solid #fecdc9;
   color:#912018;font-size:12.5px}
+html[data-theme=dark]{color-scheme:dark}
+html[data-theme=dark] body{background:#0b1019;color:#eef1f6}
+html[data-theme=dark] .box{background:#121826;border-color:#242d40;box-shadow:0 4px 8px -2px rgba(0,0,0,.45)}
+html[data-theme=dark] p.sub{color:#8591a6}
+html[data-theme=dark] label{color:#b7c0d0}
+html[data-theme=dark] input{background:#0b1019;border-color:#344058;color:#eef1f6}
+html[data-theme=dark] input:focus{border-color:#6ea8fe;box-shadow:0 0 0 3px rgba(110,168,254,.25)}
+html[data-theme=dark] button:hover{background:#3b82f6}
+html[data-theme=dark] .err{background:#2e1314;border-color:#8f2a2a;color:#fecdc9}
 </style></head><body>
 <form class="box" id="f">
   <div class="mark">

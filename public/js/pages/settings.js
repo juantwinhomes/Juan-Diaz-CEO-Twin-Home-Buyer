@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import * as U from '../ui.js';
-import { state, refresh, reloadBootstrap } from '../app.js';
+import { state, refresh, reloadBootstrap, themePreference, setTheme } from '../app.js';
 
 const SCOPES = [
   ['commitments', 'Daily commitments', 'Every commitment on every date.'],
@@ -47,6 +47,15 @@ export async function page() {
       </div>
 
       <div class="stack">
+        <div class="card">
+          <div class="card-head"><h2>Appearance</h2><span class="sub">Saved in this browser only</span></div>
+          <div class="card-body">
+            <div class="seg" id="appearance" role="radiogroup" aria-label="Appearance">${appearance()}</div>
+            <p class="hint">System follows your device's light or dark setting. The moon button in the
+              top bar switches between light and dark directly.</p>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-head"><h2>How the daily score works</h2></div>
           <div class="card-body">
@@ -116,7 +125,7 @@ export async function page() {
 
   return {
     title: 'Settings',
-    subtitle: 'Targets, scoring rules and data removal',
+    subtitle: 'Targets, appearance, scoring rules and data removal',
     html,
     mount(root) {
       root.querySelector('#settingsForm').addEventListener('submit', async (e) => {
@@ -127,6 +136,13 @@ export async function page() {
         await reloadBootstrap();
         U.toast('Settings saved', 'success');
         refresh();
+      });
+
+      root.querySelector('#appearance').addEventListener('click', (e) => {
+        const preference = e.target.closest('[data-theme-pref]')?.dataset.themePref;
+        if (!preference) return;
+        setTheme(preference);
+        root.querySelector('#appearance').innerHTML = appearance();
       });
 
       root.querySelector('#snapshot').addEventListener('click', async () => {
@@ -157,6 +173,10 @@ export async function page() {
     }
   };
 }
+
+const THEME_OPTIONS = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']];
+const appearance = () => THEME_OPTIONS.map(([value, label]) => `
+  <button type="button" role="radio" aria-checked="${themePreference() === value}" data-theme-pref="${value}">${label}</button>`).join('');
 
 const num = (name, label, value) => `
   <div class="field">
