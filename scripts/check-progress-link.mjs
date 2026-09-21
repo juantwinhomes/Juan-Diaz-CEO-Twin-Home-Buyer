@@ -219,6 +219,31 @@ try {
   const past = await call('GET', '/api/today', {}, { date: yesterday, user_id: String(user.id) });
   ok('looking back at yesterday does not create anything', past.commitments.filter((c) => c.task === T('Left open')).length === 1);
 
+  /* ---- the chain's state is its latest row --------------------------- */
+  const twoDaysAgo = D.addDays(today, -2);
+  await call('POST', '/api/commitments', { user_id: user.id, task: T('Settled'), commit_date: twoDaysAgo });
+  await call('POST', '/api/commitments', { user_id: user.id, task: T('Settled'), commit_date: yesterday,
+    status: 'Completed', notes: `Carried over from ${twoDaysAgo}` });
+  todayView = await call('GET', '/api/today', {}, { date: today, user_id: String(user.id) });
+  ok('an item finished on its carried copy does not come back', !todayView.commitments.some((c) => c.task === T('Settled')));
+
+  /* ---- removing a carried item removes the item ------------------------ */
+  const carriedCopy = todayView.commitments.find((c) => c.task === T('Left open'));
+  ok('the carried copy is on today to be removed', Boolean(carriedCopy));
+  await call('DELETE', `/api/commitments/${carriedCopy.id}`, {}, { date: today });
+  todayView = await call('GET', '/api/today', {}, { date: today, user_id: String(user.id) });
+  ok('removing the carried copy keeps it gone', !todayView.commitments.some((c) => c.task === T('Left open')));
+  const orig = await get('SELECT status, carryover_reason FROM commitments WHERE id = ?', left.id);
+  ok("the person's original is kept on its day, cancelled", orig && orig.status === 'Cancelled' && orig.carryover_reason === 'Cancelled');
+
+  /* ---- removing the original takes its copies with it ------------------ */
+  const src = await call('POST', '/api/commitments', { user_id: user.id, task: T('Removed at source'), commit_date: yesterday });
+  todayView = await call('GET', '/api/today', {}, { date: today, user_id: String(user.id) });
+  ok('the new item is carried onto today', todayView.commitments.some((c) => c.task === T('Removed at source')));
+  await call('DELETE', `/api/commitments/${src.id}`, {}, { date: today });
+  const remaining = await all('SELECT id FROM commitments WHERE user_id = ? AND task = ?', user.id, T('Removed at source'));
+  ok('removing the original removes the copies it spawned', remaining.length === 0, `${remaining.length} left`);
+
   await call('DELETE', `/api/projects/${board.id}`);
 } finally {
   await call('DELETE', `/api/projects/${project.id}`);

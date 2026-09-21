@@ -193,7 +193,9 @@ export async function page(ctx) {
           U.confirmRemove({
             title: 'Remove commitment',
             message: `Remove "${c.task}"?`,
-            detail: 'It disappears from today\'s score. If the work simply did not happen, set a reason instead so it stays on the record.',
+            detail: carriedFrom(c)
+              ? `It was carried over from ${U.fmt.date(carriedFrom(c))}. Removing it takes it off every day it was carried through and marks your original as cancelled, so it stops coming back. If the work simply did not happen, set a reason instead.`
+              : 'It disappears from today\'s score, along with any copies carried to later days. If the work simply did not happen, set a reason instead so it stays on the record.',
             onConfirm: async () => {
               await api.del(`/commitments/${c.id}`, { date: state.date });
               commitments.splice(commitments.indexOf(c), 1);

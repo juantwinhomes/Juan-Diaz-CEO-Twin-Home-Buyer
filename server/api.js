@@ -395,10 +395,21 @@ PATCH('/api/commitments/:id', async (p, q, body) => {
 
 DELETE('/api/commitments/:id', async (p, q) => {
   const c = await get('SELECT * FROM commitments WHERE id = ?', p.id) || notFound('Commitment not found');
-  await unlogCommitmentProgress(p.id);
-  await remove('commitments', p.id);
+  // To the person removing it, an item carried across days is one item. The
+  // copies the system made go with it, on every day it was carried through.
+  // What the person wrote themselves stays on its day, marked cancelled — so
+  // it neither vanishes from the record nor comes back tomorrow.
+  const chain = await all(
+    'SELECT * FROM commitments WHERE user_id = ? AND task = ? ORDER BY commit_date, id', c.user_id, c.task);
+  const toRemove = chain.filter((row) => row.id === c.id || CARRIED_NOTE.test(row.notes || ''));
+  const toCancel = chain.filter((row) => !toRemove.includes(row) && !['Completed', 'Cancelled'].includes(row.status));
+  for (const row of toRemove) {
+    await unlogCommitmentProgress(row.id);
+    await remove('commitments', row.id);
+  }
+  for (const row of toCancel) await update('commitments', row.id, { status: 'Cancelled', carryover_reason: 'Cancelled' });
   await applyCommitmentPct(c.project_id, q.date || D.today());
-  return { deleted: true, id: Number(p.id), task: c.task };
+  return { deleted: true, id: Number(p.id), task: c.task, removed: toRemove.length, cancelled: toCancel.length };
 });
 
 /**
@@ -916,14 +927,19 @@ GET('/api/priorities', async (_p, q) => await K.nextDayPriorities(dateOr(q)));
  * record explains itself. Only the real today gathers items; browsing back or
  * forward through the calendar changes nothing.
  */
+/** The note the system writes on a copy it carried, so its own copies are recognisable. */
+const CARRIED_NOTE = /^Carried over from \d{4}-\d{2}-\d{2}$/;
+
 async function carryForwardUnfinished(userId, date) {
   if (!userId || date !== D.today()) return 0;
-  // One entry per task, from the most recent day it was still open, so an item
-  // continued for a week is carried once and not once per day it sat there.
-  const open = await all(
+  // An item carried across days is one item, and its state is whatever its
+  // most recent row says. Finishing or cancelling Friday's copy settles it;
+  // Thursday's copy still reading "In Progress" must not bring it back.
+  const latest = await all(
     `SELECT DISTINCT ON (task) * FROM commitments
-      WHERE user_id = ? AND commit_date < ? AND status NOT IN ('Completed', 'Cancelled')
-      ORDER BY task, commit_date DESC`, userId, date);
+      WHERE user_id = ? AND commit_date < ?
+      ORDER BY task, commit_date DESC, id DESC`, userId, date);
+  const open = latest.filter((c) => !['Completed', 'Cancelled'].includes(c.status));
   if (!open.length) return 0;
   const planned = new Set((await all(
     'SELECT task FROM commitments WHERE user_id = ? AND commit_date >= ?', userId, date)).map((r) => r.task));
