@@ -1,5 +1,14 @@
 # Twin Home Buyer — Deal Pattern Profile & Buy-Box
 
+> ⚠️ **UNVERIFIED / SUPERSEDED (2026-07-22).** The dollar figures below are
+> **GROSS and unverified**, and cross-checking against QuickBooks proved several
+> are wrong — most notably **164 Springdale, listed here as the +$2.7M biggest
+> win, is actually a ~−$62K loss** (its sale price was logged as profit). The
+> "86% win rate" is gross; true net win rate is ~74%. For real per-deal
+> economics use **`deal-economics-quickbooks-2026-07.md`**, which is built from
+> the actual books. Keep this doc only for the geographic/rehab pattern logic
+> and the buy-box screening tiers — NOT for the specific deal dollar amounts.
+
 > Source: "Deal Pattern Profile & Buy-Box," compiled from ~160 historical
 > property records (Drive settlement statements + expense sheets + public
 > records). **All figures are GROSS** (Sale − Purchase − Rehab), before
