@@ -1,9 +1,16 @@
 # SOP — Using the Brain of Juan Diaz (Team)
 
+> This is the step-by-step *how*. For what the Brain is for and the lines it
+> won't cross — the 70% rule, "reviewer not worker," escalate-to-humans — read
+> `sop/SOP-ask-juan-ai.md` first. The two docs agree: **you do the work; the
+> Brain pressure-tests it.**
+
 **Purpose:** Before anything goes to Juan — an update, a question, a report, a
-draft — you run it past the **Brain** first. The Brain answers the way Juan
-would, tells you what's missing, and helps you fix it. Result: Juan gets
-clean, decision-ready items, and you get fewer "no, redo this" replies.
+draft — you run it past the **Brain** first. Do your thinking, make your
+recommendation, *then* the Brain answers the way Juan would, tells you what's
+missing, and helps you sharpen it. Result: Juan gets clean, decision-ready
+items, and you get fewer "no, redo this" replies. The Brain reviews your
+work — it does not do your work for you.
 
 **Who uses this:** Everyone — Cherry, Kristine, Roiz, Jose, Seth, the PH team.
 
@@ -79,10 +86,14 @@ Even then: message Juan first, run it through the Brain in parallel.
 
 ## What the Brain can also do for you
 
-- Draft emails, texts, and scripts **in Juan's voice** (ask for tone variants)
+These are supports *after* you've done the thinking — not a way to skip it
+(see the 70% rule in `sop/SOP-ask-juan-ai.md`). Bring your draft or your call
+first, then use the Brain to sharpen it:
+
+- Sharpen emails, texts, and scripts **in Juan's voice** (ask for tone variants)
 - Explain any deal, number, or rule in the knowledge base ("why was this
   campaign flagged?")
-- Build checklists, training steps, and prompts for your own role
+- Stress-test your checklists, training steps, and role prompts
 - Answer design questions via the **Designer** (paint codes, finishes, tiers)
 
 ## What the Brain will NOT do
