@@ -32,6 +32,12 @@ All counts, statuses and "action needed" lists are derived in `src/data/derive.t
 
 **Accuracy rules:** don't invent facts. Scheduled ≠ completed ≠ passed. Quote received ≠ approved. Ordered ≠ delivered. When two notes conflict, set `needsVerification` and keep both notes.
 
+## Design system (dark)
+
+- **Theme variables:** `src/theme/theme.css` (backgrounds, borders, text, status, priority, buttons, inputs). Tailwind utilities map onto them in `src/index.css` (`@theme inline`).
+- **Property accent colors:** stored per property as `accentColor` in `public/data/properties.json` and in the database docs. The approved palette and the rule that gives a new property the next free color are in `src/theme/palette.ts` (`PROPERTY_PALETTE`, `accentOf`). A color assigned to a property is kept permanently.
+- **Property color ≠ status color.** The accent (set as `--prop` on a property's subtree) only appears on borders, dots, focus rings and primary buttons. Status and priority always use `STATUS_VAR` / `PRIORITY_VAR` and always carry a text label.
+
 ## Commands
 
 ```bash

@@ -179,6 +179,7 @@ export interface Reference {
 }
 
 export interface Property {
+  accentColor?: string;         // permanent property identity color (see theme/palette.ts)
   id: string;
   address: string;
   city: string;

@@ -41,15 +41,19 @@ export function matchTask(p: Property, t: Task, f: Filters, today = todayISO()) 
   return true;
 }
 
+const TOGGLE_VAR = {
+  approval: "var(--status-approval)", waiting: "var(--status-waiting)", blocked: "var(--status-blocked)", completed: "var(--status-completed)",
+};
+
 export function DashboardFilters({ f, set, properties }: { f: Filters; set: (f: Filters) => void; properties: Property[] }) {
   const tasks = properties.flatMap((p) => p.tasks);
   const uniq = (xs: (string | undefined)[]) => [...new Set(xs.filter(Boolean) as string[])].sort();
-  const sel = "min-w-0 rounded border border-line bg-surface px-2 py-1.5 text-[12.5px]";
+  const sel = "field";
   const upd = <K extends keyof Filters>(k: K, v: Filters[K]) => set({ ...f, [k]: v });
   const toggle = (k: "approval" | "waiting" | "blocked" | "completed", label: string) => (
     <button type="button" aria-pressed={f[k]} onClick={() => upd(k, !f[k])}
-      className={`rounded border px-2.5 py-1.5 text-[12.5px] font-medium ${f[k] ? "border-accent bg-accent text-white" : "border-line bg-surface text-ink2 hover:border-line2"}`}>
-      {label}
+      className={`inline-flex min-h-[34px] items-center gap-2 rounded-md border px-3 py-1.5 text-[12.5px] font-medium ${f[k] ? "border-line2 bg-hover text-ink" : "border-line bg-raised text-ink3 hover:text-ink2"}`}>
+      <i className="block h-2 w-2 rounded-full" style={{ background: TOGGLE_VAR[k], opacity: f[k] ? 1 : 0.55 }} aria-hidden />{label}{f[k] && <span className="text-ink3" aria-hidden>✓</span>}
     </button>
   );
   return (
@@ -57,9 +61,9 @@ export function DashboardFilters({ f, set, properties }: { f: Filters; set: (f: 
       <div className="flex flex-wrap gap-2">
         <input id="search" type="search" value={f.q} onChange={(e) => upd("q", e.target.value)} autoComplete="off"
           placeholder='Search — "termite", "windows", "inspection", "Paramount", "Kristine"…'
-          className="min-w-0 flex-[1_1_260px] rounded border border-line2 bg-surface px-3 py-2 text-[14px]" />
+          className="field !w-auto flex-[1_1_260px] !py-2.5 !text-[14px]" />
         {filtersActive(f) && (
-          <button type="button" onClick={() => set(EMPTY_FILTERS)} className="rounded border border-line2 px-3 py-1.5 text-[12.5px] font-medium text-ink2 hover:text-ink">
+          <button type="button" onClick={() => set(EMPTY_FILTERS)} className="btn btn-secondary">
             Clear all
           </button>
         )}

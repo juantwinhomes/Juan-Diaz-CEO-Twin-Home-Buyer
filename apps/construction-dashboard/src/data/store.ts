@@ -10,6 +10,7 @@
 //      localStorage so a refresh does not erase them.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dataset, Property } from "./types";
+import { accentOf } from "../theme/palette";
 
 type Snap = { docs: { id: string; exists: boolean; data(): Record<string, unknown> | undefined }[] };
 type DocRef = { set(d: Record<string, unknown>): Promise<void>; onSnapshot(n: (s: { exists: boolean; data(): Record<string, unknown> | undefined }) => void, e?: (err: { code: string }) => void): () => void };
@@ -79,9 +80,12 @@ export function useDataset() {
   // seed copy of the same id; ids that exist only there are added.
   const overlay = (base: Property[], over: Property[]) =>
     base.map((p) => over.find((o) => o.id === p.id) ?? p).concat(over.filter((o) => !base.some((p) => p.id === o.id)));
-  const properties = sortProps(mode === "live"
+  const merged = sortProps(mode === "live"
     ? overlay(seed?.properties ?? [], live ?? [])
     : overlay(seed?.properties ?? [], Object.values(local)));
+  // Every property carries a permanent accent; one without a stored color gets
+  // the next free palette color, which is written back on its next save.
+  const properties = merged.map((p) => (p.accentColor ? p : { ...p, accentColor: accentOf(p, merged) }));
 
   const saveProperty = useCallback(async (p: Property) => {
     const db = dbRef.current;

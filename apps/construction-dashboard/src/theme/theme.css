@@ -1,0 +1,57 @@
+/* Construction Control — dark design system.
+   Every color in the app comes from these variables. Property accent colors
+   are NOT here: they live in each property's data (accentColor) and reach
+   the components as the --prop custom property. */
+:root {
+  color-scheme: dark;
+
+  /* surfaces — darkest to lightest */
+  --background-nav: #080c11;       /* sticky quick-view bar */
+  --background-primary: #0b0f14;   /* app background */
+  --background-card: #111820;      /* cards, panels */
+  --background-secondary: #151e28; /* secondary panels, expanded task areas, notes */
+  --background-input: #18222d;     /* inputs, dropdowns */
+  --background-hover: #1a2531;     /* row / card hover */
+  --background-overlay: rgba(3, 6, 10, 0.72);
+
+  --border-primary: #253140;
+  --border-strong: #34445a;
+
+  --text-primary: #f3f4f6;
+  --text-secondary: #c6ced8;
+  --text-muted: #8b98a8;
+  --text-disabled: #667085;
+
+  /* neutral primary action when no property is in context */
+  --action-neutral: #e6eaf0;
+  --action-neutral-ink: #0b0f14;
+
+  /* task status — one system for every property */
+  --status-not-started: #6b7280;
+  --status-in-progress: #3b82f6;
+  --status-waiting: #f59e0b;
+  --status-blocked: #ef4444;
+  --status-approval: #a855f7;
+  --status-scheduled: #06b6d4;
+  --status-inspection: #f97316;
+  --status-correction: #f43f5e;
+  --status-ready: #14b8a6;
+  --status-ordered: #6366f1;
+  --status-delivered: #10b981;
+  --status-completed: #22c55e;
+
+  /* functional aliases */
+  --status-success: var(--status-completed);
+  --status-warning: var(--status-waiting);
+  --status-danger: var(--status-blocked);
+  --status-info: var(--status-scheduled);
+
+  /* priority */
+  --priority-urgent: #ef4444;
+  --priority-high: #f97316;
+  --priority-normal: #94a3b8;
+  --priority-completed: #22c55e;
+
+  /* property accent fallback (overridden per property via inline style) */
+  --prop: #8b98a8;
+}

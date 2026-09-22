@@ -1,67 +1,113 @@
 @import "tailwindcss";
+@import "./theme/theme.css";
 
-/* Construction Control — committed light ground (an internal ops board that
-   reads the same on every screen), so no dark palette is defined. */
-@theme {
+/* Tailwind utilities map onto the theme variables in theme/theme.css. */
+@theme inline {
   --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  --color-ground: #eff1ee;
-  --color-surface: #ffffff;
-  --color-sunk: #f6f7f4;
-  --color-line: #dde1da;
-  --color-line2: #c5cbc2;
-  --color-ink: #15191c;
-  --color-ink2: #525a61;
-  --color-ink3: #858c92;
-  --color-accent: #1d3a57;
-  --color-accent2: #2b5580;
-  --color-accent-soft: #e6edf4;
-
-  --color-urgent: #b42318;
-  --color-urgent-soft: #fdecea;
-  --color-high: #b54708;
-  --color-high-soft: #fdf0e3;
-  --color-normal: #8a6a00;
-  --color-normal-soft: #fbf3d6;
-  --color-ok: #1e7b45;
-  --color-ok-soft: #e5f4ea;
-  --color-info: #2459a6;
-  --color-info-soft: #e8eff9;
-  --color-wait: #6b5a1f;
-  --color-wait-soft: #f3efe0;
-  --color-approve: #6440b8;
-  --color-approve-soft: #f0ebfa;
-  --color-progress: #0f6e74;
-  --color-progress-soft: #e2f2f2;
+  --color-ground: var(--background-primary);
+  --color-nav: var(--background-nav);
+  --color-surface: var(--background-card);
+  --color-raised: var(--background-secondary);
+  --color-field: var(--background-input);
+  --color-hover: var(--background-hover);
+  --color-line: var(--border-primary);
+  --color-line2: var(--border-strong);
+  --color-ink: var(--text-primary);
+  --color-ink2: var(--text-secondary);
+  --color-ink3: var(--text-muted);
+  --color-ink4: var(--text-disabled);
+  --color-prop: var(--prop);
+  --color-urgent: var(--status-blocked);
+  --color-ok: var(--status-completed);
+  --color-wait: var(--status-waiting);
+  --color-approve: var(--status-approval);
+  --color-info: var(--status-scheduled);
+  --color-high: var(--priority-high);
 }
 
-:root { color-scheme: light; }
-html, body { background: var(--color-ground); }
+html, body { background: var(--background-primary); }
 body {
-  color: var(--color-ink);
+  color: var(--text-secondary);
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, h4 { text-wrap: balance; }
+h1, h2, h3, h4 { text-wrap: balance; color: var(--text-primary); }
 button, input, select, textarea { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--color-accent2); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid color-mix(in srgb, var(--prop) 80%, white); outline-offset: 2px; border-radius: 4px; }
+::selection { background: color-mix(in srgb, var(--prop) 40%, transparent); color: var(--text-primary); }
 .num { font-variant-numeric: tabular-nums; }
+
 .eyebrow {
   font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-ink3);
+  color: var(--text-muted);
   font-weight: 500;
 }
-/* Hazard-tape edge used only on the one "next action" slot of a card. */
-.next-slot {
-  background: linear-gradient(var(--color-accent), var(--color-accent)) left / 4px 100% no-repeat, var(--color-accent-soft);
+
+/* Status / label pill: set --c to a status or priority variable. Dark
+   transparent fill, lightened text, faint border — label text always present. */
+.pill {
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  border-radius: 4px; border: 1px solid color-mix(in srgb, var(--c, var(--status-not-started)) 30%, transparent);
+  background: color-mix(in srgb, var(--c, var(--status-not-started)) 13%, transparent);
+  color: color-mix(in srgb, var(--c, var(--status-not-started)) 62%, white);
+  padding: 1px 7px; font-size: 11px; font-weight: 600; line-height: 18px; letter-spacing: 0.01em;
 }
+.pill i { display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
+
+/* Colored text that stays readable: status hue lifted toward white. */
+.tint { color: color-mix(in srgb, var(--c) 65%, white); }
+
+/* Property identity dot */
+.prop-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--prop); flex: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--prop) 18%, transparent); }
+
+/* Buttons: primary = current property accent (neutral light when none),
+   secondary = dark neutral, danger = red. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 6px;
+  padding: 7px 13px; font-size: 13px; font-weight: 600; line-height: 1.2; border: 1px solid transparent;
+  min-height: 34px; transition: background-color .15s, border-color .15s, color .15s; cursor: pointer; }
+.btn-primary { background: var(--prop-action, var(--action-neutral)); color: var(--prop-action-ink, var(--action-neutral-ink)); }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-secondary { background: var(--background-secondary); border-color: var(--border-strong); color: var(--text-secondary); }
+.btn-secondary:hover { background: var(--background-hover); color: var(--text-primary); }
+.btn-danger { background: color-mix(in srgb, var(--status-blocked) 16%, transparent); border-color: color-mix(in srgb, var(--status-blocked) 45%, transparent); color: #fca5a5; }
+.btn-danger:hover { background: var(--status-blocked); color: #fff; }
+.btn-sm { padding: 4px 10px; font-size: 12px; min-height: 28px; }
+.link { color: var(--text-primary); font-weight: 600; text-decoration: underline; text-decoration-color: var(--prop); text-underline-offset: 3px; }
+
+/* Inputs */
+.field { width: 100%; min-width: 0; background: var(--background-input); color: var(--text-primary);
+  border: 1px solid var(--border-primary); border-radius: 6px; padding: 7px 10px; font-size: 13px; }
+.field::placeholder { color: var(--text-muted); }
+.field:focus { outline: none; border-color: var(--prop-focus, #8b98a8);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--prop-focus, #8b98a8) 22%, transparent); }
+select.field option { background: var(--background-input); color: var(--text-primary); }
+input[type="date"].field::-webkit-calendar-picker-indicator { filter: invert(0.8); }
+
+/* Inside a property: forms, primary buttons and focus take that property's accent. */
+.prop-scope { --prop-focus: var(--prop); --prop-action: var(--prop); --prop-action-ink: #0b0f14; }
+
+/* The one "next action" slot of a card: property accent edge on a secondary panel. */
+.next-slot { background: var(--background-secondary); border: 1px solid var(--border-primary);
+  border-left: 3px solid var(--prop); }
+
+/* Property card */
+.prop-card { background: var(--background-card); border: 1px solid var(--border-primary);
+  border-left: 3px solid color-mix(in srgb, var(--prop) 75%, transparent); transition: background-color .15s, box-shadow .15s, border-color .15s; }
+.prop-card:hover, .prop-card:focus-within { background: #141c26; border-left-color: var(--prop);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--prop) 22%, transparent), 0 6px 22px -8px color-mix(in srgb, var(--prop) 38%, transparent); }
+
+/* Scrollbars */
+* { scrollbar-color: var(--border-strong) transparent; }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
