@@ -1,0 +1,1296 @@
+{
+  "asOf": "2026-09-01",
+  "sources": [
+    "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026",
+    "Monday Properties board (screenshot)",
+    "Monday Properties board financials, as transcribed in the Open Work artifact (Sep 1, 2026)"
+  ],
+  "properties": [
+    {
+      "id": "paramount",
+      "order": 1,
+      "address": "52 Paramount Ter, San Francisco, CA 94118",
+      "city": "San Francisco",
+      "stage": "Undergoing Construction",
+      "acquisitionDate": "Aug 26 (year not shown on board)",
+      "lastUpdated": "2026-09-01",
+      "nextMilestone": "Window order placed (Stage D)",
+      "nextAction": "Cesar measures the windows so John can place the window order — the order was due Aug 26.",
+      "whereItStands": "Under construction with $864 spent against a $237,300 rehab budget. The window order (Stage D) is past due because the windows have not been measured; site cleanup and pressure-washing are queued for Jairo.",
+      "archivedCompleted": 4,
+      "financials": {
+        "rehabBudget": 237300,
+        "actualCost": 864,
+        "drawAllocated": 237300,
+        "drawDisbursed": 0,
+        "source": "Monday Properties board financials, as transcribed in the Open Work artifact (Sep 1, 2026)"
+      },
+      "tasks": [
+        {
+          "id": "cr-window",
+          "title": "Place the window order",
+          "category": "Windows",
+          "status": "In Progress",
+          "priority": "Urgent",
+          "owner": "John",
+          "stage": "Stage D",
+          "date": "2026-09-01",
+          "deadline": "2026-08-26",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Working on it\". Due Aug 26, 2026 — past due on the Sep 1 board.",
+          "completedWork": [],
+          "pendingWork": [
+            "Window order not yet placed"
+          ],
+          "nextAction": "John places the window order once Cesar's measurements are in.",
+          "blocker": "Window measurements not taken yet (measurement task is Not started)",
+          "dependsOn": [
+            "cr-measure"
+          ],
+          "waitingOn": "Cesar (measurements)",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 52 Paramount Ter, San Francisco, CA 94118\nItem: \"Place the window order\"\nStage: Stage D\nOwner: John\nPriority: Critical\nDue: 2026-08-26\nStatus: Working on it",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "In Progress",
+              "note": "Imported from Monday: \"Working on it\", due 2026-08-26, owner John.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "cr-measure",
+          "title": "Cesar measures the windows",
+          "category": "Windows",
+          "status": "Not Started",
+          "priority": "Urgent",
+          "owner": "Cesar",
+          "stage": "Stage D",
+          "date": "2026-09-01",
+          "deadline": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Measure all windows"
+          ],
+          "nextAction": "Cesar measures the windows and hands the dimensions to John for the order.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 52 Paramount Ter, San Francisco, CA 94118\nItem: \"Cesar measures the windows\"\nStage: Stage D\nOwner: Cesar\nPriority: Critical\nDue: 2026-09-01\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", due 2026-09-01, owner Cesar.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "pm-washer",
+          "title": "Bring the pressure washer over from the office",
+          "category": "Materials / Equipment",
+          "status": "Not Started",
+          "priority": "High",
+          "owner": "Jairo",
+          "date": "2026-09-01",
+          "deadline": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Bring the pressure washer over from the office"
+          ],
+          "nextAction": "Jairo brings the pressure washer from the office to the site.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 52 Paramount Ter, San Francisco, CA 94118\nItem: \"Bring the pressure washer over from the office\"\nOwner: Jairo\nPriority: High\nDue: 2026-09-01\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", due 2026-09-01, owner Jairo.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "pm-yard",
+          "title": "Assign someone to finish the backyard cleanup",
+          "category": "Landscaping",
+          "status": "Not Started",
+          "priority": "High",
+          "owner": "Jairo",
+          "date": "2026-09-01",
+          "deadline": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Assign a crew member",
+            "Finish backyard cleanup"
+          ],
+          "nextAction": "Jairo assigns a crew member to finish the backyard cleanup.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 52 Paramount Ter, San Francisco, CA 94118\nItem: \"Assign someone to finish the backyard cleanup\"\nOwner: Jairo\nPriority: High\nDue: 2026-09-01\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", due 2026-09-01, owner Jairo.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "pm-wash",
+          "title": "Pressure-wash the full perimeter",
+          "category": "Exterior",
+          "status": "Not Started",
+          "priority": "Normal",
+          "owner": "Jairo",
+          "date": "2026-09-01",
+          "deadline": "2026-09-04",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Pressure-wash the full perimeter"
+          ],
+          "nextAction": "Pressure-wash the full perimeter once the pressure washer is on site.",
+          "blocker": "Pressure washer is still at the office (inferred from the related task)",
+          "dependsOn": [
+            "pm-washer"
+          ],
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 52 Paramount Ter, San Francisco, CA 94118\nItem: \"Pressure-wash the full perimeter\"\nOwner: Jairo\nPriority: Medium\nDue: 2026-09-04\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", due 2026-09-04, owner Jairo.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "pm-land",
+          "title": "Develop the landscaping design",
+          "category": "Landscaping",
+          "status": "Not Started",
+          "priority": "High",
+          "owner": "Kristine",
+          "date": "2026-09-01",
+          "deadline": "2026-09-08",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Develop the landscaping design"
+          ],
+          "nextAction": "Kristine develops the landscaping design.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 52 Paramount Ter, San Francisco, CA 94118\nItem: \"Develop the landscaping design\"\nOwner: Kristine\nPriority: High\nDue: 2026-09-08\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", due 2026-09-08, owner Kristine.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        }
+      ],
+      "inspections": [],
+      "vendors": [],
+      "purchases": [
+        {
+          "id": "pu-windows",
+          "item": "Windows",
+          "orderStatus": "Needs Measurement",
+          "taskId": "cr-window",
+          "notes": "Order owner: John. Quantity, dimensions, vendor and price not supplied.",
+          "sourceNote": "Open Work board: \"Place the window order\" (Stage D, John, Working on it, due 2026-08-26) and \"Cesar measures the windows\" (Stage D, Cesar, Not started, due 2026-09-01)."
+        }
+      ],
+      "upcomingEvents": [],
+      "decisions": [],
+      "risks": [
+        {
+          "id": "r-win",
+          "risk": "Window order past due",
+          "why": "Stage D cannot move until windows are ordered; lead time on windows is not known from the board.",
+          "taskId": "cr-window",
+          "nextAction": "Get the measurements from Cesar, then place the order.",
+          "basis": "from source"
+        },
+        {
+          "id": "r-land",
+          "risk": "Landscaping design not started",
+          "why": "Design due Sep 8, 2026 and still Not started on the Sep 1 board.",
+          "taskId": "pm-land",
+          "nextAction": "Kristine to start the design.",
+          "basis": "from source"
+        }
+      ],
+      "timeline": [
+        {
+          "date": "",
+          "displayDate": "Aug 26 (year not shown)",
+          "title": "Acquisition date on Monday Properties board",
+          "source": "Monday Properties board (screenshot)"
+        },
+        {
+          "date": "2026-08-26",
+          "title": "Window order due (Stage D)",
+          "detail": "Still Working on it as of Sep 1.",
+          "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+        },
+        {
+          "date": "2026-09-01",
+          "title": "Board snapshot — 6 open tasks, 4 archived",
+          "detail": "Window measurement not started; pressure washer, backyard cleanup due today.",
+          "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+        }
+      ]
+    },
+    {
+      "id": "fifth",
+      "order": 2,
+      "address": "460 5th Avenue, Redwood City, CA 94063",
+      "city": "Redwood City",
+      "stage": "Undergoing Construction",
+      "acquisitionDate": "Sep 1 (year not shown on board)",
+      "lastUpdated": "2026-09-01",
+      "nextMilestone": "Gutter and garage door install dates confirmed",
+      "nextAction": "Kristine locks the exact gutter and garage door install dates.",
+      "whereItStands": "Under construction: $28,012 spent against a $186,165 budget, $32,025 of draw disbursed. Two open items, both install dates Kristine is confirming.",
+      "archivedCompleted": 1,
+      "financials": {
+        "rehabBudget": 186165,
+        "actualCost": 28012,
+        "drawAllocated": 186165,
+        "drawDisbursed": 32025,
+        "source": "Monday Properties board financials, as transcribed in the Open Work artifact (Sep 1, 2026)"
+      },
+      "tasks": [
+        {
+          "id": "f5-gutter",
+          "title": "Confirm the exact gutter install date",
+          "category": "Exterior / Gutters",
+          "status": "In Progress",
+          "priority": "High",
+          "owner": "Kristine",
+          "date": "2026-09-01",
+          "deadline": "2026-09-02",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Working on it\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Confirm the exact gutter install date"
+          ],
+          "nextAction": "Kristine confirms the exact gutter install date with the installer.",
+          "waitingOn": "Gutter installer (not named)",
+          "vendor": "Gutter installer — not named",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 460 5th Avenue, Redwood City, CA 94063\nItem: \"Confirm the exact gutter install date\"\nOwner: Kristine\nPriority: High\nDue: 2026-09-02\nStatus: Working on it",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "In Progress",
+              "note": "Imported from Monday: \"Working on it\", due 2026-09-02, owner Kristine.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "f5-garage",
+          "title": "Confirm the exact garage door install date",
+          "category": "Garage Door",
+          "status": "In Progress",
+          "priority": "High",
+          "owner": "Kristine",
+          "date": "2026-09-01",
+          "deadline": "2026-09-02",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Working on it\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Confirm the exact garage door install date"
+          ],
+          "nextAction": "Kristine confirms the exact garage door install date with the installer.",
+          "waitingOn": "Garage door installer (not named)",
+          "vendor": "Garage door installer — not named",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 460 5th Avenue, Redwood City, CA 94063\nItem: \"Confirm the exact garage door install date\"\nOwner: Kristine\nPriority: High\nDue: 2026-09-02\nStatus: Working on it",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "In Progress",
+              "note": "Imported from Monday: \"Working on it\", due 2026-09-02, owner Kristine.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        }
+      ],
+      "inspections": [],
+      "vendors": [
+        {
+          "id": "v-gutter",
+          "company": "Not named on board",
+          "service": "Gutter install",
+          "status": "Install date not confirmed",
+          "nextAction": "Confirm exact install date",
+          "sourceNote": "Open Work board: \"Confirm the exact gutter install date\" (Kristine, Working on it, due 2026-09-02)."
+        },
+        {
+          "id": "v-garage",
+          "company": "Not named on board",
+          "service": "Garage door install",
+          "status": "Install date not confirmed",
+          "nextAction": "Confirm exact install date",
+          "sourceNote": "Open Work board: \"Confirm the exact garage door install date\" (Kristine, Working on it, due 2026-09-02)."
+        }
+      ],
+      "purchases": [],
+      "upcomingEvents": [],
+      "decisions": [],
+      "risks": [
+        {
+          "id": "r-dates",
+          "risk": "Install dates unconfirmed",
+          "why": "Gutter and garage door installs cannot be sequenced until dates are locked.",
+          "taskId": "f5-gutter",
+          "nextAction": "Kristine confirms both dates.",
+          "basis": "from source"
+        }
+      ],
+      "timeline": [
+        {
+          "date": "",
+          "displayDate": "Sep 1 (year not shown)",
+          "title": "Acquisition date on Monday Properties board",
+          "source": "Monday Properties board (screenshot)"
+        },
+        {
+          "date": "2026-09-01",
+          "title": "Board snapshot — 2 open tasks, 1 archived",
+          "detail": "Gutter and garage door install dates being confirmed.",
+          "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+        }
+      ]
+    },
+    {
+      "id": "prague",
+      "order": 3,
+      "address": "27 Prague St, San Mateo, CA 94401",
+      "city": "San Mateo",
+      "stage": "Pending",
+      "acquisitionDate": "Jun 18 (year not shown on board)",
+      "lastUpdated": "2026-09-01",
+      "nextMilestone": "Section 1 clearance → permit final → staging removal",
+      "nextAction": "Chris finishes termite repairs (first priority) so Kristine can book the reinspection for Section 1 clearance.",
+      "whereItStands": "Pending sale, held up by a permit chain: termite repair → Section 1 clearance → final inspection → staging removal. Termite repair (first priority), electrical and sewer work were all in progress on Sep 1.",
+      "archivedCompleted": 4,
+      "financials": {
+        "rehabBudget": 0,
+        "actualCost": 111526,
+        "drawAllocated": 0,
+        "drawDisbursed": 0,
+        "source": "Monday Properties board financials, as transcribed in the Open Work artifact (Sep 1, 2026)"
+      },
+      "tasks": [
+        {
+          "id": "pg-termite",
+          "title": "Termite repair work",
+          "category": "Termite / Pest",
+          "status": "In Progress",
+          "priority": "Urgent",
+          "owner": "Chris",
+          "stage": "Stage E",
+          "date": "2026-09-01",
+          "deadline": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Working on it\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Finish termite repair work"
+          ],
+          "nextAction": "Chris finishes the termite repairs so the reinspection can be scheduled.",
+          "flags": [
+            "First priority"
+          ],
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 27 Prague St, San Mateo, CA 94401\nItem: \"Termite repair work\"\nStage: Stage E\nOwner: Chris\nPriority: Critical\nDue: 2026-09-01\nStatus: Working on it\nTag: First priority",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "In Progress",
+              "note": "Imported from Monday: \"Working on it\", due 2026-09-01, owner Chris.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "pg-clear",
+          "title": "Schedule termite reinspection and obtain Section 1 clearance",
+          "category": "Termite / Pest",
+          "status": "Not Started",
+          "priority": "Urgent",
+          "owner": "Kristine",
+          "stage": "Stage E",
+          "date": "2026-09-01",
+          "deadline": "2026-09-04",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Schedule termite reinspection",
+            "Obtain Section 1 clearance"
+          ],
+          "nextAction": "Kristine schedules the termite reinspection as soon as Chris finishes repairs.",
+          "blocker": "Termite repair work still in progress",
+          "dependsOn": [
+            "pg-termite"
+          ],
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 27 Prague St, San Mateo, CA 94401\nItem: \"Schedule termite reinspection and obtain Section 1 clearance\"\nStage: Stage E\nOwner: Kristine\nPriority: Critical\nDue: 2026-09-04\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", due 2026-09-04, owner Kristine.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "pg-permit",
+          "title": "Complete final inspection and close the permit",
+          "category": "Permits",
+          "status": "In Progress",
+          "priority": "Urgent",
+          "owner": "Juan",
+          "stage": "Stage G",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Working on it\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Final inspection",
+            "Close the permit"
+          ],
+          "nextAction": "Book the final inspection once Section 1 clearance is in hand.",
+          "blocker": "Permit cannot final without the Section 1 clearance (board permit-chain note)",
+          "dependsOn": [
+            "pg-clear"
+          ],
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 27 Prague St, San Mateo, CA 94401\nItem: \"Complete final inspection and close the permit\"\nStage: Stage G\nOwner: Juan\nPriority: Critical\nDue: —\nStatus: Working on it",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "In Progress",
+              "note": "Imported from Monday: \"Working on it\", no due date, owner Juan.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "pg-stage",
+          "title": "Staging removal",
+          "category": "Staging",
+          "status": "Blocked",
+          "priority": "High",
+          "owner": "Juan",
+          "stage": "Stage H",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Standby\" — tagged \"Locked until permit finals\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Staging removal"
+          ],
+          "nextAction": "Hold — remove staging after the permit finals.",
+          "blocker": "Locked until permit finals",
+          "dependsOn": [
+            "pg-permit"
+          ],
+          "flags": [
+            "Locked until permit finals"
+          ],
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 27 Prague St, San Mateo, CA 94401\nItem: \"Staging removal\"\nStage: Stage H\nOwner: Juan\nPriority: High\nDue: —\nStatus: Standby\nTag: Locked until permit finals",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Blocked",
+              "note": "Imported from Monday: \"Standby\", no due date, owner Juan.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "pg-elec",
+          "title": "Electrical work",
+          "category": "Electrical",
+          "status": "In Progress",
+          "priority": "High",
+          "owner": "Jairo",
+          "date": "2026-09-01",
+          "deadline": "2026-09-02",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Working on it\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Electrical work"
+          ],
+          "nextAction": "Jairo completes the electrical work.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 27 Prague St, San Mateo, CA 94401\nItem: \"Electrical work\"\nOwner: Jairo\nPriority: High\nDue: 2026-09-02\nStatus: Working on it",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "In Progress",
+              "note": "Imported from Monday: \"Working on it\", due 2026-09-02, owner Jairo.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "pg-sewer",
+          "title": "Complete and document the sewer work",
+          "category": "Plumbing / Sewer",
+          "status": "In Progress",
+          "priority": "High",
+          "owner": "Bryan",
+          "date": "2026-09-01",
+          "deadline": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Working on it\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Complete the sewer work",
+            "Document the sewer work"
+          ],
+          "nextAction": "Bryan completes the sewer work and files the documentation.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 27 Prague St, San Mateo, CA 94401\nItem: \"Complete and document the sewer work\"\nOwner: Bryan\nPriority: High\nDue: 2026-09-01\nStatus: Working on it",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "In Progress",
+              "note": "Imported from Monday: \"Working on it\", due 2026-09-01, owner Bryan.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "pg-grass",
+          "title": "Assign someone to cut the grass on this property",
+          "category": "Landscaping",
+          "status": "Not Started",
+          "priority": "Normal",
+          "owner": "Not assigned",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Assign someone to cut the grass on this property"
+          ],
+          "nextAction": "Assign a crew member to cut the grass.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 27 Prague St, San Mateo, CA 94401\nItem: \"Assign someone to cut the grass on this property\"\nOwner: Unassigned\nPriority: Medium\nDue: —\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", no due date, unassigned.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        }
+      ],
+      "inspections": [
+        {
+          "id": "in-termite",
+          "type": "Termite reinspection (Section 1 clearance)",
+          "state": "Not scheduled",
+          "nextAction": "Schedule once termite repairs are complete",
+          "reinspection": "Yes",
+          "taskId": "pg-clear",
+          "sourceNote": "Open Work board: \"Schedule termite reinspection and obtain Section 1 clearance\" (Stage E, Kristine, Not started, due 2026-09-04)."
+        },
+        {
+          "id": "in-final",
+          "type": "Final inspection (permit close-out)",
+          "state": "Not scheduled",
+          "nextAction": "Book after Section 1 clearance",
+          "reinspection": "Unknown",
+          "taskId": "pg-permit",
+          "sourceNote": "Open Work board: \"Complete final inspection and close the permit\" (Stage G, Juan, Working on it, no due date)."
+        }
+      ],
+      "vendors": [],
+      "purchases": [],
+      "upcomingEvents": [],
+      "decisions": [],
+      "risks": [
+        {
+          "id": "r-chain",
+          "risk": "Permit chain dependency",
+          "why": "Staging cannot come out until the permit finals, and the permit cannot final without the Section 1 clearance — one slip moves everything behind it.",
+          "taskId": "pg-termite",
+          "nextAction": "Finish termite repair, then book reinspection immediately.",
+          "basis": "from source"
+        },
+        {
+          "id": "r-budget",
+          "risk": "No rehab budget recorded",
+          "why": "$111,526 actual cost against a $0 rehab budget and no draw allocated.",
+          "nextAction": "Confirm the budget / funding source for this property.",
+          "basis": "computed from source figures"
+        },
+        {
+          "id": "r-grass",
+          "risk": "Grass-cutting unassigned",
+          "why": "No owner on the board for a property that is pending sale.",
+          "taskId": "pg-grass",
+          "nextAction": "Assign a crew member.",
+          "basis": "from source"
+        }
+      ],
+      "timeline": [
+        {
+          "date": "",
+          "displayDate": "Jun 18 (year not shown)",
+          "title": "Acquisition date on Monday Properties board",
+          "source": "Monday Properties board (screenshot)"
+        },
+        {
+          "date": "2026-09-01",
+          "title": "Board snapshot — 7 open tasks, 4 archived",
+          "detail": "Termite repair tagged First priority; staging locked until permit finals.",
+          "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+        }
+      ]
+    },
+    {
+      "id": "sunrise",
+      "order": 4,
+      "address": "1464 Sunrise Parkway, Petaluma, CA 94954",
+      "city": "Petaluma",
+      "stage": "Pending",
+      "acquisitionDate": "Jul 7 (year not shown on board)",
+      "lastUpdated": "2026-09-01",
+      "nextMilestone": "Anchor inspection + next draw",
+      "nextAction": "Assign owners to the re-roof permit and both inspections; Marieflor confirms the Anchor inspection and draw request.",
+      "whereItStands": "Pending, and $26,270 over its $99,300 rehab budget ($125,570 actual). Nearly all draw funds are out ($98,713 of $99,300). The re-roof permit and two inspections have no owner.",
+      "archivedCompleted": 6,
+      "financials": {
+        "rehabBudget": 99300,
+        "actualCost": 125570,
+        "drawAllocated": 99300,
+        "drawDisbursed": 98713,
+        "source": "Monday Properties board financials, as transcribed in the Open Work artifact (Sep 1, 2026)"
+      },
+      "tasks": [
+        {
+          "id": "sr-anchor",
+          "title": "Contact Anchor to schedule an inspection and request the next draw",
+          "category": "Payments / Draws",
+          "status": "Scheduled",
+          "priority": "High",
+          "owner": "Marieflor",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Scheduled\". No inspection date recorded on the board.",
+          "completedWork": [],
+          "pendingWork": [
+            "Anchor inspection",
+            "Next draw request"
+          ],
+          "nextAction": "Marieflor confirms the Anchor inspection date and submits the next draw request.",
+          "waitingOn": "Anchor",
+          "vendor": "Anchor",
+          "flags": [
+            "Finance"
+          ],
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 1464 Sunrise Parkway, Petaluma, CA 94954\nItem: \"Contact Anchor to schedule an inspection and request the next draw\"\nOwner: Marieflor\nPriority: High\nDue: —\nStatus: Scheduled\nTag: Finance",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Scheduled",
+              "note": "Imported from Monday: \"Scheduled\", no due date, owner Marieflor.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "sr-permit",
+          "title": "Residential Re-Roof Permit",
+          "category": "Permits",
+          "status": "Not Started",
+          "priority": "High",
+          "owner": "Not assigned",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Residential Re-Roof Permit"
+          ],
+          "nextAction": "Assign an owner to pull the residential re-roof permit.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 1464 Sunrise Parkway, Petaluma, CA 94954\nItem: \"Residential Re-Roof Permit\"\nOwner: Unassigned\nPriority: High\nDue: —\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", no due date, unassigned.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "sr-midroof",
+          "title": "Mid Roof Inspection",
+          "category": "Inspections",
+          "status": "Not Started",
+          "priority": "High",
+          "owner": "Not assigned",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Mid Roof Inspection"
+          ],
+          "nextAction": "Assign an owner; schedule once the re-roof permit is in place.",
+          "blocker": "Re-roof permit not started (inferred order)",
+          "dependsOn": [
+            "sr-permit"
+          ],
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 1464 Sunrise Parkway, Petaluma, CA 94954\nItem: \"Mid Roof Inspection\"\nOwner: Unassigned\nPriority: High\nDue: —\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", no due date, unassigned.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "sr-rough",
+          "title": "Rough Inspection (Electrical & Plumbing)",
+          "category": "Inspections",
+          "status": "Not Started",
+          "priority": "High",
+          "owner": "Not assigned",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Rough Inspection (Electrical & Plumbing)"
+          ],
+          "nextAction": "Assign an owner to schedule the rough electrical & plumbing inspection.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 1464 Sunrise Parkway, Petaluma, CA 94954\nItem: \"Rough Inspection (Electrical & Plumbing)\"\nOwner: Unassigned\nPriority: High\nDue: —\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", no due date, unassigned.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "nb-cams",
+          "title": "Return the property cameras and cancel the internet",
+          "category": "Utilities",
+          "status": "In Progress",
+          "priority": "High",
+          "owner": "Jesery",
+          "date": "2026-09-01",
+          "deadline": "2026-09-02",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Working on it\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Return property cameras",
+            "Cancel internet service"
+          ],
+          "nextAction": "Jesery returns the cameras and cancels the internet.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 1464 Sunrise Parkway, Petaluma, CA 94954\nItem: \"Return the property cameras and cancel the internet\"\nOwner: Jesery\nPriority: High\nDue: 2026-09-02\nStatus: Working on it",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "In Progress",
+              "note": "Imported from Monday: \"Working on it\", due 2026-09-02, owner Jesery.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        }
+      ],
+      "inspections": [
+        {
+          "id": "in-anchor",
+          "type": "Lender draw inspection (Anchor)",
+          "state": "Scheduled",
+          "nextAction": "Confirm date — none recorded on the board",
+          "reinspection": "Unknown",
+          "taskId": "sr-anchor",
+          "sourceNote": "Open Work board: \"Contact Anchor to schedule an inspection and request the next draw\" (Marieflor, Scheduled, tag Finance, no due date)."
+        },
+        {
+          "id": "in-midroof",
+          "type": "Mid roof inspection",
+          "state": "Not scheduled",
+          "nextAction": "Assign owner; needs re-roof permit",
+          "reinspection": "Unknown",
+          "taskId": "sr-midroof",
+          "sourceNote": "Open Work board: \"Mid Roof Inspection\" (Unassigned, High, Not started)."
+        },
+        {
+          "id": "in-rough",
+          "type": "Rough inspection — electrical & plumbing",
+          "state": "Not scheduled",
+          "nextAction": "Assign owner and schedule",
+          "reinspection": "Unknown",
+          "taskId": "sr-rough",
+          "sourceNote": "Open Work board: \"Rough Inspection (Electrical & Plumbing)\" (Unassigned, High, Not started)."
+        }
+      ],
+      "vendors": [
+        {
+          "id": "v-anchor",
+          "company": "Anchor",
+          "service": "Inspection & draw (lender, per task wording)",
+          "status": "Inspection scheduled — date not recorded",
+          "nextAction": "Request the next draw",
+          "sourceNote": "Open Work board: \"Contact Anchor to schedule an inspection and request the next draw\"."
+        }
+      ],
+      "purchases": [],
+      "upcomingEvents": [],
+      "decisions": [],
+      "risks": [
+        {
+          "id": "r-over",
+          "risk": "Over rehab budget by $26,270",
+          "why": "$125,570 actual vs $99,300 budget, with only $587 of allocated draw left to disburse.",
+          "nextAction": "Review the overrun before the next draw request.",
+          "basis": "computed from source figures"
+        },
+        {
+          "id": "r-unassigned",
+          "risk": "Permit and inspections unassigned",
+          "why": "Re-roof permit, mid roof and rough inspections have no owner and no date.",
+          "taskId": "sr-permit",
+          "nextAction": "Assign an owner today.",
+          "basis": "from source"
+        }
+      ],
+      "timeline": [
+        {
+          "date": "",
+          "displayDate": "Jul 7 (year not shown)",
+          "title": "Acquisition date on Monday Properties board",
+          "source": "Monday Properties board (screenshot)"
+        },
+        {
+          "date": "2026-09-01",
+          "title": "Board snapshot — 5 open tasks, 6 archived",
+          "detail": "Anchor inspection Scheduled; re-roof permit & inspections Not started.",
+          "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+        }
+      ]
+    },
+    {
+      "id": "ave27",
+      "order": 5,
+      "address": "751 27th Ave, San Mateo, CA 94403",
+      "city": "San Mateo",
+      "stage": "Active Property In MLS",
+      "acquisitionDate": "Aug 25, 2025",
+      "constructionTimeline": "Aug 25, '25 – Mar 22, … (end year cut off in screenshot)",
+      "lastUpdated": "2026-09-01",
+      "nextMilestone": "Price decision",
+      "nextAction": "Clean the numbers (no food/restaurant costs; with and without commission), then decide the price tier.",
+      "whereItStands": "Listed in MLS at $2,898,000. Actual cost of $530,364 is $230,364 over the $300,000 rehab budget. All five open items — including the price decision — are unassigned and not started.",
+      "archivedCompleted": 0,
+      "financials": {
+        "rehabBudget": 300000,
+        "actualCost": 530364,
+        "drawAllocated": 0,
+        "drawDisbursed": 0,
+        "source": "Monday Properties board financials, as transcribed in the Open Work artifact (Sep 1, 2026)"
+      },
+      "tasks": [
+        {
+          "id": "a27-price",
+          "title": "Decide the price — tier up or down",
+          "category": "Listing / Pricing",
+          "status": "Not Started",
+          "priority": "Urgent",
+          "owner": "Not assigned",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Decide the price — tier up or down"
+          ],
+          "nextAction": "Decide the price tier — see Decisions Needed for the documented options.",
+          "blocker": "Pricing decision not made; no decision-maker assigned",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 751 27th Ave, San Mateo, CA 94403\nItem: \"Decide the price — tier up or down\"\nOwner: Unassigned\nPriority: Critical\nDue: —\nStatus: Not started\nNote: Whiteboard options: $2,700,000 · $2,750,000? · $2,898,000",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", no due date, unassigned.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "a27-food",
+          "title": "Strip all food and restaurant costs out of the numbers",
+          "category": "Financials / Reporting",
+          "status": "Not Started",
+          "priority": "High",
+          "owner": "Not assigned",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Strip all food and restaurant costs out of the numbers"
+          ],
+          "nextAction": "Remove all food and restaurant costs from the project numbers.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 751 27th Ave, San Mateo, CA 94403\nItem: \"Strip all food and restaurant costs out of the numbers\"\nOwner: Unassigned\nPriority: High\nDue: —\nStatus: Not started\nNote: Whiteboard: “Remove all food. Restaurants should not be here.”",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", no due date, unassigned.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "a27-comm",
+          "title": "Show the numbers both ways — with commission and without",
+          "category": "Financials / Reporting",
+          "status": "Not Started",
+          "priority": "High",
+          "owner": "Not assigned",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Show the numbers both ways — with commission and without"
+          ],
+          "nextAction": "Rebuild the numbers in two versions: with commission and without.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 751 27th Ave, San Mateo, CA 94403\nItem: \"Show the numbers both ways — with commission and without\"\nOwner: Unassigned\nPriority: High\nDue: —\nStatus: Not started\nNote: Whiteboard: commission | no commission",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", no due date, unassigned.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "a27-clear",
+          "title": "Section 1 Clearance",
+          "category": "Termite / Pest",
+          "status": "Not Started",
+          "priority": "High",
+          "owner": "Not assigned",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Section 1 Clearance"
+          ],
+          "nextAction": "Assign an owner to obtain the Section 1 clearance.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 751 27th Ave, San Mateo, CA 94403\nItem: \"Section 1 Clearance\"\nOwner: Unassigned\nPriority: High\nDue: —\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", no due date, unassigned.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        },
+        {
+          "id": "a27-halo",
+          "title": "Create and Submit Green Halo Waste Management Plan",
+          "category": "Documents / Disclosures",
+          "status": "Not Started",
+          "priority": "High",
+          "owner": "Not assigned",
+          "date": "2026-09-01",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Not started\".",
+          "completedWork": [],
+          "pendingWork": [
+            "Create the Green Halo waste management plan",
+            "Submit it"
+          ],
+          "nextAction": "Assign an owner to create and submit the Green Halo plan.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 751 27th Ave, San Mateo, CA 94403\nItem: \"Create and Submit Green Halo Waste Management Plan\"\nOwner: Unassigned\nPriority: High\nDue: —\nStatus: Not started",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "Not Started",
+              "note": "Imported from Monday: \"Not started\", no due date, unassigned.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        }
+      ],
+      "inspections": [
+        {
+          "id": "in-sec1",
+          "type": "Section 1 clearance",
+          "state": "Not scheduled",
+          "nextAction": "Assign an owner",
+          "reinspection": "Unknown",
+          "taskId": "a27-clear",
+          "sourceNote": "Open Work board: \"Section 1 Clearance\" (Unassigned, High, Not started)."
+        }
+      ],
+      "vendors": [],
+      "purchases": [],
+      "upcomingEvents": [],
+      "decisions": [
+        {
+          "id": "d-price",
+          "title": "Listing price — tier up or down",
+          "needs": "Choose the price tier for 751 27th Ave.",
+          "decisionMaker": "Not assigned",
+          "options": [
+            {
+              "label": "$2,700,000",
+              "detail": "Peterson offer — investor report shows a loss at this tier (Equity Track / Juan ($46,303))"
+            },
+            {
+              "label": "$2,750,000?",
+              "detail": "Whiteboard shows this with a question mark"
+            },
+            {
+              "label": "$2,898,000",
+              "detail": "Current list price"
+            }
+          ],
+          "impact": "Investor report shows the deal turns positive only from the $2,850,000 tier up.",
+          "taskId": "a27-price",
+          "sourceNote": "Open Work board: \"Decide the price — tier up or down\" (Unassigned, Critical, Not started). Whiteboard options: $2,700,000 · $2,750,000? · $2,898,000."
+        }
+      ],
+      "risks": [
+        {
+          "id": "r-over27",
+          "risk": "Over rehab budget by $230,364",
+          "why": "$530,364 actual vs $300,000 budget.",
+          "nextAction": "Clean the numbers before the price decision.",
+          "basis": "computed from source figures"
+        },
+        {
+          "id": "r-unassigned27",
+          "risk": "Every open item unassigned",
+          "why": "Price decision, Section 1 clearance, Green Halo plan and both number rebuilds have no owner.",
+          "taskId": "a27-price",
+          "nextAction": "Assign owners.",
+          "basis": "from source"
+        },
+        {
+          "id": "r-timeline27",
+          "risk": "Construction timeline end date unclear",
+          "why": "The Monday screenshot cuts the end year off (\"Mar 22, …\").",
+          "nextAction": "Verify on Monday.",
+          "basis": "from source"
+        }
+      ],
+      "references": [
+        {
+          "label": "Reference — investor report",
+          "title": "751 27th Ave — sale price scenarios & profit distribution",
+          "url": "https://claude.ai/artifacts/latest/3422f940-68b8-4f5e-8f3d-85ea29cc6045",
+          "lines": [
+            "Current list price $2,898,000 · scenarios modelled from $2,700,000 to $2,898,000",
+            "Split: 40% Equity Track / Juan Diaz — 30% Mike — 30% Issa, applied to profit/(loss) at each price tier"
+          ],
+          "table": {
+            "columns": [
+              "Price tier",
+              "Equity Track / Juan (40%)",
+              "Mike (30%)",
+              "Issa (30%)"
+            ],
+            "rows": [
+              [
+                "Peterson offer — $2,700,000",
+                "($46,303)",
+                "($34,727)",
+                "($34,727)"
+              ],
+              [
+                "Low — $2,750,000",
+                "($27,543)",
+                "($20,657)",
+                "($20,657)"
+              ],
+              [
+                "Mid — $2,800,000",
+                "($8,783)",
+                "($6,587)",
+                "($6,587)"
+              ],
+              [
+                "High — $2,850,000",
+                "$9,977",
+                "$7,483",
+                "$7,483"
+              ],
+              [
+                "Current list price — $2,898,000",
+                "$27,987",
+                "$20,990",
+                "$20,990"
+              ]
+            ]
+          },
+          "note": "Cost basis and holding-cost detail are not copied here — open the report for the full build-up."
+        }
+      ],
+      "timeline": [
+        {
+          "date": "2025-08-25",
+          "title": "Acquisition / construction timeline start",
+          "detail": "Monday Properties board: acquisition Aug 25, 2025; timeline Aug 25, '25 – Mar 22 (end year cut off).",
+          "source": "Monday Properties board (screenshot)"
+        },
+        {
+          "date": "2026-09-01",
+          "title": "Board snapshot — 5 open tasks, all unassigned",
+          "detail": "Whiteboard pricing options recorded: $2,700,000 · $2,750,000? · $2,898,000.",
+          "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+        }
+      ]
+    },
+    {
+      "id": "j820",
+      "order": 6,
+      "address": "820 28th St, Oakland, CA 94608",
+      "city": "Oakland",
+      "stage": "Undergoing Construction",
+      "acquisitionDate": "Jan 8, 2024",
+      "constructionTimeline": "Jun 7, '25 – Oct 19, '25",
+      "lastUpdated": "2026-09-01",
+      "nextMilestone": "Wood & framing repairs complete (Stage B)",
+      "nextAction": "Cesar finishes the wood and framing repairs — due Aug 29 and still in progress.",
+      "whereItStands": "Under construction with one open item: Stage B wood and framing repairs, past due. $77,912 spent; $267,435 of draw allocated and none disbursed yet.",
+      "archivedCompleted": 1,
+      "financials": {
+        "rehabBudget": 0,
+        "actualCost": 77912,
+        "drawAllocated": 267435,
+        "drawDisbursed": 0,
+        "source": "Monday Properties board financials, as transcribed in the Open Work artifact (Sep 1, 2026)"
+      },
+      "tasks": [
+        {
+          "id": "820-frame",
+          "title": "Complete the wood and framing repairs",
+          "category": "Construction / Framing",
+          "status": "In Progress",
+          "priority": "Urgent",
+          "owner": "Cesar",
+          "stage": "Stage B",
+          "date": "2026-09-01",
+          "deadline": "2026-08-29",
+          "latestUpdate": "Monday status on Sep 1, 2026: \"Working on it\". Due Aug 29, 2026 — past due on the Sep 1 board.",
+          "completedWork": [],
+          "pendingWork": [
+            "Finish wood and framing repairs"
+          ],
+          "nextAction": "Cesar completes the wood and framing repairs and reports a finish date.",
+          "sourceNote": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026\nGroup: 820 28th St, Oakland, CA 94608\nItem: \"Complete the wood and framing repairs\"\nStage: Stage B\nOwner: Cesar\nPriority: Critical\nDue: 2026-08-29\nStatus: Working on it",
+          "history": [
+            {
+              "date": "2026-09-01",
+              "status": "In Progress",
+              "note": "Imported from Monday: \"Working on it\", due 2026-08-29, owner Cesar.",
+              "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+            }
+          ]
+        }
+      ],
+      "inspections": [],
+      "vendors": [],
+      "purchases": [],
+      "upcomingEvents": [],
+      "decisions": [],
+      "risks": [
+        {
+          "id": "r-frame",
+          "risk": "Framing repairs past due",
+          "why": "Due Aug 29, 2026; still Working on it on Sep 1. This is the reset's focus deal.",
+          "taskId": "820-frame",
+          "nextAction": "Get a firm finish date from Cesar.",
+          "basis": "from source"
+        },
+        {
+          "id": "r-tl",
+          "risk": "Construction timeline ended Oct 19, 2025",
+          "why": "The board timeline ends Oct 19, '25 but the property is still Undergoing Construction.",
+          "nextAction": "Update the timeline on Monday.",
+          "basis": "from source"
+        },
+        {
+          "id": "r-draw",
+          "risk": "Draw allocated, nothing disbursed",
+          "why": "$267,435 allocated, $0 disbursed; rehab budget shows $0.",
+          "nextAction": "Confirm the draw schedule.",
+          "basis": "computed from source figures"
+        }
+      ],
+      "timeline": [
+        {
+          "date": "2024-01-08",
+          "title": "Acquisition date on Monday Properties board",
+          "source": "Monday Properties board (screenshot)"
+        },
+        {
+          "date": "2025-06-07",
+          "title": "Construction timeline start",
+          "source": "Monday Properties board (screenshot)"
+        },
+        {
+          "date": "2025-10-19",
+          "title": "Construction timeline end (planned)",
+          "detail": "Property still Undergoing Construction on the board.",
+          "source": "Monday Properties board (screenshot)"
+        },
+        {
+          "date": "2026-08-29",
+          "title": "Wood & framing repairs due (Stage B)",
+          "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+        },
+        {
+          "date": "2026-09-01",
+          "title": "Board snapshot — 1 open task, 1 archived",
+          "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+        }
+      ]
+    },
+    {
+      "id": "umland",
+      "order": 7,
+      "address": "492 Umland Dr, Santa Rosa, CA 95401",
+      "city": "Santa Rosa",
+      "stage": "Active Property In MLS",
+      "acquisitionDate": "Aug 21 (year not shown on board)",
+      "lastUpdated": "2026-09-01",
+      "nextMilestone": "None recorded",
+      "nextAction": "No open construction tasks on the board — confirm listing status on Monday.",
+      "whereItStands": "Active in MLS. No open construction tasks on the Sep 1 board. $37,203 spent against an $85,050 rehab budget.",
+      "financials": {
+        "rehabBudget": 85050,
+        "actualCost": 37203,
+        "drawAllocated": 0,
+        "drawDisbursed": 0,
+        "source": "Monday Properties board financials, as transcribed in the Open Work artifact (Sep 1, 2026)"
+      },
+      "tasks": [],
+      "inspections": [],
+      "vendors": [],
+      "purchases": [],
+      "upcomingEvents": [],
+      "decisions": [],
+      "risks": [],
+      "timeline": [
+        {
+          "date": "",
+          "displayDate": "Aug 21 (year not shown)",
+          "title": "Acquisition date on Monday Properties board",
+          "source": "Monday Properties board (screenshot)"
+        },
+        {
+          "date": "2026-09-01",
+          "title": "Board snapshot — no open tasks for this property",
+          "source": "Monday Open Work board (Construction Team), snapshot Tue Sep 1, 2026"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* Construction Control — committed light ground (an internal ops board that
+   reads the same on every screen), so no dark palette is defined. */
+@theme {
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --color-ground: #eff1ee;
+  --color-surface: #ffffff;
+  --color-sunk: #f6f7f4;
+  --color-line: #dde1da;
+  --color-line2: #c5cbc2;
+  --color-ink: #15191c;
+  --color-ink2: #525a61;
+  --color-ink3: #858c92;
+  --color-accent: #1d3a57;
+  --color-accent2: #2b5580;
+  --color-accent-soft: #e6edf4;
+
+  --color-urgent: #b42318;
+  --color-urgent-soft: #fdecea;
+  --color-high: #b54708;
+  --color-high-soft: #fdf0e3;
+  --color-normal: #8a6a00;
+  --color-normal-soft: #fbf3d6;
+  --color-ok: #1e7b45;
+  --color-ok-soft: #e5f4ea;
+  --color-info: #2459a6;
+  --color-info-soft: #e8eff9;
+  --color-wait: #6b5a1f;
+  --color-wait-soft: #f3efe0;
+  --color-approve: #6440b8;
+  --color-approve-soft: #f0ebfa;
+  --color-progress: #0f6e74;
+  --color-progress-soft: #e2f2f2;
+}
+
+:root { color-scheme: light; }
+html, body { background: var(--color-ground); }
+body {
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { text-wrap: balance; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--color-accent2); outline-offset: 2px; border-radius: 4px; }
+.num { font-variant-numeric: tabular-nums; }
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink3);
+  font-weight: 500;
+}
+/* Hazard-tape edge used only on the one "next action" slot of a card. */
+.next-slot {
+  background: linear-gradient(var(--color-accent), var(--color-accent)) left / 4px 100% no-repeat, var(--color-accent-soft);
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
