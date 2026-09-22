@@ -36,10 +36,15 @@ export async function page() {
               <div class="field"><label>Currency symbol</label>
                 <input class="input" name="currency" value="${U.esc(s.currency)}"></div>
             </div>
-            <label class="checkbox" style="margin:4px 0 14px">
+            <label class="checkbox" style="margin:4px 0 8px">
               <input type="checkbox" name="auto_progress_from_commitments" value="1"
                      ${s.auto_progress_from_commitments !== '0' ? 'checked' : ''}>
               Ticking a commitment complete logs it as progress on its project
+            </label>
+            <label class="checkbox" style="margin:0 0 14px">
+              <input type="checkbox" name="show_score_target" value="1"
+                     ${s.show_score_target === '1' ? 'checked' : ''}>
+              Draw the target line on the daily score chart
             </label>
             <button type="submit" class="btn btn-primary">Save settings</button>
           </form>
@@ -132,6 +137,7 @@ export async function page() {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target).entries());
         data.auto_progress_from_commitments = data.auto_progress_from_commitments ? '1' : '0';
+        data.show_score_target = data.show_score_target ? '1' : '0';
         await api.patch('/settings', data);
         await reloadBootstrap();
         U.toast('Settings saved', 'success');

@@ -33,6 +33,17 @@
   --focus-ring: rgba(37,99,235,.12);
   --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 
+  /* Chart colours. Not tints of the UI palette: these are stepped for each
+     theme and checked for colour blindness, so two series never collapse into
+     one for a reader who cannot separate the hues. */
+  --viz-grid: #e8eaee;
+  --viz-deemph: #d7dae0;
+  --viz-good: #0ca30c;
+  --viz-1: #2a78d6;  --viz-2: #eb6834;  --viz-3: #1baf7a;
+  /* One ordered ramp for the delivery pipeline, earliest to latest. */
+  --stage-1: #86b6ef; --stage-2: #5598e7; --stage-3: #2a78d6;
+  --stage-4: #1c5cab; --stage-5: #0d366b; --stage-blocked: #ec835a;
+
   --radius:    12px;
   --radius-sm: 8px;
   --shadow:    0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.08);
@@ -74,6 +85,12 @@
     --toast-bg: #eef1f6; --toast-fg: #101828;
     --focus-ring: rgba(110,168,254,.25);
     --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa4b8' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    --viz-grid: #222b3d;
+    --viz-deemph: #2e384c;
+    --viz-good: #0ca30c;
+    --viz-1: #3987e5;  --viz-2: #d95926;  --viz-3: #199e70;
+    --stage-1: #184f95; --stage-2: #2a78d6; --stage-3: #5598e7;
+    --stage-4: #86b6ef; --stage-5: #b7d3f6; --stage-blocked: #ec835a;
     --shadow:    0 1px 2px rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.4);
     --shadow-md: 0 4px 8px -2px rgba(0,0,0,.45), 0 2px 4px -2px rgba(0,0,0,.3);
     --shadow-lg: 0 12px 20px -4px rgba(0,0,0,.55), 0 4px 6px -2px rgba(0,0,0,.35);
@@ -462,6 +479,44 @@ table.data .muted { color: var(--text-3); }
 .combo-opt.is-on { color: var(--blue); font-weight: 600; }
 .combo-none { padding: 16px 12px; text-align: center; font-size: 12.5px; color: var(--text-3); }
 .combo-none b { color: var(--text-2); }
+
+/* ------------------------------------------------------------- Charts */
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.viz-axis { font-size: 9.5px; fill: var(--text-3); font-variant-numeric: tabular-nums; }
+.viz-label { font-size: 10.5px; font-weight: 650; }
+.viz-empty { padding: 26px 10px; text-align: center; color: var(--text-3); font-size: 12px; }
+.viz-tip {
+  position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s; z-index: 10;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg); padding: 7px 9px; font-size: 11.5px; min-width: 112px;
+}
+.viz-tip .t { font-weight: 650; margin-bottom: 3px; }
+.viz-tip .l { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.viz-tip .l i { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 auto; }
+.viz-tip .l b { margin-left: auto; padding-left: 10px; font-variant-numeric: tabular-nums; }
+
+.legend { display: flex; gap: 11px; flex-wrap: wrap; align-items: center; margin-bottom: 7px; }
+.legend .key { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-2); }
+.legend .key i { width: 9px; height: 9px; border-radius: 2px; display: block; flex: 0 0 auto; }
+
+/* A chart and the same numbers as a table, one swapped for the other. */
+.table-twin { display: none; }
+.card.show-table .chart-twin { display: none; }
+.card.show-table .table-twin { display: block; }
+
+/* Donut beside its own figures. The ring gives the shape, the table the values. */
+.donut-split { display: flex; gap: 12px; align-items: center; }
+.donut-split > .chart { flex: 0 0 auto; }
+.donut-split > .figures { flex: 1; min-width: 0; }
+.donut-split table.data td { padding: 4px 7px; font-size: 11.5px; }
+.dot-key { width: 7px; height: 7px; border-radius: 99px; flex: 0 0 auto; display: inline-block; }
+
+/* One line per production system. */
+.sys-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.sys-row:last-child { border-bottom: 0; }
+.sys-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+.sys-row .rate { font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; }
 
 .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .filters .select, .filters .input { width: auto; min-width: 128px; padding: 6px 28px 6px 10px; font-size: 12.5px; }

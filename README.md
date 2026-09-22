@@ -181,6 +181,13 @@ Any dropdown with more than eight entries — the project picker above all — o
 can type into, so a long list is a few keystrokes rather than a scroll. Shorter lists stay as
 the browser's own control, which is better on a phone.
 
+The dashboard answers three questions in order: are we on track today, is that better or
+worse than usual, and what needs a decision now. Every card reads from the recorded daily
+rollups, so the trends cost one query rather than a recount of each day. Looking at the
+dashboard records the day, which is what keeps the trends free of holes on days nobody
+closed out. Charts are hand-drawn SVG with no charting library, and each one has a **Table**
+button that shows the same numbers as text.
+
 There is a dark mode. Out of the box the app follows the device's own light or dark setting;
 the moon button in the top bar switches between the two outright, and *Settings → Appearance*
 hands the choice back to the device. Like the sidebar, it is a choice each browser keeps,
@@ -212,7 +219,7 @@ weekly/monthly reporting, so projected savings can never inflate today's number.
 
 | Page | Purpose |
 | --- | --- |
-| **Dashboard** | Today's KPI cards, execution score, per-person scorecards, stagnation warnings, active project table |
+| **Dashboard** | Today's KPI cards with their recent shape, score and commitment trends, the project pipeline, deadlines at risk, stalled projects, system health |
 | **Today** | The main working page — morning commitments, progress logging, end-of-day close-out |
 | **Commitments** | Every commitment, filterable by person, project, priority, status and date range |
 | **Projects** | All projects with progress bars, milestones, blockers and deadlines |

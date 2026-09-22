@@ -136,6 +136,7 @@ export const DEFAULT_SETTINGS = {
   blocker_age_alert_days: '1',
   max_commitments: '5',
   auto_progress_from_commitments: '1',
+  show_score_target: '0',
   team_name: 'AI & Systems',
   currency: '$'
 };

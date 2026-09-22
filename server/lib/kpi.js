@@ -415,7 +415,14 @@ const grade = (s) => (s >= 90 ? 'Excellent' : s >= 80 ? 'On Track' : s >= 65 ? '
 /* Assembled views                                                     */
 /* ------------------------------------------------------------------ */
 
-export async function dashboard(date) {
+/**
+ * @param {object} opts
+ *   trends  also fetch the day-by-day history the dashboard charts need. Off by
+ *           default, because the Today page and the reports share this builder
+ *           and neither draws a trend — two queries nobody reads is two
+ *           round trips on every page view.
+ */
+export async function dashboard(date, { trends = false } = {}) {
   const settings = await getSettings();
   const [projects, team] = await Promise.all([activeProjectsWithDay(date), loadTeamDayContext(date)]);
   const progressed = projects.filter((p) => p.progressed);
@@ -450,8 +457,66 @@ export async function dashboard(date) {
     projects,
     scorecards: await scorecards(date, projects, team),
     stagnant: await stagnantProjects(date, projects),
-    priorities: await nextDayPriorities(date, projects, team)
+    priorities: await nextDayPriorities(date, projects, team),
+    history: trends ? await kpiHistory(date, TREND_DAYS) : [],
+    commitment_series: trends ? await commitmentSeries(date, TREND_DAYS) : []
   };
+}
+
+/* How far back the dashboard trends look. Both are one indexed query each. */
+const TREND_DAYS = 30;
+
+/**
+ * The recorded daily rollups, oldest first. This is the cheap source for every
+ * trend on the dashboard: one row per day, already totalled, rather than
+ * recomputing each day from the raw tables.
+ */
+export async function kpiHistory(date, days = TREND_DAYS) {
+  const rows = await all(
+    `SELECT snapshot_date, commitments_total, commitments_completed, completion_rate,
+            projects_active, projects_progressed, deployments, blockers_open,
+            blockers_created, blockers_resolved, critical_issues, open_issues, daily_score
+       FROM daily_kpi_snapshots
+      WHERE user_id IS NULL AND snapshot_date BETWEEN ? AND ?
+      ORDER BY snapshot_date`,
+    D.addDays(date, -(days - 1)), date);
+  return rows.map((r) => ({
+    date: r.snapshot_date,
+    score: round(Number(r.daily_score)),
+    completion_rate: round(Number(r.completion_rate)),
+    commitments_total: Number(r.commitments_total),
+    commitments_completed: Number(r.commitments_completed),
+    projects_active: Number(r.projects_active),
+    projects_progressed: Number(r.projects_progressed),
+    progressed_rate: r.projects_active
+      ? round((Number(r.projects_progressed) / Number(r.projects_active)) * 100) : 0,
+    deployments: Number(r.deployments),
+    blockers_open: Number(r.blockers_open),
+    blockers_created: Number(r.blockers_created),
+    blockers_resolved: Number(r.blockers_resolved),
+    critical_issues: Number(r.critical_issues),
+    open_issues: Number(r.open_issues)
+  }));
+}
+
+/** Commitments per person per day: what each person took on and finished. */
+export async function commitmentSeries(date, days = TREND_DAYS) {
+  const rows = await all(
+    `SELECT user_id, commit_date, COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE expected_today = 1) AS taken,
+            COUNT(*) FILTER (WHERE status = 'Completed') AS finished
+       FROM commitments
+      WHERE commit_date BETWEEN ? AND ?
+      GROUP BY user_id, commit_date
+      ORDER BY commit_date`,
+    D.addDays(date, -(days - 1)), date);
+  return rows.map((r) => ({
+    user_id: Number(r.user_id),
+    date: r.commit_date,
+    all: Number(r.total),
+    taken: Number(r.taken),
+    finished: Number(r.finished)
+  }));
 }
 
 /**
@@ -718,8 +783,8 @@ export async function businessImpact() {
 /* Persisted daily snapshot (history is never overwritten by a new day)*/
 /* ------------------------------------------------------------------ */
 
-export async function persistDailySnapshot(date) {
-  const data = await dashboard(date);
+export async function persistDailySnapshot(date, prebuilt = null) {
+  const data = prebuilt || await dashboard(date);
   const write = async (userId, c, proj, dep, blk, prod, score) => {
     await run(
       `INSERT INTO daily_kpi_snapshots
@@ -754,6 +819,44 @@ export async function persistDailySnapshot(date) {
     await write(sc.user.id, sc.commitments, sc.projects, sc.deployments, sc.blockers, sc.production, sc.score);
   }
   return data;
+}
+
+/**
+ * Record just today's team row from a dashboard that has already been built.
+ *
+ * Without this the trends have holes: a day is only written when somebody
+ * closes it out, and a day nobody closes leaves a gap in every chart. Looking
+ * at the dashboard is enough to record the day, and it costs one insert
+ * because the numbers are already in hand.
+ */
+export async function recordTeamDay(date, data) {
+  if (date !== D.today()) return;   // history is never rewritten by a later visit
+  const k = data.kpis;
+  await run(
+    `INSERT INTO daily_kpi_snapshots
+       (snapshot_date, user_id, commitments_total, commitments_completed, completion_rate,
+        projects_active, projects_progressed, avg_progress_pct, deployments, blockers_open,
+        blockers_created, blockers_resolved, critical_issues, open_issues, daily_score, breakdown_json)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+     ON CONFLICT(snapshot_date, COALESCE(user_id, -1)) DO UPDATE SET
+       commitments_total = excluded.commitments_total,
+       commitments_completed = excluded.commitments_completed,
+       completion_rate = excluded.completion_rate,
+       projects_active = excluded.projects_active,
+       projects_progressed = excluded.projects_progressed,
+       avg_progress_pct = excluded.avg_progress_pct,
+       deployments = excluded.deployments,
+       blockers_open = excluded.blockers_open,
+       blockers_created = excluded.blockers_created,
+       blockers_resolved = excluded.blockers_resolved,
+       critical_issues = excluded.critical_issues,
+       open_issues = excluded.open_issues,
+       daily_score = excluded.daily_score,
+       breakdown_json = excluded.breakdown_json`,
+    date, null, k.commitments.total, k.commitments.completed, k.commitments.rate,
+    k.projects.active, k.projects.progressed, k.projects.avg_progress,
+    k.deployments.total, k.blockers.open, k.blockers.created_today, k.blockers.resolved_today,
+    k.production.critical, k.production.open, data.score.total, JSON.stringify(data.score.lines));
 }
 
 export function round(n) {

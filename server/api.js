@@ -910,7 +910,14 @@ DELETE('/api/impact/:id', async (p) => {
 /* ================================================================== */
 /* Aggregate views                                                     */
 /* ================================================================== */
-GET('/api/dashboard', async (_p, q) => await K.dashboard(dateOr(q)));
+GET('/api/dashboard', async (_p, q) => {
+  const date = dateOr(q);
+  const data = await K.dashboard(date, { trends: true });
+  // Looking at today records today, so the trend charts have no holes on days
+  // nobody closed out. A failure here is not worth failing the page for.
+  try { await K.recordTeamDay(date, data); } catch (err) { console.warn('[snapshot]', err.message); }
+  return data;
+});
 GET('/api/weekly', async (_p, q) => await K.weekly(dateOr(q)));
 GET('/api/scorecards', async (_p, q) => await K.scorecards(dateOr(q)));
 GET('/api/stagnant', async (_p, q) => await K.stagnantProjects(dateOr(q)));
