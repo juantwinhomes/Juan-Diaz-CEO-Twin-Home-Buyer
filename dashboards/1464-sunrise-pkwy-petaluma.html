@@ -1,32 +1,35 @@
 <title>1464 Sunrise Pkwy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
   :root {
     color-scheme: light;
-    --bg: #f4f6f8;
+    --bg: #eaeff4;
     --surface: #ffffff;
-    --surface-2: #f7f8fa;
-    --line: #e2e6eb;
-    --line-strong: #cfd5dc;
-    --text: #17212b;
-    --muted: #5c6773;
-    --faint: #98a2ad;
-    --navy: #1e3a5f;
-    --green: #1e7f4a;
-    --amber: #a8650b;
+    --surface-2: #f5f7fa;
+    --line: #dae1e8;
+    --line-strong: #c3ccd6;
+    --text: #13212f;
+    --muted: #536273;
+    --faint: #93a0ad;
+    --bp: #14365a;          /* blueprint */
+    --bp-2: #1c4a78;
+    --bp-ink: #d9e6f3;
+    --bp-soft: #e6eef7;
+    --green: #16734a;
+    --green-fill: #1f9a5e;
+    --green-bg: #e5f4ec;
+    --amber: #9c5a00;
+    --amber-fill: #e2961f;
+    --amber-bg: #fdf1dc;
     --red: #b42318;
-    --blue: #1d5fc4;
-    --green-fill: #22955a;
-    --amber-fill: #d98e1c;
-    --green-bg: #e8f5ee;
-    --amber-bg: #fdf3e2;
     --red-bg: #fdecea;
-    --blue-bg: #e8f0fc;
-    --shadow: 0 1px 2px rgba(23,33,43,.05), 0 1px 1px rgba(23,33,43,.03);
-    --sans: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
-    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --blue: #1b5cc0;
+    --blue-bg: #e6effc;
+    --shadow: 0 1px 2px rgba(19,33,47,.06), 0 4px 14px -6px rgba(19,33,47,.10);
+    --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --sans: "Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
@@ -39,234 +42,275 @@
     padding: 0 16px 48px;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 18px; }
+  .wrap { max-width: 1000px; margin: 0 auto; display: grid; gap: 18px; }
   h1, h2, h3 { margin: 0; text-wrap: balance; }
-  .eyebrow {
-    font-size: 11.5px; font-weight: 600; letter-spacing: .1em;
-    text-transform: uppercase; color: var(--muted);
+  .label {
+    font-family: var(--display); font-size: 13px; font-weight: 600;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
   }
-  .mono { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .mono { font-family: var(--mono); font-size: 12.5px; letter-spacing: .02em; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: currentColor; display: inline-block; }
 
   .pill {
     display: inline-flex; align-items: center; gap: 7px;
-    font-size: 12.5px; font-weight: 600; letter-spacing: .02em;
-    padding: 4px 11px; border-radius: 999px; white-space: nowrap;
-    border: 1px solid transparent;
+    font-family: var(--display); font-size: 13.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    padding: 3px 11px; border-radius: 4px; white-space: nowrap;
   }
-  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: currentColor; }
-  .s-green { color: var(--green); background: var(--green-bg); border-color: #c9e8d6; }
-  .s-amber { color: var(--amber); background: var(--amber-bg); border-color: #f3dcb3; }
-  .s-red   { color: var(--red);   background: var(--red-bg);   border-color: #f6c9c4; }
-  .s-blue  { color: var(--blue);  background: var(--blue-bg);  border-color: #c7d9f6; }
+  .s-green { color: var(--green); background: var(--green-bg); }
+  .s-amber { color: var(--amber); background: var(--amber-bg); }
+  .s-red   { color: var(--red);   background: var(--red-bg); }
+  .s-blue  { color: var(--blue);  background: var(--blue-bg); }
 
-  /* header */
-  header {
-    display: grid; gap: 14px;
-    border-top: 4px solid var(--navy);
-    padding-top: 26px; margin-top: 0;
+  /* ---------- blueprint header ---------- */
+  .hero {
+    margin: 0 -16px;
+    background-color: var(--bp);
+    background-image:
+      linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px),
+      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(160deg, var(--bp-2), var(--bp) 60%);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px, 100% 100%;
+    color: #fff;
+    padding: 30px 16px 26px;
   }
-  .title-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
-  h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; letter-spacing: -.01em; color: var(--navy); line-height: 1.15; margin-top: 4px; }
-  .sub { color: var(--muted); margin-top: 4px; font-size: 16px; }
-  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--muted); padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .hero-in { max-width: 1000px; margin: 0 auto; display: grid; gap: 22px; }
+  .hero-top { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: center; }
+  .hero .label { color: var(--bp-ink); opacity: .85; }
+  .hero h1 {
+    font-family: var(--display); font-weight: 700; font-size: 46px; line-height: 1;
+    letter-spacing: .01em; text-transform: uppercase; margin-top: 8px;
+  }
+  .hero .sub { color: var(--bp-ink); margin-top: 8px; font-size: 16px; }
+  .ring-wrap { display: flex; align-items: center; gap: 14px; }
+  .ring { width: 96px; height: 96px; flex: none; }
+  .ring-text { display: grid; gap: 2px; }
+  .ring-text b { font-family: var(--display); font-size: 22px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  .ring-text span { color: var(--bp-ink); font-size: 14px; }
+  .milestones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .ms {
+    border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06);
+    border-radius: 6px; padding: 10px 12px; display: flex; gap: 10px; align-items: center;
+  }
+  .ms-icon { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .ms-icon svg { width: 13px; height: 13px; }
+  .ms-icon.g { background: var(--green-fill); color: #fff; }
+  .ms-icon.a { border: 2px solid var(--amber-fill); }
+  .ms-icon.a::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--amber-fill); }
+  .ms b { display: block; font-weight: 600; font-size: 14.5px; line-height: 1.25; }
+  .ms span { font-size: 13px; color: var(--bp-ink); }
+  .ms.a span { color: #f6c878; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--bp-ink); border-top: 1px solid rgba(255,255,255,.14); padding-top: 14px; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
 
   .card {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: var(--shadow);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 20px; box-shadow: var(--shadow);
+  }
+  .card h3 {
+    font-family: var(--display); font-size: 19px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
   }
 
-  /* overall progress */
-  .overall { display: grid; gap: 14px; }
-  .overall-top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
-  .big { font-family: var(--serif); font-size: 26px; font-weight: 600; color: var(--navy); }
-  .big small { font-family: var(--sans); font-size: 14.5px; font-weight: 400; color: var(--muted); margin-left: 8px; }
-  .segbar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .seg { height: 8px; border-radius: 4px; background: var(--line); }
-  .seg.g { background: var(--green-fill); }
-  .seg.a { background: repeating-linear-gradient(135deg, var(--amber-fill) 0 6px, #f0c77f 6px 12px); }
-  .milestones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 14px; font-weight: 600; }
-  .milestones div { display: flex; gap: 8px; align-items: flex-start; }
-  .milestones .dot { margin-top: 7px; }
-  .goal { font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
-  .goal b { color: var(--text); font-weight: 600; }
-
-  /* blocker */
+  /* ---------- blocker ---------- */
   .blocker {
-    background: var(--surface);
-    border: 1px solid #efd3a3;
-    border-left: 5px solid var(--amber-fill);
-    border-radius: 8px;
-    padding: 22px;
-    display: grid; gap: 16px;
-    box-shadow: var(--shadow);
+    background: var(--surface); border: 1px solid #efd4a4; border-radius: 8px; box-shadow: var(--shadow);
+    display: grid; grid-template-columns: 8px 1fr; overflow: hidden;
   }
+  .blocker::before {
+    content: "";
+    background: repeating-linear-gradient(-45deg, var(--amber-fill) 0 8px, #13212f 8px 16px);
+  }
+  .blocker-in { padding: 20px 22px; display: grid; gap: 16px; }
   .blocker-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
-  .blocker h2 { font-family: var(--serif); font-size: 23px; font-weight: 600; margin: 4px 0 2px; color: var(--text); }
+  .blocker .label { color: var(--amber); }
+  .blocker h2 { font-family: var(--display); font-size: 28px; font-weight: 700; line-height: 1.1; letter-spacing: .02em; text-transform: uppercase; margin: 6px 0 4px; }
   .req {
-    display: grid; grid-template-columns: auto 1fr; gap: 6px 18px;
-    background: var(--amber-bg); border-radius: 6px; padding: 14px 16px;
-    font-size: 15px; margin: 0;
+    display: grid; grid-template-columns: auto 1fr; gap: 7px 18px; margin: 0;
+    background: var(--amber-bg); border-radius: 6px; padding: 14px 16px; font-size: 15px;
   }
-  .req dt { color: var(--muted); font-size: 13px; padding-top: 2px; font-weight: 600; }
+  .req dt { font-family: var(--display); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; font-size: 13px; color: var(--amber); padding-top: 1px; }
   .req dd { margin: 0; }
-  .req .fix { font-size: 16.5px; font-weight: 700; }
+  .req .fix { font-size: 17px; font-weight: 700; }
 
-  /* next actions */
+  /* ---------- next actions / roof final ---------- */
   .grid2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; }
-  .card h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--text); }
+  .grid2.even { grid-template-columns: 1fr 1fr; }
   ol.steps { list-style: none; margin: 0; padding: 0; display: grid; counter-reset: s; }
   ol.steps li {
-    counter-increment: s;
-    display: grid; grid-template-columns: 30px 1fr auto; gap: 12px; align-items: center;
-    padding: 12px 0; border-top: 1px solid var(--line);
+    counter-increment: s; display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center;
+    padding: 12px 0; border-top: 1px dashed var(--line-strong);
   }
   ol.steps li:first-child { border-top: 0; padding-top: 0; }
   ol.steps li::before {
-    content: counter(s);
-    width: 27px; height: 27px; border-radius: 50%;
-    display: grid; place-items: center;
-    font: 600 12.5px var(--sans);
-    border: 1.5px solid var(--line-strong); color: var(--muted); background: var(--surface);
+    content: counter(s); width: 32px; height: 32px; border-radius: 6px; display: grid; place-items: center;
+    font: 700 17px var(--display); border: 1.5px solid var(--line-strong); color: var(--muted);
   }
-  ol.steps li.now::before { border-color: var(--amber-fill); color: #fff; background: var(--amber-fill); }
-  .step-title { font-weight: 600; }
+  ol.steps li.now::before { border-color: var(--amber-fill); background: var(--amber-fill); color: #fff; }
+  .step-title { font-weight: 600; font-size: 15.5px; }
   .step-who { font-size: 13.5px; color: var(--muted); }
-  .tag { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+  .tag { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
   .tag.now { color: var(--amber); }
+  .done-line { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .done-line .dot { color: var(--green-fill); }
 
-  /* key date */
-  .keydate { display: grid; gap: 14px; align-content: start; }
-  .datebox { display: flex; gap: 14px; align-items: center; }
-  .cal {
-    width: 60px; flex: none; text-align: center; border-radius: 6px; overflow: hidden;
-    border: 1px solid #b9dcc8; background: var(--surface);
-  }
-  .cal .m { background: var(--green-fill); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .1em; padding: 3px 0; }
-  .cal .d { font-family: var(--serif); font-size: 26px; font-weight: 600; padding: 2px 0 4px; font-variant-numeric: tabular-nums; color: var(--text); }
-  .kv { display: grid; grid-template-columns: auto 1fr; gap: 7px 16px; font-size: 14.5px; margin: 0; padding-top: 12px; border-top: 1px solid var(--line); }
+  .datebox { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+  .cal { width: 62px; flex: none; text-align: center; border-radius: 6px; overflow: hidden; border: 1px solid var(--line-strong); }
+  .cal .m { background: var(--bp); color: #fff; font: 700 12px var(--display); letter-spacing: .16em; padding: 3px 0; }
+  .cal .d { font: 700 30px/1.15 var(--display); padding: 2px 0 3px; color: var(--text); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 14.5px; margin: 0; padding-top: 12px; border-top: 1px solid var(--line); }
   .kv dt { color: var(--muted); }
   .kv dd { margin: 0; font-weight: 600; }
 
-  /* permit flows */
-  .permit-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
-  .permit-head h3 { margin: 0 0 2px; }
+  /* ---------- permit cards ---------- */
+  .permit { padding: 0; overflow: hidden; position: relative; }
+  .permit-strip {
+    background: var(--bp-soft); border-bottom: 1px solid var(--line);
+    padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .permit-strip .mono { color: var(--bp); font-weight: 600; font-size: 13px; }
+  .permit-body { padding: 18px 20px 20px; position: relative; }
+  .permit-body h3 { margin-bottom: 26px; }
+  .stamp {
+    position: absolute; right: 18px; top: 10px; transform: rotate(-7deg);
+    font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: .16em; text-transform: uppercase;
+    padding: 4px 12px; border: 2.5px solid currentColor; border-radius: 5px; line-height: 1.1; text-align: center;
+    opacity: .9; pointer-events: none;
+  }
+  .stamp small { display: block; font-size: 10.5px; letter-spacing: .2em; font-weight: 600; }
+  .stamp.g { color: var(--green); box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 3.5px currentColor; }
+  .stamp.a { color: var(--amber); border-style: dashed; }
   ul.flow { list-style: none; margin: 0; padding: 0; }
   ul.flow li { position: relative; display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: start; padding-bottom: 15px; }
   ul.flow li:last-child { padding-bottom: 0; }
   ul.flow li::after { content: ""; position: absolute; left: 10px; top: 21px; bottom: 0; width: 2px; background: var(--line); }
   ul.flow li:last-child::after { display: none; }
-  ul.flow li.done::after { background: #a9d9bd; }
-  .node {
-    width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
-    border: 2px solid var(--faint); background: var(--surface); position: relative; z-index: 1;
-  }
+  ul.flow li.done::after { background: #9fd6b9; }
+  .node { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--faint); background: var(--surface); position: relative; z-index: 1; }
   .node svg { width: 12px; height: 12px; }
   li.done .node { border-color: var(--green-fill); background: var(--green-fill); color: #fff; }
   li.now .node { border-color: var(--amber-fill); box-shadow: 0 0 0 4px var(--amber-bg); }
   li.now .node::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--amber-fill); }
-  li.sched .node { border-color: var(--blue); }
-  li.todo .node { border-color: var(--faint); border-style: dashed; }
+  li.todo .node { border-style: dashed; }
   .flow-label { font-size: 15px; }
-  li.now .flow-label { font-weight: 600; }
+  li.now .flow-label { font-weight: 700; }
   li.todo .flow-label { color: var(--muted); }
-  .flow-meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; padding-top: 1px; font-weight: 600; }
+  .flow-meta { font-family: var(--display); font-size: 14px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
   li.done .flow-meta { color: var(--green); }
   li.now .flow-meta { color: var(--amber); }
-  li.sched .flow-meta { color: var(--blue); }
 
-  /* close-out */
+  /* ---------- close-out ---------- */
   .closeout { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .closeout div {
-    background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px;
-    display: grid; gap: 8px; font-size: 14.5px; font-weight: 600;
-  }
-  .box { width: 18px; height: 18px; border-radius: 4px; border: 1.5px dashed var(--faint); background: var(--surface); }
+  .closeout div { border: 1.5px dashed var(--line-strong); border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; font-weight: 600; font-size: 14.5px; }
+  .closeout div.ok { border: 1.5px solid #b5dfc8; background: var(--green-bg); }
+  .box { width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid var(--line-strong); background: var(--surface); }
 
-  /* collapsed history */
+  /* ---------- collapsed history ---------- */
   details { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
   summary {
-    cursor: pointer; list-style: none; padding: 15px 20px;
+    cursor: pointer; list-style: none; padding: 14px 20px;
     display: flex; justify-content: space-between; align-items: center; gap: 10px;
-    font-weight: 700; font-size: 15px;
+    font-family: var(--display); font-size: 17px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
   }
   summary::-webkit-details-marker { display: none; }
-  summary .chev { transition: transform .15s; color: var(--muted); font-size: 18px; }
+  summary .chev { transition: transform .15s; color: var(--muted); font-size: 20px; }
   details[open] summary .chev { transform: rotate(90deg); }
   summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 8px; }
   .dbody { padding: 0 20px 18px; }
-  .tl-item { display: grid; grid-template-columns: 92px 1fr; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .tl-item { display: grid; grid-template-columns: 96px 1fr; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
   .tl-date { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
-  .tl-date b { display: block; font-family: var(--sans); font-size: 15.5px; color: var(--text); font-weight: 700; }
+  .tl-date b { display: block; font: 700 20px/1.1 var(--display); color: var(--text); letter-spacing: .04em; text-transform: uppercase; }
   .tl-item ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14.5px; }
   .tl-item li { display: flex; gap: 8px; align-items: center; }
   .tl-item li .dot { width: 7px; height: 7px; }
   .insp { font-size: 13.5px; color: var(--muted); }
   .tbl-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
-  th { text-align: left; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line-strong); }
+  th { text-align: left; font: 600 13px var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 8px 10px 8px 0; border-bottom: 1.5px solid var(--line-strong); }
   td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
   td.num { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; color: var(--muted); }
 
-  footer { font-size: 12.5px; color: var(--faint); text-align: center; }
+  footer { font-size: 12.5px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--line-strong); padding-top: 12px; }
 
   @media (max-width: 760px) {
-    .grid2 { grid-template-columns: 1fr !important; }
+    .grid2, .grid2.even { grid-template-columns: 1fr; }
     .closeout { grid-template-columns: repeat(2, 1fr); }
+    .milestones { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 38px; }
   }
   @media (max-width: 460px) {
-    h1 { font-size: 26px; }
-    .milestones { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 32px; }
     .tl-item { grid-template-columns: 1fr; gap: 4px; }
-    ol.steps li { grid-template-columns: 30px 1fr; }
+    ol.steps li { grid-template-columns: 34px 1fr; }
     ol.steps li .tag { grid-column: 2; }
+    .stamp { position: static; display: inline-block; margin-bottom: 12px; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
-<div class="wrap">
-
-  <header>
-    <div class="title-row">
+<header class="hero">
+  <div class="hero-in">
+    <div class="hero-top">
       <div>
-        <div class="eyebrow">Construction status · Twin Home Buyer</div>
-        <h1>1464 Sunrise Pkwy, Petaluma</h1>
-        <div class="sub">All field work done. Waiting on the inspector to finalize the Re-Roof Permit.</div>
+        <div class="label">Twin Home Buyer · Permit &amp; Inspection Record</div>
+        <h1>1464 Sunrise Pkwy</h1>
+        <div class="sub">Petaluma, CA · All field work done. Waiting on the inspector to finalize the Re-Roof Permit.</div>
       </div>
-      <span class="pill s-amber"><span class="dot"></span>Almost complete</span>
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 100 100" role="img" aria-label="2 of 3 close-out items done">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="10"/>
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#1f9a5e" stroke-width="10" stroke-dasharray="165.5 251.3" transform="rotate(-90 50 50)"/>
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#e2961f" stroke-width="10" stroke-dasharray="80.8 251.3" stroke-dashoffset="-169.5" transform="rotate(-90 50 50)"/>
+          <text x="50" y="57" text-anchor="middle" fill="#ffffff" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="24">2/3</text>
+        </svg>
+        <div class="ring-text">
+          <b>Almost complete</b>
+          <span>2 of 3 close-out items done</span>
+        </div>
+      </div>
     </div>
+
+    <div class="milestones">
+      <div class="ms"><span class="ms-icon g"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><div><b>Building Alteration Permit</b><span>Finalized</span></div></div>
+      <div class="ms"><span class="ms-icon g"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><div><b>Red Tag</b><span>Removed by city</span></div></div>
+      <div class="ms a"><span class="ms-icon a"></span><div><b>Re-Roof Permit</b><span>Work done, awaiting sign-off</span></div></div>
+    </div>
+
     <div class="legend" aria-label="Status legend">
-      <span><span class="dot" style="color:var(--green)"></span>Complete</span>
-      <span><span class="dot" style="color:var(--amber)"></span>Pending</span>
-      <span><span class="dot" style="color:var(--red)"></span>Blocked</span>
-      <span><span class="dot" style="color:var(--blue)"></span>Scheduled</span>
+      <span><span class="dot" style="color:#1f9a5e"></span>Complete</span>
+      <span><span class="dot" style="color:#e2961f"></span>Pending</span>
+      <span><span class="dot" style="color:#ef5f58"></span>Blocked</span>
+      <span><span class="dot" style="color:#6aa6f0"></span>Scheduled</span>
     </div>
-  </header>
+  </div>
+</header>
+
+<div class="wrap" style="margin-top:22px">
 
   <!-- CURRENT BLOCKER -->
   <section class="blocker" aria-labelledby="blk">
-    <div class="blocker-head">
-      <div>
-        <div class="eyebrow" style="color:var(--amber)">Current blocker</div>
-        <h2 id="blk">Re-Roof Permit waiting on inspector sign-off</h2>
-        <div class="mono">BLDR-2026-0711</div>
+    <div class="blocker-in">
+      <div class="blocker-head">
+        <div>
+          <div class="label">Current blocker</div>
+          <h2 id="blk">Re-Roof Permit waiting on inspector sign-off</h2>
+          <div class="mono">BLDR-2026-0711</div>
+        </div>
+        <span class="pill s-amber"><span class="dot"></span>Pending final</span>
       </div>
-      <span class="pill s-amber"><span class="dot"></span>Pending final</span>
+      <dl class="req">
+        <dt>Waiting on</dt>
+        <dd class="fix">Inspector reviews photos and finalizes the permit</dd>
+        <dt>Done</dt>
+        <dd>Roof final inspection (Sep 23) · water heater ceiling sealed · photos sent</dd>
+        <dt>Unlocks</dt>
+        <dd>Permit finalized → project complete</dd>
+      </dl>
     </div>
-    <dl class="req">
-      <dt>Waiting on</dt>
-      <dd class="fix">Inspector reviews photos and finalizes the permit</dd>
-      <dt>Done</dt>
-      <dd>Roof final inspection (Sep 23) · water heater ceiling sealed · photos sent</dd>
-      <dt>Unlocks</dt>
-      <dd>Permit finalized → project complete</dd>
-    </dl>
   </section>
 
-  <!-- NEXT ACTIONS + KEY DATE -->
+  <!-- NEXT ACTIONS + ROOF FINAL -->
   <div class="grid2">
     <section class="card" aria-labelledby="na">
       <h3 id="na">Next actions <span class="tag">In order</span></h3>
@@ -280,11 +324,11 @@
           <span class="tag">Last</span>
         </li>
       </ol>
-      <div class="step-who" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">Completed: ceiling sealed · photos sent · roof final inspection done</div>
+      <div class="done-line"><span class="dot"></span>Completed: ceiling sealed · photos sent · roof final inspection done</div>
     </section>
 
-    <section class="card keydate" aria-labelledby="kd">
-      <h3 id="kd" style="margin-bottom:0">Roof final <span class="pill s-green"><span class="dot"></span>Done</span></h3>
+    <section class="card" aria-labelledby="kd">
+      <h3 id="kd">Roof final <span class="pill s-green"><span class="dot"></span>Done</span></h3>
       <div class="datebox">
         <div class="cal"><div class="m">SEP</div><div class="d">23</div></div>
         <div>
@@ -301,61 +345,44 @@
     </section>
   </div>
 
-  <!-- OVERALL PROGRESS -->
-  <section class="card overall" aria-labelledby="op">
-    <div class="overall-top">
-      <div>
-        <div class="eyebrow" id="op">Overall progress</div>
-        <div class="big">2 of 3 <small>close-out items done · last one awaiting sign-off</small></div>
+  <!-- PERMIT CARDS -->
+  <div class="grid2 even">
+    <section class="card permit" aria-labelledby="rr">
+      <div class="permit-strip"><span class="mono">PERMIT BLDR-2026-0711</span><span class="pill s-amber"><span class="dot"></span>Pending</span></div>
+      <div class="permit-body">
+        <div class="stamp a" aria-hidden="true">Pending<small>sign-off</small></div>
+        <h3 id="rr">Re-Roof Permit</h3>
+        <ul class="flow">
+          <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Mid-Roof inspection</span><span class="flow-meta">Passed · Sep 21</span></li>
+          <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Seal water heater ceiling</span><span class="flow-meta">Done</span></li>
+          <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Send photos to inspector</span><span class="flow-meta">Sent</span></li>
+          <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Roof final inspection</span><span class="flow-meta">Done · Sep 23</span></li>
+          <li class="now"><span class="node"></span><span class="flow-label">Inspector finalizes permit</span><span class="flow-meta">Waiting</span></li>
+          <li class="todo"><span class="node"></span><span class="flow-label">Permit closed</span><span class="flow-meta">—</span></li>
+        </ul>
       </div>
-    </div>
-    <div class="segbar" aria-hidden="true">
-      <div class="seg g"></div><div class="seg g"></div><div class="seg a"></div>
-    </div>
-    <div class="milestones">
-      <div><span class="dot" style="color:var(--green)"></span><span>Building Alteration Permit<br><span class="step-who">Finalized</span></span></div>
-      <div><span class="dot" style="color:var(--green)"></span><span>Red Tag<br><span class="step-who">Removed by city</span></span></div>
-      <div><span class="dot" style="color:var(--amber)"></span><span>Re-Roof Permit<br><span class="step-who">Work done, awaiting sign-off</span></span></div>
-    </div>
-    <div class="goal"><b>Finish line:</b> close Re-Roof Permit → confirm all permits finalized → project complete</div>
-  </section>
-
-  <!-- PERMIT FLOWS -->
-  <div class="grid2" style="grid-template-columns:1fr 1fr">
-    <section class="card" aria-labelledby="rr">
-      <div class="permit-head">
-        <div><h3 id="rr">Re-Roof Permit</h3><div class="mono">BLDR-2026-0711</div></div>
-        <span class="pill s-amber"><span class="dot"></span>Pending</span>
-      </div>
-      <ul class="flow">
-        <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Mid-Roof inspection</span><span class="flow-meta">Passed · Sep 21</span></li>
-        <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Seal water heater ceiling</span><span class="flow-meta">Done</span></li>
-        <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Send photos to inspector</span><span class="flow-meta">Sent</span></li>
-        <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Roof final inspection</span><span class="flow-meta">Done · Sep 23</span></li>
-        <li class="now"><span class="node"></span><span class="flow-label">Inspector finalizes permit</span><span class="flow-meta">Waiting</span></li>
-        <li class="todo"><span class="node"></span><span class="flow-label">Permit closed</span><span class="flow-meta">—</span></li>
-      </ul>
     </section>
 
-    <section class="card" aria-labelledby="ba">
-      <div class="permit-head">
-        <div><h3 id="ba">Building Alteration Permit</h3><div class="mono">BLDR-2026-0547</div></div>
-        <span class="pill s-green"><span class="dot"></span>Finalized</span>
+    <section class="card permit" aria-labelledby="ba">
+      <div class="permit-strip"><span class="mono">PERMIT BLDR-2026-0547</span><span class="pill s-green"><span class="dot"></span>Finalized</span></div>
+      <div class="permit-body">
+        <div class="stamp g" aria-hidden="true">Finalized<small>City approved</small></div>
+        <h3 id="ba">Building Alteration</h3>
+        <ul class="flow">
+          <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Electrical rough re-inspection</span><span class="flow-meta">Passed · Sep 16</span></li>
+          <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Lath outside / wood siding re-inspection</span><span class="flow-meta">Passed · Sep 16</span></li>
+          <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Building permit finalized</span><span class="flow-meta">Done</span></li>
+          <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Red tag removed by city</span><span class="flow-meta">Done</span></li>
+        </ul>
       </div>
-      <ul class="flow">
-        <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Electrical rough re-inspection</span><span class="flow-meta">Passed · Sep 16</span></li>
-        <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Lath outside / wood siding re-inspection</span><span class="flow-meta">Passed · Sep 16</span></li>
-        <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Building permit finalized</span><span class="flow-meta">Done</span></li>
-        <li class="done"><span class="node"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg></span><span class="flow-label">Red tag removed by city</span><span class="flow-meta">Done</span></li>
-      </ul>
     </section>
   </div>
 
   <!-- CLOSE-OUT CHECKLIST -->
   <section class="card" aria-labelledby="co">
-    <h3 id="co">Project complete when all four are checked</h3>
+    <h3 id="co">Project close-out <span class="tag">1 of 4</span></h3>
     <div class="closeout">
-      <div><svg width="18" height="18" viewBox="0 0 18 18"><rect x="0" y="0" width="18" height="18" rx="4" fill="#22955a"/><path d="M4.5 9.3l2.9 2.9 6-6.4" fill="none" stroke="#ffffff" stroke-width="2.2"/></svg>Building Permit closed</div>
+      <div class="ok"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#1f9a5e"/><path d="M5 10.3l3.2 3.2 6.6-7" fill="none" stroke="#ffffff" stroke-width="2.2"/></svg>Building Permit closed</div>
       <div><span class="box"></span>Re-Roof Permit closed</div>
       <div><span class="box"></span>All inspections passed</div>
       <div><span class="box"></span>Petaluma project complete</div>
@@ -366,30 +393,28 @@
   <details>
     <summary>Inspection history <span class="chev">›</span></summary>
     <div class="dbody">
-      <div class="tl">
-        <div class="tl-item">
-          <div class="tl-date"><b>Sep 23</b>2026</div>
-          <div>
-            <div class="insp">Victor Sahagun · Re-Roof</div>
-            <ul><li><span class="dot" style="color:var(--green)"></span>Roof final inspection — done</li><li><span class="dot" style="color:var(--green)"></span>Water heater ceiling photos sent to inspector</li><li><span class="dot" style="color:var(--amber)"></span>Permit sign-off — pending</li></ul>
-          </div>
+      <div class="tl-item">
+        <div class="tl-date"><b>Sep 23</b>2026</div>
+        <div>
+          <div class="insp">Victor Sahagun · Re-Roof</div>
+          <ul><li><span class="dot" style="color:var(--green-fill)"></span>Roof final inspection — done</li><li><span class="dot" style="color:var(--green-fill)"></span>Water heater ceiling photos sent to inspector</li><li><span class="dot" style="color:var(--amber-fill)"></span>Permit sign-off — pending</li></ul>
         </div>
-        <div class="tl-item">
-          <div class="tl-date"><b>Sep 21</b>2026</div>
-          <div>
-            <div class="insp">Victor Sahagun · Re-Roof</div>
-            <ul><li><span class="dot" style="color:var(--green)"></span>Mid-Roof inspection — passed</li></ul>
-          </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date"><b>Sep 21</b>2026</div>
+        <div>
+          <div class="insp">Victor Sahagun · Re-Roof</div>
+          <ul><li><span class="dot" style="color:var(--green-fill)"></span>Mid-Roof inspection — passed</li></ul>
         </div>
-        <div class="tl-item">
-          <div class="tl-date"><b>Sep 16</b>2026</div>
-          <div>
-            <div class="insp">Kevin Scheumann · Building Alteration</div>
-            <ul>
-              <li><span class="dot" style="color:var(--green)"></span>Electrical rough re-inspection — passed</li>
-              <li><span class="dot" style="color:var(--green)"></span>Lath outside / wood siding re-inspection — passed</li>
-            </ul>
-          </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date"><b>Sep 16</b>2026</div>
+        <div>
+          <div class="insp">Kevin Scheumann · Building Alteration</div>
+          <ul>
+            <li><span class="dot" style="color:var(--green-fill)"></span>Electrical rough re-inspection — passed</li>
+            <li><span class="dot" style="color:var(--green-fill)"></span>Lath outside / wood siding re-inspection — passed</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -410,5 +435,5 @@
     </div>
   </details>
 
-  <footer>Updated Sep 23, 2026 · City of Petaluma permits</footer>
+  <footer><span>Twin Home Buyer · 1464 Sunrise Pkwy, Petaluma</span><span>Updated Sep 23, 2026 · City of Petaluma permits</span></footer>
 </div>
