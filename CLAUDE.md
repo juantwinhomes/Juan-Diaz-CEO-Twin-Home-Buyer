@@ -98,14 +98,15 @@ still apply: SF is the buy-box AMBER zone (fat margin + hard rehab cap, Juan's
 final approval, attorney/CPA review on anything >$1–2K or with legal
 exposure). If the SF deal competes with 820 28th St or the Sep 28–Oct 2
 closings for time or cash, flag the trade-off to Juan instead of letting
-either one slip quietly. Which specific SF lead (address, seller, numbers) is
-**not yet recorded**; ask for it and record it in
-`knowledge/property-command-center.md`.
+either one slip quietly. **Most likely lead: 3375 17th St #311, SF**
+(seller Robert Gunn / Gunn Family Trust, $736K offer, under contract, WFG loan
+file #927963). Not yet confirmed by Juan; see `knowledge/master-property-list.md`.
 
 Live team tools: **Property Command Center** board
-(https://claude.ai/artifact/4AMZxHejytEdUkP7zcDW7L) and **Ask Juan** chat
+(https://claude.ai/artifact/4AMZxHejytEdUkP7zcDW7L), **Master Property List**
+(https://claude.ai/artifact/3kGCEVmg99p5br99hJgpfH) and **Ask Juan** chat
 (https://claude.ai/artifact/Ke5zCdxvBJgRCQ5DqtvZD3). See
-`knowledge/property-command-center.md`.
+`knowledge/property-command-center.md` and `knowledge/master-property-list.md`.
 
 ## CURRENT PHASE (Juan's own 90-day reset — July 2026)
 
@@ -143,4 +144,5 @@ Durable knowledge about Juan and Twin Home Buyer lives in `knowledge/`. Read it
 at the start of substantive work and keep it current as you learn more. Key
 files: `juan-grok-prompting-profile.md` (how Juan communicates — match it),
 `deal-pattern-buybox.md` (deal screening), `marketing-postcard-kpis.md`,
-`property-command-center.md` (live property board snapshot + team tools).
+`property-command-center.md` (live property board snapshot + team tools),
+`master-property-list.md` (every property on record across all entities).
