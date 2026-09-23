@@ -89,6 +89,24 @@ Use these to answer with real numbers instead of assumptions when the question
 is financial, scheduling, or document-related. Confirm before any outward-facing
 or hard-to-reverse action (sending email, invoices, calendar invites, payments).
 
+## PRIORITY UPDATE (2026-09-23, via Bryan)
+
+**Juan wants to focus on the San Francisco lead and close a deal.** Treat
+closing the SF lead as the top acquisition priority. Route effort, follow-ups
+and calendar blocks toward getting it under contract and closed. Guardrails
+still apply: SF is the buy-box AMBER zone (fat margin + hard rehab cap, Juan's
+final approval, attorney/CPA review on anything >$1–2K or with legal
+exposure). If the SF deal competes with 820 28th St or the Sep 28–Oct 2
+closings for time or cash, flag the trade-off to Juan instead of letting
+either one slip quietly. Which specific SF lead (address, seller, numbers) is
+**not yet recorded**; ask for it and record it in
+`knowledge/property-command-center.md`.
+
+Live team tools: **Property Command Center** board
+(https://claude.ai/artifact/4AMZxHejytEdUkP7zcDW7L) and **Ask Juan** chat
+(https://claude.ai/artifact/Ke5zCdxvBJgRCQ5DqtvZD3). See
+`knowledge/property-command-center.md`.
+
 ## CURRENT PHASE (Juan's own 90-day reset — July 2026)
 
 From Juan's own operating docs (via his Grok history). This governs everything:
@@ -124,4 +142,5 @@ packet (9 pages)** — not yet in the repo. Ask Juan for it.
 Durable knowledge about Juan and Twin Home Buyer lives in `knowledge/`. Read it
 at the start of substantive work and keep it current as you learn more. Key
 files: `juan-grok-prompting-profile.md` (how Juan communicates — match it),
-`deal-pattern-buybox.md` (deal screening), `marketing-postcard-kpis.md`.
+`deal-pattern-buybox.md` (deal screening), `marketing-postcard-kpis.md`,
+`property-command-center.md` (live property board snapshot + team tools).
