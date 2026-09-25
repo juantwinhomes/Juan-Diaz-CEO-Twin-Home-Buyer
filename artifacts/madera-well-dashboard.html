@@ -178,6 +178,12 @@ dl.kv dd{margin:0;font-weight:500;overflow-wrap:anywhere}
 /* Transcripts */
 .tx-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
 .tx-title{font-weight:600;margin:0 0 2px}
+.contact{margin-top:12px;padding:12px 14px;border-radius:8px;background:var(--bg);border:1px solid var(--line);display:grid;gap:2px}
+.contact p{margin:0}
+.contact-co{font-size:13.5px;color:var(--muted);font-weight:600}
+.contact-name{font-weight:700;font-size:16px}
+.contact-phone{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-variant-numeric:tabular-nums;font-size:15px;user-select:all}
+.contact-phone button{user-select:none}
 details.tx{border-top:1px solid var(--line);padding:10px 0 4px;margin-top:10px}
 details.tx summary{cursor:pointer;font-weight:600}
 .turns{margin-top:10px;max-height:min(56vh,480px);overflow:auto;padding-right:6px}
@@ -420,6 +426,11 @@ select:focus-visible{outline:3px solid var(--water)}
             <p class="hint">Drew &amp; Hefner Wells and Pumps, drilled the well at 22496 Avenue 18 3/4. Phone (559) 645-2483.</p>
           </div>
           <button class="btn" id="pdfBtn">Download PDF</button>
+        </div>
+        <div class="contact">
+          <p class="contact-co">Drew and Hefner Wells and Pumps, License #1003754</p>
+          <p class="contact-name">Ron Drew</p>
+          <p class="contact-phone"><span id="ronPhone">(559) 645-2483</span> <button class="btn small" type="button" id="copyPhone">Copy number</button></p>
         </div>
         <p class="hint" id="pdfStatus" role="status"></p>
         <details class="tx" open>
@@ -918,6 +929,16 @@ select:focus-visible{outline:3px solid var(--water)}
   lbZoom.addEventListener("click", function(){ var z = lb.classList.toggle("zoom"); lbZoom.textContent = z ? "Fit to screen" : "Zoom in"; });
   lb.addEventListener("click", function(e){ if (e.target === lb) closeLb(); });
   document.addEventListener("keydown", function(e){ if (e.key === "Escape" && !lb.hidden) closeLb(); });
+
+  // ---------- Copy Ron's number ----------
+  (function(){
+    var b = $("#copyPhone"), n = $("#ronPhone");
+    b.addEventListener("click", function(){
+      var done = function(){ b.textContent = "Copied"; setTimeout(function(){ b.textContent = "Copy number"; }, 1600); };
+      var fallback = function(){ var r = document.createRange(); r.selectNodeContents(n); var s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected, press Ctrl+C"; };
+      try { navigator.clipboard.writeText(n.textContent).then(done, fallback); } catch(e){ fallback(); }
+    });
+  })();
 
   // ---------- PDF download ----------
   (function(){
