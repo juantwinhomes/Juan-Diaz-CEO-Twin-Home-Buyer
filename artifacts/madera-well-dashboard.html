@@ -241,6 +241,50 @@ select:focus-visible{outline:3px solid var(--water)}
 .empty{padding:16px;text-align:center;color:var(--muted);border:1.5px dashed var(--line);border-radius:10px;font-size:14.5px}
 .notice{padding:11px 14px;border-radius:8px;background:var(--danger-soft);color:var(--danger);font-size:14.5px;margin-bottom:14px}
 @media (prefers-reduced-motion:no-preference){.item{animation:in .2s ease-out}@keyframes in{from{opacity:0;transform:translateY(4px)}to{opacity:1}}}
+
+/* Permit checklist */
+.goal p{margin:0 0 8px}
+.progress{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pbar{flex:1 1 200px;height:8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
+.pbar span{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+.step-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.step-head h3{margin:0;flex:1;min-width:0}
+.step-n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;background:var(--water-soft);color:var(--water);font-variant-numeric:tabular-nums}
+.step.done .step-n{background:var(--ok-soft);color:var(--ok)}
+.step-chip{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--amber-soft);color:var(--amber);white-space:nowrap;font-variant-numeric:tabular-nums}
+.step.done .step-chip{background:var(--ok-soft);color:var(--ok)}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.checks li{display:grid;gap:0;padding:6px 0;border-bottom:1px solid var(--line)}
+.checks li:last-child{border-bottom:0}
+.ck{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.ck input{flex:none;width:18px;height:18px;margin:3px 0 0;accent-color:var(--ok);cursor:pointer}
+.ck input:disabled{cursor:not-allowed}
+.ck input:checked + span{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.ck.big{margin-top:12px;font-weight:700;font-size:16px}
+.ck.big input:checked + span{text-decoration:none;color:var(--ok)}
+.ref{display:block;font-size:13px;color:var(--muted);padding-left:28px}
+.by{display:block;font-size:12px;color:var(--ok);padding-left:28px}
+.by:empty{display:none}
+.answers .by,.answers .ref{padding-left:0}
+.script{margin:0 0 10px;padding:10px 14px;border-left:3px solid var(--water);background:var(--bg);border-radius:0 8px 8px 0;font-family:"Source Serif 4",Georgia,serif;font-size:16.5px}
+.answers{display:grid;gap:12px}
+.ans{display:grid;gap:4px}
+.ans .q{margin:0;font-weight:600;font-size:15px}
+.yn{display:flex;gap:6px}
+.yn button{font-weight:700;font-size:13.5px;padding:5px 16px;border-radius:8px;border:1.5px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
+.yn button[aria-pressed="true"][data-v="yes"]{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.yn button[aria-pressed="true"][data-v="no"]{background:var(--danger-soft);border-color:var(--danger);color:var(--danger)}
+.yn button:focus-visible{outline:3px solid var(--water);outline-offset:2px}
+.yn button:disabled{opacity:.55;cursor:not-allowed}
+.field{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:7px 10px}
+.field:focus{outline:none;border-color:var(--water)}
+.field:disabled{opacity:.6}
+.final{border:1.5px solid var(--amber)}
+.final.done{border-color:var(--ok)}
+.conds{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.conds li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px}
+.cmark{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--line);margin-top:2px}
+.conds li.ok .cmark{background:var(--ok);border-color:var(--ok);box-shadow:inset 0 0 0 3px var(--panel)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 
@@ -270,6 +314,7 @@ select:focus-visible{outline:3px solid var(--water)}
     <button class="tab" role="tab" data-tab="well" aria-controls="p-well"><span>The well</span><span class="badge" data-count="well"></span></button>
     <button class="tab" role="tab" data-tab="calls" aria-controls="p-calls"><span>What Ron said</span><span class="badge" data-count="calls"></span></button>
     <button class="tab" role="tab" data-tab="open" aria-controls="p-open"><span>Still open</span><span class="badge warn">2</span></button>
+    <button class="tab" role="tab" data-tab="permit" aria-controls="p-permit"><span>Permit check</span><span class="badge warn" id="permitBadge">0/7</span></button>
     <button class="tab" role="tab" data-tab="docs" aria-controls="p-docs"><span>Report &amp; contract</span><span class="badge" data-count="docs"></span></button>
     <button class="tab" role="tab" data-tab="transcripts" aria-controls="p-transcripts"><span>Transcripts</span><span class="badge" data-count="transcripts"></span></button>
     <button class="tab" role="tab" data-tab="notes" aria-controls="p-notes"><span>All comments</span><span class="badge" data-count="notes"></span></button>
@@ -300,6 +345,7 @@ select:focus-visible{outline:3px solid var(--water)}
             <ul class="mini">
               <li><span class="dot"></span><span><strong>Old well.</strong> Need proof it was destroyed per county code. <span class="status-chip">Waiting</span></span></li>
               <li><span class="dot"></span><span><strong>Water test.</strong> Dellavalle bacteriological results, sampled Sept 24. <span class="status-chip">Waiting</span></span></li>
+              <li><span class="dot"></span><span><strong>Permit verification.</strong> Madera County must confirm the permit. <span class="status-chip" id="ovPermit">0 of 7 steps</span> <button class="linkbtn" data-go="permit">Open checklist</button></span></li>
             </ul>
           </div>
           <div class="box no-search">
@@ -389,6 +435,57 @@ select:focus-visible{outline:3px solid var(--water)}
         </article>
         <article class="box" data-sec="open-watertest" data-title="Water test">
           <div class="openitem"><span class="dot"></span><p><strong>Water test.</strong> Done yesterday, September 24, by Dellavalle Laboratory. I'm following up to see if the bacteriological test results can come in this afternoon.</p></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Permit checklist -->
+    <section class="tab-panel" id="p-permit" data-tab="permit" data-name="Permit check" role="tabpanel" tabindex="-1" hidden>
+      <div class="panel-head"><h2>Well permit verification</h2><p class="hint">Madera County checklist</p></div>
+      <div class="stack">
+        <div class="box goal">
+          <p><strong>Goal:</strong> Confirm that the well shown on the Well Completion Report was properly permitted and approved.</p>
+          <div class="progress no-search"><div class="pbar"><span id="pFill"></span></div><span class="hint" id="pText">0 of 7 steps done</span></div>
+          <p class="hint no-search" id="clHint"></p>
+        </div>
+        <div class="cols steps">
+        <article class="box step" data-sec="permit-s1" data-title="Step 1: Ask the homeowner for ALL well paperwork" data-step="1">
+          <div class="step-head"><span class="step-n" aria-hidden="true">1</span><h3>Ask the homeowner for ALL well paperwork</h3><span class="step-chip" data-stepchip="1"></span></div>
+          <ul class="checks"><li><label class="ck"><input type="checkbox" data-ck="c-1-0"><span>Original well permit</span></label><span class="by" data-by="c-1-0"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-1-1"><span>Permit number</span></label><span class="by" data-by="c-1-1"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-1-2"><span>Well Completion Report / well log</span></label><span class="ref">We have this: Ron&#x27;s son sent the Well Completion Report</span><span class="by" data-by="c-1-2"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-1-3"><span>Inspection or final approval</span></label><span class="by" data-by="c-1-3"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-1-4"><span>Drilling contract</span></label><span class="ref">We have this: from Lupe, signed 11/19/22</span><span class="by" data-by="c-1-4"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-1-5"><span>Paid invoice/receipt</span></label><span class="by" data-by="c-1-5"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-1-6"><span>Pump installation paperwork</span></label><span class="by" data-by="c-1-6"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-1-7"><span>Any correspondence with Madera County</span></label><span class="by" data-by="c-1-7"></span></li></ul>
+        </article>
+        <article class="box step" data-sec="permit-s2" data-title="Step 2: Identify the well" data-step="2">
+          <div class="step-head"><span class="step-n" aria-hidden="true">2</span><h3>Identify the well</h3><span class="step-chip" data-stepchip="2"></span></div>
+          <ul class="checks"><li><label class="ck"><input type="checkbox" data-ck="c-2-0"><span>Property address</span></label><span class="ref">22496 Ave 18 3/4, Madera, CA</span><span class="by" data-by="c-2-0"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-2-1"><span>APN</span></label><span class="ref">029-270-052</span><span class="by" data-by="c-2-1"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-2-2"><span>Owner at time well was drilled</span></label><span class="ref">Report: Guadalupe Martinez (owner on file)</span><span class="by" data-by="c-2-2"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-2-3"><span>Approximate installation date</span></label><span class="ref">Report: drilled 12/20/22 to 2/3/23</span><span class="by" data-by="c-2-3"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-2-4"><span>Well driller/company name</span></label><span class="ref">Drew &amp; Hefner Wells and Pumps (Ron Drew), License #1003754</span><span class="by" data-by="c-2-4"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-2-5"><span>Well depth — report appears to show 600 ft</span></label><span class="ref">Report: 600 ft, 5 in PVC</span><span class="by" data-by="c-2-5"></span></li></ul>
+        </article>
+        <article class="box step" data-sec="permit-s3" data-title="Step 3: Contact Madera County Environmental Health" data-step="3">
+          <div class="step-head"><span class="step-n" aria-hidden="true">3</span><h3>Contact Madera County Environmental Health</h3><span class="step-chip" data-stepchip="3"></span></div>
+          <p class="hint">Tell them:</p><blockquote class="script">“I have a Well Completion Report for this property and need to verify that a well permit was actually issued.”</blockquote><ul class="checks"><li><label class="ck"><input type="checkbox" data-ck="c-3-0"><span>Called and told them the script above</span></label><span class="by" data-by="c-3-0"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-3-1"><span>Asked them to search by APN and property address</span></label><span class="ref">APN 029-270-052 · 22496 Ave 18 3/4</span><span class="by" data-by="c-3-1"></span></li></ul>
+        </article>
+        <article class="box step" data-sec="permit-s4" data-title="Step 4: Get these answers from the County" data-step="4">
+          <div class="step-head"><span class="step-n" aria-hidden="true">4</span><h3>Get these answers from the County</h3><span class="step-chip" data-stepchip="4"></span></div>
+          <div class="answers"><div class="ans"><p class="q">Was a permit issued?</p><div class="yn" role="group" aria-label="Was a permit issued?" data-ck="a-issued"><button type="button" data-v="yes">YES</button><button type="button" data-v="no">NO</button></div><span class="by" data-by="a-issued"></span></div><div class="ans"><label class="q" for="a-permitNo">Permit number</label><input class="field" type="text" id="a-permitNo" data-ck="a-permitNo" maxlength="300" autocomplete="off"><span class="ref">Report says #22-0433. Enter what the County confirms.</span><span class="by" data-by="a-permitNo"></span></div><div class="ans"><label class="q" for="a-issueDate">Permit issue date</label><input class="field" type="text" id="a-issueDate" data-ck="a-issueDate" maxlength="300" autocomplete="off"><span class="ref">Report says issued 12/20/22</span><span class="by" data-by="a-issueDate"></span></div><div class="ans"><label class="q" for="a-work">What work did the permit authorize?</label><input class="field" type="text" id="a-work" data-ck="a-work" maxlength="300" autocomplete="off"><span class="by" data-by="a-work"></span></div><div class="ans"><p class="q">Was the well inspected?</p><div class="yn" role="group" aria-label="Was the well inspected?" data-ck="a-inspected"><button type="button" data-v="yes">YES</button><button type="button" data-v="no">NO</button></div><span class="by" data-by="a-inspected"></span></div><div class="ans"><p class="q">Was the permit finalized/approved?</p><div class="yn" role="group" aria-label="Was the permit finalized/approved?" data-ck="a-finaled"><button type="button" data-v="yes">YES</button><button type="button" data-v="no">NO</button></div><span class="by" data-by="a-finaled"></span></div><div class="ans"><p class="q">Are there any open violations or outstanding requirements?</p><div class="yn" role="group" aria-label="Are there any open violations or outstanding requirements?" data-ck="a-violations"><button type="button" data-v="yes">YES</button><button type="button" data-v="no">NO</button></div><span class="by" data-by="a-violations"></span></div><div class="ans"><label class="q" for="a-violationsNote">Details on violations or requirements, if any</label><input class="field" type="text" id="a-violationsNote" data-ck="a-violationsNote" data-optional="1" maxlength="300" autocomplete="off"><span class="ref">Leave blank if none</span><span class="by" data-by="a-violationsNote"></span></div></div>
+        </article>
+        <article class="box step" data-sec="permit-s5" data-title="Step 5: Request copies" data-step="5">
+          <div class="step-head"><span class="step-n" aria-hidden="true">5</span><h3>Request copies</h3><span class="step-chip" data-stepchip="5"></span></div>
+          <ul class="checks"><li><label class="ck"><input type="checkbox" data-ck="c-5-0"><span>Actual well permit</span></label><span class="by" data-by="c-5-0"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-5-1"><span>Inspection record</span></label><span class="by" data-by="c-5-1"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-5-2"><span>Final approval</span></label><span class="by" data-by="c-5-2"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-5-3"><span>Any other well records in the County file</span></label><span class="by" data-by="c-5-3"></span></li></ul>
+        </article>
+        <article class="box step" data-sec="permit-s6" data-title="Step 6: Cross-check California DWR records" data-step="6">
+          <div class="step-head"><span class="step-n" aria-hidden="true">6</span><h3>Cross-check California DWR records</h3><span class="step-chip" data-stepchip="6"></span></div>
+          <p class="hint">Confirm the state Well Completion Report matches: address/APN + driller + date + depth + well location.</p><ul class="checks"><li><label class="ck"><input type="checkbox" data-ck="c-6-0"><span>Address / APN</span></label><span class="ref">22496 Ave 18 3/4 · APN 029-270-052</span><span class="by" data-by="c-6-0"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-6-1"><span>Driller</span></label><span class="ref">Drew &amp; Hefner Wells and Pumps, C-57 #1003754</span><span class="by" data-by="c-6-1"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-6-2"><span>Date</span></label><span class="ref">12/20/22 to 2/3/23</span><span class="by" data-by="c-6-2"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-6-3"><span>Depth</span></label><span class="ref">600 ft</span><span class="by" data-by="c-6-3"></span></li><li><label class="ck"><input type="checkbox" data-ck="c-6-4"><span>Well location</span></label><span class="ref">Compare with the sketch on the report</span><span class="by" data-by="c-6-4"></span></li></ul>
+        </article>
+        </div>
+        <article class="box step final" data-sec="permit-s7" data-title="Step 7: Final verification" data-step="7">
+          <div class="step-head"><span class="step-n" aria-hidden="true">7</span><h3>Final verification</h3><span class="step-chip" data-stepchip="7"></span></div>
+          <p><strong>Do not mark this complete just because we have the document in the photo.</strong></p>
+          <p class="hint">COMPLETE = County confirms permit + permit number + records match this well.</p>
+          <ul class="conds">
+            <li data-cond="issued"><span class="cmark" aria-hidden="true"></span><span>County confirms a permit was issued (step 4 answered YES)</span></li>
+            <li data-cond="permitNo"><span class="cmark" aria-hidden="true"></span><span>Permit number from the County is recorded (step 4)</span></li>
+            <li data-cond="match"><span class="cmark" aria-hidden="true"></span><span>DWR records match this well (all of step 6 checked)</span></li>
+          </ul>
+          <label class="ck big"><input type="checkbox" data-ck="c-7-final"><span>Permit verified. Mark this checklist complete.</span></label>
+          <span class="by" data-by="c-7-final"></span>
+          <p class="hint" id="finalHint"></p>
         </article>
       </div>
     </section>
@@ -781,11 +878,11 @@ select:focus-visible{outline:3px solid var(--water)}
   async function renderAll(){
     var seq = ++renderSeq;
     if (state.user) {
-      var ids = state.items.map(function(i){ return i.author; }).filter(function(a, k, arr){ return a && arr.indexOf(a) === k; });
+      var ids = state.items.map(function(i){ return i.author; }).concat(Object.keys(CL.vals).map(function(k){ return CL.vals[k].by; })).filter(function(a, k, arr){ return a && arr.indexOf(a) === k; });
       if (ids.length) { try { state.profiles = await state.user.profiles(ids) || {}; } catch(e){} }
     }
     if (seq !== renderSeq) return;
-    renderThreads(); renderNotes(); renderRecent(); renderCounts();
+    renderThreads(); renderNotes(); renderRecent(); renderCounts(); applyChecklist();
   }
   function goToSection(sec, itemId){
     var s = SECS[sec] || SECS.general;
@@ -801,6 +898,69 @@ select:focus-visible{outline:3px solid var(--water)}
     if (target) target.scrollIntoView({block: "center", behavior: reduceMotion() ? "auto" : "smooth"});
   }
   function reduceMotion(){ return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+
+  // ---------- Permit checklist ----------
+  var CL = { vals: {}, queues: {}, timers: {}, ready: false };
+  var clEls = $$("[data-ck]");
+  function clVal(k){ var v = CL.vals[k]; return v ? v.value : undefined; }
+  function filled(v){ return v === true || (typeof v === "string" && v.trim() !== ""); }
+  function clWrite(k, value){
+    if (!state.db || !state.canWrite) return;
+    var doc = { value: value, by: state.me || null, at: Date.now() };
+    CL.vals[k] = doc;
+    var prev = CL.queues[k] || Promise.resolve();
+    CL.queues[k] = prev.then(function(){ return state.db.collection("checklist").doc(k).set(doc); }).catch(handleWriteError);
+    applyChecklist();
+  }
+  clEls.forEach(function(e){
+    var k = e.dataset.ck;
+    if (e.type === "checkbox") e.addEventListener("change", function(){ clWrite(k, e.checked); });
+    else if (e.classList.contains("yn")) $$("button", e).forEach(function(b){
+      b.addEventListener("click", function(){ clWrite(k, clVal(k) === b.dataset.v ? "" : b.dataset.v); });
+    });
+    else {
+      var flush = function(){ clearTimeout(CL.timers[k]); CL.timers[k] = null; if ((clVal(k) || "") !== e.value) clWrite(k, e.value); };
+      e.addEventListener("input", function(){ clearTimeout(CL.timers[k]); CL.timers[k] = setTimeout(flush, 900); });
+      e.addEventListener("change", flush);
+      e.addEventListener("blur", flush);
+    }
+  });
+  function stepKeys(n){ return $$("[data-ck]", $('[data-step="' + n + '"]')).filter(function(e){ return !e.dataset.optional; }).map(function(e){ return e.dataset.ck; }); }
+  function conds(){
+    return { issued: clVal("a-issued") === "yes", permitNo: filled(clVal("a-permitNo")), match: stepKeys(6).every(function(k){ return clVal(k) === true; }) };
+  }
+  function applyChecklist(){
+    var live = !!state.db && state.canWrite, c = conds(), allOk = c.issued && c.permitNo && c.match;
+    clEls.forEach(function(e){
+      var k = e.dataset.ck, v = clVal(k);
+      if (e.type === "checkbox") { e.checked = v === true; e.disabled = !live || (k === "c-7-final" && !allOk && v !== true); }
+      else if (e.classList.contains("yn")) $$("button", e).forEach(function(b){ b.setAttribute("aria-pressed", String(v === b.dataset.v)); b.disabled = !live; });
+      else { if (document.activeElement !== e && !CL.timers[k]) e.value = typeof v === "string" ? v : ""; e.disabled = !live; }
+    });
+    $$("[data-by]").forEach(function(b){
+      var d = CL.vals[b.dataset.by];
+      if (!d || !filled(d.value)) { b.textContent = ""; return; }
+      var p = d.by ? state.profiles[d.by] : null;
+      b.textContent = (d.value === true ? "Checked by " : "Answered by ") + ((p && p.name) || (p && p.isMe ? "You" : "Someone")) + " · " + fmt(d.at);
+    });
+    var done = 0;
+    for (var n = 1; n <= 7; n++) {
+      var keys = stepKeys(n), got = keys.filter(function(k){ return filled(clVal(k)); }).length;
+      var ok = n === 7 ? clVal("c-7-final") === true && allOk : got === keys.length;
+      if (ok) done++;
+      $('[data-step="' + n + '"]').classList.toggle("done", ok);
+      $('[data-stepchip="' + n + '"]').textContent = ok ? "Done" : n === 7 ? "Not verified" : got + " of " + keys.length;
+    }
+    Object.keys(c).forEach(function(k){ $('[data-cond="' + k + '"]').classList.toggle("ok", c[k]); });
+    var fh = $("#finalHint");
+    fh.textContent = clVal("c-7-final") === true && !allOk ? "This was marked complete, but a requirement above is no longer met. Recheck it before closing." : !allOk ? "The checkbox unlocks once all three requirements above are met." : "";
+    $("#pFill").style.width = (done / 7 * 100) + "%";
+    $("#pText").textContent = done + " of 7 steps done";
+    var badge = $("#permitBadge"); badge.textContent = done + "/7"; badge.classList.toggle("warn", done < 7);
+    $("#ovPermit").textContent = done === 7 ? "Verified" : done + " of 7 steps";
+    $("#clHint").textContent = !state.db ? (state.dbFailed ? "The checklist saves when this page is opened in Claude." : "Loading checklist…") : !state.canWrite ? "You can view this checklist but can't change it." : "Changes save automatically and show up for everyone.";
+  }
+  applyChecklist();
 
   // ---------- Search ----------
   var q = $("#q"), results = $("#results"), qClear = $("#qClear"), qKbd = $("#qKbd");
@@ -999,6 +1159,11 @@ select:focus-visible{outline:3px solid var(--water)}
       renderAll();
       if (!results.hidden) runSearch();
     }, function(){ showNotice("Notes stopped updating. Reload the page to reconnect."); });
+    db.collection("checklist").limit(200).onSnapshot(function(snap){
+      var vals = {};
+      snap.docs.forEach(function(d){ var v = d.data() || {}; vals[d.id] = { value: v.value, by: v.by || null, at: v.at || 0 }; });
+      CL.vals = vals; renderAll();
+    }, function(){ showNotice("The checklist stopped updating. Reload the page to reconnect."); });
   })();
 })();
 </script>
