@@ -285,6 +285,18 @@ select:focus-visible{outline:3px solid var(--water)}
 .conds li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px}
 .cmark{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--line);margin-top:2px}
 .conds li.ok .cmark{background:var(--ok);border-color:var(--ok);box-shadow:inset 0 0 0 3px var(--panel)}
+.replies{display:grid;gap:6px;margin-top:10px;padding-left:12px;border-left:2px solid var(--line)}
+.item.reply{background:var(--bg);border:0;border-radius:8px;padding:8px 10px;animation:none}
+.item.reply .actions{margin-top:4px}
+.rstat{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--amber-soft);color:var(--amber)}
+.rstat.done{background:var(--ok-soft);color:var(--ok)}
+.reply-box{margin-top:10px;padding:10px;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
+.reply-box textarea{min-height:60px;background:var(--panel)}
+.reply-btns{display:flex;gap:8px}
+.reply-btn{color:var(--water);border-color:var(--water-soft)}
+.reply-btn:hover{border-color:var(--water)}
+.actions .reply-btn{margin-right:auto}
+.thread-toggle.pending .badge{background:var(--amber-soft);color:var(--amber)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 
@@ -310,11 +322,11 @@ select:focus-visible{outline:3px solid var(--water)}
 
 <div class="wrap layout">
   <nav class="tabs" role="tablist" aria-label="Sections" id="tabs">
+    <button class="tab" role="tab" data-tab="permit" aria-controls="p-permit"><span>Permit check</span><span class="badge warn" id="permitBadge">0/7</span></button>
     <button class="tab" role="tab" data-tab="overview" aria-controls="p-overview"><span>Overview</span><span class="badge" data-count="overview"></span></button>
     <button class="tab" role="tab" data-tab="well" aria-controls="p-well"><span>The well</span><span class="badge" data-count="well"></span></button>
     <button class="tab" role="tab" data-tab="calls" aria-controls="p-calls"><span>What Ron said</span><span class="badge" data-count="calls"></span></button>
     <button class="tab" role="tab" data-tab="open" aria-controls="p-open"><span>Still open</span><span class="badge warn">2</span></button>
-    <button class="tab" role="tab" data-tab="permit" aria-controls="p-permit"><span>Permit check</span><span class="badge warn" id="permitBadge">0/7</span></button>
     <button class="tab" role="tab" data-tab="docs" aria-controls="p-docs"><span>Report &amp; contract</span><span class="badge" data-count="docs"></span></button>
     <button class="tab" role="tab" data-tab="transcripts" aria-controls="p-transcripts"><span>Transcripts</span><span class="badge" data-count="transcripts"></span></button>
     <button class="tab" role="tab" data-tab="notes" aria-controls="p-notes"><span>All comments</span><span class="badge" data-count="notes"></span></button>
@@ -345,7 +357,7 @@ select:focus-visible{outline:3px solid var(--water)}
             <ul class="mini">
               <li><span class="dot"></span><span><strong>Old well.</strong> Need proof it was destroyed per county code. <span class="status-chip">Waiting</span></span></li>
               <li><span class="dot"></span><span><strong>Water test.</strong> Dellavalle bacteriological results, sampled Sept 24. <span class="status-chip">Waiting</span></span></li>
-              <li><span class="dot"></span><span><strong>Permit verification.</strong> Madera County must confirm the permit. <span class="status-chip" id="ovPermit">0 of 7 steps</span> <button class="linkbtn" data-go="permit">Open checklist</button></span></li>
+              <li><span class="dot"></span><span><strong>Permit verification.</strong> Juan's checklist. Madera County must confirm the permit. <span class="status-chip" id="ovPermit">0 of 7 steps</span> <button class="linkbtn" data-go="permit">Open checklist</button></span></li>
             </ul>
           </div>
           <div class="box no-search">
@@ -441,7 +453,7 @@ select:focus-visible{outline:3px solid var(--water)}
 
     <!-- Permit checklist -->
     <section class="tab-panel" id="p-permit" data-tab="permit" data-name="Permit check" role="tabpanel" tabindex="-1" hidden>
-      <div class="panel-head"><h2>Well permit verification</h2><p class="hint">Madera County checklist</p></div>
+      <div class="panel-head"><h2>Well Permit Verification Checklist — Madera County</h2><p class="hint">Checklist from Juan</p></div>
       <div class="stack">
         <div class="box goal">
           <p><strong>Goal:</strong> Confirm that the well shown on the Well Completion Report was properly permitted and approved.</p>
@@ -619,6 +631,7 @@ select:focus-visible{outline:3px solid var(--water)}
               <button class="type" data-filter="note" aria-pressed="false">Notes</button>
               <button class="type" data-filter="comment" aria-pressed="false">Comments</button>
               <button class="type" data-filter="question" aria-pressed="false">Questions</button>
+              <button class="type" data-filter="unanswered" aria-pressed="false">Needs reply <span class="badge warn" id="needsCount"></span></button>
             </div>
             <label for="secFilter" class="hint">Section</label><br>
             <select id="secFilter"><option value="all">Every section</option></select>
@@ -676,7 +689,7 @@ select:focus-visible{outline:3px solid var(--water)}
   // ---------- Tabs ----------
   var tabBtns = $$(".tab[data-tab]");
   function showTab(id, keepScroll){
-    if (!panels[id]) id = "overview";
+    if (!panels[id]) id = "permit";
     state.tab = id;
     Object.keys(panels).forEach(function(k){ panels[k].hidden = k !== id; });
     tabBtns.forEach(function(b){ var on = b.dataset.tab === id; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; if (on && b.scrollIntoView && window.innerWidth <= 860) b.scrollIntoView({inline:"nearest", block:"nearest"}); });
@@ -698,8 +711,7 @@ select:focus-visible{outline:3px solid var(--water)}
     if (g) showTab(g.dataset.go);
   });
   var start = (location.hash || "").replace("#", "");
-  if (!panels[start]) { try { start = localStorage.getItem("madera-tab") || ""; } catch(e){ start = ""; } }
-  showTab(panels[start] ? start : "overview", true);
+  showTab(panels[start] ? start : "permit", true);
 
   // ---------- Composer ----------
   var composers = [];
@@ -762,35 +774,99 @@ select:focus-visible{outline:3px solid var(--water)}
   }
 
   // ---------- Item card ----------
-  function makeItem(i, showSection){
-    var card = el("article", "item " + i.type); card.dataset.id = i.id;
+  // Replies are notes docs with parentId set. A reply whose parent was deleted shows as a top-level entry.
+  state.replyOpen = null; state.drafts = {};
+  function byId(id){ for (var k = 0; k < state.items.length; k++) if (state.items[k].id === id) return state.items[k]; return null; }
+  function isTop(i){ return !i.parentId || !byId(i.parentId); }
+  function repliesOf(id){ return state.items.filter(function(r){ return r.parentId === id; }).sort(function(a, b){ return a.createdAt - b.createdAt; }); }
+  function lastActivity(i){ var r = repliesOf(i.id); return r.length ? Math.max(i.createdAt, r[r.length - 1].createdAt) : i.createdAt; }
+  function needsReply(i){ return isTop(i) && repliesOf(i.id).length === 0; }
+  function whoName(id){ var p = id ? state.profiles[id] : null; return (p && p.name) || (p && p.isMe ? "You" : "Someone"); }
+  function makeActions(i){
+    var actions = el("div", "actions");
+    if (state.pendingDelete === i.id) {
+      var n = i.parentId ? 0 : repliesOf(i.id).length;
+      var yes = el("button", "btn small danger", "Yes, delete"); yes.type = "button";
+      yes.addEventListener("click", function(){ doDelete(i.id, yes); });
+      var no = el("button", "btn small", "Cancel"); no.type = "button";
+      no.addEventListener("click", function(){ state.pendingDelete = null; renderAll(); });
+      actions.appendChild(el("span", "confirm", n ? "Delete this entry? Its " + n + (n === 1 ? " reply stays." : " replies stay.") : "Delete this " + (i.parentId ? "reply?" : "entry?")));
+      actions.appendChild(yes); actions.appendChild(no);
+    } else {
+      var del = el("button", "btn small danger", "Delete"); del.type = "button";
+      del.setAttribute("aria-label", "Delete this " + (i.parentId ? "reply" : (TYPES[i.type] || "entry").toLowerCase()));
+      del.addEventListener("click", function(){ state.pendingDelete = i.id; renderAll(); });
+      actions.appendChild(del);
+    }
+    return actions;
+  }
+  function makeItem(i, showSection, ctx){
+    ctx = ctx || "x";
+    var reply = !isTop(i);
+    var card = el("article", reply ? "item reply" : "item " + i.type); card.dataset.id = i.id;
     var meta = el("div", "meta");
     var p = i.author ? state.profiles[i.author] : null;
     if (p && p.avatarUrl) { var img = document.createElement("img"); img.src = p.avatarUrl; img.alt = ""; meta.appendChild(img); }
-    meta.appendChild(el("span", "who", (p && p.name) || (p && p.isMe ? "You" : "Someone")));
-    meta.appendChild(el("span", "chip " + i.type, TYPES[i.type] || "Note"));
+    meta.appendChild(el("span", "who", whoName(i.author)));
+    if (!reply) meta.appendChild(el("span", "chip " + i.type, TYPES[i.type] || "Note"));
     meta.appendChild(el("span", null, fmt(i.createdAt)));
-    if (showSection && i.section !== "general" && SECS[i.section]) {
+    if (!reply && showSection && i.section !== "general" && SECS[i.section]) {
       var w = el("span", "where", "on ");
       var lk = el("button", "linkbtn", SECS[i.section].title); lk.type = "button";
       lk.addEventListener("click", function(){ goToSection(i.section, i.id); });
       w.appendChild(lk); meta.appendChild(w);
     }
+    var reps = reply ? [] : repliesOf(i.id);
+    if (!reply) meta.appendChild(reps.length ? el("span", "rstat done", reps.length + (reps.length === 1 ? " reply" : " replies")) : el("span", "rstat", "Needs reply"));
     card.appendChild(meta);
     var t = el("p", "text"); highlightInto(t, i.text, state.words); card.appendChild(t);
-    if (state.canWrite && state.db) {
-      var actions = el("div", "actions");
-      if (state.pendingDelete === i.id) {
-        var yes = el("button", "btn small danger", "Yes, delete"); yes.type = "button";
-        yes.addEventListener("click", function(){ doDelete(i.id, yes); });
-        var no = el("button", "btn small", "Cancel"); no.type = "button";
-        no.addEventListener("click", function(){ state.pendingDelete = null; renderAll(); });
-        actions.appendChild(el("span", "confirm", "Delete this entry?")); actions.appendChild(yes); actions.appendChild(no);
-      } else {
-        var del = el("button", "btn small danger", "Delete"); del.type = "button";
-        del.setAttribute("aria-label", "Delete this " + (TYPES[i.type] || "entry").toLowerCase());
-        del.addEventListener("click", function(){ state.pendingDelete = i.id; renderAll(); });
-        actions.appendChild(del);
+    var canAct = state.canWrite && state.db;
+    if (reply) { if (canAct) card.appendChild(makeActions(i)); return card; }
+
+    if (reps.length) {
+      var rl = el("div", "replies");
+      reps.forEach(function(r){ rl.appendChild(makeItem(r, false, ctx)); });
+      card.appendChild(rl);
+    }
+    var key = ctx + ":" + i.id;
+    if (canAct && state.replyOpen === key) {
+      var box = el("div", "reply-box");
+      var rid = "reply-" + ctx + "-" + i.id;
+      var lab = el("label", "sr", "Reply to " + whoName(i.author)); lab.htmlFor = rid;
+      var ta = document.createElement("textarea"); ta.id = rid; ta.maxLength = 2000;
+      ta.placeholder = "Reply to " + whoName(i.author) + "…"; ta.value = state.drafts[i.id] || "";
+      var row = el("div", "row");
+      var hint = el("span", "hint", "Ctrl+Enter to send");
+      var btns = el("span", "reply-btns");
+      var cancel = el("button", "btn small", "Cancel"); cancel.type = "button";
+      var send = el("button", "btn small primary", "Send reply"); send.type = "button";
+      send.disabled = !ta.value.trim();
+      ta.addEventListener("input", function(){ state.drafts[i.id] = ta.value; send.disabled = !ta.value.trim(); });
+      ta.addEventListener("keydown", function(e){
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !send.disabled) send.click();
+        if (e.key === "Escape") cancel.click();
+      });
+      cancel.addEventListener("click", function(){ state.replyOpen = null; renderAll(); });
+      send.addEventListener("click", async function(){
+        var text = ta.value.trim(); if (!text) return;
+        send.disabled = true; ta.disabled = true;
+        try {
+          await state.db.collection("notes").add({ type: "comment", text: text, section: i.section, parentId: i.id, author: state.me || null, createdAt: Date.now() });
+          delete state.drafts[i.id]; state.replyOpen = null; showNotice("");
+        } catch(e){ handleWriteError(e); ta.disabled = false; send.disabled = false; }
+        renderAll();
+      });
+      btns.appendChild(cancel); btns.appendChild(send);
+      row.appendChild(hint); row.appendChild(btns);
+      box.appendChild(lab); box.appendChild(ta); box.appendChild(row);
+      card.appendChild(box);
+    }
+    if (canAct) {
+      var actions = makeActions(i);
+      if (state.replyOpen !== key) {
+        var rb = el("button", "btn small reply-btn", "Reply"); rb.type = "button";
+        rb.addEventListener("click", function(){ state.replyOpen = key; state.focusId = "reply-" + ctx + "-" + i.id; renderAll(); });
+        actions.insertBefore(rb, actions.firstChild);
       }
       card.appendChild(actions);
     }
@@ -829,14 +905,16 @@ select:focus-visible{outline:3px solid var(--water)}
   function itemsFor(sec){ return state.items.filter(function(i){ return i.section === sec; }); }
   function renderThreads(){
     Object.keys(threads).forEach(function(sec){
-      var t = threads[sec], items = itemsFor(sec).slice().reverse();
-      t.count.textContent = String(items.length);
-      t.toggle.classList.toggle("has", items.length > 0);
-      t.label.textContent = items.length === 1 ? "Comment" : "Comments";
+      var t = threads[sec], all = itemsFor(sec), items = all.filter(isTop).reverse();
+      var open = items.filter(needsReply).length;
+      t.count.textContent = String(all.length);
+      t.toggle.classList.toggle("has", all.length > 0);
+      t.toggle.classList.toggle("pending", open > 0);
+      t.label.textContent = (all.length === 1 ? "Comment" : "Comments") + (open ? " · " + open + " need" + (open === 1 ? "s" : "") + " reply" : "");
       t.list.textContent = "";
       if (!state.db) { t.list.appendChild(emptyMsg(state.dbFailed ? OFFLINE : "Loading…")); return; }
       if (!items.length) { t.list.appendChild(emptyMsg("No comments on this yet.")); return; }
-      items.forEach(function(i){ t.list.appendChild(makeItem(i, false)); });
+      items.forEach(function(i){ t.list.appendChild(makeItem(i, false, "t")); });
     });
   }
 
@@ -851,20 +929,23 @@ select:focus-visible{outline:3px solid var(--water)}
   });
   var list = $("#list"), recent = $("#recent");
   function renderNotes(){
-    var items = state.items.filter(function(i){
-      return (state.filter === "all" || i.type === state.filter) && (state.secFilter === "all" || i.section === state.secFilter);
-    });
+    var tops = state.items.filter(isTop);
+    var nb = $("#needsCount"); if (nb) { var nn = tops.filter(needsReply).length; nb.textContent = nn ? String(nn) : ""; }
+    var items = tops.filter(function(i){
+      var f = state.filter;
+      return (f === "all" || (f === "unanswered" ? needsReply(i) : i.type === f)) && (state.secFilter === "all" || i.section === state.secFilter);
+    }).sort(function(a, b){ return lastActivity(b) - lastActivity(a); });
     list.textContent = "";
     if (!state.db) { list.appendChild(emptyMsg(state.dbFailed ? "Notes load when this page is opened in Claude." : "Loading…")); return; }
     if (!items.length) { list.appendChild(emptyMsg(state.filter === "all" && state.secFilter === "all" ? "No entries yet. Add the first note, comment or question." : "Nothing here yet.")); return; }
-    items.forEach(function(i){ list.appendChild(makeItem(i, true)); });
+    items.forEach(function(i){ list.appendChild(makeItem(i, true, "n")); });
   }
   function renderRecent(){
     recent.textContent = "";
     if (!state.db) { recent.appendChild(emptyMsg(state.dbFailed ? OFFLINE : "Loading…")); return; }
-    var items = state.items.slice(0, 3);
+    var items = state.items.filter(isTop).sort(function(a, b){ return lastActivity(b) - lastActivity(a); }).slice(0, 3);
     if (!items.length) { recent.appendChild(emptyMsg("No comments yet. Open any section and use Comments at the bottom of a card.")); return; }
-    items.forEach(function(i){ recent.appendChild(makeItem(i, true)); });
+    items.forEach(function(i){ recent.appendChild(makeItem(i, true, "r")); });
   }
   function renderCounts(){
     var by = {};
@@ -882,7 +963,11 @@ select:focus-visible{outline:3px solid var(--water)}
       if (ids.length) { try { state.profiles = await state.user.profiles(ids) || {}; } catch(e){} }
     }
     if (seq !== renderSeq) return;
+    var ae = document.activeElement, keep = state.focusId || (ae && ae.id && ae.id.indexOf("reply-") === 0 ? ae.id : null);
+    var caret = ae && ae.id === keep && typeof ae.selectionStart === "number" ? ae.selectionStart : null;
+    state.focusId = null;
     renderThreads(); renderNotes(); renderRecent(); renderCounts(); applyChecklist();
+    if (keep) { var f = document.getElementById(keep); if (f) { f.focus(); var c = caret == null ? f.value.length : caret; try { f.setSelectionRange(c, c); } catch(e){} } }
   }
   function goToSection(sec, itemId){
     var s = SECS[sec] || SECS.general;
@@ -1153,7 +1238,7 @@ select:focus-visible{outline:3px solid var(--water)}
     db.collection("notes").orderBy("createdAt", "desc").limit(500).onSnapshot(function(snap){
       state.items = snap.docs.map(function(d){
         var v = d.data() || {};
-        return { id: d.id, type: TYPES[v.type] ? v.type : "note", text: String(v.text || ""), section: SECS[v.section] ? v.section : "general", author: v.author || null, createdAt: v.createdAt || 0 };
+        return { id: d.id, type: TYPES[v.type] ? v.type : "note", text: String(v.text || ""), section: SECS[v.section] ? v.section : "general", author: v.author || null, createdAt: v.createdAt || 0, parentId: typeof v.parentId === "string" ? v.parentId : null };
       });
       if (state.pendingDelete && !state.items.some(function(i){ return i.id === state.pendingDelete; })) state.pendingDelete = null;
       renderAll();
