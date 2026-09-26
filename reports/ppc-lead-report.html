@@ -1,87 +1,279 @@
 <title>Google PPC Lead Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
 <style>
-:root{--bg:#F5F6F8;--card:#FFFFFF;--ink:#16233A;--muted:#667085;--line:#DDE2EA;--accent:#1C6E8C;--accent2:#9CC7D6;--good:#2E7D4F;--warn:#B7791F;--bad:#B4443C;--neutral:#AEB6C3;
+:root{--bg:#F3F5F8;--card:#FFFFFF;--side:#16233A;--sideink:#C9D3E0;--sidehi:#FFFFFF;--ink:#16233A;--muted:#5F6B7D;--line:#DDE2EA;--accent:#1C6E8C;--accent2:#A9CFDC;--good:#2E7D4F;--warn:#B7791F;--bad:#B4443C;--neutral:#AEB6C3;--soft:#EEF4F7;
 --serif:'Source Serif 4',Georgia,serif;--sans:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0F1623;--card:#172131;--ink:#E6EBF2;--muted:#98A2B3;--line:#2A3547;--accent:#5BB0CF;--accent2:#2B5566;--good:#5CB883;--warn:#D9A441;--bad:#E07A70;--neutral:#556175}}
-:root[data-theme="dark"]{color-scheme:dark;--bg:#0F1623;--card:#172131;--ink:#E6EBF2;--muted:#98A2B3;--line:#2A3547;--accent:#5BB0CF;--accent2:#2B5566;--good:#5CB883;--warn:#D9A441;--bad:#E07A70;--neutral:#556175}
-body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);padding:32px 16px 56px}
-.wrap{max-width:1120px;margin:0 auto;display:grid;gap:28px}
-h1,h2{font-family:var(--serif);font-weight:600;text-wrap:balance;margin:0} h1{font-size:34px;line-height:1.15} h2{font-size:22px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0F1623;--card:#172131;--side:#0A101A;--sideink:#98A2B3;--sidehi:#E6EBF2;--ink:#E6EBF2;--muted:#98A2B3;--line:#2A3547;--accent:#5BB0CF;--accent2:#2B5566;--good:#5CB883;--warn:#D9A441;--bad:#E07A70;--neutral:#556175;--soft:#1B2A3A}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0F1623;--card:#172131;--side:#0A101A;--sideink:#98A2B3;--sidehi:#E6EBF2;--ink:#E6EBF2;--muted:#98A2B3;--line:#2A3547;--accent:#5BB0CF;--accent2:#2B5566;--good:#5CB883;--warn:#D9A441;--bad:#E07A70;--neutral:#556175;--soft:#1B2A3A}
+[hidden]{display:none!important}
+html,body{height:100%}
+.app>*{min-width:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans)}
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100%}
+aside{background:var(--side);color:var(--sideink);padding:24px 14px;display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh;box-sizing:border-box}
+.brand{padding:0 10px} .brand b{display:block;color:var(--sidehi);font:600 18px/1.25 var(--serif)} .brand span{font:12px var(--mono);letter-spacing:.04em}
+nav{display:flex;flex-direction:column;gap:2px}
+nav a{display:flex;justify-content:space-between;align-items:center;color:var(--sideink);text-decoration:none;padding:9px 10px;border-radius:7px;font-size:14px}
+nav a:hover{background:rgba(255,255,255,.06);color:var(--sidehi)} nav a.on{background:rgba(255,255,255,.11);color:var(--sidehi);font-weight:600}
+nav a:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.count{font:500 11px var(--mono);background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px} .count:empty{display:none}
+.asof{margin-top:auto;padding:0 10px;font-size:12px;line-height:1.5}
+main{padding:32px 16px 48px;min-width:0}
+.panel{max-width:900px;margin:0 auto;display:grid;gap:18px}
+h1,h2{font-family:var(--serif);font-weight:600;text-wrap:balance;margin:0} h1{font-size:30px;line-height:1.15} h2{font-size:18px}
 .eyebrow{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
-.lede{color:var(--muted);max-width:68ch;margin:8px 0 0}
-.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px} @media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
-.kpi b{display:block;font:500 28px var(--mono);font-variant-numeric:tabular-nums} .kpi span{color:var(--muted);font-size:13px}
-section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 18px;display:grid;gap:14px}
-.muted{color:var(--muted);font-size:13px} p{margin:0;max-width:72ch}
-.tbl{overflow-x:auto} table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
-th{text-align:left;font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--line);padding:8px 8px;white-space:nowrap}
-td{padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap} tr.total td{font-weight:600;border-top:2px solid var(--ink)}
-td.num,th.num{text-align:right} .neg{color:var(--bad)}
-.months{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;height:230px;align-items:end}
-.mcol{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:4px}
-.mbar{width:100%;max-width:56px;background:var(--accent2);border-radius:4px 4px 0 0;display:flex;align-items:flex-end;overflow:hidden}
-.mbar .legit{display:block;width:100%;background:var(--accent)}
-.mval{font:500 13px var(--mono)} .mlab{font-weight:600;font-size:13px} .msrc{font:11px var(--mono);color:var(--muted)} .msrc.bat{color:var(--warn)}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)} .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
-.srow{display:grid;grid-template-columns:minmax(120px,230px) 1fr 56px;gap:12px;align-items:center;font-size:14px}
-.strack{height:14px;background:var(--bg);border-radius:3px;overflow:hidden} .sfill{display:block;height:100%}
-.sfill.g{background:var(--good)} .sfill.w{background:var(--warn)} .sfill.n{background:var(--neutral)} .snum{text-align:right;font:500 13px var(--mono)}
+.lede{color:var(--muted);margin:0;max-width:66ch;font-size:16px}
+.big{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.tile b{display:block;font:500 26px var(--mono);font-variant-numeric:tabular-nums} .tile span{color:var(--muted);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:12px}
+.takeaways{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.takeaways li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:600 14px var(--sans);color:#fff}
+.dot.g{background:var(--good)} .dot.w{background:var(--warn)} .dot.b{background:var(--bad)}
+.takeaways p{margin:3px 0 0} .takeaways b{font-weight:600}
+.ask{background:var(--soft);border-radius:10px;padding:14px 16px} .ask h2{margin-bottom:6px} .ask ol{margin:0;padding-left:20px;display:grid;gap:4px}
+.muted{color:var(--muted);font-size:13px;margin:0} p{margin:0;max-width:70ch}
+.tbl{overflow-x:auto} table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th{text-align:left;font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--line);padding:7px 8px;white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap} tr.total td{font-weight:600;border-top:2px solid var(--ink);border-bottom:0}
+.num{text-align:right} .neg{color:var(--bad)}
+.hrow{display:grid;grid-template-columns:52px 1fr 60px 76px;gap:10px;align-items:center;font-size:14px}
+.hrow:has(.wide){grid-template-columns:minmax(150px,300px) 1fr 52px 40px}
+.hlab{font-weight:500} .htrack{height:18px;background:var(--bg);border-radius:4px;overflow:hidden}
+.hfill{display:block;height:100%;background:var(--accent2)} .hlegit{display:block;height:100%;background:var(--accent)}
+.sfill{display:block;height:100%} .sfill.g{background:var(--good)} .sfill.w{background:var(--warn)} .sfill.n{background:var(--neutral)}
+.hnum{text-align:right;font:500 13px var(--mono)} .hnote{font-size:12px;color:var(--muted)}
+.cols{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;height:170px;align-items:end}
+.mcol{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:3px;min-width:0}
+.mbar{width:100%;max-width:48px;background:var(--accent2);border-radius:4px 4px 0 0;display:flex;align-items:flex-end;overflow:hidden}
+.mbar span{display:block;width:100%;background:var(--accent)} .mbar.sp{background:var(--accent)} .mbar.sp .fee{background:var(--warn)}
+.mval{font:500 12px var(--mono);white-space:nowrap} .mlab{font-weight:600;font-size:13px} .msrc{font:11px var(--mono);color:var(--muted)} .msrc.bat{color:var(--warn)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)} .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.vs .tile b{font-size:30px} .vs .tile.hl{border-color:var(--warn)}
 .pill{font:500 12px var(--mono);padding:2px 8px;border-radius:99px;border:1px solid currentColor} .pill.ok{color:var(--good)} .pill.warn{color:var(--warn)} .pill.bad{color:var(--bad)}
-.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
 .note{border-left:3px solid var(--warn);padding:10px 14px;background:var(--bg);border-radius:0 8px 8px 0;font-size:14px}
-ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:75ch}
-@media (max-width:560px){.months{gap:4px} .msrc{display:none} h1{font-size:28px}}
+ul.plain{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
+.pager{display:flex;justify-content:space-between;gap:12px}
+.pager button,.btn{font:500 14px var(--sans);border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 14px;cursor:pointer}
+.pager button:hover,.btn:hover{border-color:var(--accent)} .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+.cform{display:grid;gap:10px}
+.cform textarea{font:15px/1.5 var(--sans);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:84px;resize:vertical}
+.cform select,.cfilter select{font:14px var(--sans);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+.crow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.clist{display:grid;gap:10px}
+.cmt{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.cmt img{width:34px;height:34px;border-radius:50%}
+.cmeta{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;font-size:13px;color:var(--muted)} .cmeta b{color:var(--ink);font-size:14px}
+.ctopic{font:500 11px var(--mono);color:var(--accent);border:1px solid var(--line);border-radius:99px;padding:1px 7px}
+.ctext{white-space:pre-wrap;word-break:break-word;margin-top:4px}
+.cdel{margin-left:auto;background:none;border:0;color:var(--muted);cursor:pointer;font:13px var(--sans);padding:2px 4px} .cdel:hover{color:var(--bad)}
+.status{font-size:13px;color:var(--muted);min-height:1.2em} .status.err{color:var(--bad)}
+.empty{color:var(--muted);font-size:14px;padding:14px;border:1px dashed var(--line);border-radius:10px;text-align:center}
+.mini{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;color:var(--muted)} .mini a{color:var(--accent)}
+@media (max-width:820px){
+ .app{grid-template-columns:1fr}
+ aside{position:sticky;top:env(safe-area-inset-top,0px);height:auto;padding:10px 16px;gap:8px;z-index:5}
+ .brand span,.asof{display:none} .brand b{font-size:15px}
+ nav{flex-direction:row;overflow-x:auto;gap:4px;scrollbar-width:none} nav a{white-space:nowrap;padding:7px 10px;gap:6px}
+ main{padding-top:20px} .big{grid-template-columns:repeat(2,1fr)} .vs{grid-template-columns:1fr}
+ .hrow{grid-template-columns:44px 1fr 52px} .hrow .hnote{display:none} .hrow:has(.wide){grid-template-columns:1fr 52px} .hrow:has(.wide) .htrack{grid-column:1/-1;grid-row:2}
+ .msrc{display:none} .cols{gap:4px} td,th{padding:6px 4px} table{font-size:13px} .mval{font-size:10px} h1{font-size:25px}
+}
+@media (prefers-reduced-motion:no-preference){.panel{animation:fade .18s ease-out} @keyframes fade{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}}
 </style>
-<div class=wrap>
-<header><div class=eyebrow>Twin Home Buyer · Google Ads PPC only · Jul 2023 – Jul 2026</div>
-<h1>Google PPC Lead Report</h1>
-<p class=lede>Every Google Ads lead we have on record, prepared for Juan. It combines the in-house <b>PPC LEAD</b> log (through May 24, 2026) with the Google tab of the <b>Bateman</b> KPI dashboard (Jun 8 – Jul 20, 2026). Organic webforms, SEO leads and Facebook leads are left out.</p></header>
-<div class=kpis>
-<div class=kpi><b>1,724</b><span>Google PPC leads</span></div>
-<div class=kpi><b>1,136</b><span>Legit leads (excl. invalid, spam, tests)</span></div>
-<div class=kpi><b>264</b><span>Interested or better</span></div>
-<div class=kpi><b>14</b><span>Properties acquired</span></div>
-<div class=kpi><b>$909,310</b><span>Net revenue recorded on those deals</span></div>
-<div class=kpi><b>$115,425</b><span>2026 PPC spend to date (books)</span></div>
+<div class=app>
+<aside><div class=brand><b>Google PPC Report</b><span>Twin Home Buyer</span></div>
+<nav aria-label="Topics"><a href="#overview" data-t="overview" id="nav-overview"><span>Summary</span></a><a href="#leads" data-t="leads" id="nav-leads"><span>Leads over time</span></a><a href="#spend" data-t="spend" id="nav-spend"><span>2026 ad spend</span></a><a href="#bateman" data-t="bateman" id="nav-bateman"><span>Bateman agency</span></a><a href="#deals" data-t="deals" id="nav-deals"><span>Homes bought</span></a><a href="#quality" data-t="quality" id="nav-quality"><span>Lead quality</span></a><a href="#data" data-t="data" id="nav-data"><span>About this data</span></a><a href="#comments" data-t="comments" id="nav-comments"><span>Comments</span><b class=count id=ccount></b></a></nav>
+<div class=asof>Google Ads leads only.<br>Leads: Jul 2023 – Jul 20, 2026<br>Spend: Jan 1 – Sep 26, 2026</div></aside>
+<main>
+
+<section class=panel id=overview data-panel>
+<div><div class=eyebrow>For Juan · Sep 26, 2026</div><h1>Google ads bring in deals. Bateman costs more, and the ads are off right now.</h1></div>
+<div class=big>
+<div class=tile><b>1,724</b><span>leads from Google ads since Jul 2023</span></div>
+<div class=tile><b>14</b><span>homes bought from those leads</span></div>
+<div class=tile><b>$909K</b><span>net profit recorded on those homes</span></div>
+<div class=tile><b>$115K</b><span>spent on Google ads in 2026</span></div>
 </div>
-<section><h2>Leads by year</h2>
-<div class=tbl><table><thead><tr><th>Year</th><th>Leads</th><th>Calls</th><th>Web forms</th><th>Legit</th><th>Interested+</th><th>Acquired</th></tr></thead><tbody><tr><td>2023 <span class=muted>(from Jul 8)</span></td><td>3</td><td>2</td><td>1</td><td>3</td><td>2</td><td><b>2</b></td></tr><tr><td>2024</td><td>543</td><td>382</td><td>161</td><td>355</td><td>31</td><td><b>2</b></td></tr><tr><td>2025</td><td>951</td><td>460</td><td>491</td><td>634</td><td>181</td><td><b>7</b></td></tr><tr><td>2026 <span class=muted>(through Jul 20)</span></td><td>227</td><td>104</td><td>123</td><td>144</td><td>50</td><td><b>3</b></td></tr><tr class=total><td>All time</td><td>1,724</td><td>948</td><td>776</td><td>1,136</td><td>264</td><td>14</td></tr></tbody></table></div>
-<p class=muted>"Interested+" counts leads scored Follow Up / Interested or higher: appointment, contract sent, under contract, cancelled contract, acquired. Acquired is counted in the year the lead came in.</p></section>
-<section><h2>2026 month by month</h2>
-<div class=legend><span><i style="background:var(--accent)"></i>Legit leads</span><span><i style="background:var(--accent2)"></i>Invalid / junk</span><span>Bottom label shows who tracked the month</span></div>
-<div class=months><div class=mcol><div class=mval>39</div><div class=mbar style="height:80%"><span class=legit style="height:59%"></span></div><div class=mlab>Jan</div><div class="msrc ">In-house</div></div><div class=mcol><div class=mval>34</div><div class=mbar style="height:69%"><span class=legit style="height:65%"></span></div><div class=mlab>Feb</div><div class="msrc ">In-house</div></div><div class=mcol><div class=mval>49</div><div class=mbar style="height:100%"><span class=legit style="height:71%"></span></div><div class=mlab>Mar</div><div class="msrc ">In-house</div></div><div class=mcol><div class=mval>16</div><div class=mbar style="height:33%"><span class=legit style="height:56%"></span></div><div class=mlab>Apr</div><div class="msrc ">In-house</div></div><div class=mcol><div class=mval>47</div><div class=mbar style="height:96%"><span class=legit style="height:49%"></span></div><div class=mlab>May</div><div class="msrc ">In-house</div></div><div class=mcol><div class=mval>27</div><div class=mbar style="height:55%"><span class=legit style="height:67%"></span></div><div class=mlab>Jun</div><div class="msrc bat">Bateman</div></div><div class=mcol><div class=mval>15</div><div class=mbar style="height:31%"><span class=legit style="height:93%"></span></div><div class=mlab>Jul</div><div class="msrc bat">Bateman</div></div></div>
-<p class=muted>Google Ads was paused Jan 7–13. Bateman took over in June; May 25 – Jun 7 has no leads in either sheet, and nothing has been logged for August or September yet.</p></section>
-<section><h2>Where every lead ended up</h2><div class=srow><span class=sname>Acquired</span><span class=strack><span class="sfill g" style="width:2.0%"></span></span><span class=snum>14</span></div><div class=srow><span class=sname>Under Contract</span><span class=strack><span class="sfill g" style="width:0.6%"></span></span><span class=snum>2</span></div><div class=srow><span class=sname>Contract Sent / Offer</span><span class=strack><span class="sfill g" style="width:1.6%"></span></span><span class=snum>11</span></div><div class=srow><span class=sname>Appointment Booked</span><span class=strack><span class="sfill g" style="width:2.4%"></span></span><span class=snum>17</span></div><div class=srow><span class=sname>Cancelled Contract</span><span class=strack><span class="sfill w" style="width:0.7%"></span></span><span class=snum>5</span></div><div class=srow><span class=sname>Follow Up / Interested</span><span class=strack><span class="sfill w" style="width:30.6%"></span></span><span class=snum>215</span></div><div class=srow><span class=sname>Offer Rejected</span><span class=strack><span class="sfill w" style="width:10.5%"></span></span><span class=snum>74</span></div><div class=srow><span class=sname>Not Qualified / Not a Seller</span><span class=strack><span class="sfill n" style="width:3.0%"></span></span><span class=snum>21</span></div><div class=srow><span class=sname>Not Interested / Unresponsive</span><span class=strack><span class="sfill n" style="width:100.0%"></span></span><span class=snum>702</span></div><div class=srow><span class=sname>Invalid / Junk</span><span class=strack><span class="sfill n" style="width:83.8%"></span></span><span class=snum>588</span></div><div class=srow><span class=sname>Not Scored</span><span class=strack><span class="sfill n" style="width:10.7%"></span></span><span class=snum>75</span></div>
-<p class=muted>Bateman's "Unqualified / Non-Seller" leads are shown as Not Qualified. The in-house log folds those into Not Interested / Unresponsive, so compare those two rows together.</p></section>
-<section><h2>2026 spend vs. leads</h2>
-<div class=tbl><table><thead><tr><th>Month</th><th class=num>Google Ads</th><th class=num>Bateman fee</th><th class=num>Total spend</th><th class=num>Leads</th><th class=num>Legit</th><th class=num>Interested+</th><th class=num>Cost / legit lead</th></tr></thead><tbody><tr><td>Jan</td><td class=num>$7,138</td><td class=num>—</td><td class=num><b>$7,138</b></td><td class=num>39</td><td class=num>23</td><td class=num>10</td><td class=num>$310</td></tr><tr><td>Feb</td><td class=num>$21,000</td><td class=num>—</td><td class=num><b>$21,000</b></td><td class=num>34</td><td class=num>22</td><td class=num>10</td><td class=num>$955</td></tr><tr><td>Mar</td><td class=num>$22,481</td><td class=num>—</td><td class=num><b>$22,481</b></td><td class=num>49</td><td class=num>35</td><td class=num>11</td><td class=num>$642</td></tr><tr><td>Apr</td><td class=num>$18,146</td><td class=num>—</td><td class=num><b>$18,146</b></td><td class=num>16</td><td class=num>9</td><td class=num>5</td><td class=num>$2,016</td></tr><tr><td>May</td><td class=num>$7,072</td><td class=num>—</td><td class=num><b>$7,072</b></td><td class=num>47</td><td class=num>23</td><td class=num>11</td><td class=num>$307</td></tr><tr><td>Jun</td><td class=num>$13,943</td><td class=num>$7,226</td><td class=num><b>$21,168</b></td><td class=num>27</td><td class=num>18</td><td class=num>2</td><td class=num>$1,176</td></tr><tr><td>Jul</td><td class=num>$13,610</td><td class=num>$4,500</td><td class=num><b>$18,110</b></td><td class=num>15</td><td class=num>14</td><td class=num>1</td><td class=num>$1,294</td></tr><tr><td>Aug</td><td class=num>$202</td><td class=num>—</td><td class=num><b>$202</b></td><td class=num>—</td><td class=num>—</td><td class=num>—</td><td class=num>—</td></tr><tr><td>Sep</td><td class=num>$109</td><td class=num>—</td><td class=num><b>$109</b></td><td class=num>—</td><td class=num>—</td><td class=num>—</td><td class=num>—</td></tr><tr class=total><td>2026 YTD</td><td class=num>$103,699</td><td class=num>$11,726</td><td class=num>$115,425</td><td class=num>227</td><td class=num>144</td><td class=num>50</td><td class=num>$802</td></tr></tbody></table></div>
-<div class=two>
-<ul><li><b>$115,425</b> spent on PPC in 2026: $103,699 to Google Ads and $11,726 in Bateman fees.</li>
-<li>That works out to <b>$802</b> per legit lead and <b>$38,475</b> per acquired property (3 in 2026: Bill in San Lorenzo, Wei Wang, Robert Gunn).</li>
-<li>Bill's deal alone netted $127,329, more than all 2026 PPC spend combined.</li></ul>
-<ul><li><b>Ads are effectively off.</b> Charges stop after Jul 24; August and September total only $312. That matches the empty lead log for those months.</li>
-<li><b>Bateman costs about 1.8× more per lead.</b> Jan–May in-house: $75,836 for 112 legit leads ($677 each). Jun–Jul with Bateman: $39,278 for 32 ($1,227 each), with far fewer calls.</li></ul></div>
-<p class=muted>Spend is from the QuickBooks "AM – PPC" transaction report (Equity Track Inc, Jan 1 – Sep 26, 2026), counted by charge date. Google bills in $500 increments, so a month's charges can run a few days behind the clicks.</p></section>
-<section><h2>Bateman, June – July 2026</h2>
-<div class=two>
-<div class=tbl><table><thead><tr><th></th><th>June</th><th>Jul 1–20</th></tr></thead><tbody>
-<tr><td>Google leads</td><td>27</td><td>15</td></tr>
-<tr><td>Legit (no tests/spam/dupes)</td><td>18</td><td>14</td></tr>
-<tr><td>Spend incl. Bateman fee (books)</td><td>$21,168</td><td>$18,110</td></tr>
-<tr><td><b>Cost per legit lead</b></td><td><b>$1,176</b></td><td><b>$1,294</b></td></tr></tbody></table></div>
-<ul><li><b>3 live deals</b> out of 42 leads: MK Ding (appointment completed), Martha Reece (contract) and Robert Gunn (acquired Jul 31, 2026, $755,000 purchase).</li>
-<li><b>21 of 42</b> were unqualified or not sellers: out of area, retail pricing, already listed.</li>
+<div class=card><h2>The four things to know</h2>
+<ul class=takeaways>
+<li><span class="dot g">1</span><p><b>The ads pay for themselves.</b> 14 homes bought since 2023. One 2026 deal in San Lorenzo made $127,329, more than everything we spent on ads this year.</p></li>
+<li><span class="dot w">2</span><p><b>Bateman leads cost almost twice as much.</b> $1,227 per real lead with Bateman (Jun–Jul) vs. $677 when we ran it ourselves (Jan–May). Phone calls nearly stopped too.</p></li>
+<li><span class="dot b">3</span><p><b>The ads have been off since Jul 24.</b> Only $312 spent in Aug–Sep, and no new leads are logged for those months.</p></li>
+<li><span class="dot w">4</span><p><b>About 1 in 3 leads is junk.</b> 588 of 1,724 were wrong numbers, spam or tests.</p></li>
+</ul></div>
+<div class=ask><h2>Decisions for you</h2><ol><li>Turn the Google ads back on?</li><li>Keep Bateman, or bring PPC back in-house?</li><li>Ask Bateman to explain why their spend numbers don't match our books.</li></ol></div>
+<div class=mini><span>Use the topics on the left for details.</span><a href="#comments">Leave a comment →</a></div>
+</section>
+
+<section class=panel id=leads data-panel hidden>
+<div><div class=eyebrow>Leads over time</div><h1>How many leads came in</h1>
+<p class=lede>Leads grew through 2025, our best year. 2026 is running slower, and the log stops on Jul 20.</p></div>
+<div class=card><h2>By year</h2>
+<div class=legend><span><i style="background:var(--accent)"></i>Real leads</span><span><i style="background:var(--accent2)"></i>Junk</span></div>
+<div class=hrow><span class=hlab>2023</span><span class=htrack><span class=hfill style="width:0.3%"><span class=hlegit style="width:100.0%"></span></span></span><span class=hnum>3</span><span class=hnote>2 bought</span></div><div class=hrow><span class=hlab>2024</span><span class=htrack><span class=hfill style="width:57.1%"><span class=hlegit style="width:65.4%"></span></span></span><span class=hnum>543</span><span class=hnote>2 bought</span></div><div class=hrow><span class=hlab>2025</span><span class=htrack><span class=hfill style="width:100.0%"><span class=hlegit style="width:66.7%"></span></span></span><span class=hnum>951</span><span class=hnote>7 bought</span></div><div class=hrow><span class=hlab>2026</span><span class=htrack><span class=hfill style="width:23.9%"><span class=hlegit style="width:63.4%"></span></span></span><span class=hnum>227</span><span class=hnote>3 bought</span></div>
+<p class=muted>2023 starts in July. 2026 runs through Jul 20. "Bought" is counted in the year the lead first came in.</p></div>
+<div class=card><h2>2026, month by month</h2>
+<div class=cols><div class=mcol><div class=mval>39</div><div class=mbar style="height:80%"><span style="height:59%"></span></div><div class=mlab>Jan</div><div class="msrc">In-house</div></div><div class=mcol><div class=mval>34</div><div class=mbar style="height:69%"><span style="height:65%"></span></div><div class=mlab>Feb</div><div class="msrc">In-house</div></div><div class=mcol><div class=mval>49</div><div class=mbar style="height:100%"><span style="height:71%"></span></div><div class=mlab>Mar</div><div class="msrc">In-house</div></div><div class=mcol><div class=mval>16</div><div class=mbar style="height:33%"><span style="height:56%"></span></div><div class=mlab>Apr</div><div class="msrc">In-house</div></div><div class=mcol><div class=mval>47</div><div class=mbar style="height:96%"><span style="height:49%"></span></div><div class=mlab>May</div><div class="msrc">In-house</div></div><div class=mcol><div class=mval>27</div><div class=mbar style="height:55%"><span style="height:67%"></span></div><div class=mlab>Jun</div><div class="msrc bat">Bateman</div></div><div class=mcol><div class=mval>15</div><div class=mbar style="height:31%"><span style="height:93%"></span></div><div class=mlab>Jul</div><div class="msrc bat">Bateman</div></div></div>
+<p class=muted>Ads were paused Jan 7–13. Bateman took over in June. Nothing is logged for May 25 – Jun 7 or after Jul 20.</p></div>
+</section>
+
+<section class=panel id=spend data-panel hidden>
+<div><div class=eyebrow>2026 ad spend</div><h1>$115,425 spent on Google ads this year</h1>
+<p class=lede>That's $103,699 paid to Google plus $11,726 in Bateman fees. On average each real lead cost $802, and each home bought in 2026 cost about $38,475 in ads.</p></div>
+<div class=card><h2>Spend by month</h2>
+<div class=legend><span><i style="background:var(--accent)"></i>Google ads</span><span><i style="background:var(--warn)"></i>Bateman fee</span></div>
+<div class=cols><div class=mcol><div class=mval>$7K</div><div class="mbar sp" style="height:32%"><span class=fee style="height:0%"></span></div><div class=mlab>Jan</div></div><div class=mcol><div class=mval>$21K</div><div class="mbar sp" style="height:93%"><span class=fee style="height:0%"></span></div><div class=mlab>Feb</div></div><div class=mcol><div class=mval>$22K</div><div class="mbar sp" style="height:100%"><span class=fee style="height:0%"></span></div><div class=mlab>Mar</div></div><div class=mcol><div class=mval>$18K</div><div class="mbar sp" style="height:81%"><span class=fee style="height:0%"></span></div><div class=mlab>Apr</div></div><div class=mcol><div class=mval>$7K</div><div class="mbar sp" style="height:31%"><span class=fee style="height:0%"></span></div><div class=mlab>May</div></div><div class=mcol><div class=mval>$21K</div><div class="mbar sp" style="height:94%"><span class=fee style="height:34%"></span></div><div class=mlab>Jun</div></div><div class=mcol><div class=mval>$18K</div><div class="mbar sp" style="height:81%"><span class=fee style="height:25%"></span></div><div class=mlab>Jul</div></div><div class=mcol><div class=mval>$202</div><div class="mbar sp" style="height:1%"><span class=fee style="height:0%"></span></div><div class=mlab>Aug</div></div><div class=mcol><div class=mval>$109</div><div class="mbar sp" style="height:1%"><span class=fee style="height:0%"></span></div><div class=mlab>Sep</div></div></div></div>
+<div class=card><div class=tbl><table><thead><tr><th>Month</th><th class=num>Spent</th><th class=num>Real leads</th><th class=num>Cost per lead</th></tr></thead><tbody><tr><td>Jan</td><td class=num>$7,138</td><td class=num>23</td><td class=num>$310</td></tr><tr><td>Feb</td><td class=num>$21,000</td><td class=num>22</td><td class=num>$955</td></tr><tr><td>Mar</td><td class=num>$22,481</td><td class=num>35</td><td class=num>$642</td></tr><tr><td>Apr</td><td class=num>$18,146</td><td class=num>9</td><td class=num>$2,016</td></tr><tr><td>May</td><td class=num>$7,072</td><td class=num>23</td><td class=num>$307</td></tr><tr><td>Jun</td><td class=num>$21,168</td><td class=num>18</td><td class=num>$1,176</td></tr><tr><td>Jul</td><td class=num>$18,110</td><td class=num>14</td><td class=num>$1,294</td></tr><tr><td>Aug</td><td class=num>$202</td><td class=num>—</td><td class=num>—</td></tr><tr><td>Sep</td><td class=num>$109</td><td class=num>—</td><td class=num>—</td></tr><tr class=total><td>2026 so far</td><td class=num>$115,425</td><td class=num>144</td><td class=num>$802</td></tr></tbody></table></div>
+<p class=muted>From the QuickBooks "AM – PPC" report. Google charges in $500 chunks a few days after the clicks, so single months jump around (April looks high because only 9 real leads came in). The full-year number is the reliable one.</p></div>
+</section>
+
+<section class=panel id=bateman data-panel hidden>
+<div><div class=eyebrow>Bateman agency · Jun–Jul 2026</div><h1>Bateman is getting leads at nearly double the cost</h1>
+<p class=lede>Bateman ran our Google ads for two months. They produced 42 leads and one home we bought, but each real lead cost much more than when we ran it ourselves.</p></div>
+<div class=vs>
+<div class=tile><b>$677</b><span>per real lead, in-house (Jan–May): $75,836 for 112 leads</span></div>
+<div class="tile hl"><b>$1,227</b><span>per real lead, Bateman (Jun–Jul): $39,278 incl. fees for 32 leads</span></div>
+</div>
+<div class=card><h2>What their 42 leads turned into</h2>
+<ul class=plain>
+<li><b>3 good ones:</b> Robert Gunn (bought Jul 31, $755,000), MK Ding (appointment done), Martha Reece (contract).</li>
+<li><b>21</b> weren't real sellers: out of our area, wanted full retail price, or already listed.</li>
+<li><b>8</b> never answered.</li>
 <li><b>10</b> were our own tests, duplicates or spam.</li>
-<li>Calls dropped sharply: 4 tracked calls in two months vs. 25–30 a month in-house.</li></ul></div>
-<p class=note>Bateman's own dashboard reports different spend: $22,527 for June and $16,660 for Jul 1–21 (and separately "$13,202.49 for July"). Our books show $13,943 and $13,610 actually charged by Google in those months. Worth asking Bateman to reconcile.</p></section>
-<section><h2>Deals from Google PPC</h2>
-<div class=tbl><table><thead><tr><th>Lead date</th><th>Seller</th><th>City</th><th>Source</th><th>Status</th><th class=num>Purchase</th><th class=num>Sale</th><th class=num>Net</th></tr></thead><tbody><tr><td>2026-06-28</td><td>Robert Gunn</td><td>San Francisco</td><td>Bateman – Google Ads</td><td><span class='pill ok'>Acquired</span></td><td class=num>$755,000</td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2026-03-12</td><td>Joseph Harper</td><td>Orland</td><td>PPC – Web Form</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2026-02-12</td><td>Wei Wang</td><td>Emerald Hills</td><td>PPC – Call</td><td><span class='pill ok'>Acquired</span></td><td class=num>$2,500,000</td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2026-01-21</td><td>Bill</td><td>San Lorenzo</td><td>PPC – Call</td><td><span class='pill ok'>Acquired</span></td><td class=num>$600,000</td><td class=num>$858,000</td><td class='num '>$127,329</td></tr><tr><td>2025-12-02</td><td>JONES, ELLIS</td><td>Oakland</td><td>PPC – Web Form</td><td><span class='pill ok'>Acquired</span></td><td class=num>$440,000</td><td class=num>$825,000</td><td class='num '>$232,806</td></tr><tr><td>2025-09-16</td><td>Gopi</td><td>East Palo Alto</td><td>PPC – Call</td><td><span class='pill ok'>Acquired</span></td><td class=num>$700,000</td><td class=num>$900,000</td><td class='num '>$31,786</td></tr><tr><td>2025-08-20</td><td>Mitchell Vierra</td><td>San Lorenzo</td><td>PPC – Web Form</td><td><span class='pill ok'>Acquired</span></td><td class=num>$550,000</td><td class=num>$800,000</td><td class='num '>$65,282</td></tr><tr><td>2025-08-06</td><td>DelGiudice, Joy</td><td>Berkeley</td><td>PPC – Web Form</td><td><span class='pill ok'>Acquired</span></td><td class=num>$750,000</td><td class=num>$950,000</td><td class='num '>$85,101</td></tr><tr><td>2025-05-20</td><td>Parent, Thomas</td><td>Orinda</td><td>PPC – Web Form</td><td><span class='pill ok'>Acquired</span></td><td class=num>$1,350,000</td><td class=num>$1,498,000</td><td class='num neg'>-$71,477</td></tr><tr><td>2025-04-04</td><td>Garret Lydia</td><td>Oakland</td><td>PPC – Call</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2025-03-29</td><td>David R Dancisin</td><td>San Jose</td><td>PPC – Web Form</td><td><span class='pill ok'>Acquired</span></td><td class=num>—</td><td class=num>$1,088,000</td><td class='num '>$52,310</td></tr><tr><td>2025-03-02</td><td>Okoro, Ona</td><td>Sacramento</td><td>PPC – Web Form</td><td><span class='pill ok'>Acquired</span></td><td class=num>$442,000</td><td class=num>$535,000</td><td class='num '>$12,755</td></tr><tr><td>2025-02-04</td><td>Chet Holloway</td><td>Sunnyvale</td><td>PPC – Web Form</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2024-11-04</td><td>Susan Delgado</td><td>Redding</td><td>PPC – Web Form</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2024-07-15</td><td>Bard, Elizabeth</td><td>Redwood City</td><td>PPC – Call</td><td><span class='pill ok'>Acquired</span></td><td class=num>$900,000</td><td class=num>$1,230,000</td><td class='num '>$127,138</td></tr><tr><td>2024-06-24</td><td>Carlier, Robin</td><td>Redwood City</td><td>PPC – Call</td><td><span class='pill ok'>Acquired</span></td><td class=num>$2,400,000</td><td class=num>$3,020,000</td><td class='num '>$304,605</td></tr><tr><td>2023-12-25</td><td>William Freeman</td><td>Oregon House</td><td>Not in lead log</td><td><span class='pill ok'>Acquired</span></td><td class=num>$170,000</td><td class=num>$370,000</td><td class='num neg'>-$58,325</td></tr><tr><td>2023-10-29</td><td>Rita Williams</td><td>Emeryville</td><td>PPC – Call</td><td><span class='pill warn'>Under Contract</span></td><td class=num>—</td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2023-07-08</td><td>Villanueva, Flavio</td><td>Bakersfield</td><td>PPC – Web Form</td><td><span class='pill ok'>Acquired</span></td><td class=num>—</td><td class=num>—</td><td class='num '>—</td></tr></tbody></table></div>
-<p class=muted>From the "Acquired Leads" tab. Blank figures weren't filled in on the sheet. William Freeman (Dec 2023) isn't in the lead log; the tab tags him PPC with campaign "bofu", so he's included.</p>
-<p class=note><b>Removed:</b> 10 deals on the Acquired Leads tab are labeled "PPC" but the lead log shows them as <b>Organic Webform</b>, so they don't count here: Galvan, Carla, Wong, Dan, M Ferretti, Jean, Greenwood, Mike, Wada, Toyotaro, Dania Aceves, Jae Lee, Sheryl Taylor, Davis, Bill, vu, Loan. Together they show $499,091 net.</p></section>
-<section><h2>What's in and what's out</h2>
-<ul><li><b>Included:</b> PPC LEAD rows tagged "Incoming Call" or "PPC Webform" (1,682), plus Bateman leads with source Google (42).</li>
-<li><b>Excluded:</b> 314 Organic Webform, 8 THB SEO, and 13 Bateman Facebook leads.</li>
-<li>The full list of 1,724 leads with status, notes and campaign is in the Excel file that goes with this report.</li></ul></section>
-</div>
+<li>Only <b>4 phone calls</b> in two months. We used to get 20–30 calls a month.</li></ul></div>
+<p class=note><b>Their numbers don't match ours.</b> Bateman reports $22,527 spent in June and $16,660 for Jul 1–21. Our books show Google charged $13,943 and $13,610. Ask them to explain the difference.</p>
+</section>
+
+<section class=panel id=deals data-panel hidden>
+<div><div class=eyebrow>Homes bought</div><h1>14 homes bought from Google ads</h1>
+<p class=lede>9 made money and 2 lost money, for $909,310 net profit on the deals with numbers filled in. Four contracts fell through and one is still under contract.</p></div>
+<div class=card><div class=tbl><table><thead><tr><th>Lead came in</th><th>Seller</th><th>City</th><th>Result</th><th class=num>We paid</th><th class=num>Net profit</th></tr></thead><tbody><tr><td>2026-06</td><td>Robert Gunn</td><td>San Francisco</td><td><span class='pill ok'>Bought</span></td><td class=num>$755,000</td><td class='num '>—</td></tr><tr><td>2026-03</td><td>Joseph Harper</td><td>Orland</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2026-02</td><td>Wei Wang</td><td>Emerald Hills</td><td><span class='pill ok'>Bought</span></td><td class=num>$2,500,000</td><td class='num '>—</td></tr><tr><td>2026-01</td><td>Bill</td><td>San Lorenzo</td><td><span class='pill ok'>Bought</span></td><td class=num>$600,000</td><td class='num '>$127,329</td></tr><tr><td>2025-12</td><td>JONES, ELLIS</td><td>Oakland</td><td><span class='pill ok'>Bought</span></td><td class=num>$440,000</td><td class='num '>$232,806</td></tr><tr><td>2025-09</td><td>Gopi</td><td>East Palo Alto</td><td><span class='pill ok'>Bought</span></td><td class=num>$700,000</td><td class='num '>$31,786</td></tr><tr><td>2025-08</td><td>Mitchell Vierra</td><td>San Lorenzo</td><td><span class='pill ok'>Bought</span></td><td class=num>$550,000</td><td class='num '>$65,282</td></tr><tr><td>2025-08</td><td>DelGiudice, Joy</td><td>Berkeley</td><td><span class='pill ok'>Bought</span></td><td class=num>$750,000</td><td class='num '>$85,101</td></tr><tr><td>2025-05</td><td>Parent, Thomas</td><td>Orinda</td><td><span class='pill ok'>Bought</span></td><td class=num>$1,350,000</td><td class='num neg'>−$71,477</td></tr><tr><td>2025-04</td><td>Garret Lydia</td><td>Oakland</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2025-03</td><td>David R Dancisin</td><td>San Jose</td><td><span class='pill ok'>Bought</span></td><td class=num>—</td><td class='num '>$52,310</td></tr><tr><td>2025-03</td><td>Okoro, Ona</td><td>Sacramento</td><td><span class='pill ok'>Bought</span></td><td class=num>$442,000</td><td class='num '>$12,755</td></tr><tr><td>2025-02</td><td>Chet Holloway</td><td>Sunnyvale</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2024-11</td><td>Susan Delgado</td><td>Redding</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2024-07</td><td>Bard, Elizabeth</td><td>Redwood City</td><td><span class='pill ok'>Bought</span></td><td class=num>$900,000</td><td class='num '>$127,138</td></tr><tr><td>2024-06</td><td>Carlier, Robin</td><td>Redwood City</td><td><span class='pill ok'>Bought</span></td><td class=num>$2,400,000</td><td class='num '>$304,605</td></tr><tr><td>2023-12</td><td>William Freeman</td><td>Oregon House</td><td><span class='pill ok'>Bought</span></td><td class=num>$170,000</td><td class='num neg'>−$58,325</td></tr><tr><td>2023-10</td><td>Rita Williams</td><td>Emeryville</td><td><span class='pill warn'>Under Contract</span></td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2023-07</td><td>Villanueva, Flavio</td><td>Bakersfield</td><td><span class='pill ok'>Bought</span></td><td class=num>—</td><td class='num '>—</td></tr></tbody></table></div>
+<p class=muted>From the "Acquired Leads" tab. A dash means the number isn't filled in on the sheet yet.</p></div>
+<p class=note><b>10 more deals are left out.</b> The Acquired Leads tab calls them PPC, but the lead log says they came from our website form (organic), not ads: Galvan, Carla, Wong, Dan, M Ferretti, Jean, Greenwood, Mike, Wada, Toyotaro, Dania Aceves, Jae Lee, Sheryl Taylor, Davis, Bill, vu, Loan. Together they show $499,091 net profit.</p>
+</section>
+
+<section class=panel id=quality data-panel hidden>
+<div><div class=eyebrow>Lead quality</div><h1>Where every lead ended up</h1>
+<p class=lede>Out of 1,724 leads, about 1 in 20 became interested or better. Most never answered or weren't real sellers.</p></div>
+<div class=card><div class=hrow><span class="hlab wide">Bought or in contract</span><span class=htrack><span class="sfill g" style="width:3.7%"></span></span><span class=hnum>27</span><span class=hnote>2%</span></div><div class=hrow><span class="hlab wide">Appointment booked</span><span class=htrack><span class="sfill g" style="width:2.4%"></span></span><span class=hnum>17</span><span class=hnote>1%</span></div><div class=hrow><span class="hlab wide">Interested, following up</span><span class=htrack><span class="sfill w" style="width:29.7%"></span></span><span class=hnum>215</span><span class=hnote>12%</span></div><div class=hrow><span class="hlab wide">Said no to our offer / contract cancelled</span><span class=htrack><span class="sfill w" style="width:10.9%"></span></span><span class=hnum>79</span><span class=hnote>5%</span></div><div class=hrow><span class="hlab wide">Not interested, not a seller, or never answered</span><span class=htrack><span class="sfill n" style="width:100.0%"></span></span><span class=hnum>723</span><span class=hnote>42%</span></div><div class=hrow><span class="hlab wide">Junk: wrong number, spam, tests</span><span class=htrack><span class="sfill n" style="width:81.3%"></span></span><span class=hnum>588</span><span class=hnote>34%</span></div><div class=hrow><span class="hlab wide">Not scored yet</span><span class=htrack><span class="sfill n" style="width:10.4%"></span></span><span class=hnum>75</span><span class=hnote>4%</span></div></div>
+<p class=muted>Green means a deal or a booked appointment. Yellow means there was real interest. Grey means no deal.</p>
+</section>
+
+<section class=panel id=data data-panel hidden>
+<div><div class=eyebrow>About this data</div><h1>Where these numbers come from</h1></div>
+<div class=card><h2>Sources</h2><ul class=plain>
+<li><b>PPC LEAD sheet</b>: our in-house lead log, Jul 2023 – May 24, 2026.</li>
+<li><b>Bateman PPC Lead KPI Dashboard</b>: Google leads only, Jun 8 – Jul 20, 2026.</li>
+<li><b>QuickBooks "AM – PPC" report</b>: every Google Ads and Bateman charge, Jan 1 – Sep 26, 2026.</li>
+<li><b>Acquired Leads tab</b>: purchase and sale prices and net profit for homes bought.</li></ul></div>
+<div class=card><h2>What's left out</h2><ul class=plain>
+<li>314 website form (organic) leads</li>
+<li>8 SEO leads</li>
+<li>13 Facebook leads from Bateman</li></ul></div>
+<div class=card><h2>Things to fix in the sheets</h2><ul class=plain>
+<li>Ten deals are tagged PPC on the Acquired tab but organic in the lead log.</li>
+<li>William Freeman (Dec 2023) is on the Acquired tab but not in the lead log. He's counted here because the tab says PPC.</li>
+<li>Martha Reece's note is cut off ("already signed…"), so it isn't clear she signed with us.</li></ul></div>
+<p class=muted>The full list of 1,724 leads is in the Excel file Juan_PPC_Lead_Report.xlsx.</p>
+</section>
+
+<section class=panel id=comments data-panel hidden>
+<div><div class=eyebrow>Comments</div><h1>Questions and notes</h1>
+<p class=lede>Anyone with edit access to this page can add or delete comments. They save automatically and everyone sees them.</p></div>
+<div class=card>
+<form class=cform id=cform>
+<label for=ctext class=muted>Your comment</label>
+<textarea id=ctext maxlength=2000 placeholder="e.g. Let's restart the ads next week and keep Bateman on a 30-day trial."></textarea>
+<div class=crow><div><label for=ctopicsel class=muted>About: </label><select id=ctopicsel><option value="overview">Summary</option><option value="leads">Leads over time</option><option value="spend">2026 ad spend</option><option value="bateman">Bateman agency</option><option value="deals">Homes bought</option><option value="quality">Lead quality</option><option value="data">About this data</option><option value="general">General</option></select></div>
+<button class="btn primary" id=cpost type=submit>Post comment</button></div>
+<div class=status id=cstatus role=status></div>
+</form></div>
+<div class=crow><h2 id=ctitle>All comments</h2><div class=cfilter><label for=cfilter class=muted>Show: </label><select id=cfilter><option value="all">All topics</option><option value="overview">Summary</option><option value="leads">Leads over time</option><option value="spend">2026 ad spend</option><option value="bateman">Bateman agency</option><option value="deals">Homes bought</option><option value="quality">Lead quality</option><option value="data">About this data</option><option value="general">General</option></select></div></div>
+<div class=clist id=clist><div class=empty>Loading comments…</div></div>
+</section>
+
+<div class=panel style="margin-top:18px"><div class=pager><button type=button id=prev>← Previous</button><button type=button id=next>Next →</button></div></div>
+</main></div>
+<script>
+const TOPICS=[["overview", "Summary"], ["leads", "Leads over time"], ["spend", "2026 ad spend"], ["bateman", "Bateman agency"], ["deals", "Homes bought"], ["quality", "Lead quality"], ["data", "About this data"], ["comments", "Comments"]];
+const NAMES=Object.fromEntries(TOPICS);NAMES.general='General';
+const ids=TOPICS.map(t=>t[0]);
+function show(id){
+  if(!ids.includes(id)) id='overview';
+  document.querySelectorAll('[data-panel]').forEach(p=>p.hidden=p.id!==id);
+  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.t===id));
+  const i=ids.indexOf(id);
+  const pv=document.getElementById('prev'),nx=document.getElementById('next');
+  pv.hidden=i===0; nx.hidden=i===ids.length-1;
+  pv.textContent='← '+(i>0?NAMES[ids[i-1]]:''); nx.textContent=(i<ids.length-1?NAMES[ids[i+1]]:'')+' →';
+  pv.onclick=()=>go(ids[i-1]); nx.onclick=()=>go(ids[i+1]);
+  const sel=document.getElementById('ctopicsel'); if(id!=='comments'&&sel) sel.value=id;
+  document.querySelector('main').scrollTop=0; window.scrollTo(0,0);
+  const on=document.querySelector('nav a.on'); if(on){const n=on.parentElement; if(n.scrollWidth>n.clientWidth) n.scrollLeft=on.offsetLeft-16;}
+}
+function go(id){ if(location.hash!=='#'+id) location.hash=id; else show(id); }
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+show(location.hash.slice(1));
+
+// ---- comments (shared db) ----
+const list=document.getElementById('clist'),status=document.getElementById('cstatus'),form=document.getElementById('cform'),txt=document.getElementById('ctext'),post=document.getElementById('cpost'),filt=document.getElementById('cfilter'),count=document.getElementById('ccount');
+let DB=null,USER=null,DOCS=[],canWrite=true;
+function setStatus(m,err){status.textContent=m||'';status.classList.toggle('err',!!err);}
+function when(t){try{return new Date(t).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return '';}}
+async function render(){
+  count.textContent=DOCS.length?String(DOCS.length):'';
+  const f=filt.value; const rows=DOCS.filter(d=>f==='all'||d.data().topic===f);
+  document.getElementById('ctitle').textContent=f==='all'?'All comments':'Comments on '+NAMES[f];
+  if(!DB){list.innerHTML='';const e=document.createElement('div');e.className='empty';e.textContent='Comments are not available in this view. Open the page on claude.ai while signed in.';list.append(e);return;}
+  if(!rows.length){list.innerHTML='';const e=document.createElement('div');e.className='empty';e.textContent='No comments yet. Be the first.';list.append(e);return;}
+  const authorIds=[...new Set(rows.map(d=>d.data().author).filter(Boolean))];
+  let ps={}; if(USER&&authorIds.length){try{ps=await USER.profiles(authorIds);}catch(e){}}
+  const frag=document.createDocumentFragment();
+  for(const d of rows){
+    const c=d.data(); const p=ps[c.author]||{};
+    const el=document.createElement('div'); el.className='cmt';
+    const img=document.createElement('img'); img.alt=''; if(p.avatarUrl) img.src=p.avatarUrl; else img.style.background='var(--line)';
+    const body=document.createElement('div');
+    const meta=document.createElement('div'); meta.className='cmeta';
+    const who=document.createElement('b'); who.textContent=(p.name||'Someone')+(p.isMe?' (you)':'');
+    const tm=document.createElement('span'); tm.textContent=when(c.createdAt);
+    const tp=document.createElement('span'); tp.className='ctopic'; tp.textContent=NAMES[c.topic]||'General';
+    meta.append(who,tm,tp);
+    if(canWrite){const del=document.createElement('button');del.type='button';del.className='cdel';del.textContent='Delete';del.setAttribute('aria-label','Delete this comment');
+      del.onclick=async()=>{del.disabled=true;del.textContent='Deleting…';try{await DB.doc('comments/'+d.id).delete();setStatus('Comment deleted.');}catch(e){del.disabled=false;del.textContent='Delete';setStatus(e&&e.code==='invalid_argument'?'You need edit access to delete comments.':'Could not delete. Try again.',true);}};
+      meta.append(del);}
+    const t=document.createElement('div'); t.className='ctext'; t.textContent=c.text||'';
+    body.append(meta,t); el.append(img,body); frag.append(el);
+  }
+  list.innerHTML=''; list.append(frag);
+}
+filt.addEventListener('change',render);
+form.addEventListener('submit',async e=>{
+  e.preventDefault(); const text=txt.value.trim();
+  if(!text){setStatus('Type a comment first.',true);txt.focus();return;}
+  if(!DB){setStatus('Comments are not available in this view.',true);return;}
+  post.disabled=true; setStatus('Saving…');
+  try{
+    const author=USER?await USER.id():null;
+    await DB.collection('comments').add({text,topic:document.getElementById('ctopicsel').value,author,createdAt:new Date().toISOString()});
+    txt.value=''; setStatus('Saved. Everyone with access can see it.');
+  }catch(err){
+    const c=err&&err.code;
+    if(c==='invalid_argument'){canWrite=false;form.hidden=true;render();setStatus('');list.insertAdjacentHTML('beforebegin','');alert0('You have view-only access. Ask Seth to give you edit access to comment.');}
+    else if(c==='quota_exceeded') setStatus('The comment box is full. Delete some old comments first.',true);
+    else setStatus('Could not save. Check your connection and try again.',true);
+  }finally{post.disabled=false;}
+});
+function alert0(m){const e=document.createElement('p');e.className='note';e.textContent=m;form.parentElement.append(e);}
+(async()=>{
+  const [db,user]=await Promise.all([window.claude?.use?.('db')??null,window.claude?.use?.('user')??null]);
+  DB=db; USER=user;
+  if(!DB){render();form.parentElement.hidden=true;return;}
+  if(USER){const w=await USER.can('data.write'); if(w===false){canWrite=false;form.hidden=true;alert0('You have view-only access, so you can read comments but not add them. Ask Seth for edit access.');}}
+  DB.collection('comments').orderBy('createdAt','desc').limit(500).onSnapshot(s=>{DOCS=s.docs;render();},e=>{list.innerHTML='';const x=document.createElement('div');x.className='empty';x.textContent='Comments could not load. Reload the page to try again.';list.append(x);});
+})();
+</script>
