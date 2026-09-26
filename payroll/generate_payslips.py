@@ -155,7 +155,7 @@ def load_payroll(path, sheet="Core Team"):
                 "gross": money(r[9]), "sss": money(r[sss]), "philhealth": money(r[sss + 1]),
                 "pagibig": money(r[sss + 2]), "tax": money(r[sss + 4]),
                 "allowance": money(r[sss + 5]), "net": money(r[sss + 6]),
-                "department": department, "days": [],
+                "department": department, "job_role": r[1], "days": [],
             }
             employees.append(cur)
         elif label in DAY_NAMES and cur is not None:
@@ -335,8 +335,9 @@ def main():
         else:
             new_id = next_free_id(used_ids, year)
             used_ids.add(new_id)
-            info = {"id": new_id, "department": emp["department"], "position": ""}
-            notes.append(f"NOT IN DATABASE: {emp['name']} -> assigned {new_id}, position left blank")
+            info = {"id": new_id, "department": emp["department"], "position": emp["job_role"]}
+            notes.append(f"NOT IN DATABASE: {emp['name']} -> assigned {new_id}, "
+                         f"position '{emp['job_role'] or '(blank)'}' from payroll")
         build_sheet(wb, src, logos, emp, info, days, period_label)
 
         day_gross = sum(d["gross"] for d in emp["days"])

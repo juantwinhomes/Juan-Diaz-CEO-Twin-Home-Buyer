@@ -172,8 +172,9 @@ def main():
         else:
             new_id = next_free_id(used_ids, year)
             used_ids.add(new_id)
-            info = {"id": new_id, "department": emp["department"], "position": ""}
-            notes.append(f"NOT IN DATABASE: {emp['name']} -> assigned {new_id}, position left blank")
+            info = {"id": new_id, "department": emp["department"], "position": emp["job_role"]}
+            notes.append(f"NOT IN DATABASE: {emp['name']} -> assigned {new_id}, "
+                         f"position '{emp['job_role'] or '(blank)'}' from payroll")
         build_sheet(wb, src, args.logo, emp, info, days, period_label)
         day_gross = sum(d["gross"] for d in emp["days"])
         net = day_gross - emp["sss"] - emp["philhealth"] - emp["pagibig"] - emp["tax"] + emp["allowance"]
