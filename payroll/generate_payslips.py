@@ -56,12 +56,17 @@ HOLIDAYS = {
 
 # Payroll names that differ from the Employee Database spelling
 NAME_ALIASES = {
-    "Bryan Gene Cadahing": "Bryan Gene Hombre",
+    "Bryan Gene Cadahing": "Bryan Gene Cadahing Hombre",
     "Roiz Emman Bartolata": "Roiz Eman Bartolata",
     "Mc Angelo Abbatuan": "Mc Angelo A. Abbatuan",
     "Kristine Joy Lomeda": "Kristine Joy S. Lomeda",
     "Theavil Margate": "Theavil Marie Margate",
     "Lawrence Oliveros": "John Lawrence Oliveros",
+}
+
+# Complete name to print on the payslip when the payroll sheet shortens it
+DISPLAY_NAMES = {
+    "Bryan Gene Cadahing": "Bryan Gene Cadahing Hombre",
 }
 
 # Template geometry ('Dec 16-31' tab = the 16-day version of the template)
@@ -265,6 +270,8 @@ def main():
     ap.add_argument("--database", required=True)
     ap.add_argument("--payroll", required=True)
     ap.add_argument("--out")
+    ap.add_argument("--exclude", action="append", default=[],
+                    help="payroll name to leave out (repeatable)")
     args = ap.parse_args()
 
     employees = load_payroll(args.payroll)
@@ -282,8 +289,11 @@ def main():
     logos = [(img._data(), img.width, img.height, img.anchor) for img in src._images]
     original = list(wb.worksheets)
     notes = []
+    employees = [e for e in employees if e["name"] not in args.exclude]
     for emp in employees:
-        row = db.get(NAME_ALIASES.get(emp["name"], emp["name"]))
+        emp["payroll_name"] = emp["name"]
+        emp["name"] = DISPLAY_NAMES.get(emp["name"], emp["name"])
+        row = db.get(NAME_ALIASES.get(emp["payroll_name"], emp["payroll_name"]))
         if row:
             info = {"id": row["Employee ID"], "department": row["Department"], "position": row["Position"]}
         else:
