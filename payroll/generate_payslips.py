@@ -116,35 +116,65 @@ def next_free_id(used, year):
         n += 1
 
 
-def load_payroll(path):
-    """Return employee blocks: header totals + one record per calendar day."""
-    rows = list(csv.reader(open(path, newline="", encoding="utf-8-sig")))
+def _cell_text(v):
+    """Normalise an xlsx value to the text a CSV export of the same sheet would hold."""
+    if v is None:
+        return ""
+    if isinstance(v, dt.timedelta):
+        secs = int(round(v.total_seconds()))
+        return f"{secs // 3600}:{secs % 3600 // 60:02d}:{secs % 60:02d}"
+    if isinstance(v, dt.time):
+        return v.strftime("%H:%M:%S")
+    if isinstance(v, dt.datetime):
+        return v.strftime("%m/%d/%Y")
+    return str(v)
+
+
+def read_rows(path, sheet):
+    if path.lower().endswith((".xlsx", ".xlsm")):
+        ws = openpyxl.load_workbook(path, data_only=True)[sheet]
+        return [[_cell_text(v) for v in row] for row in ws.iter_rows(values_only=True)]
+    return list(csv.reader(open(path, newline="", encoding="utf-8-sig")))
+
+
+def load_payroll(path, sheet="Core Team"):
+    """Return (employees, problems). Each employee: header totals + one record per day."""
+    rows = read_rows(path, sheet)
     department = rows[0][1].strip() if rows and len(rows[0]) > 1 else ""
-    employees, cur = [], None
+    # Contribution columns move between payroll versions: find them from the "SSS" sub-header
+    sss = next(i for i, v in enumerate(rows[3]) if v.strip() == "SSS")
+    width = max(len(r) for r in rows)
+    employees, problems, cur = [], [], None
     for r in rows[4:]:
-        r = r + [""] * (27 - len(r))
-        label = r[2].strip()
+        r = [v.strip() for v in r] + [""] * (width - len(r))
+        label = r[2]
         if label and label not in DAY_NAMES:
             cur = {
-                "name": label, "rate": r[3].strip(), "hours": r[4].strip(),
+                "name": label, "rate": peso(money(r[3])), "hours": r[4],
                 "basic": money(r[5]), "ot": money(r[6]) + money(r[7]), "nd": money(r[8]),
-                "gross": money(r[9]), "sss": money(r[13]), "philhealth": money(r[14]),
-                "pagibig": money(r[15]), "tax": money(r[17]), "allowance": money(r[18]),
-                "net": money(r[19]), "department": department, "days": [],
+                "gross": money(r[9]), "sss": money(r[sss]), "philhealth": money(r[sss + 1]),
+                "pagibig": money(r[sss + 2]), "tax": money(r[sss + 4]),
+                "allowance": money(r[sss + 5]), "net": money(r[sss + 6]),
+                "department": department, "days": [],
             }
             employees.append(cur)
         elif label in DAY_NAMES and cur is not None:
+            date = dt.datetime.strptime(r[3], "%m/%d/%Y").date()
+            if any(d["date"] == date for d in cur["days"]):
+                # A second set of days with no name row above it - can't tell whose it is
+                cur = {"name": None, "after": cur["name"], "days": []}
+                problems.append(cur)
             rest_day = money(r[7])
             cur["days"].append({
-                "date": dt.datetime.strptime(r[3].strip(), "%m/%d/%Y").date(),
+                "date": date,
                 "hours": parse_time(r[4]),
                 "daily": money(r[5]),
                 "ot": money(r[6]) + rest_day,
                 "nd": money(r[8]),
-                "gross": money(r[9]) if r[9].strip() else money(r[5]),
+                "gross": money(r[9]) if r[9] else money(r[5]),
                 "rest_day": rest_day,
             })
-    return employees
+    return employees, problems
 
 
 def copy_cell(src, dst):
@@ -270,11 +300,12 @@ def main():
     ap.add_argument("--database", required=True)
     ap.add_argument("--payroll", required=True)
     ap.add_argument("--out")
+    ap.add_argument("--sheet", default="Core Team", help="tab to read when --payroll is an .xlsx")
     ap.add_argument("--exclude", action="append", default=[],
                     help="payroll name to leave out (repeatable)")
     args = ap.parse_args()
 
-    employees = load_payroll(args.payroll)
+    employees, orphans = load_payroll(args.payroll, args.sheet)
     dates = sorted({d["date"] for e in employees for d in e["days"]})
     year, month = dates[0].year, dates[0].month
     first, last = (1, 15) if dates[0].day <= 15 else (16, calendar.monthrange(year, month)[1])
@@ -289,7 +320,12 @@ def main():
     logos = [(img._data(), img.width, img.height, img.anchor) for img in src._images]
     original = list(wb.worksheets)
     notes = []
-    employees = [e for e in employees if e["name"] not in args.exclude]
+    for o in orphans:
+        notes.append(f"SKIPPED unnamed block of {len(o['days'])} days found under {o['after']} "
+                     f"({o['days'][0]['date']:%b %d}-{o['days'][-1]['date']:%b %d})")
+    for e in [e for e in employees if not e["days"]]:
+        notes.append(f"SKIPPED {e['name']}: no daily hours in the payroll sheet")
+    employees = [e for e in employees if e["name"] not in args.exclude and e["days"]]
     for emp in employees:
         emp["payroll_name"] = emp["name"]
         emp["name"] = DISPLAY_NAMES.get(emp["name"], emp["name"])
@@ -307,6 +343,11 @@ def main():
         if abs(day_gross - emp["gross"]) > 0.01:
             notes.append(f"CHECK {emp['name']}: payroll gross {peso(emp['gross'])} but daily rows add up "
                          f"to {peso(day_gross)} (payslip uses the daily rows)")
+        slip_net = (day_gross - emp["sss"] - emp["philhealth"] - emp["pagibig"] - emp["tax"]
+                    + emp["allowance"])
+        if abs(slip_net - emp["net"]) > 0.02:
+            notes.append(f"CHECK {emp['name']}: payslip net {peso(slip_net)} but payroll says "
+                         f"{peso(emp['net'])}")
     for sheet in original:
         wb.remove(sheet)
 
