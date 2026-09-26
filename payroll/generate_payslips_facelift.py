@@ -34,7 +34,7 @@ def hms(seconds):
     return f"{seconds // 3600}:{seconds % 3600 // 60:02d}:{seconds % 60:02d}"
 
 
-def build_sheet(wb, src, logo_path, emp, info, days, period_label):
+def build_sheet(wb, src, logo_path, emp, info, days, period_label, extras=False):
     ws = wb.create_sheet("new")          # renamed after the design's own tabs are removed
     ws._final_title = emp["name"][:31]
     n = len(days)
@@ -67,13 +67,14 @@ def build_sheet(wb, src, logo_path, emp, info, days, period_label):
                        start_column=rng.min_col, end_column=rng.max_col)
     ws.sheet_view.showGridLines = src.sheet_view.showGridLines
     ws.page_margins = copy(src.page_margins)
-    ws.page_setup.orientation = "portrait"
-    ws.sheet_properties.pageSetUpPr.fitToPage = True      # one page per payslip
-    ws.page_setup.fitToWidth = 1
-    ws.page_setup.fitToHeight = 1
-    ws.print_options.horizontalCentered = True
+    if extras:
+        ws.page_setup.orientation = "portrait"
+        ws.sheet_properties.pageSetUpPr.fitToPage = True  # one page per payslip
+        ws.page_setup.fitToWidth = 1
+        ws.page_setup.fitToHeight = 1
+        ws.print_options.horizontalCentered = True
 
-    if logo_path:                                          # logo in the empty A1:C5 block
+    if extras and logo_path:                               # logo in the empty A1:C5 block
         logo = Image(logo_path)
         logo.height = 125
         logo.width = round(125 * 673 / 537)
@@ -85,7 +86,8 @@ def build_sheet(wb, src, logo_path, emp, info, days, period_label):
     ws["B10"] = emp["name"]
     ws["F10"] = info["position"] or None
     ws["B11"] = float(emp["rate"].replace("₱", "").replace(",", ""))
-    ws["B11"].alignment = Alignment(horizontal="left")
+    if extras:
+        ws["B11"].alignment = Alignment(horizontal="left")
 
     by_date = {d["date"]: d for d in emp["days"]}
     seconds = 0
@@ -102,7 +104,10 @@ def build_sheet(wb, src, logo_path, emp, info, days, period_label):
         ws[f"E{r}"] = rec["ot"]
         ws[f"F{r}"] = rec["nd"]
         ws[f"G{r}"] = rec["gross"]
-        ws[f"H{r}"] = HOLIDAYS.get(day) or ("Rest Day OT" if rec["rest_day"] else None)
+        if extras:
+            ws[f"H{r}"] = HOLIDAYS.get(day) or ("Rest Day OT" if rec["rest_day"] else None)
+        else:
+            ws[f"H{r}"] = None
     ws["F11"] = hms(seconds)
 
     for col in "DEFG":
@@ -119,6 +124,8 @@ def build_sheet(wb, src, logo_path, emp, info, days, period_label):
     ws[f"D{s+4}"] = emp["allowance"]
     ws[f"H{s+4}"] = f"=ROUND(SUM(H{s}:H{s+3}),2)"
     ws[f"H{s+5}"] = f"=ROUND(D{s+3}+D{s+4}-H{s+4},2)"
+    if not extras:
+        return ws
     # Monthly Gross Pay Rate (hourly rate x 8 x 20), styled like the allowance line
     for col in "ABCDE":
         copy_cell(ws[f"{col}{s+4}"], ws[f"{col}{s+5}"])
@@ -140,6 +147,9 @@ def main():
     ap.add_argument("--payroll", required=True)
     ap.add_argument("--sheet", default="Core Team")
     ap.add_argument("--logo")
+    ap.add_argument("--extras", action="store_true",
+                    help="add logo, Monthly Gross Pay Rate, remarks, Calibri font and fit-to-page "
+                         "(default: copy the design exactly)")
     ap.add_argument("--out")
     ap.add_argument("--exclude", action="append", default=[])
     args = ap.parse_args()
@@ -175,7 +185,7 @@ def main():
             info = {"id": new_id, "department": emp["department"], "position": emp["job_role"]}
             notes.append(f"NOT IN DATABASE: {emp['name']} -> assigned {new_id}, "
                          f"position '{emp['job_role'] or '(blank)'}' from payroll")
-        build_sheet(wb, src, args.logo, emp, info, days, period_label)
+        build_sheet(wb, src, args.logo, emp, info, days, period_label, args.extras)
         day_gross = sum(d["gross"] for d in emp["days"])
         net = day_gross - emp["sss"] - emp["philhealth"] - emp["pagibig"] - emp["tax"] + emp["allowance"]
         if abs(day_gross - emp["gross"]) > 0.01 or abs(net - emp["net"]) > 0.02:
