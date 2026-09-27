@@ -1,0 +1,699 @@
+<title>Kristine Controller Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --surface-2:#e9eef2; --ink:#16212e; --ink-2:#4a5866; --line:#d3dbe2;
+  --accent:#1c6b86; --accent-ink:#ffffff; --accent-soft:#dcecf2;
+  --good:#2e7a4c; --good-soft:#e1f1e7; --bad:#b0322a; --bad-soft:#f8e3e1; --warn:#9a6a12; --warn-soft:#f6ecd6;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Public Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#10161d; --surface:#18212b; --surface-2:#212c38; --ink:#e6ecf1; --ink-2:#a2b0bd; --line:#2f3d4b;
+    --accent:#5fb2cf; --accent-ink:#0c1a21; --accent-soft:#1c3440;
+    --good:#6cc28d; --good-soft:#18301f; --bad:#ec8a80; --bad-soft:#3a1f1c; --warn:#e0b25c; --warn-soft:#352a14;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#10161d; --surface:#18212b; --surface-2:#212c38; --ink:#e6ecf1; --ink-2:#a2b0bd; --line:#2f3d4b;
+  --accent:#5fb2cf; --accent-ink:#0c1a21; --accent-soft:#1c3440;
+  --good:#6cc28d; --good-soft:#18301f; --bad:#ec8a80; --bad-soft:#3a1f1c; --warn:#e0b25c; --warn-soft:#352a14;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:24px 64px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,4.4vw,42px);letter-spacing:-.01em}
+h2{font-size:26px}
+h3{font-size:18px}
+p{margin:0}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--ink-2)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* header */
+header.top{display:flex;flex-direction:column;gap:12px;padding-block:8px}
+header.top .lede{max-width:68ch;color:var(--ink-2);font-size:17px}
+.progress{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bar{flex:1 1 240px;height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.bar > i{display:block;height:100%;background:var(--accent);width:0;transition:width .4s}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:0}
+.tabs button{font:600 14px var(--body);background:none;border:0;color:var(--ink-2);padding:10px 14px;border-bottom:3px solid transparent;cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs button:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* course layout */
+.course{display:grid;grid-template-columns:280px 1fr;gap:28px;align-items:start}
+@media (max-width:820px){.course{grid-template-columns:1fr}}
+nav.modules{display:flex;flex-direction:column;gap:6px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:820px){nav.modules{position:static}}
+nav.modules button{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;color:var(--ink);font:500 14px/1.35 var(--body)}
+nav.modules button[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+nav.modules .wk{font:500 11px var(--mono);color:var(--ink-2);display:block}
+.dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:600 12px var(--mono);background:var(--surface-2);color:var(--ink-2)}
+.dot.done{background:var(--good);color:var(--surface)}
+.pill{font:600 11px var(--body);letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+
+main.module{display:flex;flex-direction:column;gap:22px;min-width:0}
+.section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.section.plain{background:none;border:0;padding:0}
+.section h3{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.step-tag{font:600 11px var(--mono);color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:5px}
+.prose{display:flex;flex-direction:column;gap:12px;max-width:70ch}
+.prose ul, .prose ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+.keyrule{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;max-width:70ch}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+td.r, th.r{text-align:right}
+.qbo{display:flex;flex-direction:column;gap:10px;counter-reset:q;margin:0;padding:0;list-style:none}
+.qbo li{display:grid;grid-template-columns:28px 1fr;gap:10px;counter-increment:q}
+.qbo li::before{content:counter(q);font:600 12px var(--mono);width:24px;height:24px;border-radius:6px;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2);margin-top:2px}
+.path{font:500 13px var(--mono);background:var(--surface-2);padding:1px 6px;border-radius:4px;white-space:normal}
+.note{font-size:13px;color:var(--ink-2)}
+
+/* quiz */
+.q{display:flex;flex-direction:column;gap:8px;padding-block:14px;border-top:1px solid var(--line)}
+.q:first-of-type{border-top:0;padding-top:0}
+.q legend{font-weight:600;padding:0;margin-bottom:6px}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.opt input{margin-top:5px;accent-color:var(--accent)}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.why{font-size:14px;padding:8px 12px;border-radius:8px;background:var(--surface-2)}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{font:600 14px var(--body);padding:10px 16px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.btn.ghost{background:none;color:var(--accent)}
+.result{font-weight:600}
+.result.good{color:var(--good)} .result.bad{color:var(--bad)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:600;font-size:14px}
+input[type=text], input[type=number], textarea{font:15px var(--body);padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%;max-width:420px}
+textarea{max-width:100%;min-height:90px;resize:vertical}
+.check{display:flex;gap:10px;align-items:flex-start}
+.check input{margin-top:5px;accent-color:var(--good);width:17px;height:17px}
+
+/* other tabs */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.ladder{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.rung{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:8px}
+.rung.now{border-color:var(--accent)}
+.rung ul{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.prompt{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.prompt pre{white-space:pre-wrap;font:13px/1.55 var(--mono);background:var(--surface-2);padding:12px;border-radius:8px;margin:0}
+.day{display:grid;grid-template-columns:90px 1fr;gap:12px;padding-block:10px;border-bottom:1px solid var(--line)}
+.day:last-child{border-bottom:0}
+footer{font-size:13px;color:var(--ink-2);max-width:80ch}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Twin Home Buyer group · Finance training</span>
+    <h1>Kristine Controller Academy</h1>
+    <p class="lede">A 12-week course that takes you from bookkeeping to assistant controller, taught in QuickBooks Online with our own kind of work: house flips, rehab jobs, lender draws and four separate companies. Work through one module every two weeks. Move on when you pass it, not when the calendar says so.</p>
+    <div class="progress">
+      <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+      <span class="num" id="progressText">0 of 6 modules complete</span>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-course" aria-selected="true" data-view="course">Course</button>
+    <button role="tab" id="tab-path" aria-selected="false" data-view="path">Career path</button>
+    <button role="tab" id="tab-routine" aria-selected="false" data-view="routine">Daily routine</button>
+    <button role="tab" id="tab-ai" aria-selected="false" data-view="ai">AI prompts</button>
+  </div>
+
+  <!-- COURSE -->
+  <section id="view-course" class="course">
+    <nav class="modules" id="moduleNav" aria-label="Modules"></nav>
+    <main class="module" id="moduleBody"></main>
+  </section>
+
+  <!-- CAREER PATH -->
+  <section id="view-path" hidden>
+    <div class="section plain" style="gap:18px">
+      <h2>From accountant to controller</h2>
+      <p class="muted" style="max-width:70ch">Each step adds responsibility. The title follows what you can do consistently, month after month. A CPA license is not required for an internal controller, but our CPA still reviews tax, policy and lender reporting.</p>
+      <div class="ladder">
+        <div class="rung">
+          <span class="pill">Step 1</span><h3>Bookkeeper</h3>
+          <ul><li>Enters bills, receipts and deposits</li><li>Codes transactions to the right company and property</li><li>Matches the bank feed</li></ul>
+          <p class="note">Covered in Modules 1–2</p>
+        </div>
+        <div class="rung now">
+          <span class="pill warn">You start here</span><h3>Staff accountant</h3>
+          <ul><li>Reconciles bank, card and loan accounts</li><li>Tracks costs per property and job</li><li>Runs accounts payable with controls</li></ul>
+          <p class="note">Covered in Modules 2–3</p>
+        </div>
+        <div class="rung">
+          <span class="pill">Step 3</span><h3>Assistant controller</h3>
+          <ul><li>Runs the month-end close for each company</li><li>Reconciles every balance-sheet account</li><li>Builds the 13-week cash forecast and weekly brief</li></ul>
+          <p class="note">Covered in Modules 4–5</p>
+        </div>
+        <div class="rung">
+          <span class="pill">Step 4</span><h3>Controller</h3>
+          <ul><li>Owns the close across all four companies</li><li>Maintains controls and works with the CPA</li><li>Explains results and risks to Juan</li></ul>
+          <p class="note">Module 6, then three clean closes in a row</p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Promotion gates</h3>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Gate</th><th>What you must show</th><th>Title</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td>Classify 20 varied transactions with at least 90% accuracy and explain the exceptions</td><td>Staff accountant</td></tr>
+            <tr><td class="num">2</td><td>Reconcile two bank or card accounts with $0.00 unexplained difference</td><td>Staff accountant</td></tr>
+            <tr><td class="num">3</td><td>Build a complete profit bridge for one property with every cost sourced</td><td>Assistant controller</td></tr>
+            <tr><td class="num">4</td><td>Run a supervised month-end close for one company</td><td>Assistant controller</td></tr>
+            <tr><td class="num">5</td><td>Run three closes in a row with reviewer-approved balances and a clear brief for Juan</td><td>Controller</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="section">
+        <h3>Outside certificates worth adding</h3>
+        <p class="muted">Optional, but they back up the title. Check current price and requirements before signing up.</p>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Certificate</th><th>Why</th><th>When</th></tr></thead>
+          <tbody>
+            <tr><td>QuickBooks Online Certified ProAdvisor (Intuit)</td><td>Proves QuickBooks Online skill. Free with a QuickBooks Online Accountant login.</td><td>Weeks 3–8</td></tr>
+            <tr><td>Intuit Academy Bookkeeping certificate (Coursera)</td><td>Structured bookkeeping foundations</td><td>Weeks 1–4</td></tr>
+            <tr><td>Certified Bookkeeper (AIPB) or similar</td><td>Formal bookkeeping credential</td><td>After Module 4</td></tr>
+            <tr><td>CMA (Certified Management Accountant)</td><td>Long-term: budgeting, cost control, reporting. Fits a controller.</td><td>Year 2+</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROUTINE -->
+  <section id="view-routine" hidden>
+    <div class="grid2">
+      <div class="section">
+        <h3>Every workday (80 minutes)</h3>
+        <div>
+          <div class="day"><span class="num">20 min</span><span>Read the lesson for your current module</span></div>
+          <div class="day"><span class="num">30 min</span><span>Practice: the scenario, or the same step on sample records in QuickBooks</span></div>
+          <div class="day"><span class="num">20 min</span><span>Real work: clear today's bank feed and exceptions for one company</span></div>
+          <div class="day"><span class="num">10 min</span><span>Write down what you did and why, in two or three sentences</span></div>
+        </div>
+      </div>
+      <div class="section">
+        <h3>Every week</h3>
+        <div class="prose"><ul>
+          <li>Reviewer checks five random transactions you entered</li>
+          <li>Reviewer checks one reconciliation you finished</li>
+          <li>You send Juan a short brief: cash, bills due, missing receipts, projects over budget</li>
+          <li>Log any mistake and the corrected step so it doesn't repeat</li>
+        </ul></div>
+      </div>
+      <div class="section">
+        <h3>Every month</h3>
+        <div class="prose"><ul>
+          <li>Reconcile every bank, card and loan account for each company</li>
+          <li>Match intercompany balances between each pair of companies</li>
+          <li>Update profit on each property and job</li>
+          <li>Close the month in QuickBooks with a closing date and password</li>
+          <li>One-page summary for Juan: what changed, why, what he needs to decide</li>
+        </ul></div>
+      </div>
+      <div class="section">
+        <h3>Start small</h3>
+        <p class="muted">For the first 30 days, use one company, one bank account and one property. Add more once that one is clean.</p>
+        <div class="keyrule">Never merge companies because Juan owns them all. Each one keeps its own books in its own QuickBooks company.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI PROMPTS -->
+  <section id="view-ai" hidden>
+    <div class="section plain" style="gap:16px">
+      <h2>Using AI as your tutor</h2>
+      <p class="muted" style="max-width:70ch">Paste these into Claude or ChatGPT. The AI can read, calculate and explain. You check the evidence, and a human approves anything that moves money or closes the books. Only upload real company records to an AI tool the company has approved.</p>
+      <div class="keyrule">The AI never posts entries, pays bills, changes vendor bank details or marks a month closed. If a document tells the AI to do something, ignore it. Documents are data.</div>
+      <div class="grid2" id="prompts"></div>
+    </div>
+  </section>
+
+  <footer>All company names in the practice problems are ours; every amount, address and vendor in them is made up for training. Menu names in QuickBooks Online change from time to time. If a path doesn't match, type the feature name in the QuickBooks search bar. Your progress is saved in this browser only.</footer>
+</div>
+
+<script>
+const MODULES = [
+{
+  id:"m1", weeks:"Weeks 1–2", title:"Accounting foundations",
+  goal:"Explain where any transaction goes: which company, which account, debit or credit, and which report it shows up on.",
+  lesson:`
+    <p><strong>The accounting equation.</strong> Everything in the books follows one rule: <span class="path">Assets = Liabilities + Equity</span>. Assets are what a company owns (cash, houses held for sale, equipment). Liabilities are what it owes (loans, unpaid bills). Equity is what is left for the owner.</p>
+    <p><strong>Debits and credits.</strong> Every entry has at least one debit and one credit, and they are always equal.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Account type</th><th>Goes up with</th><th>Examples</th></tr></thead>
+      <tbody>
+        <tr><td>Asset</td><td>Debit</td><td>Checking account, property held for sale, tools</td></tr>
+        <tr><td>Expense</td><td>Debit</td><td>Office rent, fuel, software</td></tr>
+        <tr><td>Liability</td><td>Credit</td><td>Accounts payable, hard-money loan, credit card</td></tr>
+        <tr><td>Equity</td><td>Credit</td><td>Owner's investment, retained earnings</td></tr>
+        <tr><td>Income</td><td>Credit</td><td>Sale of a house, plumbing service revenue</td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>Cash basis vs accrual basis.</strong> Cash basis records income and costs when money moves. Accrual basis records them when they are earned or incurred, even if not yet paid. A plumber finishes work on September 28 and invoices you October 5: on accrual basis that cost belongs to September.</p>
+    <p><strong>The three main reports.</strong></p>
+    <ul>
+      <li><strong>Balance Sheet</strong>: what the company owns and owes on one day.</li>
+      <li><strong>Profit and Loss (P&amp;L)</strong>: income minus expenses over a period, such as September.</li>
+      <li><strong>Statement of Cash Flows</strong>: where cash came from and where it went.</li>
+    </ul>
+    <p><strong>Four companies, four sets of books.</strong> Twin Home Buyer / Equity Track, Matrix Group One, Peninsula Plumbing Solutions and Equity Track PH are separate legal entities. When one pays a bill that belongs to another, you record money owed between them (intercompany). You never just book the expense in whichever company paid.</p>`,
+  rule:"Every transaction answers four questions: Which company? Which account? Which property or job? What document proves it?",
+  qbo:[
+    ["Switch between companies", "Gear icon <span class='path'>⚙ → Switch company</span>. Check the company name at the top left before you enter anything."],
+    ["Open the chart of accounts", "<span class='path'>⚙ → Chart of accounts</span>. Look at each account's type and detail type. Print or export it; you'll build a cheat sheet from it."],
+    ["Run the Balance Sheet and P&amp;L", "<span class='path'>Reports → Balance Sheet</span> and <span class='path'>Reports → Profit and Loss</span>. Set the dates to last month."],
+    ["Check the accounting basis", "On any report, look for the Cash / Accrual setting and note which one the CPA wants."],
+    ["Trace one transaction", "Click any number on the P&amp;L to drill down to the transaction, then open the original bill or receipt attached to it."]
+  ],
+  scenario:{
+    text:`Equity Track PH has <span class="num">$512,000</span> in assets: <span class="num">$38,000</span> cash and one house held for sale at <span class="num">$474,000</span>. It owes <span class="num">$331,500</span> on a hard-money loan and <span class="num">$1,500</span> in unpaid bills.`,
+    ask:"What is the owner's equity?", answer:179000,
+    explain:"Equity = Assets − Liabilities = $512,000 − ($331,500 + $1,500) = $179,000."
+  },
+  quiz:[
+    {q:"Twin Home Buyer buys $2,000 of tools with cash. What is the entry?", o:["Debit Cash, credit Tools","Debit Tools (asset), credit Cash","Debit Tools expense, credit Accounts payable","No entry until the tools are used"], a:1, why:"Tools go up (asset, debit). Cash goes down (asset, credit). Ask the CPA about the threshold for recording tools as an asset or an expense."},
+    {q:"Which of these increases with a credit?", o:["Checking account","Fuel expense","Hard-money loan payable","Property held for sale"], a:2, why:"Liabilities, equity and income increase with credits. A loan is a liability."},
+    {q:"On accrual basis, when do you record a contractor's cost?", o:["When you pay it","When the work is done (incurred)","When Juan approves it","At year end"], a:1, why:"Accrual basis records the cost in the period the work happened, even if the bill is paid later."},
+    {q:"Matrix Group One pays a $3,000 invoice that belongs to Twin Home Buyer. How is it recorded?", o:["Expense in Matrix Group One","Expense in Twin Home Buyer only, nothing in Matrix","Matrix records money owed by Twin Home Buyer; Twin Home Buyer records the expense and money owed to Matrix","Ignore it; the same owner owns both"], a:2, why:"Both companies record it: a due-from in Matrix and the expense plus a due-to in Twin Home Buyer. The two balances must match."},
+    {q:"The Balance Sheet shows…", o:["Income and expenses for a month","What the company owns and owes on one date","Only cash movements","Only unpaid bills"], a:1, why:"The Balance Sheet is a snapshot on one date. The P&L covers a period."}
+  ],
+  task:"Take 10 real transactions from last month for one company. For each, write the company, account, property/job, debit/credit and the document that proves it. Your reviewer checks them.",
+  rubric:["At least 9 of 10 coded to the right company and account","Every line names its source document","Debits equal credits on every entry","Explains any item she wasn't sure about"]
+},
+{
+  id:"m2", weeks:"Weeks 3–4", title:"Bills, vendor controls and bank reconciliation",
+  goal:"Process bills without duplicates or fraud, and reconcile a bank account to the statement with zero unexplained difference.",
+  lesson:`
+    <p><strong>Bill, expense or check?</strong> In QuickBooks Online a <em>bill</em> records money owed now and paid later. An <em>expense</em> or <em>check</em> records money already paid. If you enter a bill, pay it with <strong>Pay bills</strong> so it doesn't get counted twice.</p>
+    <p><strong>Before any bill gets paid</strong>, three things must agree:</p>
+    <ol>
+      <li>The invoice (vendor, amount, invoice number, property)</li>
+      <li>Approval from the person who owns that property or job</li>
+      <li>The work or goods were actually received</li>
+    </ol>
+    <p><strong>Duplicate bills.</strong> Look for the same vendor and amount with invoice numbers that look alike: <span class="path">INV-1001</span> and <span class="path">INV1001</span>, or the same invoice sent by email and on paper.</p>
+    <p><strong>Vendor bank changes are the top fraud risk.</strong> If a vendor asks to change where you send money, call them at the phone number already on file, not the number in the email. A second person approves the change. The person who creates a vendor should not also release payment to that vendor.</p>
+    <p><strong>Bank reconciliation</strong> proves the books match the bank:</p>
+    <div class="keyrule"><span class="num">Bank statement ending balance − checks not yet cleared + deposits not yet cleared = Book balance</span></div>
+    <p>The difference must be <span class="num">$0.00</span>. If it isn't, you find the reason. You never force it to balance.</p>
+    <p><strong>Bank feed: Match, don't Add.</strong> When a bank transaction matches a bill already entered, choose <em>Match</em>. Choosing <em>Add</em> creates the expense a second time.</p>`,
+  rule:"A reconciliation with an unexplained difference is not finished, no matter how small.",
+  qbo:[
+    ["Enter a bill", "<span class='path'>+ New → Bill</span>. Pick the vendor, enter the invoice number, date, due date, and on each line pick the account and the customer/project. Attach the PDF."],
+    ["Pay bills", "<span class='path'>+ New → Pay bills</span>. Select the bills and the bank account. The payment then matches the bank feed."],
+    ["Review the bank feed", "<span class='path'>Transactions → Bank transactions</span> (sometimes under Banking). For each line, choose Match when a bill or payment already exists."],
+    ["Reconcile", "<span class='path'>⚙ → Reconcile</span>. Choose the account, enter the statement ending date and balance, tick each cleared item until the Difference is $0.00."],
+    ["Check the vendor list and audit log", "<span class='path'>Expenses → Vendors</span> for open balances; <span class='path'>⚙ → Audit log</span> to see who changed a vendor's details and when."],
+    ["Aging report", "<span class='path'>Reports → A/P Aging Summary</span> shows what is owed and how late it is."]
+  ],
+  scenario:{
+    text:`Twin Home Buyer operating account, September. Bank statement ending balance <span class="num">$48,250.00</span>. Check #1045 for <span class="num">$3,400.00</span> hasn't cleared. A deposit of <span class="num">$1,150.00</span> was made September 30 and isn't on the statement. QuickBooks shows a book balance of <span class="num">$46,025.00</span>. The statement also shows a <span class="num">$25.00</span> service fee.`,
+    ask:"What is the adjusted bank balance (statement − uncleared checks + uncleared deposits)?", answer:46000,
+    explain:"$48,250 − $3,400 + $1,150 = $46,000. Books show $46,025, a $25 difference: the bank fee isn't recorded yet. Record the $25 fee, and the books become $46,000. Difference $0.00."
+  },
+  quiz:[
+    {q:"A vendor emails new bank account details and asks you to pay there. What do you do?", o:["Update the vendor and pay","Reply to the email to confirm","Call the vendor at the number already on file, and get a second person to approve the change","Pay half to the old account and half to the new"], a:2, why:"Never trust contact details in the email that asks for the change. Verify independently and require a second approver."},
+    {q:"The bank feed shows a $4,800 payment that matches an open bill in QuickBooks. You should…", o:["Add it as a new expense","Match it to the bill","Exclude it","Categorize it as Uncategorized Expense"], a:1, why:"Adding it would record the $4,800 cost twice. Match links the payment to the bill."},
+    {q:"Your reconciliation is off by $25. What next?", o:["Finish anyway; it's small","Let QuickBooks create an adjustment","Find the $25 (fee, typo, missing item) and fix the record","Change the statement balance"], a:2, why:"Find the cause. Forcing the adjustment hides errors and makes next month harder."},
+    {q:"Which pair most likely is a duplicate?", o:["Same vendor, different amounts, different months","Same vendor, same amount, invoice INV-1001 and INV1001","Different vendors, same amount","Same vendor, same property, different invoice numbers and dates"], a:1, why:"Same vendor, same amount and nearly identical invoice numbers is the classic duplicate."},
+    {q:"Who should release a payment?", o:["The person who created the vendor and entered the bill","A named approver who didn't set up the vendor","Anyone with QuickBooks access","The AI tool"], a:1, why:"Separate the duties: one person sets up and enters, a different person approves and releases."}
+  ],
+  task:"Reconcile one real bank account for last month. List every uncleared item with its date and amount. Difference must be $0.00. Your reviewer re-checks it against the statement.",
+  rubric:["Difference is $0.00 with no forced adjustment","Every uncleared item is listed with check number or reference","Statement PDF attached to the reconciliation","Any item older than 60 days is flagged for follow-up"]
+},
+{
+  id:"m3", weeks:"Weeks 5–6", title:"Property and job costing",
+  goal:"Build a cost ledger for one property and explain its budget vs actual and expected profit, with every number tied to an invoice.",
+  lesson:`
+    <p><strong>A vendor is not a project.</strong> Every property and every plumbing job gets its own ID, address, owning company, purchase date, budget, lender and status. The plumber you pay is the vendor; the house is the project.</p>
+    <p><strong>Types of property cost</strong></p>
+    <ul>
+      <li><strong>Acquisition</strong>: purchase price and buying closing costs</li>
+      <li><strong>Rehab</strong>: labor, materials, subcontractors, permits</li>
+      <li><strong>Financing</strong>: loan interest, points, lender fees</li>
+      <li><strong>Holding</strong>: property tax, insurance, utilities while you own it</li>
+      <li><strong>Selling</strong>: closing costs on sale, agent commissions</li>
+    </ul>
+    <p><strong>Actual, committed, forecast.</strong> <em>Actual</em> is recorded (paid or billed). <em>Committed</em> is signed but not yet billed, like a contract or purchase order. <em>Forecast to complete</em> is your best estimate of what is still to come. Show all three separately.</p>
+    <p><strong>Change orders</strong> change the budget. Record who approved them and update the forecast.</p>
+    <p><strong>Lender draws.</strong> Track four numbers for each draw: what you submitted, what the lender approved, what actually arrived, and any holdback. Differences are not errors to ignore; each needs a reason.</p>
+    <p><strong>Accounting treatment.</strong> For flips, rehab costs are usually added to the property's cost on the Balance Sheet rather than expensed right away. The CPA sets this policy. Write down their decision and follow it.</p>`,
+  rule:"Every cost on a property report links to an invoice, a bill or a closing statement.",
+  qbo:[
+    ["Turn on Projects", "<span class='path'>Business → Projects</span> (or the Projects menu). Available on Plus and Advanced. Create one project per property or job."],
+    ["Code every cost to the project", "On each bill, expense or check line, fill in the Customer/Project column. Also mark it billable if you re-bill it."],
+    ["Use classes or locations if the CPA wants them", "<span class='path'>⚙ → Account and settings → Advanced → Categories</span>. Turn on class or location tracking."],
+    ["Set a budget", "<span class='path'>⚙ → Budgeting</span> (Plus and Advanced). Create a budget by project or class."],
+    ["Run project reports", "Open a project to see its profitability tab, or <span class='path'>Reports → Project profitability summary</span>. Compare with <span class='path'>Reports → Budget vs. Actuals</span>."]
+  ],
+  scenario:{
+    text:`Practice property TH-017 (made-up house). Sale price <span class="num">$385,000</span>. Purchase <span class="num">$240,000</span>. Rehab <span class="num">$62,000</span>. Financing <span class="num">$11,500</span>. Holding <span class="num">$4,300</span>. Seller closing costs <span class="num">$7,700</span>. Commissions <span class="num">$19,250</span>.`,
+    ask:"What is the profit on TH-017?", answer:40250,
+    explain:"Total cost = 240,000 + 62,000 + 11,500 + 4,300 + 7,700 + 19,250 = $344,750. Profit = $385,000 − $344,750 = $40,250 (about 10.5% of the sale price)."
+  },
+  quiz:[
+    {q:"A plumber invoices $1,800 for work at practice property TH-017. How is it coded?", o:["Vendor: TH-017","Project: the plumber","Vendor: the plumber; Project: TH-017","No project; it's general overhead"], a:2, why:"The vendor is who you pay. The project is where the cost belongs."},
+    {q:"A committed cost is…", o:["A cost already paid","A signed contract or purchase order not yet billed","A cost you hope to avoid","Any cost over budget"], a:1, why:"Committed means you're on the hook but no bill has arrived yet."},
+    {q:"The lender approved a $40,000 draw but only $36,000 arrived. What is the $4,000?", o:["A bookkeeping error to delete","A holdback, fee or disallowed cost that must be explained and tracked","Extra profit","Nothing; round it off"], a:1, why:"Find out why: a holdback or retainage, a fee, or a cost the lender didn't allow. Record it in the draw tracker."},
+    {q:"Forecast to complete should be…", o:["Budget minus actual, always","Your current best estimate of remaining cost","Zero until the project ends","Whatever the contractor says"], a:1, why:"Budget minus actual is only a starting point. Use current information: bids, change orders, the site lead's estimate."},
+    {q:"Who decides whether rehab costs are expensed or added to the property cost?", o:["The bookkeeper","The AI tool","The CPA, written into the policy register","The vendor"], a:2, why:"This is an accounting policy with tax effects. The CPA decides, and you document it."}
+  ],
+  task:"Pick one real property. Build a cost list with every bill and closing-statement line, grouped by acquisition, rehab, financing, holding and selling. Compare to budget and explain the three biggest differences.",
+  rubric:["Every cost links to a document","Actual, committed and forecast shown separately","Budget vs actual difference explained for the top three lines","Duplicates or uncoded costs flagged"]
+},
+{
+  id:"m4", weeks:"Weeks 7–8", title:"Month-end close",
+  goal:"Close one company's month under supervision, with a workpaper for every balance-sheet account and reviewer sign-off.",
+  lesson:`
+    <p><strong>What closing means.</strong> The month is closed when every account is correct, supported and reviewed, and QuickBooks is locked so nobody changes it by accident.</p>
+    <p><strong>Close checklist (per company)</strong></p>
+    <ol>
+      <li>Clear the bank feed and the Uncategorized / Ask My Accountant accounts</li>
+      <li>Reconcile every bank, credit card and loan account</li>
+      <li>Record accruals: work done this month but not yet billed</li>
+      <li>Match intercompany balances with each other company</li>
+      <li>Review A/P and A/R aging for anything wrong or stale</li>
+      <li>Check loan balances against lender statements</li>
+      <li>Reconcile payroll liabilities to the payroll reports</li>
+      <li>Review the P&amp;L for anything unusual compared with last month</li>
+      <li>Reviewer signs off, then set the closing date</li>
+    </ol>
+    <p><strong>Balance-sheet reconciliation.</strong> For every balance-sheet account, a workpaper shows the QuickBooks balance, the outside proof (bank statement, loan statement, aging report) and the difference, which should be zero or explained.</p>
+    <p><strong>Intercompany.</strong> If Twin Home Buyer shows <span class="num">$12,500</span> due from Matrix Group One, Matrix must show <span class="num">$12,500</span> due to Twin Home Buyer. Any difference is an error in one of the two companies.</p>`,
+  rule:"The person who prepares the close does not approve it.",
+  qbo:[
+    ["Trial balance", "<span class='path'>Reports → Trial Balance</span> for the month end. This lists every account balance."],
+    ["Find the loose ends", "Open <span class='path'>⚙ → Chart of accounts</span> and check the balances of Uncategorized Income, Uncategorized Expense and Ask My Accountant. They should be zero."],
+    ["Record an accrual", "<span class='path'>+ New → Journal entry</span>. Describe it clearly, attach support, and send it to the reviewer before posting if it's over the approval limit."],
+    ["Lock the month", "<span class='path'>⚙ → Account and settings → Advanced → Accounting → Close the books</span>. Set the closing date and a password held by the reviewer."],
+    ["Review changes after close", "<span class='path'>⚙ → Audit log</span>, or <span class='path'>Reports → Exceptions to closing date</span>, to see anything changed in a closed period."]
+  ],
+  scenario:{
+    text:`At September 30, Twin Home Buyer shows <span class="num">$12,500</span> due from Matrix Group One. Matrix Group One shows <span class="num">$11,300</span> due to Twin Home Buyer.`,
+    ask:"What is the intercompany difference you must explain?", answer:1200,
+    explain:"$12,500 − $11,300 = $1,200. Look for a payment or transfer recorded in one company but not the other, or coded to the wrong account."
+  },
+  quiz:[
+    {q:"Uncategorized Expense has a $3,200 balance at month end. What do you do?", o:["Leave it for the CPA","Move it to Miscellaneous","Code each item to the right account and project before close","Delete the transactions"], a:2, why:"The close isn't done until every item is coded with evidence."},
+    {q:"Intercompany balances between two companies should…", o:["Be roughly close","Match exactly, opposite sides","Be ignored since the same owner owns both","Only be checked at year end"], a:1, why:"One company's due-from equals the other's due-to. Check every pair monthly."},
+    {q:"Why set a closing date with a password in QuickBooks?", o:["To hide reports","To stop changes to a finished month without approval","It's required by the bank","To speed up QuickBooks"], a:1, why:"It protects reviewed numbers. Changes after close need the password and show in the audit log."},
+    {q:"Who signs off the month-end close?", o:["The preparer","A named reviewer who didn't prepare it","The AI tool","Anyone"], a:1, why:"Independent review is the control. You can't approve your own close."},
+    {q:"A subcontractor finished work September 26 but sends the invoice October 8. On accrual basis…", o:["Record it in October","Record it in September as an accrual","Don't record it","Record half in each month"], a:1, why:"The cost was incurred in September. Accrue it, then reverse the accrual when the bill arrives."}
+  ],
+  task:"Close last month for one company under supervision. Produce the checklist, the trial balance, and a workpaper for each balance-sheet account. Reviewer signs off before you set the closing date.",
+  rubric:["Every balance-sheet account has a workpaper with outside proof","Uncategorized and Ask My Accountant are zero","Intercompany balances match","Reviewer sign-off recorded before closing date is set"]
+},
+{
+  id:"m5", weeks:"Weeks 9–10", title:"Reporting and the 13-week cash forecast",
+  goal:"Produce Juan's weekly brief and a rolling 13-week cash forecast with every assumption written down.",
+  lesson:`
+    <p><strong>Four different numbers.</strong> Keep them separate on every report:</p>
+    <ul>
+      <li><strong>Company cash</strong>: the bank balance of one company</li>
+      <li><strong>Project cash</strong>: money spent and received on one property</li>
+      <li><strong>Profit</strong>: income minus cost; a flip can be profitable while cash is low</li>
+      <li><strong>Available cash</strong>: cash you can spend after bills due, loan payments and restricted funds</li>
+    </ul>
+    <p><strong>13-week cash forecast.</strong> One row per week:</p>
+    <div class="keyrule"><span class="num">Starting cash + money coming in − money going out = Ending cash</span></div>
+    <p>Money in: house sales, lender draws, plumbing customer payments. Money out: bills due, payroll, loan payments, rehab spending. Label each line as <em>known</em> (signed, scheduled) or <em>estimate</em>, and write down the assumption. Update it every week and compare last week's forecast with what really happened.</p>
+    <p><strong>The weekly brief for Juan answers eight questions:</strong> cash today, lowest cash in the next 13 weeks, money owed to us, bills due, projects over budget, lender draws pending, open exceptions, and three decisions he needs to make.</p>`,
+  rule:"If a number has no source, it doesn't go in the brief. Write \"unknown\" instead.",
+  qbo:[
+    ["Aging reports", "<span class='path'>Reports → A/R Aging Summary</span> and <span class='path'>A/P Aging Summary</span> for each company."],
+    ["Cash position", "<span class='path'>Reports → Balance Sheet</span> (cash accounts) or the bank account list on the dashboard. Use reconciled balances where possible."],
+    ["Upcoming bills", "<span class='path'>Reports → Unpaid bills</span>, sorted by due date."],
+    ["Export for the forecast", "Export each report to Excel (the export icon at the top of any report). Build the forecast in one spreadsheet with a tab per company, formulas visible."],
+    ["Save report settings", "Customize a report once and click <span class='path'>Save customization</span> so you run the same version every week."]
+  ],
+  scenario:{
+    text:`Peninsula Plumbing has <span class="num">$60,000</span> cash today. Week 1: pays <span class="num">$25,000</span>. Week 2: pays <span class="num">$30,000</span>. Week 3: receives a <span class="num">$45,000</span> customer payment and pays <span class="num">$10,000</span>.`,
+    ask:"What is the lowest ending cash across these three weeks?", answer:5000,
+    explain:"Week 1 ends at $35,000. Week 2 ends at $5,000. Week 3 ends at $40,000. The low point is $5,000 at the end of week 2. Flag it to Juan now, with options such as moving a payment or confirming the customer payment date."
+  },
+  quiz:[
+    {q:"A flip shows $40,000 profit but the company's cash barely moved. Most likely why?", o:["The books are wrong","Sale proceeds paid off the loan, and costs were paid earlier","Profit and cash are always equal","The CPA made an error"], a:1, why:"Profit and cash are different. Loan payoff and timing explain most gaps."},
+    {q:"A forecast line depends on a sale that hasn't closed. How do you show it?", o:["As known cash","As an estimate with the assumption written down","Leave it out entirely without a note","Double it to be safe"], a:1, why:"Label estimates and state the assumption (closing date, price) so Juan knows the risk."},
+    {q:"A customer invoice is 95 days overdue. What do you do?", o:["Nothing until year end","Follow up, flag it in the brief, and ask the CPA about collectability","Delete the invoice","Count it as cash"], a:1, why:"Old receivables need action and may not be collectible."},
+    {q:"Juan asks for total cash across all four companies. You…", o:["Show one total only","Show each company's cash separately, then a total labeled as not all available","Move all cash into one company","Refuse"], a:1, why:"Each company's cash belongs to that company. A total is fine only when labeled."},
+    {q:"The forecast shows cash going negative in week 6. When do you tell Juan?", o:["In week 6","Now, in this week's brief with options","Only if it gets worse","Never; it's only a forecast"], a:1, why:"The point of a forecast is early warning. Give him options while there's time."}
+  ],
+  task:"Build a 13-week cash forecast for one company and write Juan's weekly brief. Every number cites its report and date.",
+  rubric:["Starting cash ties to reconciled balance","Every line labeled known or estimate with an assumption","Lowest cash week highlighted","Brief answers all eight questions and lists three decisions"]
+},
+{
+  id:"m6", weeks:"Weeks 11–12", title:"Independent close and leadership",
+  goal:"Run a full close on your own, present a five-minute brief to Juan, and have the CPA or reviewer assess it.",
+  lesson:`
+    <p><strong>Running the close yourself.</strong> Use your Module 4 checklist for every company. Keep a close calendar: bank feed daily, reconciliations by business day 5, intercompany by day 6, review by day 8, brief to Juan by day 10.</p>
+    <p><strong>The five-minute brief.</strong></p>
+    <ol>
+      <li>What changed from last month</li>
+      <li>Why it changed, with the source</li>
+      <li>What is uncertain or unknown</li>
+      <li>Three decisions Juan needs to make</li>
+    </ol>
+    <p>Separate <em>facts</em> (reconciled, sourced), <em>estimates</em> (with assumptions) and <em>unknowns</em>. Use plain language; skip the accounting terms.</p>
+    <p><strong>Controls you own as controller</strong></p>
+    <ul>
+      <li>One person can't create a vendor, change its bank details and pay it</li>
+      <li>Journal entries above the limit need a second approval</li>
+      <li>Reopening a closed month needs approval</li>
+      <li>The approval matrix is written down and followed even when busy</li>
+    </ul>
+    <p><strong>Working with the CPA.</strong> Send the CPA tax questions, unusual transactions, accounting policy changes and anything going to a lender. Keep their answers in a policy register so you apply them the same way next time.</p>`,
+  rule:"AI makes you faster. It never signs anything and it is never the reviewer.",
+  qbo:[
+    ["Monthly close in each company", "Repeat the Module 4 steps in each QuickBooks company, one after another. Never combine companies in one file."],
+    ["Review what changed", "<span class='path'>Reports → Profit and Loss Comparison</span> (this month vs last month) to find what moved."],
+    ["Check user access", "<span class='path'>⚙ → Manage users</span>. Confirm who can pay bills, edit vendors and change the closing date."],
+    ["Keep a management report", "<span class='path'>Reports → Management reports</span> lets you package the P&amp;L, Balance Sheet and notes into one report for Juan."]
+  ],
+  scenario:{
+    text:`For Juan's brief, reconciled cash on September 30: Twin Home Buyer <span class="num">$46,000</span>, Matrix Group One <span class="num">$18,500</span>, Peninsula Plumbing <span class="num">$9,200</span>, Equity Track PH <span class="num">$3,300</span>.`,
+    ask:"What is total cash across the four companies?", answer:77000,
+    explain:"$46,000 + $18,500 + $9,200 + $3,300 = $77,000. Show each company on its own line too, and note that this total is not all available to spend."
+  },
+  quiz:[
+    {q:"You want to include a number in Juan's brief but can't find its source. You…", o:["Estimate it and move on","Write \"unknown\" and say what's needed to get it","Ask the AI for a number","Use last month's number"], a:1, why:"An unsourced number is worse than an honest \"unknown.\""},
+    {q:"The AI says an account is reconciled. Is it?", o:["Yes","Only after you check it against the statement and a reviewer signs off","Yes, if two AI tools agree","Yes, if the difference is under $100"], a:1, why:"AI can help find matches. Evidence and human sign-off decide."},
+    {q:"Juan says to skip the reviewer this month because everyone is busy. You…", o:["Skip it","Explain the risk, and either get a lighter review or document that he approved the exception","Sign it off yourself","Ask the AI to review instead"], a:1, why:"Controls matter most when busy. If skipped, it's a documented, approved exception."},
+    {q:"A lender asks for a signed financial statement. Who handles it?", o:["You alone","The AI","You prepare; the CPA or authorized person reviews and signs","The lender fills it in"], a:2, why:"Lender reporting needs qualified review and a named signer."},
+    {q:"What earns the controller title?", o:["Finishing 12 weeks","Passing the quizzes","Three consecutive clean closes with reviewer-approved balances and clear briefs","Getting a CPA license"], a:2, why:"The title follows consistent, demonstrated performance."}
+  ],
+  task:"Run the full month-end close for every company on your own. Present the five-minute brief to Juan. The CPA or reviewer assesses the close and the brief.",
+  rubric:["All companies closed on schedule","Every material balance supported and reviewer-approved","Brief separates facts, estimates and unknowns","Three clear decisions for Juan"]
+}
+];
+
+const PROMPTS = [
+  ["Classify a bill","Here is a redacted invoice and our chart of accounts. Which company, property/job and account fit? Show the evidence and what is missing. Mark anything you guessed. Do not post anything."],
+  ["Reconcile","Compare this QuickBooks register export to this bank statement. Calculate the difference, list every unmatched item by row, and suggest what to check. Ask me to explain each unmatched item before you show your answer. Do not mark it reconciled."],
+  ["Property profit","Using this budget and transaction detail for property [ID], calculate actual cost, committed cost, forecast to complete, and profit at three sale prices. Show the formulas and the row for each number. Flag uncoded or duplicate costs."],
+  ["Teach me","Act as my accounting coach. Give me one scenario like today's work. Ask me which company, property, account, evidence and approval apply. Wait for my answer. Then score my reasoning, explain what I missed, and give me a slightly harder one."],
+  ["Draft Juan's brief","From these reviewed reports only, draft one page for Juan. Separate facts, estimates, risks and decisions. For every number cite the report name, date and line. If a source is missing, say so. Use plain language."],
+  ["Check my work","Act as a skeptical controller reviewer. Find unsupported numbers, wrong dates, wrong companies, double counts and guesses presented as facts. Give me a correction checklist."]
+];
+
+const $ = s => document.querySelector(s);
+const store = {
+  get(){ try{ return JSON.parse(localStorage.getItem("kca-progress")||"{}"); }catch(e){ return {}; } },
+  set(v){ try{ localStorage.setItem("kca-progress", JSON.stringify(v)); }catch(e){} }
+};
+let state = store.get();
+let current = (()=>{ try{ return localStorage.getItem("kca-current")||"m1"; }catch(e){ return "m1"; } })();
+const ms = id => (state[id] = state[id] || {quiz:null, scenario:false, lesson:false, task:false, signoff:false, reviewer:"", notes:""});
+const fmt = n => "$" + Number(n).toLocaleString("en-US");
+
+function isDone(id){ const s = ms(id); return s.lesson && s.scenario && s.quiz !== null && s.quiz >= 4 && s.task && s.signoff && s.reviewer.trim(); }
+
+function renderNav(){
+  const done = MODULES.filter(m=>isDone(m.id)).length;
+  $("#barFill").style.width = (done/MODULES.length*100)+"%";
+  $("#progressText").textContent = `${done} of ${MODULES.length} modules complete`;
+  $("#moduleNav").innerHTML = MODULES.map((m,i)=>{
+    const s = ms(m.id), d = isDone(m.id);
+    const started = s.lesson || s.scenario || s.quiz!==null;
+    return `<button data-m="${m.id}" aria-current="${m.id===current}">
+      <span class="dot ${d?'done':''}">${d?'✓':i+1}</span>
+      <span><span class="wk">${m.weeks}</span>${m.title}</span>
+      ${d?'<span class="pill good">Passed</span>':started?'<span class="pill warn">In progress</span>':''}
+    </button>`;
+  }).join("");
+  document.querySelectorAll("#moduleNav button").forEach(b=>b.onclick=()=>{
+    current=b.dataset.m; try{localStorage.setItem("kca-current",current);}catch(e){}
+    renderNav(); renderModule(); $("#moduleBody").scrollIntoView({behavior:"smooth",block:"start"});
+  });
+}
+
+function renderModule(){
+  const m = MODULES.find(x=>x.id===current), s = ms(m.id), idx = MODULES.indexOf(m);
+  $("#moduleBody").innerHTML = `
+    <div class="section plain" style="gap:8px">
+      <span class="eyebrow">Module ${idx+1} · ${m.weeks}</span>
+      <h2>${m.title}</h2>
+      <p class="muted" style="max-width:70ch"><strong>You pass when you can:</strong> ${m.goal}</p>
+    </div>
+
+    <div class="section">
+      <h3><span class="step-tag">1 · Lesson</span> Read and understand</h3>
+      <div class="prose">${m.lesson}</div>
+      <div class="keyrule"><strong>Rule to remember:</strong> ${m.rule}</div>
+      <label class="check"><input type="checkbox" id="lesson-${m.id}" ${s.lesson?'checked':''}> <span>I've read the lesson and can explain it in my own words</span></label>
+    </div>
+
+    <div class="section">
+      <h3><span class="step-tag">2 · QuickBooks Online</span> Do it in the software</h3>
+      <ol class="qbo">${m.qbo.map(([t,d])=>`<li><div><strong>${t}.</strong> ${d}</div></li>`).join("")}</ol>
+      <p class="note">Practice in a sample company first if you can. Menu names shift between QuickBooks versions; use the search bar if a path doesn't match.</p>
+    </div>
+
+    <div class="section">
+      <h3><span class="step-tag">3 · Practice problem</span> Work it out first</h3>
+      <p>${m.scenario.text}</p>
+      <div class="field">
+        <label for="reason-${m.id}">How are you working it out? (write this before you answer)</label>
+        <textarea id="reason-${m.id}" placeholder="Show your steps">${s.reason||""}</textarea>
+      </div>
+      <div class="field">
+        <label for="ans-${m.id}">${m.scenario.ask}</label>
+        <input type="text" inputmode="decimal" id="ans-${m.id}" placeholder="e.g. 12,500" value="${s.ans||""}">
+      </div>
+      <div class="field">
+        <label for="conf-${m.id}">How sure are you?</label>
+        <select id="conf-${m.id}" style="font:15px var(--body);padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);max-width:260px">
+          ${["Not sure","Somewhat sure","Very sure"].map(o=>`<option ${s.conf===o?'selected':''}>${o}</option>`).join("")}
+        </select>
+      </div>
+      <div class="btnrow"><button class="btn" id="checkScen">Check my answer</button><span id="scenOut" class="result"></span></div>
+      <div id="scenWhy" class="why" ${s.scenario?'':'hidden'}>${m.scenario.explain}</div>
+    </div>
+
+    <div class="section">
+      <h3><span class="step-tag">4 · Quiz</span> Score 4 of 5 to pass</h3>
+      <form id="quiz">${m.quiz.map((q,qi)=>`
+        <fieldset class="q"><legend>${qi+1}. ${q.q}</legend>
+          ${q.o.map((o,oi)=>`<label class="opt" data-q="${qi}" data-o="${oi}"><input type="radio" name="q${qi}" id="${m.id}-q${qi}-o${oi}" value="${oi}"> <span>${o}</span></label>`).join("")}
+          <div class="why" id="why-${qi}" hidden></div>
+        </fieldset>`).join("")}
+        <div class="btnrow" style="margin-top:12px"><button class="btn" type="submit">Score my quiz</button><button class="btn ghost" type="button" id="retry">Try again</button><span id="quizOut" class="result">${s.quiz!==null?`Last score: ${s.quiz} of 5`:''}</span></div>
+      </form>
+    </div>
+
+    <div class="section">
+      <h3><span class="step-tag">5 · Real task</span> Do it on our books</h3>
+      <p>${m.task}</p>
+      <p class="note"><strong>Reviewer checks:</strong></p>
+      <div class="prose"><ul>${m.rubric.map(r=>`<li>${r}</li>`).join("")}</ul></div>
+      <label class="check"><input type="checkbox" id="task-${m.id}" ${s.task?'checked':''}> <span>I finished the task and gave it to my reviewer</span></label>
+    </div>
+
+    <div class="section">
+      <h3><span class="step-tag">6 · Sign-off</span> Reviewer only</h3>
+      <p class="muted">Filled in by the reviewer, not by Kristine. The module is passed when all six steps are done.</p>
+      <div class="field"><label for="rev-${m.id}">Reviewer name</label><input type="text" id="rev-${m.id}" value="${s.reviewer||""}" placeholder="e.g. CPA or Juan"></div>
+      <div class="field"><label for="notes-${m.id}">Reviewer notes: mistakes found and what to practice</label><textarea id="notes-${m.id}">${s.notes||""}</textarea></div>
+      <label class="check"><input type="checkbox" id="sign-${m.id}" ${s.signoff?'checked':''}> <span>I reviewed the real task against the checklist and it meets the standard</span></label>
+      <p id="status" class="result ${isDone(m.id)?'good':''}">${isDone(m.id)?'Module passed.':missing(m.id)}</p>
+    </div>
+    ${idx < MODULES.length-1 ? `<div class="btnrow"><button class="btn ghost" id="next">Next: ${MODULES[idx+1].title} →</button></div>`:''}
+  `;
+  wire(m);
+}
+
+function missing(id){
+  const s = ms(id), left=[];
+  if(!s.lesson) left.push("lesson"); if(!s.scenario) left.push("practice problem");
+  if(s.quiz===null || s.quiz<4) left.push("quiz (4 of 5)"); if(!s.task) left.push("real task");
+  if(!s.signoff || !s.reviewer.trim()) left.push("reviewer sign-off");
+  return "Still to do: " + left.join(", ") + ".";
+}
+
+function save(){ store.set(state); renderNav(); const st=$("#status"); if(st){ const d=isDone(current); st.className="result "+(d?"good":""); st.textContent=d?"Module passed.":missing(current);} }
+
+function wire(m){
+  const s = ms(m.id);
+  $(`#lesson-${m.id}`).onchange = e=>{ s.lesson=e.target.checked; save(); };
+  $(`#task-${m.id}`).onchange = e=>{ s.task=e.target.checked; save(); };
+  $(`#sign-${m.id}`).onchange = e=>{ s.signoff=e.target.checked; save(); };
+  $(`#rev-${m.id}`).oninput = e=>{ s.reviewer=e.target.value; save(); };
+  $(`#notes-${m.id}`).oninput = e=>{ s.notes=e.target.value; store.set(state); };
+  $(`#reason-${m.id}`).oninput = e=>{ s.reason=e.target.value; store.set(state); };
+  $(`#conf-${m.id}`).onchange = e=>{ s.conf=e.target.value; store.set(state); };
+  $("#checkScen").onclick = ()=>{
+    const raw = $(`#ans-${m.id}`).value; s.ans = raw;
+    const reason = $(`#reason-${m.id}`).value.trim();
+    const out = $("#scenOut");
+    if(!reason){ out.className="result bad"; out.textContent="Write how you're working it out first."; return; }
+    const v = parseFloat(raw.replace(/[$,\s]/g,""));
+    if(isNaN(v)){ out.className="result bad"; out.textContent="Enter a number, like 12500."; return; }
+    if(Math.abs(v - m.scenario.answer) < 0.01){
+      s.scenario = true; out.className="result good"; out.textContent=`Correct: ${fmt(m.scenario.answer)}.`;
+    } else {
+      out.className="result bad"; out.textContent=`Not quite. You entered ${fmt(v)}. Check each step and try again.`;
+    }
+    $("#scenWhy").hidden = !s.scenario;
+    save();
+  };
+  $("#quiz").onsubmit = e=>{
+    e.preventDefault();
+    let score=0, answered=0;
+    m.quiz.forEach((q,qi)=>{
+      const pick = document.querySelector(`input[name=q${qi}]:checked`);
+      document.querySelectorAll(`.opt[data-q="${qi}"]`).forEach(l=>l.classList.remove("right","wrong"));
+      const why = $(`#why-${qi}`);
+      if(!pick){ why.hidden=true; return; }
+      answered++;
+      const p = +pick.value;
+      document.querySelector(`.opt[data-q="${qi}"][data-o="${q.a}"]`).classList.add("right");
+      if(p===q.a) score++; else document.querySelector(`.opt[data-q="${qi}"][data-o="${p}"]`).classList.add("wrong");
+      why.hidden=false; why.innerHTML = (p===q.a?"<strong>Right.</strong> ":"<strong>Not this one.</strong> ") + q.why;
+    });
+    const out=$("#quizOut");
+    if(answered<m.quiz.length){ out.className="result bad"; out.textContent=`Answer all ${m.quiz.length} questions (${answered} answered).`; return; }
+    s.quiz = Math.max(s.quiz??0, score);
+    out.className = "result " + (score>=4?"good":"bad");
+    out.textContent = score>=4 ? `${score} of 5. Passed.` : `${score} of 5. Read the explanations, then try again.`;
+    save();
+  };
+  $("#retry").onclick = ()=>{ renderModule(); };
+  const nx = $("#next"); if(nx) nx.onclick = ()=>{ current = MODULES[MODULES.indexOf(m)+1].id; try{localStorage.setItem("kca-current",current);}catch(e){} renderNav(); renderModule(); window.scrollTo({top:0,behavior:"smooth"}); };
+}
+
+function renderPrompts(){
+  $("#prompts").innerHTML = PROMPTS.map(([t,p],i)=>`<div class="prompt"><h3>${t}</h3><pre id="p${i}">${p}</pre><div class="btnrow"><button class="btn ghost" data-copy="${i}">Copy prompt</button><span class="note" id="c${i}"></span></div></div>`).join("");
+  document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>{
+    const i=b.dataset.copy, text=$("#p"+i).textContent;
+    const done=()=>{$("#c"+i).textContent="Copied";};
+    const fallback=()=>{ const r=document.createRange(); r.selectNodeContents($("#p"+i)); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); $("#c"+i).textContent="Selected. Press Ctrl+C or Cmd+C."; };
+    try{ navigator.clipboard.writeText(text).then(done,fallback); }catch(e){ fallback(); }
+  });
+}
+
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected", x===b));
+  ["course","path","routine","ai"].forEach(v=> $("#view-"+v).hidden = v!==b.dataset.view);
+});
+
+renderNav(); renderModule(); renderPrompts();
+</script>
