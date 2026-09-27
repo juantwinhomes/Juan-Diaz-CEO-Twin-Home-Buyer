@@ -5,7 +5,7 @@
 --serif:'Source Serif 4',Georgia,serif;--sans:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0F1623;--card:#172131;--side:#0A101A;--sideink:#98A2B3;--sidehi:#E6EBF2;--ink:#E6EBF2;--muted:#98A2B3;--line:#2A3547;--accent:#5BB0CF;--accent2:#2B5566;--good:#5CB883;--warn:#D9A441;--bad:#E07A70;--neutral:#556175;--soft:#1B2A3A}}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#0F1623;--card:#172131;--side:#0A101A;--sideink:#98A2B3;--sidehi:#E6EBF2;--ink:#E6EBF2;--muted:#98A2B3;--line:#2A3547;--accent:#5BB0CF;--accent2:#2B5566;--good:#5CB883;--warn:#D9A441;--bad:#E07A70;--neutral:#556175;--soft:#1B2A3A}
-[hidden]{display:none!important}
+[hidden]{display:none!important} .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 html,body{height:100%}
 .app>*{min-width:0}
 body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans)}
@@ -72,8 +72,24 @@ ul.plain{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
 .cdel{margin-left:auto;background:none;border:0;color:var(--muted);cursor:pointer;font:13px var(--sans);padding:2px 4px} .cdel:hover{color:var(--bad)}
 .status{font-size:13px;color:var(--muted);min-height:1.2em} .status.err{color:var(--bad)}
 .empty{color:var(--muted);font-size:14px;padding:14px;border:1px dashed var(--line);border-radius:10px;text-align:center}
+.qbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 13px var(--sans);border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:5px 12px;cursor:pointer}
+.chip:hover{border-color:var(--accent)} .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.qrange{display:flex;gap:6px;align-items:center} .qrange select{font:14px var(--sans);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
+#qbars{display:grid;gap:8px}
+details.thread{background:var(--card);border:1px solid var(--line);border-radius:12px}
+details.thread>summary{list-style:none;cursor:pointer;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:14px}
+details.thread>summary::-webkit-details-marker{display:none}
+details.thread>summary .tog{font:500 13px var(--sans);color:var(--accent)}
+details.thread[open]>summary{border-bottom:1px solid var(--line)}
+details.thread>summary .n{font:500 11px var(--mono);background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px;margin-left:6px} details.thread>summary .n:empty{display:none}
+.tbody{padding:12px 16px;display:grid;gap:10px}
+.tlist{display:grid;gap:8px;max-height:280px;overflow-y:auto;padding-right:4px}
+.tform{display:flex;gap:8px;align-items:flex-end} .tform textarea{flex:1;font:14px/1.45 var(--sans);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:44px;resize:vertical}
 .mini{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;color:var(--muted)} .mini a{color:var(--accent)}
 @media (max-width:820px){
+ .qbar{flex-direction:column;align-items:stretch} .tform{flex-direction:column;align-items:stretch}
  .app{grid-template-columns:1fr}
  aside{position:sticky;top:env(safe-area-inset-top,0px);height:auto;padding:10px 16px;gap:8px;z-index:5}
  .brand span,.asof{display:none} .brand b{font-size:15px}
@@ -87,13 +103,13 @@ ul.plain{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
 <div class=app>
 <aside><div class=brand><b>Google PPC Report</b><span>Twin Home Buyer</span></div>
 <nav aria-label="Topics"><a href="#overview" data-t="overview" id="nav-overview"><span>Summary</span></a><a href="#leads" data-t="leads" id="nav-leads"><span>Leads over time</span></a><a href="#spend" data-t="spend" id="nav-spend"><span>2026 ad spend</span></a><a href="#bateman" data-t="bateman" id="nav-bateman"><span>Bateman agency</span></a><a href="#deals" data-t="deals" id="nav-deals"><span>Homes bought</span></a><a href="#quality" data-t="quality" id="nav-quality"><span>Lead quality</span></a><a href="#data" data-t="data" id="nav-data"><span>About this data</span></a><a href="#comments" data-t="comments" id="nav-comments"><span>Comments</span><b class=count id=ccount></b></a></nav>
-<div class=asof>Google Ads leads only.<br>Leads: Jul 2023 – Jul 20, 2026<br>Spend: Jan 1 – Sep 26, 2026</div></aside>
+<div class=asof>Google Ads leads only.<br>Leads: May 2023 – Jul 20, 2026<br>Spend: Jan 1 – Sep 26, 2026</div></aside>
 <main>
 
 <section class=panel id=overview data-panel>
 <div><div class=eyebrow>For Juan · Sep 26, 2026</div><h1>Google ads bring in deals. Bateman costs more, and the ads are off right now.</h1></div>
 <div class=big>
-<div class=tile><b>1,724</b><span>leads from Google ads since Jul 2023</span></div>
+<div class=tile><b>1,724</b><span>leads from Google ads since May 2023</span></div>
 <div class=tile><b>14</b><span>homes bought from those leads</span></div>
 <div class=tile><b>$909K</b><span>net profit recorded on those homes</span></div>
 <div class=tile><b>$115K</b><span>spent on Google ads in 2026</span></div>
@@ -107,6 +123,7 @@ ul.plain{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
 </ul></div>
 <div class=ask><h2>Decisions for you</h2><ol><li>Turn the Google ads back on?</li><li>Keep Bateman, or bring PPC back in-house?</li><li>Ask Bateman to explain why their spend numbers don't match our books.</li></ol></div>
 <div class=mini><span>Use the topics on the left for details.</span><a href="#comments">Leave a comment →</a></div>
+<details class=thread data-thread="overview"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-overview>Add a comment</label><textarea id=t-overview maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
 </section>
 
 <section class=panel id=leads data-panel hidden>
@@ -115,10 +132,11 @@ ul.plain{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
 <div class=card><h2>By year</h2>
 <div class=legend><span><i style="background:var(--accent)"></i>Real leads</span><span><i style="background:var(--accent2)"></i>Junk</span></div>
 <div class=hrow><span class=hlab>2023</span><span class=htrack><span class=hfill style="width:0.3%"><span class=hlegit style="width:100.0%"></span></span></span><span class=hnum>3</span><span class=hnote>2 bought</span></div><div class=hrow><span class=hlab>2024</span><span class=htrack><span class=hfill style="width:57.1%"><span class=hlegit style="width:65.4%"></span></span></span><span class=hnum>543</span><span class=hnote>2 bought</span></div><div class=hrow><span class=hlab>2025</span><span class=htrack><span class=hfill style="width:100.0%"><span class=hlegit style="width:66.7%"></span></span></span><span class=hnum>951</span><span class=hnote>7 bought</span></div><div class=hrow><span class=hlab>2026</span><span class=htrack><span class=hfill style="width:23.9%"><span class=hlegit style="width:63.4%"></span></span></span><span class=hnum>227</span><span class=hnote>3 bought</span></div>
-<p class=muted>2023 starts in July. 2026 runs through Jul 20. "Bought" is counted in the year the lead first came in.</p></div>
+<p class=muted>2023 starts in late May. 2026 runs through Jul 20. "Bought" is counted in the year the lead first came in.</p></div>
 <div class=card><h2>2026, month by month</h2>
 <div class=cols><div class=mcol><div class=mval>39</div><div class=mbar style="height:80%"><span style="height:59%"></span></div><div class=mlab>Jan</div><div class="msrc">In-house</div></div><div class=mcol><div class=mval>34</div><div class=mbar style="height:69%"><span style="height:65%"></span></div><div class=mlab>Feb</div><div class="msrc">In-house</div></div><div class=mcol><div class=mval>49</div><div class=mbar style="height:100%"><span style="height:71%"></span></div><div class=mlab>Mar</div><div class="msrc">In-house</div></div><div class=mcol><div class=mval>16</div><div class=mbar style="height:33%"><span style="height:56%"></span></div><div class=mlab>Apr</div><div class="msrc">In-house</div></div><div class=mcol><div class=mval>47</div><div class=mbar style="height:96%"><span style="height:49%"></span></div><div class=mlab>May</div><div class="msrc">In-house</div></div><div class=mcol><div class=mval>27</div><div class=mbar style="height:55%"><span style="height:67%"></span></div><div class=mlab>Jun</div><div class="msrc bat">Bateman</div></div><div class=mcol><div class=mval>15</div><div class=mbar style="height:31%"><span style="height:93%"></span></div><div class=mlab>Jul</div><div class="msrc bat">Bateman</div></div></div>
 <p class=muted>Ads were paused Jan 7–13. Bateman took over in June. Nothing is logged for May 25 – Jun 7 or after Jul 20.</p></div>
+<details class=thread data-thread="leads"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-leads>Add a comment</label><textarea id=t-leads maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
 </section>
 
 <section class=panel id=spend data-panel hidden>
@@ -129,6 +147,7 @@ ul.plain{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
 <div class=cols><div class=mcol><div class=mval>$7K</div><div class="mbar sp" style="height:32%"><span class=fee style="height:0%"></span></div><div class=mlab>Jan</div></div><div class=mcol><div class=mval>$21K</div><div class="mbar sp" style="height:93%"><span class=fee style="height:0%"></span></div><div class=mlab>Feb</div></div><div class=mcol><div class=mval>$22K</div><div class="mbar sp" style="height:100%"><span class=fee style="height:0%"></span></div><div class=mlab>Mar</div></div><div class=mcol><div class=mval>$18K</div><div class="mbar sp" style="height:81%"><span class=fee style="height:0%"></span></div><div class=mlab>Apr</div></div><div class=mcol><div class=mval>$7K</div><div class="mbar sp" style="height:31%"><span class=fee style="height:0%"></span></div><div class=mlab>May</div></div><div class=mcol><div class=mval>$21K</div><div class="mbar sp" style="height:94%"><span class=fee style="height:34%"></span></div><div class=mlab>Jun</div></div><div class=mcol><div class=mval>$18K</div><div class="mbar sp" style="height:81%"><span class=fee style="height:25%"></span></div><div class=mlab>Jul</div></div><div class=mcol><div class=mval>$202</div><div class="mbar sp" style="height:1%"><span class=fee style="height:0%"></span></div><div class=mlab>Aug</div></div><div class=mcol><div class=mval>$109</div><div class="mbar sp" style="height:1%"><span class=fee style="height:0%"></span></div><div class=mlab>Sep</div></div></div></div>
 <div class=card><div class=tbl><table><thead><tr><th>Month</th><th class=num>Spent</th><th class=num>Real leads</th><th class=num>Cost per lead</th></tr></thead><tbody><tr><td>Jan</td><td class=num>$7,138</td><td class=num>23</td><td class=num>$310</td></tr><tr><td>Feb</td><td class=num>$21,000</td><td class=num>22</td><td class=num>$955</td></tr><tr><td>Mar</td><td class=num>$22,481</td><td class=num>35</td><td class=num>$642</td></tr><tr><td>Apr</td><td class=num>$18,146</td><td class=num>9</td><td class=num>$2,016</td></tr><tr><td>May</td><td class=num>$7,072</td><td class=num>23</td><td class=num>$307</td></tr><tr><td>Jun</td><td class=num>$21,168</td><td class=num>18</td><td class=num>$1,176</td></tr><tr><td>Jul</td><td class=num>$18,110</td><td class=num>14</td><td class=num>$1,294</td></tr><tr><td>Aug</td><td class=num>$202</td><td class=num>—</td><td class=num>—</td></tr><tr><td>Sep</td><td class=num>$109</td><td class=num>—</td><td class=num>—</td></tr><tr class=total><td>2026 so far</td><td class=num>$115,425</td><td class=num>144</td><td class=num>$802</td></tr></tbody></table></div>
 <p class=muted>From the QuickBooks "AM – PPC" report. Google charges in $500 chunks a few days after the clicks, so single months jump around (April looks high because only 9 real leads came in). The full-year number is the reliable one.</p></div>
+<details class=thread data-thread="spend"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-spend>Add a comment</label><textarea id=t-spend maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
 </section>
 
 <section class=panel id=bateman data-panel hidden>
@@ -146,6 +165,7 @@ ul.plain{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
 <li><b>10</b> were our own tests, duplicates or spam.</li>
 <li>Only <b>4 phone calls</b> in two months. We used to get 20–30 calls a month.</li></ul></div>
 <p class=note><b>Their numbers don't match ours.</b> Bateman reports $22,527 spent in June and $16,660 for Jul 1–21. Our books show Google charged $13,943 and $13,610. Ask them to explain the difference.</p>
+<details class=thread data-thread="bateman"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-bateman>Add a comment</label><textarea id=t-bateman maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
 </section>
 
 <section class=panel id=deals data-panel hidden>
@@ -154,19 +174,29 @@ ul.plain{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
 <div class=card><div class=tbl><table><thead><tr><th>Lead came in</th><th>Seller</th><th>City</th><th>Result</th><th class=num>We paid</th><th class=num>Net profit</th></tr></thead><tbody><tr><td>2026-06</td><td>Robert Gunn</td><td>San Francisco</td><td><span class='pill ok'>Bought</span></td><td class=num>$755,000</td><td class='num '>—</td></tr><tr><td>2026-03</td><td>Joseph Harper</td><td>Orland</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2026-02</td><td>Wei Wang</td><td>Emerald Hills</td><td><span class='pill ok'>Bought</span></td><td class=num>$2,500,000</td><td class='num '>—</td></tr><tr><td>2026-01</td><td>Bill</td><td>San Lorenzo</td><td><span class='pill ok'>Bought</span></td><td class=num>$600,000</td><td class='num '>$127,329</td></tr><tr><td>2025-12</td><td>JONES, ELLIS</td><td>Oakland</td><td><span class='pill ok'>Bought</span></td><td class=num>$440,000</td><td class='num '>$232,806</td></tr><tr><td>2025-09</td><td>Gopi</td><td>East Palo Alto</td><td><span class='pill ok'>Bought</span></td><td class=num>$700,000</td><td class='num '>$31,786</td></tr><tr><td>2025-08</td><td>Mitchell Vierra</td><td>San Lorenzo</td><td><span class='pill ok'>Bought</span></td><td class=num>$550,000</td><td class='num '>$65,282</td></tr><tr><td>2025-08</td><td>DelGiudice, Joy</td><td>Berkeley</td><td><span class='pill ok'>Bought</span></td><td class=num>$750,000</td><td class='num '>$85,101</td></tr><tr><td>2025-05</td><td>Parent, Thomas</td><td>Orinda</td><td><span class='pill ok'>Bought</span></td><td class=num>$1,350,000</td><td class='num neg'>−$71,477</td></tr><tr><td>2025-04</td><td>Garret Lydia</td><td>Oakland</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2025-03</td><td>David R Dancisin</td><td>San Jose</td><td><span class='pill ok'>Bought</span></td><td class=num>—</td><td class='num '>$52,310</td></tr><tr><td>2025-03</td><td>Okoro, Ona</td><td>Sacramento</td><td><span class='pill ok'>Bought</span></td><td class=num>$442,000</td><td class='num '>$12,755</td></tr><tr><td>2025-02</td><td>Chet Holloway</td><td>Sunnyvale</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2024-11</td><td>Susan Delgado</td><td>Redding</td><td><span class='pill bad'>Cancelled Contract</span></td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2024-07</td><td>Bard, Elizabeth</td><td>Redwood City</td><td><span class='pill ok'>Bought</span></td><td class=num>$900,000</td><td class='num '>$127,138</td></tr><tr><td>2024-06</td><td>Carlier, Robin</td><td>Redwood City</td><td><span class='pill ok'>Bought</span></td><td class=num>$2,400,000</td><td class='num '>$304,605</td></tr><tr><td>2023-12</td><td>William Freeman</td><td>Oregon House</td><td><span class='pill ok'>Bought</span></td><td class=num>$170,000</td><td class='num neg'>−$58,325</td></tr><tr><td>2023-10</td><td>Rita Williams</td><td>Emeryville</td><td><span class='pill warn'>Under Contract</span></td><td class=num>—</td><td class='num '>—</td></tr><tr><td>2023-07</td><td>Villanueva, Flavio</td><td>Bakersfield</td><td><span class='pill ok'>Bought</span></td><td class=num>—</td><td class='num '>—</td></tr></tbody></table></div>
 <p class=muted>From the "Acquired Leads" tab. A dash means the number isn't filled in on the sheet yet.</p></div>
 <p class=note><b>10 more deals are left out.</b> The Acquired Leads tab calls them PPC, but the lead log says they came from our website form (organic), not ads: Galvan, Carla, Wong, Dan, M Ferretti, Jean, Greenwood, Mike, Wada, Toyotaro, Dania Aceves, Jae Lee, Sheryl Taylor, Davis, Bill, vu, Loan. Together they show $499,091 net profit.</p>
+<details class=thread data-thread="deals"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-deals>Add a comment</label><textarea id=t-deals maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
 </section>
 
 <section class=panel id=quality data-panel hidden>
-<div><div class=eyebrow>Lead quality</div><h1>Where every lead ended up</h1>
-<p class=lede>Out of 1,724 leads, about 1 in 20 became interested or better. Most never answered or weren't real sellers.</p></div>
-<div class=card><div class=hrow><span class="hlab wide">Bought or in contract</span><span class=htrack><span class="sfill g" style="width:3.7%"></span></span><span class=hnum>27</span><span class=hnote>2%</span></div><div class=hrow><span class="hlab wide">Appointment booked</span><span class=htrack><span class="sfill g" style="width:2.4%"></span></span><span class=hnum>17</span><span class=hnote>1%</span></div><div class=hrow><span class="hlab wide">Interested, following up</span><span class=htrack><span class="sfill w" style="width:29.7%"></span></span><span class=hnum>215</span><span class=hnote>12%</span></div><div class=hrow><span class="hlab wide">Said no to our offer / contract cancelled</span><span class=htrack><span class="sfill w" style="width:10.9%"></span></span><span class=hnum>79</span><span class=hnote>5%</span></div><div class=hrow><span class="hlab wide">Not interested, not a seller, or never answered</span><span class=htrack><span class="sfill n" style="width:100.0%"></span></span><span class=hnum>723</span><span class=hnote>42%</span></div><div class=hrow><span class="hlab wide">Junk: wrong number, spam, tests</span><span class=htrack><span class="sfill n" style="width:81.3%"></span></span><span class=hnum>588</span><span class=hnote>34%</span></div><div class=hrow><span class="hlab wide">Not scored yet</span><span class=htrack><span class="sfill n" style="width:10.4%"></span></span><span class=hnum>75</span><span class=hnote>4%</span></div></div>
-<p class=muted>Green means a deal or a booked appointment. Yellow means there was real interest. Grey means no deal.</p>
+<div><div class=eyebrow>Lead quality</div><h1>Where the leads ended up</h1>
+<p class=lede id=qlede></p></div>
+<div class=card>
+<div class=qbar role=group aria-label="Date range">
+<div class=chips id=qchips></div>
+<div class=qrange><label for=qfrom class=muted>From</label><select id=qfrom></select><label for=qto class=muted>to</label><select id=qto></select></div>
+</div>
+<div id=qbars></div>
+<p class=muted>Green means a deal or a booked appointment. Yellow means there was real interest. Grey means no deal. Dates are when the lead came in.</p></div>
+<div class=card><h2>Quality by year</h2>
+<div class=tbl><table><thead><tr><th>Year</th><th class=num>Leads</th><th class=num>Deal or appointment</th><th class=num>Interested+</th><th class=num>Junk</th></tr></thead><tbody id=qyears></tbody></table></div>
+<p class=muted>Percentages are out of all leads that year. Interested+ includes deals, appointments, follow-ups and rejected offers.</p></div>
+<details class=thread data-thread="quality"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-quality>Add a comment</label><textarea id=t-quality maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
 </section>
 
 <section class=panel id=data data-panel hidden>
 <div><div class=eyebrow>About this data</div><h1>Where these numbers come from</h1></div>
 <div class=card><h2>Sources</h2><ul class=plain>
-<li><b>PPC LEAD sheet</b>: our in-house lead log, Jul 2023 – May 24, 2026.</li>
+<li><b>PPC LEAD sheet</b>: our in-house lead log, May 2023 – May 24, 2026.</li>
 <li><b>Bateman PPC Lead KPI Dashboard</b>: Google leads only, Jun 8 – Jul 20, 2026.</li>
 <li><b>QuickBooks "AM – PPC" report</b>: every Google Ads and Bateman charge, Jan 1 – Sep 26, 2026.</li>
 <li><b>Acquired Leads tab</b>: purchase and sale prices and net profit for homes bought.</li></ul></div>
@@ -179,11 +209,12 @@ ul.plain{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
 <li>William Freeman (Dec 2023) is on the Acquired tab but not in the lead log. He's counted here because the tab says PPC.</li>
 <li>Martha Reece's note is cut off ("already signed…"), so it isn't clear she signed with us.</li></ul></div>
 <p class=muted>The full list of 1,724 leads is in the Excel file Juan_PPC_Lead_Report.xlsx.</p>
+<details class=thread data-thread="data"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-data>Add a comment</label><textarea id=t-data maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
 </section>
 
 <section class=panel id=comments data-panel hidden>
 <div><div class=eyebrow>Comments</div><h1>Questions and notes</h1>
-<p class=lede>Anyone with edit access to this page can add or delete comments. They save automatically and everyone sees them.</p></div>
+<p class=lede>Every comment from every topic, in one place. You can also comment at the bottom of each topic. Comments save automatically and everyone with access sees them.</p></div>
 <div class=card>
 <form class=cform id=cform>
 <label for=ctext class=muted>Your comment</label>
@@ -219,61 +250,120 @@ function go(id){ if(location.hash!=='#'+id) location.hash=id; else show(id); }
 window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
 show(location.hash.slice(1));
 
+// ---- lead quality by date ----
+const QD={"2023-05": [0, 0, 0, 1, 0, 0, 0], "2023-07": [1, 0, 0, 0, 0, 0, 0], "2023-10": [1, 0, 0, 0, 0, 0, 0], "2024-04": [1, 0, 0, 1, 0, 0, 0], "2024-05": [0, 0, 2, 4, 17, 3, 0], "2024-06": [1, 0, 1, 2, 29, 21, 0], "2024-07": [1, 0, 0, 3, 23, 24, 0], "2024-08": [0, 0, 0, 4, 23, 31, 0], "2024-09": [0, 0, 0, 4, 24, 16, 0], "2024-10": [1, 0, 2, 6, 48, 23, 0], "2024-11": [0, 0, 7, 11, 76, 37, 0], "2024-12": [1, 0, 13, 4, 46, 33, 0], "2025-01": [0, 0, 17, 3, 47, 16, 0], "2025-02": [0, 0, 12, 1, 60, 27, 1], "2025-03": [3, 0, 5, 2, 33, 37, 0], "2025-04": [0, 0, 15, 3, 45, 34, 0], "2025-05": [1, 0, 11, 2, 28, 33, 0], "2025-06": [0, 0, 10, 3, 31, 40, 17], "2025-07": [0, 0, 9, 5, 42, 41, 0], "2025-08": [4, 0, 13, 9, 25, 29, 7], "2025-09": [0, 0, 6, 0, 2, 13, 14], "2025-10": [2, 0, 8, 0, 7, 15, 4], "2025-11": [1, 4, 14, 1, 16, 15, 4], "2025-12": [2, 3, 38, 0, 21, 17, 23], "2026-01": [1, 1, 8, 1, 7, 16, 5], "2026-02": [2, 3, 5, 0, 12, 12, 0], "2026-03": [0, 4, 6, 6, 19, 14, 0], "2026-04": [1, 0, 4, 0, 4, 7, 0], "2026-05": [1, 1, 9, 3, 9, 24, 0], "2026-06": [2, 0, 0, 0, 16, 9, 0], "2026-07": [0, 1, 0, 0, 13, 1, 0]}, GROUPS=[["Bought or in contract", "g"], ["Appointment booked", "g"], ["Interested, following up", "w"], ["Said no to our offer / contract cancelled", "w"], ["Not interested, not a seller, or never answered", "n"], ["Junk: wrong number, spam, tests", "n"], ["Not scored yet", "n"]];
+const months=Object.keys(QD);
+const mlabel=ym=>new Date(ym+'-15').toLocaleString('en-US',{month:'short',year:'numeric'});
+const qf=document.getElementById('qfrom'),qt=document.getElementById('qto');
+for(const m of months){qf.add(new Option(mlabel(m),m));qt.add(new Option(mlabel(m),m));}
+const last=months[months.length-1];
+const PRESETS=[['All time',months[0],last],['2024','2024-01','2024-12'],['2025','2025-01','2025-12'],['2026','2026-01',last],['Bateman (Jun–Jul 2026)','2026-06',last],['In-house 2026 (Jan–May)','2026-01','2026-05']];
+const chips=document.getElementById('qchips');
+PRESETS.forEach(([n,f,t])=>{const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=n;b.onclick=()=>{qf.value=clamp(f);qt.value=clamp(t);drawQ();};chips.append(b);});
+function clamp(m){return months.includes(m)?m:(m<months[0]?months[0]:(months.filter(x=>x<=m).pop()||last));}
+function sum(f,t){const r=[0,0,0,0,0,0,0];for(const m of months) if(m>=f&&m<=t) QD[m].forEach((v,i)=>r[i]+=v);return r;}
+function pct(a,b){return b?Math.round(a/b*100)+'%':'—';}
+function drawQ(){
+  let f=qf.value,t=qt.value; if(f>t){[f,t]=[t,f];qf.value=f;qt.value=t;}
+  const r=sum(f,t), T=r.reduce((a,b)=>a+b,0), mx=Math.max(1,...r);
+  const box=document.getElementById('qbars'); box.innerHTML='';
+  GROUPS.forEach(([n,c],i)=>{const row=document.createElement('div');row.className='hrow';
+    row.innerHTML='<span class="hlab wide"></span><span class=htrack><span class="sfill '+c+'"></span></span><span class=hnum></span><span class=hnote></span>';
+    row.children[0].textContent=n; row.querySelector('.sfill').style.width=(r[i]?Math.max(r[i]/mx*100,.8):0)+'%';
+    row.children[2].textContent=r[i].toLocaleString(); row.children[3].textContent=pct(r[i],T); box.append(row);});
+  const hot=r[0]+r[1]+r[2]+r[3];
+  const range=f===t?mlabel(f):mlabel(f)+' – '+mlabel(t);
+  document.getElementById('qlede').textContent=range+': '+T.toLocaleString()+' leads. '+(T?pct(r[0]+r[1],T)+' became a deal or appointment, '+pct(hot,T)+' showed real interest, and '+pct(r[5],T)+' were junk.':'No leads in this range.');
+  chips.querySelectorAll('.chip').forEach((b,i)=>b.setAttribute('aria-pressed',String(clamp(PRESETS[i][1])===f&&clamp(PRESETS[i][2])===t)));
+}
+qf.onchange=qt.onchange=drawQ; qf.value=months[0]; qt.value=last; drawQ();
+const yb=document.getElementById('qyears');
+[...new Set(months.map(m=>m.slice(0,4)))].forEach(y=>{const r=sum(y+'-01',y+'-12'),T=r.reduce((a,b)=>a+b,0);
+  const tr=document.createElement('tr');[y+(y==='2023'?' (from May)':y==='2026'?' (to Jul 20)':''),T.toLocaleString(),pct(r[0]+r[1],T),pct(r[0]+r[1]+r[2]+r[3],T),pct(r[5],T)].forEach((v,i)=>{const td=document.createElement('td');td.textContent=v;if(i)td.className='num';tr.append(td);});yb.append(tr);});
+
 // ---- comments (shared db) ----
 const list=document.getElementById('clist'),status=document.getElementById('cstatus'),form=document.getElementById('cform'),txt=document.getElementById('ctext'),post=document.getElementById('cpost'),filt=document.getElementById('cfilter'),count=document.getElementById('ccount');
-let DB=null,USER=null,DOCS=[],canWrite=true;
-function setStatus(m,err){status.textContent=m||'';status.classList.toggle('err',!!err);}
+const threads=[...document.querySelectorAll('details.thread')];
+let DB=null,USER=null,DOCS=[],canWrite=true,READY=false;
+function setStatus(el,m,err){el.textContent=m||'';el.classList.toggle('err',!!err);}
 function when(t){try{return new Date(t).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return '';}}
+function emptyMsg(el,m){el.innerHTML='';const e=document.createElement('div');e.className='empty';e.textContent=m;el.append(e);}
+function cmtEl(d,ps,showTopic,statusEl){
+  const c=d.data(); const p=ps[c.author]||{};
+  const el=document.createElement('div'); el.className='cmt';
+  const img=document.createElement('img'); img.alt=''; if(p.avatarUrl) img.src=p.avatarUrl; else img.style.background='var(--line)';
+  const body=document.createElement('div');
+  const meta=document.createElement('div'); meta.className='cmeta';
+  const who=document.createElement('b'); who.textContent=(p.name||'Someone')+(p.isMe?' (you)':'');
+  const tm=document.createElement('span'); tm.textContent=when(c.createdAt);
+  meta.append(who,tm);
+  if(showTopic){const tp=document.createElement('a'); tp.className='ctopic'; tp.href='#'+(NAMES[c.topic]&&c.topic!=='general'?c.topic:'comments'); tp.textContent=NAMES[c.topic]||'General'; meta.append(tp);}
+  if(canWrite){const del=document.createElement('button');del.type='button';del.className='cdel';del.textContent='Delete';del.setAttribute('aria-label','Delete this comment');
+    del.onclick=async()=>{del.disabled=true;del.textContent='Deleting…';try{await DB.doc('comments/'+d.id).delete();setStatus(statusEl,'Comment deleted.');}catch(e){del.disabled=false;del.textContent='Delete';setStatus(statusEl,e&&e.code==='invalid_argument'?'You need edit access to delete comments.':'Could not delete. Try again.',true);}};
+    meta.append(del);}
+  const t=document.createElement('div'); t.className='ctext'; t.textContent=c.text||'';
+  body.append(meta,t); el.append(img,body); return el;
+}
 async function render(){
   count.textContent=DOCS.length?String(DOCS.length):'';
+  const authorIds=[...new Set(DOCS.map(d=>d.data().author).filter(Boolean))];
+  let ps={}; if(USER&&authorIds.length){try{ps=await USER.profiles(authorIds);}catch(e){}}
+  // main list
   const f=filt.value; const rows=DOCS.filter(d=>f==='all'||d.data().topic===f);
   document.getElementById('ctitle').textContent=f==='all'?'All comments':'Comments on '+NAMES[f];
-  if(!DB){list.innerHTML='';const e=document.createElement('div');e.className='empty';e.textContent='Comments are not available in this view. Open the page on claude.ai while signed in.';list.append(e);return;}
-  if(!rows.length){list.innerHTML='';const e=document.createElement('div');e.className='empty';e.textContent='No comments yet. Be the first.';list.append(e);return;}
-  const authorIds=[...new Set(rows.map(d=>d.data().author).filter(Boolean))];
-  let ps={}; if(USER&&authorIds.length){try{ps=await USER.profiles(authorIds);}catch(e){}}
-  const frag=document.createDocumentFragment();
-  for(const d of rows){
-    const c=d.data(); const p=ps[c.author]||{};
-    const el=document.createElement('div'); el.className='cmt';
-    const img=document.createElement('img'); img.alt=''; if(p.avatarUrl) img.src=p.avatarUrl; else img.style.background='var(--line)';
-    const body=document.createElement('div');
-    const meta=document.createElement('div'); meta.className='cmeta';
-    const who=document.createElement('b'); who.textContent=(p.name||'Someone')+(p.isMe?' (you)':'');
-    const tm=document.createElement('span'); tm.textContent=when(c.createdAt);
-    const tp=document.createElement('span'); tp.className='ctopic'; tp.textContent=NAMES[c.topic]||'General';
-    meta.append(who,tm,tp);
-    if(canWrite){const del=document.createElement('button');del.type='button';del.className='cdel';del.textContent='Delete';del.setAttribute('aria-label','Delete this comment');
-      del.onclick=async()=>{del.disabled=true;del.textContent='Deleting…';try{await DB.doc('comments/'+d.id).delete();setStatus('Comment deleted.');}catch(e){del.disabled=false;del.textContent='Delete';setStatus(e&&e.code==='invalid_argument'?'You need edit access to delete comments.':'Could not delete. Try again.',true);}};
-      meta.append(del);}
-    const t=document.createElement('div'); t.className='ctext'; t.textContent=c.text||'';
-    body.append(meta,t); el.append(img,body); frag.append(el);
+  if(!DB) emptyMsg(list,'Comments are not available in this view. Open the page on claude.ai while signed in.');
+  else if(!READY) emptyMsg(list,'Loading comments…');
+  else if(!rows.length) emptyMsg(list,'No comments yet. Be the first.');
+  else {const fr=document.createDocumentFragment(); rows.forEach(d=>fr.append(cmtEl(d,ps,true,status))); list.innerHTML=''; list.append(fr);}
+  // per-topic threads (oldest first so the newest sits next to the box)
+  for(const th of threads){
+    const tid=th.dataset.thread, tl=th.querySelector('.tlist'), st=th.querySelector('.status');
+    const tr=DOCS.filter(d=>d.data().topic===tid).slice().reverse();
+    th.querySelector('.n').textContent=tr.length?String(tr.length):'';
+    if(!DB){th.hidden=true;continue;}
+    if(!tr.length) emptyMsg(tl,READY?'No comments on this topic yet.':'Loading…');
+    else {const atEnd=tl.scrollHeight-tl.scrollTop-tl.clientHeight<30; const fr=document.createDocumentFragment(); tr.forEach(d=>fr.append(cmtEl(d,ps,false,st))); tl.innerHTML=''; tl.append(fr); if(atEnd||tl.dataset.stick) {tl.scrollTop=tl.scrollHeight; delete tl.dataset.stick;}}
   }
-  list.innerHTML=''; list.append(frag);
 }
 filt.addEventListener('change',render);
-form.addEventListener('submit',async e=>{
-  e.preventDefault(); const text=txt.value.trim();
-  if(!text){setStatus('Type a comment first.',true);txt.focus();return;}
-  if(!DB){setStatus('Comments are not available in this view.',true);return;}
-  post.disabled=true; setStatus('Saving…');
+async function addComment(text,topic,statusEl,btn){
+  if(!text){setStatus(statusEl,'Type a comment first.',true);return false;}
+  if(!DB){setStatus(statusEl,'Comments are not available in this view.',true);return false;}
+  btn.disabled=true; setStatus(statusEl,'Saving…');
   try{
     const author=USER?await USER.id():null;
-    await DB.collection('comments').add({text,topic:document.getElementById('ctopicsel').value,author,createdAt:new Date().toISOString()});
-    txt.value=''; setStatus('Saved. Everyone with access can see it.');
+    await DB.collection('comments').add({text,topic,author,createdAt:new Date().toISOString()});
+    setStatus(statusEl,'Saved. Everyone with access can see it.'); return true;
   }catch(err){
     const c=err&&err.code;
-    if(c==='invalid_argument'){canWrite=false;form.hidden=true;render();setStatus('');list.insertAdjacentHTML('beforebegin','');alert0('You have view-only access. Ask Seth to give you edit access to comment.');}
-    else if(c==='quota_exceeded') setStatus('The comment box is full. Delete some old comments first.',true);
-    else setStatus('Could not save. Check your connection and try again.',true);
-  }finally{post.disabled=false;}
-});
-function alert0(m){const e=document.createElement('p');e.className='note';e.textContent=m;form.parentElement.append(e);}
+    if(c==='invalid_argument'){readOnly();}
+    else if(c==='quota_exceeded') setStatus(statusEl,'The comment box is full. Delete some old comments first.',true);
+    else setStatus(statusEl,'Could not save. Check your connection and try again.',true);
+    return false;
+  }finally{btn.disabled=false;}
+}
+form.addEventListener('submit',async e=>{e.preventDefault(); if(await addComment(txt.value.trim(),document.getElementById('ctopicsel').value,status,post)) txt.value='';});
+for(const th of threads){
+  const tid=th.dataset.thread, fm=th.querySelector('form'), ta=fm.querySelector('textarea'), bt=fm.querySelector('button'), st=th.querySelector('.status'), tog=th.querySelector('.tog');
+  const key='thread-open-'+tid;
+  try{ if(localStorage.getItem(key)==='1') th.open=true; }catch(e){}
+  const sync=()=>{tog.textContent=th.open?'Hide':'Show'; if(th.open){const tl=th.querySelector('.tlist'); tl.scrollTop=tl.scrollHeight;}};
+  th.addEventListener('toggle',()=>{sync(); try{localStorage.setItem(key,th.open?'1':'0');}catch(e){}}); sync();
+  fm.addEventListener('submit',async e=>{e.preventDefault(); th.querySelector('.tlist').dataset.stick='1'; if(await addComment(ta.value.trim(),tid,st,bt)) ta.value='';});
+  ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)) fm.requestSubmit();});
+}
+function readOnly(){
+  if(!canWrite) return; canWrite=false; form.hidden=true;
+  threads.forEach(th=>{th.querySelector('form').hidden=true; setStatus(th.querySelector('.status'),'You have view-only access. Ask Seth for edit access to comment.');});
+  const e=document.createElement('p');e.className='note';e.textContent='You have view-only access, so you can read comments but not add or delete them. Ask Seth for edit access.';form.parentElement.append(e);
+  render();
+}
 (async()=>{
   const [db,user]=await Promise.all([window.claude?.use?.('db')??null,window.claude?.use?.('user')??null]);
   DB=db; USER=user;
-  if(!DB){render();form.parentElement.hidden=true;return;}
-  if(USER){const w=await USER.can('data.write'); if(w===false){canWrite=false;form.hidden=true;alert0('You have view-only access, so you can read comments but not add them. Ask Seth for edit access.');}}
-  DB.collection('comments').orderBy('createdAt','desc').limit(500).onSnapshot(s=>{DOCS=s.docs;render();},e=>{list.innerHTML='';const x=document.createElement('div');x.className='empty';x.textContent='Comments could not load. Reload the page to try again.';list.append(x);});
+  if(!DB){form.parentElement.hidden=true;render();return;}
+  if(USER){const w=await USER.can('data.write'); if(w===false) readOnly();}
+  render();
+  DB.collection('comments').orderBy('createdAt','desc').limit(500).onSnapshot(s=>{DOCS=s.docs;READY=true;render();},e=>{emptyMsg(list,'Comments could not load. Reload the page to try again.');});
 })();
 </script>
