@@ -1,0 +1,409 @@
+<title>Vendor Lead Costs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+:root{--bg:#F3F5F8;--card:#FFFFFF;--side:#16233A;--sideink:#C9D3E0;--sidehi:#FFFFFF;--ink:#16233A;--muted:#5F6B7D;--line:#DDE2EA;--accent:#1C6E8C;--accent2:#A9CFDC;--good:#2E7D4F;--warn:#B7791F;--bad:#B4443C;--neutral:#AEB6C3;--soft:#EEF4F7;
+--serif:'Source Serif 4',Georgia,serif;--sans:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0F1623;--card:#172131;--side:#0A101A;--sideink:#98A2B3;--sidehi:#E6EBF2;--ink:#E6EBF2;--muted:#98A2B3;--line:#2A3547;--accent:#5BB0CF;--accent2:#2B5566;--good:#5CB883;--warn:#D9A441;--bad:#E07A70;--neutral:#556175;--soft:#1B2A3A}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0F1623;--card:#172131;--side:#0A101A;--sideink:#98A2B3;--sidehi:#E6EBF2;--ink:#E6EBF2;--muted:#98A2B3;--line:#2A3547;--accent:#5BB0CF;--accent2:#2B5566;--good:#5CB883;--warn:#D9A441;--bad:#E07A70;--neutral:#556175;--soft:#1B2A3A}
+[hidden]{display:none!important} .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+html,body{height:100%}
+.app>*{min-width:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans)}
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100%}
+aside{background:var(--side);color:var(--sideink);padding:24px 14px;display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh;box-sizing:border-box}
+.brand{padding:0 10px} .brand b{display:block;color:var(--sidehi);font:600 18px/1.25 var(--serif)} .brand span{font:12px var(--mono);letter-spacing:.04em}
+nav{display:flex;flex-direction:column;gap:2px}
+nav a{display:flex;justify-content:space-between;align-items:center;color:var(--sideink);text-decoration:none;padding:9px 10px;border-radius:7px;font-size:14px}
+nav a:hover{background:rgba(255,255,255,.06);color:var(--sidehi)} nav a.on{background:rgba(255,255,255,.11);color:var(--sidehi);font-weight:600}
+nav a:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.count{font:500 11px var(--mono);background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px} .count:empty{display:none}
+.asof{margin-top:auto;padding:0 10px;font-size:12px;line-height:1.5}
+main{padding:32px 16px 48px;min-width:0}
+.panel{max-width:900px;margin:0 auto;display:grid;gap:18px}
+h1,h2{font-family:var(--serif);font-weight:600;text-wrap:balance;margin:0} h1{font-size:30px;line-height:1.15} h2{font-size:18px}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.lede{color:var(--muted);margin:0;max-width:66ch;font-size:16px}
+.big{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.tile b{display:block;font:500 26px var(--mono);font-variant-numeric:tabular-nums} .tile span{color:var(--muted);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:12px}
+.takeaways{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.takeaways li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:600 14px var(--sans);color:#fff}
+.dot.g{background:var(--good)} .dot.w{background:var(--warn)} .dot.b{background:var(--bad)}
+.takeaways p{margin:3px 0 0} .takeaways b{font-weight:600}
+.ask{background:var(--soft);border-radius:10px;padding:14px 16px} .ask h2{margin-bottom:6px} .ask ol{margin:0;padding-left:20px;display:grid;gap:4px}
+.muted{color:var(--muted);font-size:13px;margin:0} p{margin:0;max-width:70ch}
+.tbl{overflow-x:auto} table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th{text-align:left;font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--line);padding:7px 8px;white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap} tr.total td{font-weight:600;border-top:2px solid var(--ink);border-bottom:0}
+.num{text-align:right} .neg{color:var(--bad)}
+.hrow{display:grid;grid-template-columns:52px 1fr 60px 76px;gap:10px;align-items:center;font-size:14px}
+.hrow:has(.wide){grid-template-columns:minmax(150px,300px) 1fr 52px 40px}
+.hlab{font-weight:500} .htrack{height:18px;background:var(--bg);border-radius:4px;overflow:hidden}
+.hfill{display:block;height:100%;background:var(--accent2)} .hlegit{display:block;height:100%;background:var(--accent)}
+.sfill{display:block;height:100%} .sfill.g{background:var(--good)} .sfill.w{background:var(--warn)} .sfill.n{background:var(--neutral)}
+.hnum{text-align:right;font:500 13px var(--mono)} .hnote{font-size:12px;color:var(--muted)}
+.cols{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;height:170px;align-items:end}
+.mcol{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:3px;min-width:0}
+.mbar{width:100%;max-width:48px;background:var(--accent2);border-radius:4px 4px 0 0;display:flex;align-items:flex-end;overflow:hidden}
+.mbar span{display:block;width:100%;background:var(--accent)} .mbar.sp{background:var(--accent)} .mbar.sp .fee{background:var(--warn)}
+.mval{font:500 12px var(--mono);white-space:nowrap} .mlab{font-weight:600;font-size:13px} .msrc{font:11px var(--mono);color:var(--muted)} .msrc.bat{color:var(--warn)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)} .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.vs .tile b{font-size:30px} .vs .tile.hl{border-color:var(--warn)}
+.pill{font:500 12px var(--mono);padding:2px 8px;border-radius:99px;border:1px solid currentColor} .pill.ok{color:var(--good)} .pill.warn{color:var(--warn)} .pill.bad{color:var(--bad)}
+.note{border-left:3px solid var(--warn);padding:10px 14px;background:var(--bg);border-radius:0 8px 8px 0;font-size:14px}
+ul.plain{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
+.pager{display:flex;justify-content:space-between;gap:12px}
+.pager button,.btn{font:500 14px var(--sans);border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 14px;cursor:pointer}
+.pager button:hover,.btn:hover{border-color:var(--accent)} .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+.cform{display:grid;gap:10px}
+.cform textarea{font:15px/1.5 var(--sans);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:84px;resize:vertical}
+.cform select,.cfilter select{font:14px var(--sans);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+.crow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.clist{display:grid;gap:10px}
+.cmt{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.cmt img{width:34px;height:34px;border-radius:50%}
+.cmeta{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;font-size:13px;color:var(--muted)} .cmeta b{color:var(--ink);font-size:14px}
+.ctopic{font:500 11px var(--mono);color:var(--accent);border:1px solid var(--line);border-radius:99px;padding:1px 7px}
+.ctext{white-space:pre-wrap;word-break:break-word;margin-top:4px}
+.crm{font-size:12px;color:var(--warn);white-space:normal;max-width:260px}
+.cdel{margin-left:auto;background:none;border:0;color:var(--muted);cursor:pointer;font:13px var(--sans);padding:2px 4px} .cdel:hover{color:var(--bad)}
+.status{font-size:13px;color:var(--muted);min-height:1.2em} .status.err{color:var(--bad)}
+.empty{color:var(--muted);font-size:14px;padding:14px;border:1px dashed var(--line);border-radius:10px;text-align:center}
+.qbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 13px var(--sans);border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:5px 12px;cursor:pointer}
+.chip:hover{border-color:var(--accent)} .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.qrange{display:flex;gap:6px;align-items:center} .qrange select{font:14px var(--sans);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
+#qbars{display:grid;gap:8px}
+details.thread{background:var(--card);border:1px solid var(--line);border-radius:12px}
+details.thread>summary{list-style:none;cursor:pointer;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:14px}
+details.thread>summary::-webkit-details-marker{display:none}
+details.thread>summary .tog{font:500 13px var(--sans);color:var(--accent)}
+details.thread[open]>summary{border-bottom:1px solid var(--line)}
+details.thread>summary .n{font:500 11px var(--mono);background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px;margin-left:6px} details.thread>summary .n:empty{display:none}
+.tbody{padding:12px 16px;display:grid;gap:10px}
+.tlist{display:grid;gap:8px;max-height:280px;overflow-y:auto;padding-right:4px}
+.tform{display:flex;gap:8px;align-items:flex-end} .tform textarea{flex:1;font:14px/1.45 var(--sans);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:44px;resize:vertical}
+.mini{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;color:var(--muted)} .mini a{color:var(--accent)}
+@media (max-width:820px){
+ .qbar{flex-direction:column;align-items:stretch} .tform{flex-direction:column;align-items:stretch}
+ .app{grid-template-columns:1fr}
+ aside{position:sticky;top:env(safe-area-inset-top,0px);height:auto;padding:10px 16px;gap:8px;z-index:5}
+ .brand span,.asof{display:none} .brand b{font-size:15px}
+ nav{flex-direction:row;overflow-x:auto;gap:4px;scrollbar-width:none} nav a{white-space:nowrap;padding:7px 10px;gap:6px}
+ main{padding-top:20px} .big{grid-template-columns:repeat(2,1fr)} .vs{grid-template-columns:1fr}
+ .hrow{grid-template-columns:44px 1fr 52px} .hrow .hnote{display:none} .hrow:has(.wide){grid-template-columns:1fr 52px} .hrow:has(.wide) .htrack{grid-column:1/-1;grid-row:2}
+ .msrc{display:none} .cols{gap:4px} td,th{padding:6px 4px} table{font-size:13px} .mval{font-size:10px} h1{font-size:25px}
+}
+@media (prefers-reduced-motion:no-preference){.panel{animation:fade .18s ease-out} @keyframes fade{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}}
+
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:24px;align-items:start}
+.heronum{font:600 clamp(44px,7vw,72px)/1 var(--serif);letter-spacing:-.02em;margin-top:6px}
+.heronum small{font-size:.45em;vertical-align:.8em}
+.stats{margin:0;display:grid} .stats div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dotted var(--line);font-size:14px} .stats div:last-child{border:0}
+.stats dt{color:var(--muted)} .stats dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums;text-align:right} .stats dd small{font-weight:400;color:var(--muted);margin-left:6px}
+.cols{height:210px} .mbar.v{background:var(--accent);flex-direction:column;justify-content:flex-end;align-items:stretch} .mbar.v .cr{display:block;width:100%;background:var(--warn);opacity:.85} .mbar.v .kp{display:block;width:100%;background:var(--accent)}
+.mcpl{font:600 12px var(--mono)} .mdeal{font-size:11px;color:var(--good)} .mopen{font:500 10px var(--mono);color:var(--warn);text-transform:uppercase;letter-spacing:.05em}
+.hcred{display:block;height:100%;background:var(--warn)}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cmp td:first-child{color:var(--muted)} .cmp td{white-space:normal}
+.good{color:var(--good)} .warnc{color:var(--warn)}
+.flag{font:500 10px var(--mono);color:var(--warn);border:1px solid currentColor;border-radius:4px;padding:0 4px;margin-left:6px;text-transform:uppercase}
+@media (max-width:820px){.hero,.vgrid{grid-template-columns:1fr}}
+</style>
+<div class=app>
+<aside><div class=brand><b>Vendor Lead Costs</b><span>Property Leads · Motivated Leads</span></div>
+<nav aria-label="Topics"><a href="#overview" data-t="overview" id="nav-overview"><span>Summary</span></a><a href="#pl" data-t="pl" id="nav-pl"><span>Property Leads</span></a><a href="#ml" data-t="ml" id="nav-ml"><span>Motivated Leads</span></a><a href="#compare" data-t="compare" id="nav-compare"><span>Side by side</span></a><a href="#disputes" data-t="disputes" id="nav-disputes"><span>Disputes &amp; credits</span></a><a href="#counties" data-t="counties" id="nav-counties"><span>Where leads came from</span></a><a href="#returns" data-t="returns" id="nav-returns"><span>Deals &amp; revenue</span></a><a href="#data" data-t="data" id="nav-data"><span>About this data</span></a><a href="#comments" data-t="comments" id="nav-comments"><span>Comments</span><b class=count id=ccount></b></a></nav>
+<div class=asof>Paid lead vendors only.<br>Property Leads: to Sep 1, 2026<br>Motivated Leads: to Aug 9, 2026<br>From the monday.com boards</div></aside>
+<main>
+
+<section class=panel id=overview data-panel hidden>
+<div><div class=eyebrow>For Juan · compiled Sep 9, 2026</div><h1>Property Leads pays off. Motivated Leads hasn't yet.</h1></div>
+<div class=big>
+<div class=tile><b>$105,900</b><span>paid to both vendors after credits</span></div>
+<div class=tile><b>421</b><span>leads received (376 + 45)</span></div>
+<div class=tile><b>$372.89</b><span>average cost per lead we kept</span></div>
+<div class=tile><b>$215K</b><span>revenue booked, all from Property Leads</span></div>
+</div>
+<div class=card><h2>The four things to know</h2>
+<ul class=takeaways>
+<li><span class="dot g">1</span><p><b>Property Leads earns its money back 2.3×.</b> $92,175 spent, 3 homes closed, $215,000 gross revenue. That's about $30,725 in lead cost per deal.</p></li>
+<li><span class="dot w">2</span><p><b>Property Leads is getting more expensive.</b> $341 per lead in May, $497 in August, $533 in September, because the cheaper counties were cut.</p></li>
+<li><span class="dot g">3</span><p><b>Disputes are saving real money.</b> $49,550 credited back on 137 bad leads. Property Leads approves 9 out of 10 disputes we file.</p></li>
+<li><span class="dot b">4</span><p><b>Motivated Leads has cost $13,725 with no revenue entered.</b> One home was acquired (Umland Dr, Santa Rosa) and four more are in progress, but nobody has entered the revenue. Some of its leads are duplicates of Property Leads.</p></li>
+</ul></div>
+<div class=ask><h2>Decisions for you</h2><ol><li>Enter the revenue for the Motivated Leads deals so we can judge it fairly.</li><li>Ask Motivated Leads to stop sending leads we already bought from Property Leads, or pause them.</li><li>Decide on a price ceiling for Property Leads, or bring back some cheaper counties.</li><li>File disputes on August and September leads before those windows close.</li></ol></div>
+<details class=thread data-thread="overview"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-overview>Add a comment</label><textarea id=t-overview maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
+</section>
+
+<section class=panel id=pl data-panel hidden>
+<div><div class=eyebrow>Property Leads · May 7 – Sep 1, 2026</div><h1 id=pl-h1></h1><p class=lede id=pl-lede></p></div>
+<div class=card>
+<div class=qbar><div class=chips role=group aria-label="Cost basis"><button type=button class=chip data-v=pl data-basis=net aria-pressed=true>After disputes</button><button type=button class=chip data-v=pl data-basis=gross aria-pressed=false>As billed</button></div>
+<div class=chips role=group aria-label="Months"><button type=button class=chip data-v=pl data-scope=all aria-pressed=true>All months</button><button type=button class=chip data-v=pl data-scope=settled aria-pressed=false>Settled months only</button></div></div>
+<div class=hero><div><div class=muted id=pl-label></div><div class=heronum id=pl-num></div></div><dl class=stats id=pl-stats></dl></div></div>
+<div class=card><h2>Month by month</h2>
+<div class=legend><span><i style="background:var(--accent)"></i>Money we kept paying</span><span><i style="background:var(--warn)"></i>Credited back on disputes</span></div>
+<div class=cols id=pl-cols></div>
+<p class=muted>Top number is the amount billed that month. Under each month: cost per lead on the basis picked above. "Open" months can still get credits, so they'll end up a bit lower.</p></div>
+<div class=card><div class=tbl><table><thead><tr><th>Month</th><th class=num>Leads</th><th class=num>Billed</th><th class=num>Credited</th><th class=num>Paid</th><th class=num>Leads kept</th><th class=num>Cost / lead</th><th class=num>Reached offer</th></tr></thead><tbody id=pl-rows></tbody><tfoot id=pl-foot></tfoot></table></div></div>
+<div class=card><h2>Why the price went up</h2><ul class=plain>
+<li><b>Weak counties were cut after June.</b> San Joaquin, Sacramento, Stanislaus, Merced, Madera and Monterey dropped out: 69 fewer leads, and those were the cheap ones.</li>
+<li><b>What's left is expensive.</b> San Carlos and San Francisco addresses ran up to $625, and August had nothing under $450 to average them down.</li></ul></div>
+<details class=thread data-thread="pl"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-pl>Add a comment</label><textarea id=t-pl maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
+</section>
+<section class=panel id=ml data-panel hidden>
+<div><div class=eyebrow>Motivated Leads · May 7 – Aug 9, 2026</div><h1 id=ml-h1></h1><p class=lede id=ml-lede></p></div>
+<div class=card>
+<div class=qbar><div class=chips role=group aria-label="Cost basis"><button type=button class=chip data-v=ml data-basis=net aria-pressed=true>After disputes</button><button type=button class=chip data-v=ml data-basis=gross aria-pressed=false>As billed</button></div>
+<div class=chips role=group aria-label="Months"><button type=button class=chip data-v=ml data-scope=all aria-pressed=true>All months</button><button type=button class=chip data-v=ml data-scope=settled aria-pressed=false>Settled months only</button></div></div>
+<div class=hero><div><div class=muted id=ml-label></div><div class=heronum id=ml-num></div></div><dl class=stats id=ml-stats></dl></div></div>
+<div class=card><h2>Month by month</h2>
+<div class=legend><span><i style="background:var(--accent)"></i>Money we kept paying</span><span><i style="background:var(--warn)"></i>Credited back on disputes</span></div>
+<div class=cols id=ml-cols></div>
+<p class=muted>Top number is the amount billed that month. Under each month: cost per lead on the basis picked above. "Open" months can still get credits, so they'll end up a bit lower.</p></div>
+<div class=card><div class=tbl><table><thead><tr><th>Month</th><th class=num>Leads</th><th class=num>Billed</th><th class=num>Credited</th><th class=num>Paid</th><th class=num>Leads kept</th><th class=num>Cost / lead</th><th class=num>Reached offer</th></tr></thead><tbody id=ml-rows></tbody><tfoot id=ml-foot></tfoot></table></div></div>
+<p class=note><b>July's "no disputes" is not a clean month.</b> Motivated Leads is sending us leads we already bought from Property Leads. Duplicates across two vendors can't be disputed, so treat July's cost per lead as the lowest it could be, not the real number.</p>
+<details class=thread data-thread="ml"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-ml>Add a comment</label><textarea id=t-ml maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
+</section>
+
+<section class=panel id=compare data-panel hidden>
+<div><div class=eyebrow>Side by side</div><h1>Similar price, very different results</h1>
+<p class=lede>Both vendors charge about the same per lead. Property Leads sends 8× the volume and has closed three homes with revenue booked. Motivated Leads has deals in progress but nothing booked.</p></div>
+<div class=card><div class=tbl><table class=cmp><thead><tr><th></th><th class=num>Property Leads</th><th class=num>Motivated Leads</th><th class=num>Both</th></tr></thead><tbody>
+<tr><td>Dates</td><td class=num>May 7 – Sep 1</td><td class=num>May 7 – Aug 9</td><td class=num>May 7 – Sep 1</td></tr>
+<tr><td>Leads received</td><td class=num>376</td><td class=num>45</td><td class=num>421</td></tr>
+<tr><td>Billed</td><td class=num>$139,125</td><td class=num>$16,325</td><td class=num>$155,450</td></tr>
+<tr><td>Credited back</td><td class=num>$46,950</td><td class=num>$2,600</td><td class=num>$49,550</td></tr>
+<tr><td><b>Paid after credits</b></td><td class=num><b>$92,175</b></td><td class=num><b>$13,725</b></td><td class=num><b>$105,900</b></td></tr>
+<tr><td>Cost per lead kept</td><td class=num>$374.70</td><td class=num>$361.18</td><td class=num>$372.89</td></tr>
+<tr><td>Dispute approval rate</td><td class=num>90%</td><td class=num>58%</td><td class=num>88%</td></tr>
+<tr><td>Homes closed</td><td class=num>3</td><td class=num>1 acquired, no revenue entered</td><td class=num>4</td></tr>
+<tr><td>Revenue booked</td><td class=num class=good>$215,000</td><td class=num>—</td><td class=num>$215,000</td></tr>
+<tr><td>Return per $1 spent</td><td class="num good"><b>2.33×</b></td><td class=num>not known yet</td><td class=num>2.03×</td></tr>
+</tbody></table></div></div>
+<details class=thread data-thread="compare"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-compare>Add a comment</label><textarea id=t-compare maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
+</section>
+
+<section class=panel id=disputes data-panel hidden>
+<div><div class=eyebrow>Disputes & credits</div><h1>$49,550 came back from disputes</h1>
+<p class=lede>When a lead is bad (wrong number, not the owner, a duplicate) we dispute it and the vendor credits us. It lowers the bill, but the price per good lead stays about the same.</p></div>
+<div class=vgrid>
+<div class=tile><b>$46,950</b><span>Property Leads: 130 of 144 disputes approved (90%). That's 34% of the bill. $3,150 on 8 leads is still waiting on a decision.</span></div>
+<div class=tile><b>$2,600</b><span>Motivated Leads: 7 of 12 disputes approved (58%). That's 16% of the bill. Nothing pending.</span></div></div>
+<div class=card><h2>Credits by month</h2><div class=tbl><table><thead><tr><th>Month</th><th class=num>Property Leads</th><th class=num>Motivated Leads</th><th class=num>Share of bill</th></tr></thead><tbody>
+<tr><td>May 2026</td><td class=num>$3,800</td><td class=num>$400</td><td class=num>26%</td></tr><tr><td>Jun 2026</td><td class=num>$32,375</td><td class=num>$1,900</td><td class=num>41%</td></tr><tr><td>Jul 2026</td><td class=num>$6,850</td><td class=num>—</td><td class=num>19%</td></tr><tr><td>Aug 2026<span class=flag>open</span></td><td class=num>$3,925</td><td class=num>—</td><td class=num>24%</td></tr><tr><td>Sep 2026<span class=flag>open</span></td><td class=num>—</td><td class=num>—</td><td class=num>0%</td></tr>
+</tbody></table></div>
+<p class=muted>June was the big month: $32,375 back from Property Leads on 93 leads. August and September are still open, so more credits can come in.</p></div>
+<p class=note><b>Duplicates slip through.</b> Motivated Leads sometimes sends a lead we already bought from Property Leads. Neither vendor accepts a dispute for that, so we pay twice.</p>
+<details class=thread data-thread="disputes"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-disputes>Add a comment</label><textarea id=t-disputes maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
+</section>
+
+<section class=panel id=counties data-panel hidden>
+<div><div class=eyebrow>Where leads came from</div><h1>Most leads are East Bay and Sonoma</h1>
+<p class=lede>Contra Costa and Alameda send the most leads, but they also have the most bad ones. About 4 in 10 Contra Costa leads got credited back.</p></div>
+<div class=card>
+<div class=chips role=group aria-label=Vendor id=cvchips><button type=button class=chip data-c=both aria-pressed=true>Both</button><button type=button class=chip data-c=pl aria-pressed=false>Property Leads</button><button type=button class=chip data-c=ml aria-pressed=false>Motivated Leads</button></div>
+<div class=legend><span><i style="background:var(--accent2)"></i>Leads</span><span><i style="background:var(--warn)"></i>Credited back (bad leads)</span></div>
+<div id=cbars-both><div class=hrow><span class="hlab wide">Contra Costa</span><span class=htrack><span class=hfill style="width:100.0%"><span class=hcred style="width:40.3%"></span></span></span><span class=hnum>72</span><span class=hnote>29 cr.</span></div><div class=hrow><span class="hlab wide">Alameda</span><span class=htrack><span class=hfill style="width:98.6%"><span class=hcred style="width:32.4%"></span></span></span><span class=hnum>71</span><span class=hnote>23 cr.</span></div><div class=hrow><span class="hlab wide">Sonoma</span><span class=htrack><span class=hfill style="width:72.2%"><span class=hcred style="width:28.8%"></span></span></span><span class=hnum>52</span><span class=hnote>15 cr.</span></div><div class=hrow><span class="hlab wide">San Joaquin</span><span class=htrack><span class=hfill style="width:58.3%"><span class=hcred style="width:26.2%"></span></span></span><span class=hnum>42</span><span class=hnote>11 cr.</span></div><div class=hrow><span class="hlab wide">Solano</span><span class=htrack><span class=hfill style="width:51.4%"><span class=hcred style="width:16.2%"></span></span></span><span class=hnum>37</span><span class=hnote>6 cr.</span></div><div class=hrow><span class="hlab wide">Santa Clara</span><span class=htrack><span class=hfill style="width:45.8%"><span class=hcred style="width:39.4%"></span></span></span><span class=hnum>33</span><span class=hnote>13 cr.</span></div><div class=hrow><span class="hlab wide">San Mateo</span><span class=htrack><span class=hfill style="width:37.5%"><span class=hcred style="width:18.5%"></span></span></span><span class=hnum>27</span><span class=hnote>5 cr.</span></div><div class=hrow><span class="hlab wide">San Francisco</span><span class=htrack><span class=hfill style="width:37.5%"><span class=hcred style="width:33.3%"></span></span></span><span class=hnum>27</span><span class=hnote>9 cr.</span></div><div class=hrow><span class="hlab wide">Sacramento</span><span class=htrack><span class=hfill style="width:13.9%"><span class=hcred style="width:70.0%"></span></span></span><span class=hnum>10</span><span class=hnote>7 cr.</span></div><div class=hrow><span class="hlab wide">Santa Cruz</span><span class=htrack><span class=hfill style="width:13.9%"><span class=hcred style="width:10.0%"></span></span></span><span class=hnum>10</span><span class=hnote>1 cr.</span></div></div><div id=cbars-pl hidden><div class=hrow><span class="hlab wide">Alameda</span><span class=htrack><span class=hfill style="width:100.0%"><span class=hcred style="width:32.8%"></span></span></span><span class=hnum>67</span><span class=hnote>22 cr.</span></div><div class=hrow><span class="hlab wide">Contra Costa</span><span class=htrack><span class=hfill style="width:82.1%"><span class=hcred style="width:47.3%"></span></span></span><span class=hnum>55</span><span class=hnote>26 cr.</span></div><div class=hrow><span class="hlab wide">San Joaquin</span><span class=htrack><span class=hfill style="width:62.7%"><span class=hcred style="width:26.2%"></span></span></span><span class=hnum>42</span><span class=hnote>11 cr.</span></div><div class=hrow><span class="hlab wide">Sonoma</span><span class=htrack><span class=hfill style="width:61.2%"><span class=hcred style="width:31.7%"></span></span></span><span class=hnum>41</span><span class=hnote>13 cr.</span></div><div class=hrow><span class="hlab wide">Solano</span><span class=htrack><span class=hfill style="width:55.2%"><span class=hcred style="width:16.2%"></span></span></span><span class=hnum>37</span><span class=hnote>6 cr.</span></div><div class=hrow><span class="hlab wide">Santa Clara</span><span class=htrack><span class=hfill style="width:40.3%"><span class=hcred style="width:48.1%"></span></span></span><span class=hnum>27</span><span class=hnote>13 cr.</span></div><div class=hrow><span class="hlab wide">San Mateo</span><span class=htrack><span class=hfill style="width:35.8%"><span class=hcred style="width:20.8%"></span></span></span><span class=hnum>24</span><span class=hnote>5 cr.</span></div><div class=hrow><span class="hlab wide">San Francisco</span><span class=htrack><span class=hfill style="width:35.8%"><span class=hcred style="width:33.3%"></span></span></span><span class=hnum>24</span><span class=hnote>8 cr.</span></div><div class=hrow><span class="hlab wide">Santa Cruz</span><span class=htrack><span class=hfill style="width:14.9%"><span class=hcred style="width:10.0%"></span></span></span><span class=hnum>10</span><span class=hnote>1 cr.</span></div><div class=hrow><span class="hlab wide">Sacramento</span><span class=htrack><span class=hfill style="width:14.9%"><span class=hcred style="width:70.0%"></span></span></span><span class=hnum>10</span><span class=hnote>7 cr.</span></div></div><div id=cbars-ml hidden><div class=hrow><span class="hlab wide">Contra Costa</span><span class=htrack><span class=hfill style="width:100.0%"><span class=hcred style="width:17.6%"></span></span></span><span class=hnum>17</span><span class=hnote>3 cr.</span></div><div class=hrow><span class="hlab wide">Sonoma</span><span class=htrack><span class=hfill style="width:64.7%"><span class=hcred style="width:18.2%"></span></span></span><span class=hnum>11</span><span class=hnote>2 cr.</span></div><div class=hrow><span class="hlab wide">Santa Clara</span><span class=htrack><span class=hfill style="width:35.3%"><span class=hcred style="width:0.0%"></span></span></span><span class=hnum>6</span><span class=hnote>0 cr.</span></div><div class=hrow><span class="hlab wide">Alameda</span><span class=htrack><span class=hfill style="width:23.5%"><span class=hcred style="width:25.0%"></span></span></span><span class=hnum>4</span><span class=hnote>1 cr.</span></div><div class=hrow><span class="hlab wide">San Francisco</span><span class=htrack><span class=hfill style="width:17.6%"><span class=hcred style="width:33.3%"></span></span></span><span class=hnum>3</span><span class=hnote>1 cr.</span></div><div class=hrow><span class="hlab wide">San Mateo</span><span class=htrack><span class=hfill style="width:17.6%"><span class=hcred style="width:0.0%"></span></span></span><span class=hnum>3</span><span class=hnote>0 cr.</span></div></div>
+<p class=muted>Top counties by number of leads. "cr." is how many were credited back.</p></div>
+<details class=thread data-thread="counties"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-counties>Add a comment</label><textarea id=t-counties maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
+</section>
+
+<section class=panel id=returns data-panel hidden>
+<div><div class=eyebrow>Deals & revenue</div><h1>Three homes closed, all from Property Leads</h1>
+<p class=lede>Revenue here is gross as entered on the board, before purchase and rehab costs.</p></div>
+<div class=big>
+<div class=tile><b class=good>2.33×</b><span>revenue per $1 spent on Property Leads</span></div>
+<div class=tile><b>3</b><span>closed from 376 leads (0.8%)</span></div>
+<div class=tile><b>$30,725</b><span>lead cost per deal closed</span></div>
+<div class=tile><b>$71,667</b><span>average revenue per deal</span></div></div>
+<div class=card><h2>Motivated Leads: deals in progress, no revenue entered</h2><div class=tbl><table><thead><tr><th>Stage</th><th>Property</th><th>Lead came in</th><th class=num>Lead cost</th></tr></thead><tbody>
+<tr><td><span class='pill ok'>Acquired</span></td><td>492 Umland Dr, Santa Rosa</td><td>Jul 7, 2026</td><td class=num>$300</td></tr>
+<tr><td><span class='pill warn'>Listed with realtor</span></td><td>1746 Mirabella Ct, Milpitas</td><td>Jul 1, 2026</td><td class=num>$400</td></tr>
+<tr><td><span class='pill warn'>Offer pending</span></td><td>637 Palomar Dr, Redwood City</td><td>Jun 22, 2026</td><td class=num>$450</td></tr>
+<tr><td><span class='pill warn'>Negotiating</span></td><td>1133 Olive St, Santa Rosa</td><td>May 21, 2026</td><td class=num>$400</td></tr>
+<tr><td><span class='pill warn'>Negotiating</span></td><td>519 S 17th St, Richmond</td><td>Jul 5, 2026</td><td class=num>$300</td></tr></tbody></table></div>
+<p class=muted>Once revenue is entered for Umland Dr and Mirabella Ct, we can compare Motivated Leads to Property Leads fairly.</p></div>
+<details class=thread data-thread="returns"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-returns>Add a comment</label><textarea id=t-returns maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
+</section>
+
+<section class=panel id=data data-panel hidden>
+<div><div class=eyebrow>About this data</div><h1>Where these numbers come from</h1></div>
+<div class=card><h2>Sources</h2><ul class=plain>
+<li><b>Property Leads</b>: monday.com board export (Property_Leads_1788299759.xlsx), May 7 – Sep 1, 2026. 7 subtotal rows removed.</li>
+<li><b>Motivated Leads</b>: monday.com board export (Motivated_Leads_1788303067.xlsx), May 7 – Aug 9, 2026. 4 subtotal rows removed.</li>
+<li>Compiled Sep 9, 2026.</li></ul></div>
+<div class=card><h2>How to read it</h2><ul class=plain>
+<li><b>After disputes</b> = what we actually paid, divided by the leads we kept.</li>
+<li><b>As billed</b> = the full invoice, divided by every lead delivered.</li>
+<li><b>Dispute approval rate</b> leaves out leads where no dispute was filed.</li>
+<li><b>Open months</b> (Aug and Sep for Property Leads, Aug for Motivated Leads) can still get credits, so their numbers will drop a little.</li>
+<li>One $300 Motivated Leads lead in Sonoma has no date, so the months add up to 44 leads while the board has 45.</li></ul></div>
+<details class=thread data-thread="data"><summary><span>Comments on this topic<span class=n></span></span><span class=tog>Show</span></summary><div class=tbody><div class=tlist aria-live=polite></div><form class=tform><label class=sr for=t-data>Add a comment</label><textarea id=t-data maxlength=2000 placeholder="Add a comment about this…"></textarea><button class="btn primary" type=submit>Post</button></form><div class=status role=status></div></div></details>
+</section>
+
+<section class=panel id=comments data-panel hidden>
+<div><div class=eyebrow>Comments</div><h1>Questions and notes</h1>
+<p class=lede>Every comment from every topic, in one place. You can also comment at the bottom of each topic. Comments save automatically and everyone with access sees them.</p></div>
+<div class=card>
+<form class=cform id=cform>
+<label for=ctext class=muted>Your comment</label>
+<textarea id=ctext maxlength=2000 placeholder="e.g. Let's pause Motivated Leads until they fix the duplicates."></textarea>
+<div class=crow><div><label for=ctopicsel class=muted>About: </label><select id=ctopicsel><option value="overview">Summary</option><option value="pl">Property Leads</option><option value="ml">Motivated Leads</option><option value="compare">Side by side</option><option value="disputes">Disputes &amp; credits</option><option value="counties">Where leads came from</option><option value="returns">Deals &amp; revenue</option><option value="data">About this data</option><option value="general">General</option></select></div>
+<button class="btn primary" id=cpost type=submit>Post comment</button></div>
+<div class=status id=cstatus role=status></div>
+</form></div>
+<div class=crow><h2 id=ctitle>All comments</h2><div class=cfilter><label for=cfilter class=muted>Show: </label><select id=cfilter><option value="all">All topics</option><option value="overview">Summary</option><option value="pl">Property Leads</option><option value="ml">Motivated Leads</option><option value="compare">Side by side</option><option value="disputes">Disputes &amp; credits</option><option value="counties">Where leads came from</option><option value="returns">Deals &amp; revenue</option><option value="data">About this data</option><option value="general">General</option></select></div></div>
+<div class=clist id=clist><div class=empty>Loading comments…</div></div>
+</section>
+
+<div class=panel style="margin-top:18px"><div class=pager><button type=button id=prev>← Previous</button><button type=button id=next>Next →</button></div></div>
+</main></div>
+<script>
+const TOPICS=[["overview", "Summary"], ["pl", "Property Leads"], ["ml", "Motivated Leads"], ["compare", "Side by side"], ["disputes", "Disputes & credits"], ["counties", "Where leads came from"], ["returns", "Deals & revenue"], ["data", "About this data"], ["comments", "Comments"]];
+const NAMES=Object.fromEntries(TOPICS);NAMES.general='General';
+const ids=TOPICS.map(t=>t[0]);
+function show(id){
+  if(!ids.includes(id)) id='overview';
+  document.querySelectorAll('[data-panel]').forEach(p=>p.hidden=p.id!==id);
+  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.t===id));
+  const i=ids.indexOf(id);
+  const pv=document.getElementById('prev'),nx=document.getElementById('next');
+  pv.hidden=i===0; nx.hidden=i===ids.length-1;
+  pv.textContent='← '+(i>0?NAMES[ids[i-1]]:''); nx.textContent=(i<ids.length-1?NAMES[ids[i+1]]:'')+' →';
+  pv.onclick=()=>go(ids[i-1]); nx.onclick=()=>go(ids[i+1]);
+  const sel=document.getElementById('ctopicsel'); if(id!=='comments'&&sel) sel.value=id;
+  window.scrollTo(0,0);
+  const on=document.querySelector('nav a.on'); if(on){const n=on.parentElement; if(n.scrollWidth>n.clientWidth) n.scrollLeft=on.offsetLeft-16;}
+}
+function go(id){ if(location.hash!=='#'+id) location.hash=id; else show(id); }
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+show(location.hash.slice(1));
+
+// ---- vendor panels ----
+const V={"pl": {"name": "Property Leads", "range": "May 7 \u2013 Sep 1, 2026", "totals": {"leads": 376, "gross": 139125, "credited": 130, "credit": 46950, "pending": 8, "pendingAmt": 3150, "net": 92175, "netLeads": 246, "ruled": 144}, "months": [{"m": "May", "leads": 38, "gross": 12675, "credited": 12, "credit": 3800, "net": 8875, "netLeads": 26, "open": false, "deal": 4}, {"m": "Jun", "leads": 221, "gross": 76950, "credited": 93, "credit": 32375, "net": 44575, "netLeads": 128, "open": false, "deal": 5}, {"m": "Jul", "leads": 83, "gross": 32550, "credited": 17, "credit": 6850, "net": 25700, "netLeads": 66, "open": false, "deal": 0}, {"m": "Aug", "leads": 31, "gross": 15350, "credited": 8, "credit": 3925, "net": 11425, "netLeads": 23, "open": true, "deal": 1}, {"m": "Sep", "leads": 3, "gross": 1600, "credited": 0, "credit": 0, "net": 1600, "netLeads": 3, "open": true, "deal": 0}], "county": [["Alameda", 67, 22], ["Contra Costa", 55, 26], ["San Joaquin", 42, 11], ["Sonoma", 41, 13], ["Solano", 37, 6], ["Santa Clara", 27, 13], ["San Mateo", 24, 5], ["San Francisco", 24, 8], ["Santa Cruz", 10, 1], ["Sacramento", 10, 7]]}, "ml": {"name": "Motivated Leads", "range": "May 7 \u2013 Aug 9, 2026", "totals": {"leads": 45, "gross": 16325, "credited": 7, "credit": 2600, "pending": 0, "pendingAmt": 0, "net": 13725, "netLeads": 38, "ruled": 12}, "months": [{"m": "May", "leads": 9, "gross": 3675, "credited": 1, "credit": 400, "net": 3275, "netLeads": 8, "open": false, "deal": 1}, {"m": "Jun", "leads": 19, "gross": 7225, "credited": 5, "credit": 1900, "net": 5325, "netLeads": 14, "open": false, "deal": 1}, {"m": "Jul", "leads": 14, "gross": 4400, "credited": 0, "credit": 0, "net": 4400, "netLeads": 14, "open": false, "deal": 3}, {"m": "Aug", "leads": 2, "gross": 725, "credited": 0, "credit": 0, "net": 725, "netLeads": 2, "open": true, "deal": 0}], "county": [["Contra Costa", 17, 3], ["Sonoma", 11, 2], ["Santa Clara", 6, 0], ["Alameda", 4, 1], ["San Francisco", 3, 1], ["San Mateo", 3, 0]]}};
+const $=n=>'$'+Math.round(n).toLocaleString('en-US');
+const $2=n=>'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const ST={pl:{basis:'net',scope:'all'},ml:{basis:'net',scope:'all'}};
+function drawV(k){
+  const v=V[k], s=ST[k];
+  const ms=s.scope==='settled'?v.months.filter(m=>!m.open):v.months;
+  const t=s.scope==='all'?v.totals:ms.reduce((a,m)=>{for(const f of ['leads','gross','credited','credit','net','netLeads']) a[f]=(a[f]||0)+m[f]; return a;},{pending:0,pendingAmt:0,ruled:null});
+  const cpl=s.basis==='net'?t.net/t.netLeads:t.gross/t.leads;
+  const [w,c]=cpl.toFixed(2).split('.');
+  document.getElementById(k+'-num').innerHTML='$'+Number(w).toLocaleString('en-US')+'<small>.'+c+'</small>';
+  const scopeTxt=s.scope==='settled'?(ms.map(m=>m.m)[0]+'–'+ms[ms.length-1].m+' (settled)'):v.range;
+  document.getElementById(k+'-label').textContent=(s.basis==='net'?'Cost per lead we kept, after disputes':'Cost per lead, as billed')+' · '+scopeTxt;
+  document.getElementById(k+'-h1').textContent=v.name+' costs '+$(cpl)+' a lead';
+  document.getElementById(k+'-lede').innerHTML=s.basis==='net'
+    ?'We kept <b>'+t.netLeads+'</b> of '+t.leads+' leads and actually paid <b>'+$(t.net)+'</b>, after <b>'+$(t.credit)+'</b> came back on '+t.credited+' disputed leads.'
+    :'All <b>'+t.leads+'</b> leads against the full <b>'+$(t.gross)+'</b> billed, before any credits. Disputes cut the bill, not the price.';
+  const rows=[['Leads received',t.leads],['Billed',$(t.gross)],['Credited back',$(t.credit)+' <small>'+t.credited+' leads</small>'],['Paid after credits',$(t.net)],
+    ['Still waiting on disputes',t.pendingAmt?$(t.pendingAmt)+' <small>'+t.pending+' leads</small>':'—']];
+  if(t.ruled) rows.push(['Disputes approved',Math.round(t.credited/t.ruled*100)+'% <small>'+t.credited+' of '+t.ruled+'</small>']);
+  document.getElementById(k+'-stats').innerHTML=rows.map(r=>'<div><dt>'+r[0]+'</dt><dd>'+r[1]+'</dd></div>').join('');
+  const mx=Math.max(...ms.map(m=>m.gross));
+  document.getElementById(k+'-cols').innerHTML=ms.map(m=>{const cp=s.basis==='net'?m.net/m.netLeads:m.gross/m.leads;
+    return '<div class=mcol><div class=mval>'+(m.gross>=1000?'$'+(m.gross/1000).toFixed(m.gross<10000?1:0)+'K':$(m.gross))+'</div><div class="mbar v" style="height:'+Math.max(m.gross/mx*100,2)+'%"><span class=cr style="height:'+(m.credit/m.gross*100)+'%"></span><span class=kp style="flex:1"></span></div><div class=mlab>'+m.m+'</div><div class=mcpl>'+$(cp)+'</div><div class=mdeal>'+(m.deal?m.deal+' to offer':'&nbsp;')+'</div>'+(m.open?'<div class=mopen>open</div>':'<div class=mopen>&nbsp;</div>')+'</div>';}).join('');
+  document.getElementById(k+'-rows').innerHTML=ms.map(m=>'<tr><td>'+m.m+' 2026'+(m.open?'<span class=flag>open</span>':'')+'</td><td class=num>'+m.leads+'</td><td class=num>'+$(m.gross)+'</td><td class=num>'+(m.credit?$(m.credit):'—')+'</td><td class=num>'+$(m.net)+'</td><td class=num>'+m.netLeads+'</td><td class=num><b>'+$2(s.basis==='net'?m.net/m.netLeads:m.gross/m.leads)+'</b></td><td class=num>'+(m.deal||'—')+'</td></tr>').join('');
+  document.getElementById(k+'-foot').innerHTML='<tr class=total><td>'+(s.scope==='all'?'Total':'Settled total')+'</td><td class=num>'+t.leads+'</td><td class=num>'+$(t.gross)+'</td><td class=num>'+$(t.credit)+'</td><td class=num>'+$(t.net)+'</td><td class=num>'+t.netLeads+'</td><td class=num>'+$2(cpl)+'</td><td class=num>'+ms.reduce((a,m)=>a+m.deal,0)+'</td></tr>';
+  document.querySelectorAll('.chip[data-v='+k+']').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.basis?b.dataset.basis===s.basis:b.dataset.scope===s.scope)));
+}
+document.querySelectorAll('.chip[data-v]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.v; if(b.dataset.basis) ST[k].basis=b.dataset.basis; else ST[k].scope=b.dataset.scope; drawV(k);}));
+drawV('pl'); drawV('ml');
+document.querySelectorAll('#cvchips .chip').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#cvchips .chip').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  ['both','pl','ml'].forEach(k=>document.getElementById('cbars-'+k).hidden=k!==b.dataset.c);}));
+
+// ---- comments (shared db) ----
+const list=document.getElementById('clist'),status=document.getElementById('cstatus'),form=document.getElementById('cform'),txt=document.getElementById('ctext'),post=document.getElementById('cpost'),filt=document.getElementById('cfilter'),count=document.getElementById('ccount');
+const threads=[...document.querySelectorAll('details.thread')];
+let DB=null,USER=null,DOCS=[],canWrite=true,READY=false;
+function setStatus(el,m,err){el.textContent=m||'';el.classList.toggle('err',!!err);}
+function when(t){try{return new Date(t).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return '';}}
+function emptyMsg(el,m){el.innerHTML='';const e=document.createElement('div');e.className='empty';e.textContent=m;el.append(e);}
+function cmtEl(d,ps,showTopic,statusEl){
+  const c=d.data(); const p=ps[c.author]||{};
+  const el=document.createElement('div'); el.className='cmt';
+  const img=document.createElement('img'); img.alt=''; if(p.avatarUrl) img.src=p.avatarUrl; else img.style.background='var(--line)';
+  const body=document.createElement('div');
+  const meta=document.createElement('div'); meta.className='cmeta';
+  const who=document.createElement('b'); who.textContent=(p.name||'Someone')+(p.isMe?' (you)':'');
+  const tm=document.createElement('span'); tm.textContent=when(c.createdAt);
+  meta.append(who,tm);
+  if(showTopic){const tp=document.createElement('a'); tp.className='ctopic'; tp.href='#'+(NAMES[c.topic]&&c.topic!=='general'?c.topic:'comments'); tp.textContent=NAMES[c.topic]||'General'; meta.append(tp);}
+  if(canWrite){const del=document.createElement('button');del.type='button';del.className='cdel';del.textContent='Delete';del.setAttribute('aria-label','Delete this comment');
+    del.onclick=async()=>{del.disabled=true;del.textContent='Deleting…';try{await DB.doc('comments/'+d.id).delete();setStatus(statusEl,'Comment deleted.');}catch(e){del.disabled=false;del.textContent='Delete';setStatus(statusEl,e&&e.code==='invalid_argument'?'You need edit access to delete comments.':'Could not delete. Try again.',true);}};
+    meta.append(del);}
+  const t=document.createElement('div'); t.className='ctext'; t.textContent=c.text||'';
+  body.append(meta,t); el.append(img,body); return el;
+}
+async function render(){
+  count.textContent=DOCS.length?String(DOCS.length):'';
+  const authorIds=[...new Set(DOCS.map(d=>d.data().author).filter(Boolean))];
+  let ps={}; if(USER&&authorIds.length){try{ps=await USER.profiles(authorIds);}catch(e){}}
+  // main list
+  const f=filt.value; const rows=DOCS.filter(d=>f==='all'||d.data().topic===f);
+  document.getElementById('ctitle').textContent=f==='all'?'All comments':'Comments on '+NAMES[f];
+  if(!DB) emptyMsg(list,'Comments are not available in this view. Open the page on claude.ai while signed in.');
+  else if(!READY) emptyMsg(list,'Loading comments…');
+  else if(!rows.length) emptyMsg(list,'No comments yet. Be the first.');
+  else {const fr=document.createDocumentFragment(); rows.forEach(d=>fr.append(cmtEl(d,ps,true,status))); list.innerHTML=''; list.append(fr);}
+  // per-topic threads (oldest first so the newest sits next to the box)
+  for(const th of threads){
+    const tid=th.dataset.thread, tl=th.querySelector('.tlist'), st=th.querySelector('.status');
+    const tr=DOCS.filter(d=>d.data().topic===tid).slice().reverse();
+    th.querySelector('.n').textContent=tr.length?String(tr.length):'';
+    if(!DB){th.hidden=true;continue;}
+    if(!tr.length) emptyMsg(tl,READY?'No comments on this topic yet.':'Loading…');
+    else {const atEnd=tl.scrollHeight-tl.scrollTop-tl.clientHeight<30; const fr=document.createDocumentFragment(); tr.forEach(d=>fr.append(cmtEl(d,ps,false,st))); tl.innerHTML=''; tl.append(fr); if(atEnd||tl.dataset.stick) {tl.scrollTop=tl.scrollHeight; delete tl.dataset.stick;}}
+  }
+}
+filt.addEventListener('change',render);
+async function addComment(text,topic,statusEl,btn){
+  if(!text){setStatus(statusEl,'Type a comment first.',true);return false;}
+  if(!DB){setStatus(statusEl,'Comments are not available in this view.',true);return false;}
+  btn.disabled=true; setStatus(statusEl,'Saving…');
+  try{
+    const author=USER?await USER.id():null;
+    await DB.collection('comments').add({text,topic,author,createdAt:new Date().toISOString()});
+    setStatus(statusEl,'Saved. Everyone with access can see it.'); return true;
+  }catch(err){
+    const c=err&&err.code;
+    if(c==='invalid_argument'){readOnly();}
+    else if(c==='quota_exceeded') setStatus(statusEl,'The comment box is full. Delete some old comments first.',true);
+    else setStatus(statusEl,'Could not save. Check your connection and try again.',true);
+    return false;
+  }finally{btn.disabled=false;}
+}
+form.addEventListener('submit',async e=>{e.preventDefault(); if(await addComment(txt.value.trim(),document.getElementById('ctopicsel').value,status,post)) txt.value='';});
+for(const th of threads){
+  const tid=th.dataset.thread, fm=th.querySelector('form'), ta=fm.querySelector('textarea'), bt=fm.querySelector('button'), st=th.querySelector('.status'), tog=th.querySelector('.tog');
+  const key='thread-open-'+tid;
+  try{ if(localStorage.getItem(key)==='1') th.open=true; }catch(e){}
+  const sync=()=>{tog.textContent=th.open?'Hide':'Show'; if(th.open){const tl=th.querySelector('.tlist'); tl.scrollTop=tl.scrollHeight;}};
+  th.addEventListener('toggle',()=>{sync(); try{localStorage.setItem(key,th.open?'1':'0');}catch(e){}}); sync();
+  fm.addEventListener('submit',async e=>{e.preventDefault(); th.querySelector('.tlist').dataset.stick='1'; if(await addComment(ta.value.trim(),tid,st,bt)) ta.value='';});
+  ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)) fm.requestSubmit();});
+}
+function readOnly(){
+  if(!canWrite) return; canWrite=false; form.hidden=true;
+  threads.forEach(th=>{th.querySelector('form').hidden=true; setStatus(th.querySelector('.status'),'You have view-only access. Ask Seth for edit access to comment.');});
+  const e=document.createElement('p');e.className='note';e.textContent='You have view-only access, so you can read comments but not add or delete them. Ask Seth for edit access.';form.parentElement.append(e);
+  render();
+}
+(async()=>{
+  const [db,user]=await Promise.all([window.claude?.use?.('db')??null,window.claude?.use?.('user')??null]);
+  DB=db; USER=user;
+  if(!DB){form.parentElement.hidden=true;render();return;}
+  if(USER){const w=await USER.can('data.write'); if(w===false) readOnly();}
+  render();
+  DB.collection('comments').orderBy('createdAt','desc').limit(500).onSnapshot(s=>{DOCS=s.docs;READY=true;render();},e=>{emptyMsg(list,'Comments could not load. Reload the page to try again.');});
+})();
+
+</script>
