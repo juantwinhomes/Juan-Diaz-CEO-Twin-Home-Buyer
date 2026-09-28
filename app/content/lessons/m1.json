@@ -1,0 +1,118 @@
+{
+  "id": "m1",
+  "weeks": "Weeks 1–2",
+  "title": "Accounting foundations",
+  "goal": "Explain where any transaction goes: which company, which account, debit or credit, and which report it shows up on.",
+  "skills": [
+    "Debits and credits",
+    "Accrual vs cash",
+    "Chart of accounts",
+    "Entity separation"
+  ],
+  "concept_card": "Every transaction answers four questions: which company, which account, which property or job, and what document proves it. Debits raise assets and expenses; credits raise liabilities, equity and income. Each company keeps its own books.",
+  "lesson_html": "<p><strong>The accounting equation.</strong> Everything in the books follows one rule: <span class=\"path\">Assets = Liabilities + Equity</span>. Assets are what a company owns (cash, houses held for sale, equipment). Liabilities are what it owes (loans, unpaid bills). Equity is what is left for the owner.</p>\n<p><strong>Debits and credits.</strong> Every entry has at least one debit and one credit, and they are always equal.</p>\n<div class=\"tablewrap\"><table>\n<thead><tr><th>Account type</th><th>Goes up with</th><th>Examples</th></tr></thead>\n<tbody>\n<tr><td>Asset</td><td>Debit</td><td>Checking account, property held for sale, tools</td></tr>\n<tr><td>Expense</td><td>Debit</td><td>Office rent, fuel, software</td></tr>\n<tr><td>Liability</td><td>Credit</td><td>Accounts payable, hard-money loan, credit card</td></tr>\n<tr><td>Equity</td><td>Credit</td><td>Owner's investment, retained earnings</td></tr>\n<tr><td>Income</td><td>Credit</td><td>Sale of a house, plumbing service revenue</td></tr>\n</tbody>\n</table></div>\n<p><strong>Cash basis vs accrual basis.</strong> Cash basis records income and costs when money moves. Accrual basis records them when they are earned or incurred, even if not yet paid. A plumber finishes work on September 28 and invoices you October 5: on accrual basis that cost belongs to September.</p>\n<p><strong>The three main reports.</strong></p>\n<ul>\n<li><strong>Balance Sheet</strong>: what the company owns and owes on one day.</li>\n<li><strong>Profit and Loss (P&amp;L)</strong>: income minus expenses over a period, such as September.</li>\n<li><strong>Statement of Cash Flows</strong>: where cash came from and where it went.</li>\n</ul>\n<p><strong>Four companies, four sets of books.</strong> Twin Home Buyer / Equity Track, Matrix Group One, Peninsula Plumbing Solutions and Equity Track PH are separate legal entities. When one pays a bill that belongs to another, you record money owed between them (intercompany). You never just book the expense in whichever company paid.</p>",
+  "rule": "Every transaction answers four questions: Which company? Which account? Which property or job? What document proves it?",
+  "qbo_steps": [
+    {
+      "title": "Switch between companies",
+      "html": "Gear icon <span class='path'>⚙ → Switch company</span>. Check the company name at the top left before you enter anything."
+    },
+    {
+      "title": "Open the chart of accounts",
+      "html": "<span class='path'>⚙ → Chart of accounts</span>. Look at each account's type and detail type. Print or export it; you'll build a cheat sheet from it."
+    },
+    {
+      "title": "Run the Balance Sheet and P&amp;L",
+      "html": "<span class='path'>Reports → Balance Sheet</span> and <span class='path'>Reports → Profit and Loss</span>. Set the dates to last month."
+    },
+    {
+      "title": "Check the accounting basis",
+      "html": "On any report, look for the Cash / Accrual setting and note which one the CPA wants."
+    },
+    {
+      "title": "Trace one transaction",
+      "html": "Click any number on the P&amp;L to drill down to the transaction, then open the original bill or receipt attached to it."
+    }
+  ],
+  "scenario": {
+    "text_html": "Equity Track PH has <span class=\"num\">$512,000</span> in assets: <span class=\"num\">$38,000</span> cash and one house held for sale at <span class=\"num\">$474,000</span>. It owes <span class=\"num\">$331,500</span> on a hard-money loan and <span class=\"num\">$1,500</span> in unpaid bills.",
+    "ask": "What is the owner's equity?",
+    "answer_cents": 17900000,
+    "explain": "Equity = Assets − Liabilities = $512,000 − ($331,500 + $1,500) = $179,000.",
+    "followup": "Peninsula Plumbing finishes a job on the 30th and invoices on the 2nd. Which month is the revenue in on accrual basis?"
+  },
+  "quiz": [
+    {
+      "q": "Twin Home Buyer buys $2,000 of tools with cash. What is the entry?",
+      "options": [
+        "Debit Cash, credit Tools",
+        "Debit Tools (asset), credit Cash",
+        "Debit Tools expense, credit Accounts payable",
+        "No entry until the tools are used"
+      ],
+      "answer": 1,
+      "why": "Tools go up (asset, debit). Cash goes down (asset, credit). Ask the CPA about the threshold for recording tools as an asset or an expense.",
+      "policy": "POL-BASIS",
+      "followup": "Twin Home Buyer pays a $600 insurance premium for 12 months up front. What gets debited on day one?"
+    },
+    {
+      "q": "Which of these increases with a credit?",
+      "options": [
+        "Checking account",
+        "Fuel expense",
+        "Hard-money loan payable",
+        "Property held for sale"
+      ],
+      "answer": 2,
+      "why": "Liabilities, equity and income increase with credits. A loan is a liability.",
+      "policy": "POL-BASIS",
+      "followup": null
+    },
+    {
+      "q": "On accrual basis, when do you record a contractor's cost?",
+      "options": [
+        "When you pay it",
+        "When the work is done (incurred)",
+        "When Juan approves it",
+        "At year end"
+      ],
+      "answer": 1,
+      "why": "Accrual basis records the cost in the period the work happened, even if the bill is paid later.",
+      "policy": "POL-BASIS",
+      "followup": null
+    },
+    {
+      "q": "Matrix Group One pays a $3,000 invoice that belongs to Twin Home Buyer. How is it recorded?",
+      "options": [
+        "Expense in Matrix Group One",
+        "Expense in Twin Home Buyer only, nothing in Matrix",
+        "Matrix records money owed by Twin Home Buyer; Twin Home Buyer records the expense and money owed to Matrix",
+        "Ignore it; the same owner owns both"
+      ],
+      "answer": 2,
+      "why": "Both companies record it: a due-from in Matrix and the expense plus a due-to in Twin Home Buyer. The two balances must match.",
+      "policy": "POL-IC",
+      "followup": null
+    },
+    {
+      "q": "The Balance Sheet shows…",
+      "options": [
+        "Income and expenses for a month",
+        "What the company owns and owes on one date",
+        "Only cash movements",
+        "Only unpaid bills"
+      ],
+      "answer": 1,
+      "why": "The Balance Sheet is a snapshot on one date. The P&L covers a period.",
+      "policy": "POL-BASIS",
+      "followup": null
+    }
+  ],
+  "task": "Take 10 real transactions from last month for one company. For each, write the company, account, property/job, debit/credit and the document that proves it. Your reviewer checks them.",
+  "rubric": [
+    "At least 9 of 10 coded to the right company and account",
+    "Every line names its source document",
+    "Debits equal credits on every entry",
+    "Explains any item she wasn't sure about"
+  ]
+}

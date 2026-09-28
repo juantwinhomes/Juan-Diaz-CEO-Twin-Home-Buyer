@@ -1,0 +1,10 @@
+Date,Type,Entity,Account,Bank Account,Amount,Vendor,Customer,Project,Category,Ref,Invoice No,Due Date,Memo,Receipt,Counterparty Entity,Approved By,Status
+2026-06-17,invoice,ENT-PPS,1200,,"4,200.00",,Sample Property Mgmt,,,,PPS-2041,2026-06-27,SYNTHETIC - Emergency repair billing,,,,
+2026-07-15,bill,ENT-PPS,5100,,"2,300.00",Sample Fixture Wholesale,,PRJ-PPS-0001,materials,,FW-102,2026-08-14,SYNTHETIC - Fixtures for repipe job,fixtures-fw-102.pdf,,Site lead (demo),Open
+2026-09-08,expense,ENT-PPS,5100,BA-PPS-OP,"-2,460.00",Sample Pipe Supply,,PRJ-PPS-0001,materials,DC-0908,,,SYNTHETIC - PEX pipe and fittings,pipe-receipt-0908.pdf,,,
+2026-09-10,bill,ENT-PPS,5100,,"1,640.00",Sample Pipe Supply,,PRJ-PPS-0001,materials,,PS-221,2026-10-10,SYNTHETIC - Copper and valves,pipe-ps-221.pdf,,Site lead (demo),Open
+2026-09-12,expense,ENT-PPS,5200,BA-PPS-OP,"-3,800.00",Sample Payroll Service,,PRJ-PPS-0001,labor,PR-0912,,,SYNTHETIC - Payroll 9/12 job labor,payroll-0912.pdf,,,
+2026-09-15,invoice,ENT-PPS,1200,,"9,000.00",,Sample Homeowner,PRJ-PPS-0001,,,PPS-2088,2026-10-15,SYNTHETIC - Repipe progress billing 50%,,,,
+2026-09-18,expense,ENT-PPS,5100,BA-PPS-OP,-640.00,Sample Supply Depot,,,materials,DC-0918,,,SYNTHETIC - Fittings (job not noted),supply-receipt-0918.pdf,,,
+2026-09-20,invoice_payment,ENT-PPS,1200,BA-PPS-OP,"6,500.00",,Sample Builder Co,,,DEP-0920,PPS-2070,,SYNTHETIC - Payment on prior job,,,,
+2026-09-26,expense,ENT-PPS,6300,BA-PPS-OP,"-3,800.00",Sample Payroll Service,,,,PR-0926,,,SYNTHETIC - Payroll 9/26,payroll-0926.pdf,,,

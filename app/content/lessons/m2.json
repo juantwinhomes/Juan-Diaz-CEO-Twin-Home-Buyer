@@ -1,0 +1,122 @@
+{
+  "id": "m2",
+  "weeks": "Weeks 3–4",
+  "title": "Bills, vendor controls and bank reconciliation",
+  "goal": "Process bills without duplicates or fraud, and reconcile a bank account to the statement with zero unexplained difference.",
+  "skills": [
+    "Bills vs expenses",
+    "Duplicate detection",
+    "Vendor bank-change controls",
+    "Bank reconciliation"
+  ],
+  "concept_card": "Before a bill is paid, the invoice, the approval and proof of delivery must agree. Match bank-feed items to existing bills; never add them twice. Verify any vendor bank change by calling the number already on file. A reconciliation is done only at $0.00 unexplained difference.",
+  "lesson_html": "<p><strong>Bill, expense or check?</strong> In QuickBooks Online a <em>bill</em> records money owed now and paid later. An <em>expense</em> or <em>check</em> records money already paid. If you enter a bill, pay it with <strong>Pay bills</strong> so it doesn't get counted twice.</p>\n<p><strong>Before any bill gets paid</strong>, three things must agree:</p>\n<ol>\n<li>The invoice (vendor, amount, invoice number, property)</li>\n<li>Approval from the person who owns that property or job</li>\n<li>The work or goods were actually received</li>\n</ol>\n<p><strong>Duplicate bills.</strong> Look for the same vendor and amount with invoice numbers that look alike: <span class=\"path\">INV-1001</span> and <span class=\"path\">INV1001</span>, or the same invoice sent by email and on paper.</p>\n<p><strong>Vendor bank changes are the top fraud risk.</strong> If a vendor asks to change where you send money, call them at the phone number already on file, not the number in the email. A second person approves the change. The person who creates a vendor should not also release payment to that vendor.</p>\n<p><strong>Bank reconciliation</strong> proves the books match the bank:</p>\n<div class=\"keyrule\"><span class=\"num\">Bank statement ending balance − checks not yet cleared + deposits not yet cleared = Book balance</span></div>\n<p>The difference must be <span class=\"num\">$0.00</span>. If it isn't, you find the reason. You never force it to balance.</p>\n<p><strong>Bank feed: Match, don't Add.</strong> When a bank transaction matches a bill already entered, choose <em>Match</em>. Choosing <em>Add</em> creates the expense a second time.</p>",
+  "rule": "A reconciliation with an unexplained difference is not finished, no matter how small.",
+  "qbo_steps": [
+    {
+      "title": "Enter a bill",
+      "html": "<span class='path'>+ New → Bill</span>. Pick the vendor, enter the invoice number, date, due date, and on each line pick the account and the customer/project. Attach the PDF."
+    },
+    {
+      "title": "Pay bills",
+      "html": "<span class='path'>+ New → Pay bills</span>. Select the bills and the bank account. The payment then matches the bank feed."
+    },
+    {
+      "title": "Review the bank feed",
+      "html": "<span class='path'>Transactions → Bank transactions</span> (sometimes under Banking). For each line, choose Match when a bill or payment already exists."
+    },
+    {
+      "title": "Reconcile",
+      "html": "<span class='path'>⚙ → Reconcile</span>. Choose the account, enter the statement ending date and balance, tick each cleared item until the Difference is $0.00."
+    },
+    {
+      "title": "Check the vendor list and audit log",
+      "html": "<span class='path'>Expenses → Vendors</span> for open balances; <span class='path'>⚙ → Audit log</span> to see who changed a vendor's details and when."
+    },
+    {
+      "title": "Aging report",
+      "html": "<span class='path'>Reports → A/P Aging Summary</span> shows what is owed and how late it is."
+    }
+  ],
+  "scenario": {
+    "text_html": "Twin Home Buyer operating account, September. Bank statement ending balance <span class=\"num\">$48,250.00</span>. Check #1045 for <span class=\"num\">$3,400.00</span> hasn't cleared. A deposit of <span class=\"num\">$1,150.00</span> was made September 30 and isn't on the statement. QuickBooks shows a book balance of <span class=\"num\">$46,025.00</span>. The statement also shows a <span class=\"num\">$25.00</span> service fee.",
+    "ask": "What is the adjusted bank balance (statement − uncleared checks + uncleared deposits)?",
+    "answer_cents": 4600000,
+    "explain": "$48,250 − $3,400 + $1,150 = $46,000. Books show $46,025, a $25 difference: the bank fee isn't recorded yet. Record the $25 fee, and the books become $46,000. Difference $0.00.",
+    "followup": "A vendor calls to say their bank changed and asks you to confirm the old account number. What do you say?"
+  },
+  "quiz": [
+    {
+      "q": "A vendor emails new bank account details and asks you to pay there. What do you do?",
+      "options": [
+        "Update the vendor and pay",
+        "Reply to the email to confirm",
+        "Call the vendor at the number already on file, and get a second person to approve the change",
+        "Pay half to the old account and half to the new"
+      ],
+      "answer": 2,
+      "why": "Never trust contact details in the email that asks for the change. Verify independently and require a second approver.",
+      "policy": "POL-VBANK",
+      "followup": "The reconciliation is off by exactly $180 and one check for $90 appears twice in the books. What happened?"
+    },
+    {
+      "q": "The bank feed shows a $4,800 payment that matches an open bill in QuickBooks. You should…",
+      "options": [
+        "Add it as a new expense",
+        "Match it to the bill",
+        "Exclude it",
+        "Categorize it as Uncategorized Expense"
+      ],
+      "answer": 1,
+      "why": "Adding it would record the $4,800 cost twice. Match links the payment to the bill.",
+      "policy": "POL-SOD",
+      "followup": null
+    },
+    {
+      "q": "Your reconciliation is off by $25. What next?",
+      "options": [
+        "Finish anyway; it's small",
+        "Let QuickBooks create an adjustment",
+        "Find the $25 (fee, typo, missing item) and fix the record",
+        "Change the statement balance"
+      ],
+      "answer": 2,
+      "why": "Find the cause. Forcing the adjustment hides errors and makes next month harder.",
+      "policy": "POL-SOD",
+      "followup": null
+    },
+    {
+      "q": "Which pair most likely is a duplicate?",
+      "options": [
+        "Same vendor, different amounts, different months",
+        "Same vendor, same amount, invoice INV-1001 and INV1001",
+        "Different vendors, same amount",
+        "Same vendor, same property, different invoice numbers and dates"
+      ],
+      "answer": 1,
+      "why": "Same vendor, same amount and nearly identical invoice numbers is the classic duplicate.",
+      "policy": "POL-APPR",
+      "followup": null
+    },
+    {
+      "q": "Who should release a payment?",
+      "options": [
+        "The person who created the vendor and entered the bill",
+        "A named approver who didn't set up the vendor",
+        "Anyone with QuickBooks access",
+        "The AI tool"
+      ],
+      "answer": 1,
+      "why": "Separate the duties: one person sets up and enters, a different person approves and releases.",
+      "policy": "POL-SOD",
+      "followup": null
+    }
+  ],
+  "task": "Reconcile one real bank account for last month. List every uncleared item with its date and amount. Difference must be $0.00. Your reviewer re-checks it against the statement.",
+  "rubric": [
+    "Difference is $0.00 with no forced adjustment",
+    "Every uncleared item is listed with check number or reference",
+    "Statement PDF attached to the reconciliation",
+    "Any item older than 60 days is flagged for follow-up"
+  ]
+}

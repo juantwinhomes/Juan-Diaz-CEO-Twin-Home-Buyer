@@ -1,0 +1,114 @@
+{
+  "id": "m6",
+  "weeks": "Weeks 11–12",
+  "title": "Independent close and leadership",
+  "goal": "Run a full close on your own, present a five-minute brief to Juan, and have the CPA or reviewer assess it.",
+  "skills": [
+    "Independent close",
+    "Five-minute brief",
+    "Controls ownership",
+    "Working with the CPA"
+  ],
+  "concept_card": "A controller runs the close on schedule, owns the controls even when busy, separates facts from estimates, sends policy questions to the CPA, and never lets an AI sign anything.",
+  "lesson_html": "<p><strong>Running the close yourself.</strong> Use your Module 4 checklist for every company. Keep a close calendar: bank feed daily, reconciliations by business day 5, intercompany by day 6, review by day 8, brief to Juan by day 10.</p>\n<p><strong>The five-minute brief.</strong></p>\n<ol>\n<li>What changed from last month</li>\n<li>Why it changed, with the source</li>\n<li>What is uncertain or unknown</li>\n<li>Three decisions Juan needs to make</li>\n</ol>\n<p>Separate <em>facts</em> (reconciled, sourced), <em>estimates</em> (with assumptions) and <em>unknowns</em>. Use plain language; skip the accounting terms.</p>\n<p><strong>Controls you own as controller</strong></p>\n<ul>\n<li>One person can't create a vendor, change its bank details and pay it</li>\n<li>Journal entries above the limit need a second approval</li>\n<li>Reopening a closed month needs approval</li>\n<li>The approval matrix is written down and followed even when busy</li>\n</ul>\n<p><strong>Working with the CPA.</strong> Send the CPA tax questions, unusual transactions, accounting policy changes and anything going to a lender. Keep their answers in a policy register so you apply them the same way next time.</p>",
+  "rule": "AI makes you faster. It never signs anything and it is never the reviewer.",
+  "qbo_steps": [
+    {
+      "title": "Monthly close in each company",
+      "html": "Repeat the Module 4 steps in each QuickBooks company, one after another. Never combine companies in one file."
+    },
+    {
+      "title": "Review what changed",
+      "html": "<span class='path'>Reports → Profit and Loss Comparison</span> (this month vs last month) to find what moved."
+    },
+    {
+      "title": "Check user access",
+      "html": "<span class='path'>⚙ → Manage users</span>. Confirm who can pay bills, edit vendors and change the closing date."
+    },
+    {
+      "title": "Keep a management report",
+      "html": "<span class='path'>Reports → Management reports</span> lets you package the P&amp;L, Balance Sheet and notes into one report for Juan."
+    }
+  ],
+  "scenario": {
+    "text_html": "For Juan's brief, reconciled cash on September 30: Twin Home Buyer <span class=\"num\">$46,000</span>, Matrix Group One <span class=\"num\">$18,500</span>, Peninsula Plumbing <span class=\"num\">$9,200</span>, Equity Track PH <span class=\"num\">$3,300</span>.",
+    "ask": "What is total cash across the four companies?",
+    "answer_cents": 7700000,
+    "explain": "$46,000 + $18,500 + $9,200 + $3,300 = $77,000. Show each company on its own line too, and note that this total is not all available to spend.",
+    "followup": "The AI’s summary says all accounts reconciled. What do you check before believing it?"
+  },
+  "quiz": [
+    {
+      "q": "You want to include a number in Juan's brief but can't find its source. You…",
+      "options": [
+        "Estimate it and move on",
+        "Write \"unknown\" and say what's needed to get it",
+        "Ask the AI for a number",
+        "Use last month's number"
+      ],
+      "answer": 1,
+      "why": "An unsourced number is worse than an honest \"unknown.\"",
+      "policy": "POL-SOD",
+      "followup": "Juan asks you to show a lender “about $250,000 of equity.” What do you need before you say a number?"
+    },
+    {
+      "q": "The AI says an account is reconciled. Is it?",
+      "options": [
+        "Yes",
+        "Only after you check it against the statement and a reviewer signs off",
+        "Yes, if two AI tools agree",
+        "Yes, if the difference is under $100"
+      ],
+      "answer": 1,
+      "why": "AI can help find matches. Evidence and human sign-off decide.",
+      "policy": "POL-SOD",
+      "followup": null
+    },
+    {
+      "q": "Juan says to skip the reviewer this month because everyone is busy. You…",
+      "options": [
+        "Skip it",
+        "Explain the risk, and either get a lighter review or document that he approved the exception",
+        "Sign it off yourself",
+        "Ask the AI to review instead"
+      ],
+      "answer": 1,
+      "why": "Controls matter most when busy. If skipped, it's a documented, approved exception.",
+      "policy": "POL-SOD",
+      "followup": null
+    },
+    {
+      "q": "A lender asks for a signed financial statement. Who handles it?",
+      "options": [
+        "You alone",
+        "The AI",
+        "You prepare; the CPA or authorized person reviews and signs",
+        "The lender fills it in"
+      ],
+      "answer": 2,
+      "why": "Lender reporting needs qualified review and a named signer.",
+      "policy": "POL-LENDER",
+      "followup": null
+    },
+    {
+      "q": "What earns the controller title?",
+      "options": [
+        "Finishing 12 weeks",
+        "Passing the quizzes",
+        "Three consecutive clean closes with reviewer-approved balances and clear briefs",
+        "Getting a CPA license"
+      ],
+      "answer": 2,
+      "why": "The title follows consistent, demonstrated performance.",
+      "policy": "POL-SOD",
+      "followup": null
+    }
+  ],
+  "task": "Run the full month-end close for every company on your own. Present the five-minute brief to Juan. The CPA or reviewer assesses the close and the brief.",
+  "rubric": [
+    "All companies closed on schedule",
+    "Every material balance supported and reviewer-approved",
+    "Brief separates facts, estimates and unknowns",
+    "Three clear decisions for Juan"
+  ]
+}

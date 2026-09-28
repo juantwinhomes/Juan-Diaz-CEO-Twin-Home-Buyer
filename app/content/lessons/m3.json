@@ -1,0 +1,119 @@
+{
+  "id": "m3",
+  "weeks": "Weeks 5–6",
+  "title": "Property and job costing",
+  "goal": "Build a cost ledger for one property and explain its budget vs actual and expected profit, with every number tied to an invoice.",
+  "skills": [
+    "Project IDs vs vendors",
+    "Actual / committed / forecast",
+    "Change orders",
+    "Draw reconciliation",
+    "Profit bridge"
+  ],
+  "concept_card": "A vendor is who you pay; a project is where the cost belongs. Show actual paid, incurred unpaid, committed and forecast remaining separately. Every lender draw has four numbers: submitted, approved, funded and held back.",
+  "lesson_html": "<p><strong>A vendor is not a project.</strong> Every property and every plumbing job gets its own ID, address, owning company, purchase date, budget, lender and status. The plumber you pay is the vendor; the house is the project.</p>\n<p><strong>Types of property cost</strong></p>\n<ul>\n<li><strong>Acquisition</strong>: purchase price and buying closing costs</li>\n<li><strong>Rehab</strong>: labor, materials, subcontractors, permits</li>\n<li><strong>Financing</strong>: loan interest, points, lender fees</li>\n<li><strong>Holding</strong>: property tax, insurance, utilities while you own it</li>\n<li><strong>Selling</strong>: closing costs on sale, agent commissions</li>\n</ul>\n<p><strong>Actual, committed, forecast.</strong> <em>Actual</em> is recorded (paid or billed). <em>Committed</em> is signed but not yet billed, like a contract or purchase order. <em>Forecast to complete</em> is your best estimate of what is still to come. Show all three separately.</p>\n<p><strong>Change orders</strong> change the budget. Record who approved them and update the forecast.</p>\n<p><strong>Lender draws.</strong> Track four numbers for each draw: what you submitted, what the lender approved, what actually arrived, and any holdback. Differences are not errors to ignore; each needs a reason.</p>\n<p><strong>Accounting treatment.</strong> For flips, rehab costs are usually added to the property's cost on the Balance Sheet rather than expensed right away. The CPA sets this policy. Write down their decision and follow it.</p>",
+  "rule": "Every cost on a property report links to an invoice, a bill or a closing statement.",
+  "qbo_steps": [
+    {
+      "title": "Turn on Projects",
+      "html": "<span class='path'>Business → Projects</span> (or the Projects menu). Available on Plus and Advanced. Create one project per property or job."
+    },
+    {
+      "title": "Code every cost to the project",
+      "html": "On each bill, expense or check line, fill in the Customer/Project column. Also mark it billable if you re-bill it."
+    },
+    {
+      "title": "Use classes or locations if the CPA wants them",
+      "html": "<span class='path'>⚙ → Account and settings → Advanced → Categories</span>. Turn on class or location tracking."
+    },
+    {
+      "title": "Set a budget",
+      "html": "<span class='path'>⚙ → Budgeting</span> (Plus and Advanced). Create a budget by project or class."
+    },
+    {
+      "title": "Run project reports",
+      "html": "Open a project to see its profitability tab, or <span class='path'>Reports → Project profitability summary</span>. Compare with <span class='path'>Reports → Budget vs. Actuals</span>."
+    }
+  ],
+  "scenario": {
+    "text_html": "Practice property TH-017 (made-up house). Sale price <span class=\"num\">$385,000</span>. Purchase <span class=\"num\">$240,000</span>. Rehab <span class=\"num\">$62,000</span>. Financing <span class=\"num\">$11,500</span>. Holding <span class=\"num\">$4,300</span>. Seller closing costs <span class=\"num\">$7,700</span>. Commissions <span class=\"num\">$19,250</span>.",
+    "ask": "What is the profit on TH-017?",
+    "answer_cents": 4025000,
+    "explain": "Total cost = 240,000 + 62,000 + 11,500 + 4,300 + 7,700 + 19,250 = $344,750. Profit = $385,000 − $344,750 = $40,250 (about 10.5% of the sale price).",
+    "followup": "The lender funded $36,000 of a $40,000 approved draw and kept $4,000 as retainage. How do you show that in the draw tracker?"
+  },
+  "quiz": [
+    {
+      "q": "A plumber invoices $1,800 for work at practice property TH-017. How is it coded?",
+      "options": [
+        "Vendor: TH-017",
+        "Project: the plumber",
+        "Vendor: the plumber; Project: TH-017",
+        "No project; it's general overhead"
+      ],
+      "answer": 2,
+      "why": "The vendor is who you pay. The project is where the cost belongs.",
+      "policy": "POL-CAP",
+      "followup": "A change order adds $4,000 of tile. The budget line was $6,000 and $5,500 is already billed. What is the new variance?"
+    },
+    {
+      "q": "A committed cost is…",
+      "options": [
+        "A cost already paid",
+        "A signed contract or purchase order not yet billed",
+        "A cost you hope to avoid",
+        "Any cost over budget"
+      ],
+      "answer": 1,
+      "why": "Committed means you're on the hook but no bill has arrived yet.",
+      "policy": "POL-CAP",
+      "followup": null
+    },
+    {
+      "q": "The lender approved a $40,000 draw but only $36,000 arrived. What is the $4,000?",
+      "options": [
+        "A bookkeeping error to delete",
+        "A holdback, fee or disallowed cost that must be explained and tracked",
+        "Extra profit",
+        "Nothing; round it off"
+      ],
+      "answer": 1,
+      "why": "Find out why: a holdback or retainage, a fee, or a cost the lender didn't allow. Record it in the draw tracker.",
+      "policy": "POL-LOAN",
+      "followup": null
+    },
+    {
+      "q": "Forecast to complete should be…",
+      "options": [
+        "Budget minus actual, always",
+        "Your current best estimate of remaining cost",
+        "Zero until the project ends",
+        "Whatever the contractor says"
+      ],
+      "answer": 1,
+      "why": "Budget minus actual is only a starting point. Use current information: bids, change orders, the site lead's estimate.",
+      "policy": "POL-CAP",
+      "followup": null
+    },
+    {
+      "q": "Who decides whether rehab costs are expensed or added to the property cost?",
+      "options": [
+        "The bookkeeper",
+        "The AI tool",
+        "The CPA, written into the policy register",
+        "The vendor"
+      ],
+      "answer": 2,
+      "why": "This is an accounting policy with tax effects. The CPA decides, and you document it.",
+      "policy": "POL-CAP",
+      "followup": null
+    }
+  ],
+  "task": "Pick one real property. Build a cost list with every bill and closing-statement line, grouped by acquisition, rehab, financing, holding and selling. Compare to budget and explain the three biggest differences.",
+  "rubric": [
+    "Every cost links to a document",
+    "Actual, committed and forecast shown separately",
+    "Budget vs actual difference explained for the top three lines",
+    "Duplicates or uncoded costs flagged"
+  ]
+}

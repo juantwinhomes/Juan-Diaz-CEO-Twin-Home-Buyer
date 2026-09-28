@@ -1,0 +1,11 @@
+Bill Date,Vendor,Invoice No,Due Date,Amount,Entity,Project,Account,Category,Memo,Receipt,Approved By,Status
+2026-08-28,Sample Drywall Co,INV-1001,2026-09-12,"6,400.00",ENT-THB,PRJ-THB-0001,1320,rehab,SYNTHETIC - Drywall hang and finish,drywall-inv-1001.pdf,Juan Diaz (demo),Paid
+2026-09-02,Sample Roofing LLC,R-2231,2026-09-10,"14,200.00",ENT-THB,PRJ-THB-0001,1320,rehab,SYNTHETIC - Roof replacement,roofing-r-2231.pdf,Juan Diaz (demo),Paid
+2026-09-06,Sample Tile & Stone,T-778,2026-09-15,"4,850.00",ENT-THB,PRJ-THB-0001,1320,rehab,SYNTHETIC - Bathroom tile,tile-t-778.pdf,Juan Diaz (demo),Paid
+2026-09-11,Sample Drywall Co,INV1001,2026-09-26,"6,400.00",ENT-THB,PRJ-THB-0001,1320,rehab,SYNTHETIC - Drywall hang & finish (emailed copy),drywall-inv1001-email.pdf,,Open
+2026-09-14,Sample Paint Pros,P-5512,2026-09-25,"3,990.00",ENT-THB,PRJ-THB-0001,1320,rehab,SYNTHETIC - Interior paint,paint-p-5512.pdf,Juan Diaz (demo),Paid
+2026-09-15,Sample Utility Co,UT-0915,2026-09-22,410.00,ENT-THB,PRJ-THB-0001,1330,holding,SYNTHETIC - Utilities during rehab,utility-ut-0915.pdf,,Paid
+2026-09-17,Sample Cabinet Co,C-9001,2026-10-01,"3,400.00",ENT-THB,PRJ-THB-0001,1320,rehab,SYNTHETIC - Kitchen cabinets deposit,cabinet-c-9001.pdf,Juan Diaz (demo),Paid
+2026-09-19,Sample Electric LLC,E-340,2026-10-05,"7,250.00",ENT-THB,PRJ-THB-0001,1320,rehab,SYNTHETIC - Rewire and panel upgrade,electric-e-340.pdf,Juan Diaz (demo),Open
+2026-09-20,Sample Landscaping,L-88,2026-10-20,"2,100.00",ENT-MG1,PRJ-THB-0001,1320,rehab,SYNTHETIC - Front yard and sod,landscaping-l-88.pdf,Juan Diaz (demo),Open
+2026-09-22,Sample Lumber Yard,LY-4410,2026-10-22,"1,860.00",ENT-THB,PRJ-THB-0001,1320,rehab,SYNTHETIC - Trim and baseboard,lumber-ly-4410.pdf,Juan Diaz (demo),Open

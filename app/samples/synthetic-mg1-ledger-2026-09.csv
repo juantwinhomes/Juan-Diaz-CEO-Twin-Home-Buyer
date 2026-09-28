@@ -1,0 +1,4 @@
+Date,Type,Entity,Account,Bank Account,Amount,Vendor,Customer,Project,Category,Ref,Invoice No,Due Date,Memo,Receipt,Counterparty Entity
+2026-09-05,transfer,ENT-MG1,1500,BA-MG1-OP,"-11,300.00",,,,,TRF-0905,,,SYNTHETIC - Transfer to Twin Home Buyer,transfer-confirmation.pdf,ENT-THB
+2026-09-10,expense,ENT-MG1,6200,BA-MG1-OP,"-1,200.00",Sample Office Landlord,,,,ACH-0910,,,SYNTHETIC - Office rent September,lease.pdf,
+2026-09-25,deposit,ENT-MG1,4000,BA-MG1-OP,"4,800.00",,Sample Tenant LLC,,,DEP-0925,,,SYNTHETIC - Management fee,mgmt-fee-invoice.pdf,

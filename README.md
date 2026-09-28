@@ -1,18 +1,16 @@
 # Juan-Diaz-CEO-Twin-Home-Buyer
 
-## Kristine Controller Academy
+## Kristine AI Controller Academy (app)
 
-`course/controller-academy.html` is a 12-week training course, taught in QuickBooks Online, that takes an accountant from bookkeeper to assistant controller and then controller.
+`app/` holds a working MVP of the training and review app from Juan's build brief. It includes Learn, Workbench, Exception queue, Close & reports, Juan's brief, Coach & scorecard, Approvals, Setup and Admin. It runs on synthetic data, and QuickBooks Online stays the system of record.
 
-Six modules, two weeks each. Every module has a lesson, QuickBooks Online steps, a practice problem, a 5-question quiz (pass with 4), a real task on the company books, and a reviewer sign-off.
+```bash
+cd app && npm start   # http://127.0.0.1:4400
+cd app && npm test
+```
 
-1. Accounting foundations
-2. Bills, vendor controls and bank reconciliation
-3. Property and job costing
-4. Month-end close
-5. Reporting and the 13-week cash forecast
-6. Independent close and leadership
+See [app/README.md](app/README.md) for setup, access, backup, data retention, and how to add lessons and connectors. See [docs/PLAN.md](docs/PLAN.md) for the implementation plan and acceptance checklist.
 
-The page also includes the career path and promotion gates, a daily routine, and AI tutor prompts.
+## Course page
 
-To add or edit a lesson, change the `MODULES` list in the `<script>` section of the file. Progress is saved in the viewer's browser only.
+`course/controller-academy.html` is a standalone 12-week QuickBooks Online course page with the same six modules. It is useful on its own, without the app.

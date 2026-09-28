@@ -1,0 +1,16 @@
+{
+  "name": "kristine-ai-controller-academy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Internal training and review app for the monthly close. Synthetic demo data; QuickBooks Online stays the system of record.",
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "start": "node --no-warnings server/index.js",
+    "reset": "node -e \"require('fs').rmSync('data',{recursive:true,force:true})\" && npm start",
+    "test": "node --no-warnings --test test/*.test.js",
+    "screenshots": "node --no-warnings scripts/screenshots.js"
+  },
+  "optionalDependencies": {
+    "@anthropic-ai/sdk": "*"
+  }
+}

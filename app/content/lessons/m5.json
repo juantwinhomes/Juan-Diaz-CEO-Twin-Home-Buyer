@@ -1,0 +1,118 @@
+{
+  "id": "m5",
+  "weeks": "Weeks 9–10",
+  "title": "Reporting and the 13-week cash forecast",
+  "goal": "Produce Juan's weekly brief and a rolling 13-week cash forecast with every assumption written down.",
+  "skills": [
+    "Cash vs profit vs available cash",
+    "13-week forecast",
+    "AR/AP aging",
+    "Executive brief"
+  ],
+  "concept_card": "Company cash, project cash, profit and available cash are different numbers. A forecast line is either known (in the books or signed) or an estimate with a written assumption. If a number has no source, it goes in the brief as “unknown.”",
+  "lesson_html": "<p><strong>Four different numbers.</strong> Keep them separate on every report:</p>\n<ul>\n<li><strong>Company cash</strong>: the bank balance of one company</li>\n<li><strong>Project cash</strong>: money spent and received on one property</li>\n<li><strong>Profit</strong>: income minus cost; a flip can be profitable while cash is low</li>\n<li><strong>Available cash</strong>: cash you can spend after bills due, loan payments and restricted funds</li>\n</ul>\n<p><strong>13-week cash forecast.</strong> One row per week:</p>\n<div class=\"keyrule\"><span class=\"num\">Starting cash + money coming in − money going out = Ending cash</span></div>\n<p>Money in: house sales, lender draws, plumbing customer payments. Money out: bills due, payroll, loan payments, rehab spending. Label each line as <em>known</em> (signed, scheduled) or <em>estimate</em>, and write down the assumption. Update it every week and compare last week's forecast with what really happened.</p>\n<p><strong>The weekly brief for Juan answers eight questions:</strong> cash today, lowest cash in the next 13 weeks, money owed to us, bills due, projects over budget, lender draws pending, open exceptions, and three decisions he needs to make.</p>",
+  "rule": "If a number has no source, it doesn't go in the brief. Write \"unknown\" instead.",
+  "qbo_steps": [
+    {
+      "title": "Aging reports",
+      "html": "<span class='path'>Reports → A/R Aging Summary</span> and <span class='path'>A/P Aging Summary</span> for each company."
+    },
+    {
+      "title": "Cash position",
+      "html": "<span class='path'>Reports → Balance Sheet</span> (cash accounts) or the bank account list on the dashboard. Use reconciled balances where possible."
+    },
+    {
+      "title": "Upcoming bills",
+      "html": "<span class='path'>Reports → Unpaid bills</span>, sorted by due date."
+    },
+    {
+      "title": "Export for the forecast",
+      "html": "Export each report to Excel (the export icon at the top of any report). Build the forecast in one spreadsheet with a tab per company, formulas visible."
+    },
+    {
+      "title": "Save report settings",
+      "html": "Customize a report once and click <span class='path'>Save customization</span> so you run the same version every week."
+    }
+  ],
+  "scenario": {
+    "text_html": "Peninsula Plumbing has <span class=\"num\">$60,000</span> cash today. Week 1: pays <span class=\"num\">$25,000</span>. Week 2: pays <span class=\"num\">$30,000</span>. Week 3: receives a <span class=\"num\">$45,000</span> customer payment and pays <span class=\"num\">$10,000</span>.",
+    "ask": "What is the lowest ending cash across these three weeks?",
+    "answer_cents": 500000,
+    "explain": "Week 1 ends at $35,000. Week 2 ends at $5,000. Week 3 ends at $40,000. The low point is $5,000 at the end of week 2. Flag it to Juan now, with options such as moving a payment or confirming the customer payment date.",
+    "followup": "A customer promised to pay next week but has missed two promises. Is that payment known or an estimate?"
+  },
+  "quiz": [
+    {
+      "q": "A flip shows $40,000 profit but the company's cash barely moved. Most likely why?",
+      "options": [
+        "The books are wrong",
+        "Sale proceeds paid off the loan, and costs were paid earlier",
+        "Profit and cash are always equal",
+        "The CPA made an error"
+      ],
+      "answer": 1,
+      "why": "Profit and cash are different. Loan payoff and timing explain most gaps.",
+      "policy": "POL-BASIS",
+      "followup": "The forecast assumes a house sells on Nov 20 for $385,000. What happens to the lowest-cash week if it slips 4 weeks?"
+    },
+    {
+      "q": "A forecast line depends on a sale that hasn't closed. How do you show it?",
+      "options": [
+        "As known cash",
+        "As an estimate with the assumption written down",
+        "Leave it out entirely without a note",
+        "Double it to be safe"
+      ],
+      "answer": 1,
+      "why": "Label estimates and state the assumption (closing date, price) so Juan knows the risk.",
+      "policy": "POL-FCST",
+      "followup": null
+    },
+    {
+      "q": "A customer invoice is 95 days overdue. What do you do?",
+      "options": [
+        "Nothing until year end",
+        "Follow up, flag it in the brief, and ask the CPA about collectability",
+        "Delete the invoice",
+        "Count it as cash"
+      ],
+      "answer": 1,
+      "why": "Old receivables need action and may not be collectible.",
+      "policy": "POL-FCST",
+      "followup": null
+    },
+    {
+      "q": "Juan asks for total cash across all four companies. You…",
+      "options": [
+        "Show one total only",
+        "Show each company's cash separately, then a total labeled as not all available",
+        "Move all cash into one company",
+        "Refuse"
+      ],
+      "answer": 1,
+      "why": "Each company's cash belongs to that company. A total is fine only when labeled.",
+      "policy": "POL-IC",
+      "followup": null
+    },
+    {
+      "q": "The forecast shows cash going negative in week 6. When do you tell Juan?",
+      "options": [
+        "In week 6",
+        "Now, in this week's brief with options",
+        "Only if it gets worse",
+        "Never; it's only a forecast"
+      ],
+      "answer": 1,
+      "why": "The point of a forecast is early warning. Give him options while there's time.",
+      "policy": "POL-FCST",
+      "followup": null
+    }
+  ],
+  "task": "Build a 13-week cash forecast for one company and write Juan's weekly brief. Every number cites its report and date.",
+  "rubric": [
+    "Starting cash ties to reconciled balance",
+    "Every line labeled known or estimate with an assumption",
+    "Lowest cash week highlighted",
+    "Brief answers all eight questions and lists three decisions"
+  ]
+}

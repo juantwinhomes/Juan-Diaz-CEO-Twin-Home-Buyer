@@ -1,0 +1,119 @@
+{
+  "id": "m4",
+  "weeks": "Weeks 7–8",
+  "title": "Month-end close",
+  "goal": "Close one company's month under supervision, with a workpaper for every balance-sheet account and reviewer sign-off.",
+  "skills": [
+    "Close checklist",
+    "Balance-sheet reconciliations",
+    "Accruals",
+    "Intercompany matching",
+    "Reviewer sign-off"
+  ],
+  "concept_card": "A month is closed when every balance-sheet account is supported, intercompany balances match, exceptions are cleared and a reviewer who didn’t prepare the work signs off. Then lock the period in QuickBooks.",
+  "lesson_html": "<p><strong>What closing means.</strong> The month is closed when every account is correct, supported and reviewed, and QuickBooks is locked so nobody changes it by accident.</p>\n<p><strong>Close checklist (per company)</strong></p>\n<ol>\n<li>Clear the bank feed and the Uncategorized / Ask My Accountant accounts</li>\n<li>Reconcile every bank, credit card and loan account</li>\n<li>Record accruals: work done this month but not yet billed</li>\n<li>Match intercompany balances with each other company</li>\n<li>Review A/P and A/R aging for anything wrong or stale</li>\n<li>Check loan balances against lender statements</li>\n<li>Reconcile payroll liabilities to the payroll reports</li>\n<li>Review the P&amp;L for anything unusual compared with last month</li>\n<li>Reviewer signs off, then set the closing date</li>\n</ol>\n<p><strong>Balance-sheet reconciliation.</strong> For every balance-sheet account, a workpaper shows the QuickBooks balance, the outside proof (bank statement, loan statement, aging report) and the difference, which should be zero or explained.</p>\n<p><strong>Intercompany.</strong> If Twin Home Buyer shows <span class=\"num\">$12,500</span> due from Matrix Group One, Matrix must show <span class=\"num\">$12,500</span> due to Twin Home Buyer. Any difference is an error in one of the two companies.</p>",
+  "rule": "The person who prepares the close does not approve it.",
+  "qbo_steps": [
+    {
+      "title": "Trial balance",
+      "html": "<span class='path'>Reports → Trial Balance</span> for the month end. This lists every account balance."
+    },
+    {
+      "title": "Find the loose ends",
+      "html": "Open <span class='path'>⚙ → Chart of accounts</span> and check the balances of Uncategorized Income, Uncategorized Expense and Ask My Accountant. They should be zero."
+    },
+    {
+      "title": "Record an accrual",
+      "html": "<span class='path'>+ New → Journal entry</span>. Describe it clearly, attach support, and send it to the reviewer before posting if it's over the approval limit."
+    },
+    {
+      "title": "Lock the month",
+      "html": "<span class='path'>⚙ → Account and settings → Advanced → Accounting → Close the books</span>. Set the closing date and a password held by the reviewer."
+    },
+    {
+      "title": "Review changes after close",
+      "html": "<span class='path'>⚙ → Audit log</span>, or <span class='path'>Reports → Exceptions to closing date</span>, to see anything changed in a closed period."
+    }
+  ],
+  "scenario": {
+    "text_html": "At September 30, Twin Home Buyer shows <span class=\"num\">$12,500</span> due from Matrix Group One. Matrix Group One shows <span class=\"num\">$11,300</span> due to Twin Home Buyer.",
+    "ask": "What is the intercompany difference you must explain?",
+    "answer_cents": 120000,
+    "explain": "$12,500 − $11,300 = $1,200. Look for a payment or transfer recorded in one company but not the other, or coded to the wrong account.",
+    "followup": "After close, someone changes a September bill. How would you find out?"
+  },
+  "quiz": [
+    {
+      "q": "Uncategorized Expense has a $3,200 balance at month end. What do you do?",
+      "options": [
+        "Leave it for the CPA",
+        "Move it to Miscellaneous",
+        "Code each item to the right account and project before close",
+        "Delete the transactions"
+      ],
+      "answer": 2,
+      "why": "The close isn't done until every item is coded with evidence.",
+      "policy": "POL-SOD",
+      "followup": "Twin Home Buyer shows $5,000 due from Equity Track PH. Equity Track PH shows nothing. Where do you look first?"
+    },
+    {
+      "q": "Intercompany balances between two companies should…",
+      "options": [
+        "Be roughly close",
+        "Match exactly, opposite sides",
+        "Be ignored since the same owner owns both",
+        "Only be checked at year end"
+      ],
+      "answer": 1,
+      "why": "One company's due-from equals the other's due-to. Check every pair monthly.",
+      "policy": "POL-IC",
+      "followup": null
+    },
+    {
+      "q": "Why set a closing date with a password in QuickBooks?",
+      "options": [
+        "To hide reports",
+        "To stop changes to a finished month without approval",
+        "It's required by the bank",
+        "To speed up QuickBooks"
+      ],
+      "answer": 1,
+      "why": "It protects reviewed numbers. Changes after close need the password and show in the audit log.",
+      "policy": "POL-SOD",
+      "followup": null
+    },
+    {
+      "q": "Who signs off the month-end close?",
+      "options": [
+        "The preparer",
+        "A named reviewer who didn't prepare it",
+        "The AI tool",
+        "Anyone"
+      ],
+      "answer": 1,
+      "why": "Independent review is the control. You can't approve your own close.",
+      "policy": "POL-SOD",
+      "followup": null
+    },
+    {
+      "q": "A subcontractor finished work September 26 but sends the invoice October 8. On accrual basis…",
+      "options": [
+        "Record it in October",
+        "Record it in September as an accrual",
+        "Don't record it",
+        "Record half in each month"
+      ],
+      "answer": 1,
+      "why": "The cost was incurred in September. Accrue it, then reverse the accrual when the bill arrives.",
+      "policy": "POL-BASIS",
+      "followup": null
+    }
+  ],
+  "task": "Close last month for one company under supervision. Produce the checklist, the trial balance, and a workpaper for each balance-sheet account. Reviewer signs off before you set the closing date.",
+  "rubric": [
+    "Every balance-sheet account has a workpaper with outside proof",
+    "Uncategorized and Ask My Accountant are zero",
+    "Intercompany balances match",
+    "Reviewer sign-off recorded before closing date is set"
+  ]
+}
