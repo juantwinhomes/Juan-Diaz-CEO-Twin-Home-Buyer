@@ -74,7 +74,7 @@ main{display:flex;flex-direction:column;gap:14px;min-width:0}
 .bar{height:8px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--ok));border-radius:999px}
 .barRow{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--ink-3);flex-wrap:wrap}
-.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
 .fact{border:0;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;background:var(--sunk)}
 .fact.ok{background:var(--ok-soft)}.fact.ok .k{color:var(--ok)}.fact.wait{background:var(--wait-soft)}.fact.wait .k{color:var(--wait)}.fact.bad{background:var(--bad-soft)}.fact.bad .k{color:var(--bad)}
 .fact .k{font-size:11px;color:var(--ink-3);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
@@ -138,6 +138,7 @@ section.tier-urgent h3{color:var(--bad)}section.tier-high h3{color:var(--wait)}s
 .fields label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--ink-3);font-weight:600}
 .fields input,.fields select,.fields textarea{border:1px solid var(--line);background:var(--sunk);border-radius:6px;padding:6px 8px;font-size:13px;font-weight:400;color:var(--ink);width:100%}
 .fields .wide{grid-column:1/-1}
+.nextEdit{width:100%;border:0;border-left:3px solid var(--accent);resize:vertical;color:var(--ink);font-family:var(--serif);font-size:14px;line-height:1.45}
 .notes{display:flex;flex-direction:column;gap:6px}
 .note{border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--bg)}
 .note .by{font-size:11.5px;color:var(--ink-3);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
@@ -285,13 +286,12 @@ function renderHeader(st){
   if(!S.loaded){c.textContent="Loading…";return}
   if(st.upcoming){const d=daysTo(st.upcoming);c.className="chip "+(d<=3?"bad":"wait");c.textContent=`${st.upcoming.title.split(/[—_(]/)[0].trim()} ${fmtDate(st.upcoming.dueDate)} · ${d===0?"due today":d+" day"+(d==1?"":"s")+" left"}`}
   else{c.className="chip ok";c.textContent="No upcoming deadlines"}
-  $("#subline").textContent=`${S.items.length} items · ${st.open.length} open · ${st.closed} closed · Updated live for everyone`;
 }
 function renderSide(st){
   const n=k=>st.byTier[k]?st.byTier[k].open.length:0;
   const openNotes=S.notes.length;
   const tabs=[["overview","Overview",""],["urgent","Urgent",n("urgent"),"bad"],["high","High",n("high"),"wait"],["normal","Normal",n("normal"),"info"],
-    ["low","No urgent task",(st.byTier.low||{all:[]}).all.length,""],["notes","All notes",openNotes,""],["files","Documents",S.files.length,""]];
+    ["low","No urgent task",(st.byTier.low||{all:[]}).all.length,""],["notes","All notes",openNotes,""],["files","Documents",new Set(S.files.map(f=>f.assetId||f.href||f.id)).size,""]];
   $("#side").innerHTML=tabs.map(([k,l,c,cls])=>`<button class="tab" type="button" data-view="${k}" ${S.view===k?'aria-current="page"':""}><span>${esc(l)}</span>${c!==""?`<span class="chip ${cls||""}">${c}</span>`:""}</button>`).join("")+
   `<button class="btn primary addBtn" type="button" id="addBtn">+ Add item</button><div class="sep"></div><div class="who">Accounting team, Twin Home Buyer<br>170 Glenn Way Ste 5, San Carlos</div>`;
 }
@@ -302,18 +302,17 @@ function miniRow(it){
 function overview(st){
   const pct=S.items.length?Math.round(st.closed/S.items.length*100):0;
   const u=st.byTier.urgent.open, next=st.upcoming;
-  let lead=`<b>${st.open.length} of ${S.items.length} items are still open</b>, with <b>${usd(st.toPay)}</b> left to pay across open bills. `;
-  lead+=st.overdue.length?`<b style="color:var(--bad)">${st.overdue.length} are past their due date.</b> `:"Nothing is past due. ";
-  lead+=next?`The next deadline is <b>${esc(next.title)}</b> on ${fmtDate(next.dueDate)}.`:"";
+  const od=sortItems(st.overdue),short=i=>esc(i.title.split(/[—_(]/)[0].trim());
+  const lead=od.length?`<b>Bottom line:</b> start with the overdue items: ${od.slice(0,3).map(i=>`<b>${short(i)}</b>`).join(", ")}${od.length>3?` and ${od.length-3} more`:""}.`
+    :`<b>Bottom line:</b> nothing is past due.`;
   const facts=[
-    ["Confirmed / closed",`${st.closed} items paid, filed or notice only`],
-    ["Still open",`${u.length} urgent · ${st.byTier.high.open.length} high · ${st.byTier.normal.open.length} normal`],
-    ["Next deadline",next?`${fmtDate(next.dueDate)} · ${next.title.split(/[—_(]/)[0].trim()}`:"None scheduled"]];
+    ["Still open",`${st.open.length} items · ${usd(st.toPay)} to pay`,"wait"],
+    ["Overdue",od.length?`${od.length} items past their due date`:"None","bad"]];
   let h=`<div class="viewHead"><h2>Overview</h2><span class="src">From the September 2026 mail sheet</span></div>
   <div class="card goal"><div class="lead">${lead}</div>
   <div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
   <div class="barRow"><span>Changes save automatically and show up for everyone.</span><span>${st.closed} of ${S.items.length} closed</span></div>
-  <div class="facts">${facts.map(([k,v],i)=>`<div class="fact ${["ok","wait","bad"][i]}"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join("")}</div></div>
+  <div class="facts">${facts.map(([k,v,c])=>`<div class="fact ${c}"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join("")}</div></div>
   <div class="grid">`;
   TIERS.forEach((t,i)=>{
     const b=st.byTier[t.k],list=sortItems(t.k==="low"?b.all:b.open);
@@ -328,7 +327,7 @@ function overview(st){
 
 function itemCard(it){
   const open=S.open.has(it.id),notes=notesFor(it.id),files=filesFor(it.id),done=isDone(it),ro=!S.db,id=esc(it.id);
-  const checked=done?(it.closedBy?`Closed by ${esc(who(it.closedBy))} · ${esc(fmtAt(it.closedAt))}`:`Marked ${esc(it.status)} on the September sheet`):(it.updatedBy?`Updated by ${esc(who(it.updatedBy))} · ${esc(fmtAt(it.updatedAt))}`:"");
+  const checked=done?(it.closedBy?`Closed by ${esc(who(it.closedBy))} · ${esc(fmtAt(it.closedAt))}`:""):(it.updatedBy?`Updated by ${esc(who(it.updatedBy))} · ${esc(fmtAt(it.updatedAt))}`:"");
   let h=`<article class="card item tier-${esc(pri(it))}${done?" closed":""}" id="item-${id}">
   <div class="itemTop"><input type="checkbox" class="cb" data-close="${id}" ${done?"checked":""} ${ro?"disabled":""} aria-label="Mark closed" title="${done?"Reopen":"Mark paid / done"}">
     <span class="t">${esc(it.title)}</span>${statusChip(it)}
@@ -336,40 +335,36 @@ function itemCard(it){
     ${checked?`<span class="checked">${checked}</span>`:""}</div>
   ${!open&&it.nextStep?`<div class="nextShort">${esc(it.nextStep)}</div>`:""}`;
   if(open)h+=detail(it,notes,files,ro,id);
-  h+=`<div class="cardFoot"><button class="link" type="button" data-toggle="${id}">${ICON_C}Comments <span class="badge ${notes.length?"wait":""}">${notes.length}</span></button>
-  <button class="link" type="button" data-toggle="${id}">${ICON_F}Files <span class="badge">${files.length}</span></button>
-  <button class="link sp" type="button" data-toggle="${id}">${open?"Close":"Open details"}</button></div></article>`;
+  h+=`<div class="cardFoot"><button class="link" type="button" data-toggle="${id}" aria-expanded="${open}" style="width:100%">${ICON_C}<span class="badge ${notes.length?"wait":""}">${notes.length}</span> comments ${ICON_F}<span class="badge">${files.length}</span> files<span style="margin-left:auto">${open?"Close":"Open"}</span></button></div></article>`;
   return h;
 }
 function detail(it,notes,files,ro,id){
   const sel=(k,vals,labels)=>`<select id="f-${k}-${id}" data-field="${k}" data-id="${id}" ${ro?"disabled":""}>${vals.map((v,i)=>`<option value="${esc(v)}"${(it[k]||"")===v?" selected":""}>${esc(labels?labels[i]:v)}</option>`).join("")}</select>`;
   return`<div class="detail">
-    ${it.nextStep?`<div class="blk"><h4>Next step</h4><div class="quote">${esc(it.nextStep)}</div></div>`:""}
+    <div class="blk"><h4>Next step</h4><textarea class="quote nextEdit" rows="3" id="f-nextStep-${id}" data-field="nextStep" data-id="${id}" ${ro?"disabled":""} placeholder="What needs to happen next">${esc(it.nextStep||"")}</textarea></div>
     ${it.description?`<div class="blk"><h4>What this is</h4><p>${esc(it.description)}</p></div>`:""}
     ${it.info?`<div class="blk"><h4>Account details</h4><pre>${esc(it.info)}</pre></div>`:""}
-    ${it.amount?`<div class="blk"><h4>Amount</h4><p class="mono">${esc(it.amount)}</p></div>`:""}
-    ${it.dueText?`<div class="blk"><h4>Due (as written on the notice)</h4><p>${esc(it.dueText)}</p></div>`:""}
     <div class="blk"><h4>Comments &amp; call notes</h4><div class="notes">${notes.map(n=>`<div class="note"><div class="by"><b>${esc(who(n.by))}</b><span>${esc(fmtAt(n.at))}</span>${n.by&&n.by===S.me?`<button class="x" type="button" data-delnote="${esc(n.id)}">Delete</button>`:""}</div><div class="txt">${esc(n.text)}</div></div>`).join("")||`<div class="empty">No comments yet.</div>`}</div></div>
     <div class="compose"><textarea id="note-${id}" placeholder="Add a comment or call note: who you spoke to, confirmation #, what's next" ${ro?"disabled":""}></textarea>
       <div class="row"><span class="hint">Ctrl/⌘ + Enter to save</span><button class="btn primary" type="button" data-addnote="${id}" ${ro?"disabled":""}>Add comment</button></div></div>
     <div class="blk"><h4>Documents</h4><div class="files">${files.map(fileRow).join("")||`<div class="empty">No documents yet.</div>`}</div></div>
     ${S.assets?`<label class="drop" data-drop="${id}"><input type="file" multiple hidden data-upload="${id}" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.csv,.txt,.json,.md">Drop a PDF, photo or receipt here, or click to choose</label>`:(S.db?`<div class="hint">Uploading files needs Editor access. You can still paste a link.</div>`:"")}
     <div class="linkadd"><input id="link-${id}" placeholder="Paste a link (Google Drive receipt, portal page)" ${ro?"disabled":""}><button class="btn" type="button" data-addlink="${id}" ${ro?"disabled":""}>Add link</button></div>
-    <div class="blk"><h4>Edit</h4><div class="fields">
+    <div class="blk"><h4>Amount, dates &amp; status</h4><div class="fields">
       <label>Priority${sel("priority",TIERS.map(t=>t.k),TIERS.map(t=>t.name))}</label>
       <label>Status${sel("status",STATUSES)}</label>
       <label>Due date<input type="date" id="f-dueDate-${id}" data-field="dueDate" data-id="${id}" value="${esc(it.dueDate||"")}" ${ro?"disabled":""}></label>
       <label>Category${sel("category",CATS)}</label>
       <label class="wide">Amount<input id="f-amount-${id}" data-field="amount" data-id="${id}" value="${esc(it.amount||"")}" ${ro?"disabled":""}></label>
-      <label class="wide">Next step<textarea rows="3" id="f-nextStep-${id}" data-field="nextStep" data-id="${id}" ${ro?"disabled":""}>${esc(it.nextStep||"")}</textarea></label>
+      ${it.dueText&&!/^n\/?a\s*$/i.test(it.dueText)?`<div class="wide hint">Due as written on the notice: ${esc(it.dueText)}</div>`:""}
     </div></div>
     <div class="row" style="justify-content:flex-end">${S.confirmDel===it.id?`<span class="hint">Delete this item with its comments?</span><button class="btn" type="button" data-canceldel>Keep</button><button class="btn danger" type="button" data-delitem="${id}">Yes, delete</button>`:`<button class="btn danger" type="button" data-askdel="${id}" ${ro?"disabled":""}>Delete item</button>`}</div>
   </div>`;
 }
-function fileRow(f,withItem){
+function fileRow(f){
   const href=f.assetId?"/_blob/"+f.assetId:f.href,ext=f.kind==="link"?"LINK":((f.name||"").split(".").pop()||"FILE").slice(0,4).toUpperCase();
-  const img=f.assetId&&/^image\//.test(f.contentType||""),it=withItem&&S.items.find(i=>i.id===f.itemId);
-  return`<div class="file"><span class="ic">${esc(ext)}</span><a href="${esc(href)}" target="_blank" rel="noopener">${esc(f.name||href)}</a><span class="sz">${esc([fmtSize(f.size),who(f.by)].filter(Boolean).join(" · "))}</span>${S.db?`<button class="x" type="button" aria-label="Remove" data-delfile="${esc(f.id)}">✕</button>`:""}</div>${it?`<div class="hint" style="margin:-2px 0 4px 8px">on <button class="link" type="button" data-goto="${esc(it.id)}">${esc(it.title)}</button></div>`:""}${img?`<img class="thumb" src="${esc(href)}" alt="${esc(f.name)}">`:""}`;
+  const img=f.assetId&&/^image\//.test(f.contentType||"");
+  return`<div class="file"><span class="ic">${esc(ext)}</span><a href="${esc(href)}" target="_blank" rel="noopener">${esc(f.name||href)}</a><span class="sz">${esc([fmtSize(f.size),who(f.by)].filter(Boolean).join(" · "))}</span>${S.db?`<button class="x" type="button" aria-label="Remove" data-delfile="${esc(f.id)}">✕</button>`:""}</div>${img?`<img class="thumb" src="${esc(href)}" alt="${esc(f.name)}">`:""}`;
 }
 
 function tierView(k){
@@ -390,9 +385,13 @@ function notesView(){
   <div class="card"><div class="notes">${ns.map(n=>{const it=S.items.find(i=>i.id===n.itemId);return`<div class="note">${it?`<div class="on">on <button class="link" type="button" data-goto="${esc(it.id)}">${esc(it.title)}</button></div>`:""}<div class="by"><b>${esc(who(n.by))}</b><span>${esc(fmtAt(n.at))}</span></div><div class="txt">${esc(n.text)}</div></div>`}).join("")||`<div class="empty">No notes yet.</div>`}</div></div>`;
 }
 function filesView(){
-  const fs=S.files.slice().sort((a,b)=>(a.at||"")<(b.at||"")?1:-1);
-  return`<div class="viewHead"><h2>Documents</h2><span class="src">${fs.length} files and links. Open an item to add more.</span></div><div class="card"><div class="files">${fs.map(f=>fileRow(f,true)).join("")||`<div class="empty">No documents yet.</div>`}</div></div>`;
+  // One row per document: a file attached to several items is listed once, with each item linked
+  const groups=new Map();
+  S.files.slice().sort((a,b)=>(a.at||"")<(b.at||"")?1:-1).forEach(f=>{const k=f.assetId||f.href||f.id;if(!groups.has(k))groups.set(k,{f,items:[]});const it=S.items.find(i=>i.id===f.itemId);if(it)groups.get(k).items.push(it)});
+  const rows=[...groups.values()].map(({f,items})=>fileRow(f)+(items.length?`<div class="hint" style="margin:-2px 0 4px 8px">on ${items.map(it=>`<button class="link" type="button" data-goto="${esc(it.id)}">${esc(it.title)}</button>`).join(" · ")}</div>`:""));
+  return`<div class="viewHead"><h2>Documents</h2><span class="src">${groups.size} files and links. Open an item to add more.</span></div><div class="card"><div class="files">${rows.join("")||`<div class="empty">No documents yet.</div>`}</div></div>`;
 }
+
 
 function render(){
   const st=stats();renderHeader(st);renderSide(st);
