@@ -8,7 +8,8 @@
     "start": "node --no-warnings server/index.js",
     "reset": "node -e \"require('fs').rmSync('data',{recursive:true,force:true})\" && npm start",
     "test": "node --no-warnings --test test/*.test.js",
-    "screenshots": "node --no-warnings scripts/screenshots.js"
+    "screenshots": "node --no-warnings scripts/screenshots.js",
+    "build:browser": "node scripts/build-browser.js"
   },
   "optionalDependencies": {
     "@anthropic-ai/sdk": "*"
