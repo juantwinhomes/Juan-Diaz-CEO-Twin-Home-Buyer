@@ -1,0 +1,255 @@
+<title>Hall Bath Tile Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a spec board — render viewer on top, scheme tabs, then working lists (tile, upgrades, field notes) */
+:root{
+  --bg:#f6f3ee; --panel:#ffffff; --ink:#23201c; --muted:#6c655c; --line:#e3ddd3;
+  --oak:#9a6b3f; --brass:#a8823f; --flag:#b4492f; --ok:#3f7a52; --chip:#efe8dc;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Figtree",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1a1815; --panel:#24211d; --ink:#efe9df; --muted:#a79e91; --line:#39342d;
+  --oak:#d19a63; --brass:#d7b06a; --flag:#e7785c; --ok:#7cc493; --chip:#302b25; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1a1815; --panel:#24211d; --ink:#efe9df; --muted:#a79e91; --line:#39342d;
+  --oak:#d19a63; --brass:#d7b06a; --flag:#e7785c; --ok:#7cc493; --chip:#302b25; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:grid;gap:36px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,4.4vw,42px);font-weight:700}
+h2{font-size:24px;font-weight:700}
+h3{font-size:16px;font-weight:700}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--oak)}
+.lede{color:var(--muted);max-width:68ch;margin:8px 0 0}
+.sku{font-family:var(--mono);font-size:13px;letter-spacing:.02em}
+header{display:grid;gap:6px}
+.viewer{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:820px){.viewer{grid-template-columns:1fr}}
+.render{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.render img{display:block;width:100%;height:auto;aspect-ratio:4/3}
+.render figcaption{padding:10px 14px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line)}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tab{font:600 13.5px var(--body);border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 12px;border-radius:999px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab:focus-visible,.copy:focus-visible{outline:2px solid var(--oak);outline-offset:2px}
+.spec{display:grid;gap:14px}
+.spec p{margin:0}
+.pair{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center}
+.pair img{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.pair small{display:block;color:var(--muted);font-size:12.5px}
+.tag{display:inline-block;font:600 11px var(--body);letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--muted)}
+.tag.flag{color:var(--flag)} .tag.ok{color:var(--ok)}
+.note{border-left:3px solid var(--flag);padding:8px 12px;background:var(--panel);font-size:13.5px}
+.cost{font-variant-numeric:tabular-nums;font-weight:600}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.list{display:grid;gap:0;border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:start}
+.row img{width:56px;height:56px;object-fit:cover;border-radius:5px;border:1px solid var(--line)}
+.row p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--chip)}
+td.num{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600}
+tr:last-child td{border-bottom:0}
+.pri{font:600 11px var(--body);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.pri.must{color:var(--flag)} .pri.high{color:var(--oak)} .pri.nice{color:var(--muted)}
+ul.checks{margin:0;padding-left:18px;display:grid;gap:6px}
+.totals{display:flex;flex-wrap:wrap;gap:24px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.totals div{display:grid}
+.totals b{font:700 22px var(--display);font-variant-numeric:tabular-nums}
+.totals span{font-size:12.5px;color:var(--muted)}
+.prompt{font:13px/1.5 var(--mono);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;white-space:pre-wrap;word-break:break-word}
+.copy{font:600 13px var(--body);border:1px solid var(--line);background:var(--chip);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer;justify-self:start}
+section{display:grid;gap:14px}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Hall bath flip · 8′-10″ × 5′-1″ · tub/shower combo</span>
+  <h1>Hall Bath Tile Board</h1>
+  <p class="lede">Your floor plan, rebuilt at real dimensions with KZ Kitchen's own tile photos mapped onto the tub surround and floor. The frosted framed door from the listing photo is replaced with clear low-iron glass in brushed brass. The rest is warm-modern: white-oak vanity, white quartz, pill mirror, brass fixtures, SW 7008 Alabaster walls.</p>
+</header>
+
+<section class="viewer" aria-label="Rendered options">
+  <figure class="render">
+    <img id="rimg" src="{{RA}}" alt="Rendered bathroom concept">
+    <figcaption>Concept render made from your floor plan and the actual KZ tile images. It's not a photo: geometry and lighting are simplified. Use it to judge color and pattern, not grout lines.</figcaption>
+  </figure>
+  <div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="spec" id="spec"></div>
+  </div>
+</section>
+
+<section>
+  <div><span class="eyebrow">Contractor flag</span><h2>Check the floor tile's slip rating before you pay</h2></div>
+  <p class="note"><b>TCL-2424P:</b> on KZ's list, codes ending in <span class="sku">P</span> are usually polished and <span class="sku">M</span> matte. A polished 24×24 on a bath floor is slippery when wet and a buyer's inspector may flag it. Ask KZ for the DCOF on the spec sheet. You want <b>≥ 0.42 wet</b> (ANSI A326.3). If it's lower, switch to a matte option below; they're in the same aisle and similar in price.</p>
+</section>
+
+<section class="grid2">
+  <div>
+    <span class="eyebrow">Floor · all KZ stock codes</span>
+    <h2>Floor tile options</h2>
+    <div class="list" id="floorList"></div>
+  </div>
+  <div>
+    <span class="eyebrow">Tub surround · 24×48 to ceiling</span>
+    <h2>Shower wall options</h2>
+    <div class="list" id="wallList"></div>
+  </div>
+</section>
+
+<section>
+  <div><span class="eyebrow">Quantities for this room</span><h2>Your box counts check out</h2></div>
+  <div class="totals">
+    <div><b>≈ 33 sf</b><span>Floor (room minus tub) → 3 boxes (46.5 sf)</span></div>
+    <div><b>≈ 65 sf</b><span>Surround, 3 walls, tub deck to 8′ → 5 boxes min</span></div>
+    <div><b>6 boxes</b><span>Wall order is right: 24×48 breakage + niche returns</span></div>
+    <div><b class="cost">$369.78</b><span>Your KZ pick, tile only, before tax</span></div>
+  </div>
+  <p class="lede">Buy every box from one dye lot and open two boxes before install to check for shade variation. Add 4 boxes (≈ $170 for TCD-2448P) if you want the full-height vanity accent wall in the upgrades list.</p>
+</section>
+
+<section>
+  <div><span class="eyebrow">2026 trends · small spend, big listing-photo return</span><h2>Upgrades ranked for resale</h2>
+  <p class="lede">Rough Bay Area installed costs for a licensed contractor doing the work in-house (materials + your labor). Ranked by what buyers notice first in listing photos and at showings.</p></div>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Upgrade</th><th>Rough cost</th><th>Why it adds value</th><th>Priority</th></tr></thead>
+    <tbody id="upg"></tbody>
+  </table></div>
+  <div class="totals">
+    <div><b class="cost">≈ $3,500–6,700</b><span>All "must" + "high" rows, on top of base rehab</span></div>
+    <div><b>Skip</b><span>Freestanding tub, curbless conversion, heated floors. Too costly for a 45 sf hall bath.</span></div>
+  </div>
+</section>
+
+<section class="grid2">
+  <div>
+    <span class="eyebrow">California field notes</span><h2>Build it to pass inspection</h2>
+    <ul class="checks">
+      <li>Pull the permit when plumbing or electrical changes. Unpermitted bath work shows up in buyer disclosures and inspections.</li>
+      <li>Waterproof the surround with a sheet or liquid membrane (Kerdi, RedGard or Hydro Ban) over cement board. No greenboard.</li>
+      <li>Large-format 24×48 needs a flat wall (≤ ⅛″ in 10′), LFT mortar, back-buttering and leveling clips. Keep the offset at ⅓ or less to control lippage.</li>
+      <li>The tub enclosure glass must be tempered safety glazing with the permanent mark (CRC R308.4.5).</li>
+      <li>Pressure-balance or thermostatic shower valve (CPC 408.3). Toilet 1.28 gpf max, lav faucet 1.2 gpm, showerhead 1.8 gpm (CA standards).</li>
+      <li>GFCI on every bath receptacle, a dedicated 20A bath circuit (CEC 210.11(C)(3)), exhaust fan on humidity control (CALGreen 4.506), and Title 24 JA8 high-efficacy LED lighting.</li>
+      <li>Rectified tile at a 1/16″ joint with a color-matched grout (a high-performance or epoxy grout) looks like one slab and won't stain.</li>
+    </ul>
+  </div>
+  <div>
+    <span class="eyebrow">Paint · Sherwin-Williams</span><h2>Paint plan</h2>
+    <div class="list">
+      <div class="row"><img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23EDEAE0'/%3E%3C/svg%3E"><div><b>SW 7008 Alabaster</b> · walls<p>Warm white that won't go yellow next to brass, or cold next to white tile. Satin finish for a bathroom.</p></div></div>
+      <div class="row"><img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23EEEFEA'/%3E%3C/svg%3E"><div><b>SW 7006 Extra White</b> · ceiling, trim, door<p>Crisp contrast for the crown and casing. Semi-gloss on trim, flat moisture-resistant bath paint on the ceiling.</p></div></div>
+      <div class="row"><img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23D6CDBE'/%3E%3C/svg%3E"><div><b>SW 9109 Natural Linen</b> · optional vanity wall<p>Use this in place of tile if you want warmth on the vanity wall without the tile cost.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div><span class="eyebrow">For a photoreal version</span><h2>Image-generator prompt</h2>
+  <p class="lede">For a photoreal marketing image, paste this into an image tool along with your listing photo and the two KZ tile photos.</p></div>
+  <div class="prompt" id="prompt">Photorealistic interior photo, small hall bathroom 8'10" wide x 5'1" deep, shot from the doorway with a wide lens. Left: alcove bathtub running the full 5' depth, tile to the ceiling in 24x48 white porcelain with soft gold veining (KZ TCD-2448P) laid horizontally with a 1/3 offset and 1/16" joints. Recessed niche with oat-beige stacked stick tile. Clear low-iron semi-frameless bypass glass doors with a brushed brass frame and handle. Back wall: 30" white-oak furniture vanity with two drawers, white quartz top, undermount oval sink, brushed brass single-hole faucet, brass pill-shaped mirror, 3-light brass vanity light with frosted globes, 3000K warm light. Right: white elongated one-piece toilet, window on the right wall. Floor: 24x24 light gray marble-look matte porcelain. Walls Sherwin-Williams Alabaster, white crown molding. Neutral linen bath mat, white towels, small plant. Warm modern, bright, real-estate listing photography.</div>
+  <button class="copy" id="copyBtn" type="button">Copy prompt</button>
+</section>
+
+<p class="lede" style="font-size:12.5px">Tile codes and images come from KZ Kitchen Cabinet &amp; Stone's online tile catalog (kzkitchen.com/tiles-all), pulled 2026-09-29. Only TCL-2424P and TCD-2448P are priced, from your estimate #E442203. Confirm stock and price for the alternates at the counter. Costs are planning ranges, not bids.</p>
+</div>
+
+<script>
+const A = {{ASSETS}};
+const SCHEMES = [
+  {id:'A', name:'Your KZ pick', img:'RA',
+   floor:['TCL-2424P','24×24 light gray marble-look','3 boxes × $38.14 = $114.42'],
+   wall:['TCD-2448P','24×48 white, soft gold vein','6 boxes × $42.56 = $255.36'],
+   niche:'EKOT-0915 Oat stacked-stick accent',
+   read:'Bright, clean and safe. Soft gold veining ties the wall tile to the brass. Main risk: the polished floor (see flag below).',
+   tags:[['Lowest cost','ok'],['Check floor DCOF','flag']]},
+  {id:'B', name:'Warm oak spa', img:'RB',
+   floor:['ECBO-2447M','24×47 matte oak wood-look','≈ 3 boxes, price at counter'],
+   wall:['TCA-2448P','24×48 warm white, soft beige vein','≈ 6 boxes, price at counter'],
+   niche:'EKOT-0915 Oat stacked-stick accent',
+   read:'The warmest option and the most on-trend for 2026. Wood-look porcelain gives the look of a wood floor with no water risk. It photographs as a "spa" bath.',
+   tags:[['Top pick for resale','ok'],['Matte floor','ok']]},
+  {id:'C', name:'Textured organic', img:'RC',
+   floor:['MSMS-1224','12×24 matte sand stone-look','≈ 3 boxes, price at counter'],
+   wall:['MSGW-2448M','24×48 white, ribbed/linear texture','≈ 6 boxes, price at counter'],
+   niche:'Same ribbed tile',
+   read:'Texture is the 2026 look: ribbed or linear stone. It looks custom but costs the same as flat tile. The sand floor hides dirt, which suits a family buyer.',
+   tags:[['Designer look','ok'],['Matte floor','ok']]},
+  {id:'D', name:'Gold-vein statement', img:'RD',
+   floor:['ESP-1224M','12×24 matte pearl','≈ 3 boxes, price at counter'],
+   wall:['TCP-2448P','24×48 Calacatta white, bold gold vein','≈ 6 boxes, price at counter'],
+   niche:'EKOT-0915 Oat stacked-stick accent',
+   read:'The strongest listing-photo "wow". The bold gold vein matches the brass exactly. Use it for a higher price band. It can feel busy in a small room, so keep everything else quiet.',
+   tags:[['Most dramatic','ok'],['Matte floor','ok']]}
+];
+const FLOORS = [
+  ['TCL-2424P','24×24 · light gray marble-look','Your pick. Confirm slip rating; P suffix likely polished.','Marble look'],
+  ['ECBO-2447M','24×47 · matte oak wood-look','Warmest option. Pairs with a white or light-oak vanity.','Wood look'],
+  ['ECBM-2447M','24×47 · matte maple, linear grain','Lighter Scandinavian wood tone.','Wood look'],
+  ['ECCM-2447M','24×47 · matte maple chevron print','Chevron pattern printed on the tile, laid like a normal plank. A statement floor without extra labor.','Pattern'],
+  ['MSMS-1224','12×24 · matte sand stone','Warm, hides dirt, good grip.','Stone look'],
+  ['MSMW-1224','12×24 · matte white stone','Bright option if you keep the wood-tone vanity.','Stone look'],
+  ['ESP-1224M','12×24 · matte pearl','Soft warm greige. Safe with any wall tile.','Concrete look'],
+  ['MSMT-1224','12×24 · matte taupe','Darker grounding floor for contrast with white walls.','Stone look']
+];
+const WALLS = [
+  ['TCD-2448P','24×48 · white, soft gold vein','Your pick. Clean, pairs with brass.','Marble look'],
+  ['TCA-2448P','24×48 · warm white, faint vein','Quietest marble. Works with every floor.','Marble look'],
+  ['TCP-2448P','24×48 · Calacatta, bold gold vein','Statement surround. Keep the floor plain.','Marble look'],
+  ['TCPP-2448P','24×48 · ivory onyx, soft blush vein','Warm, luxe onyx look.','Onyx look'],
+  ['MSGW-2448M','24×48 · white ribbed texture','Texture trend. Looks custom for the same labor.','Textured'],
+  ['MSGS-2448M','24×48 · sand ribbed texture','Warmer version. Great with a wood-look floor.','Textured'],
+  ['TCS-2448P','24×48 · soft gray stone','Only if the house is cool-toned overall.','Stone look'],
+  ['EKOT-0915','Stacked stick sheet · oat','Niche or vanity-wall accent. Trending 2026 "finger tile".','Accent']
+];
+const UPG = [
+  ['Clear low-iron glass bypass doors, brushed brass (replaces frosted framed door)','$1,100–1,800','Frosted framed glass dates a bath to around 2005. Clear glass shows the tile to the ceiling and makes a 5′ room look bigger in photos. It\'s the biggest change in the render.','must'],
+  ['Vanity swap: 30″ white-oak look + white quartz + undermount (replaces brown granite)','$700–1,300','Brown speckled granite is the #1 dated signal in your listing photo. Wood tones are the core of the 2026 warm-modern look. KZ carries vanities and pre-cut tops.','must'],
+  ['Brushed brass/champagne fixture package: shower trim + rain head w/ handheld, single-hole faucet, hooks','$300–700 over chrome','Mixed metals are fine; one warm finish across the room reads intentional. The handheld sells to families and older buyers.','must'],
+  ['Recessed niche 12×24 (prefab foam niche) with EKOT-0915 accent','$150–350','No shampoo caddy clutter in photos. The accent tile is the design detail buyers remember.','high'],
+  ['Pill or arched LED mirror, anti-fog, dimmable 3000K','$200–450','Replaces the builder medicine cabinet. It\'s a top 2026 bath photo detail. Must be JA8 LED for Title 24.','high'],
+  ['Quiet humidity-sensing exhaust fan (80 CFM, ≤1 sone)','$250–500','Code item (CALGreen) that inspectors check. Stops mildew callbacks and reads as "done right" on the inspection report.','high'],
+  ['One-piece skirted elongated toilet, 1.28 gpf, comfort height','$300–550','The skirted base looks modern and is easy to clean. Compliant with CA water limits.','high'],
+  ['Full-height tile accent wall behind vanity (4 more boxes)','$350–700','Carries the tile across the room so it reads as a designer bath. Optional: SW 9109 paint gets 70% of the look for $60.','high'],
+  ['Brass vanity light + all bulbs 3000K, CRI 90+','$150–300','Warm light is what makes "warm modern" show up in photos. Cold 5000K kills it.','high'],
+  ['Smart bidet seat + GFCI outlet behind toilet','$250–500','A strong 2026 trend and cheap to add. Buyers mention it at showings. The outlet is the real cost; the seat can stay as staging.','nice'],
+  ['Plug-in or hardwired heated towel bar','$180–450','"Spa" feel rarely seen in flips. A differentiator for a small spend.','nice'],
+  ['Staging kit: waffle towels, linen mat, plant, tray','$80–150','Carries the warm look in photos. Reusable across flips.','nice']
+];
+const $ = s => document.querySelector(s);
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function thumb(code){return A[code]||''}
+function renderSpec(i){
+  const s = SCHEMES[i];
+  $('#rimg').src = A[s.img];
+  $('#rimg').alt = 'Rendered bathroom, option '+s.id+': '+s.name;
+  document.querySelectorAll('.tab').forEach((t,j)=>t.setAttribute('aria-selected', j===i));
+  $('#spec').innerHTML = `
+    <h3>Option ${s.id} · ${esc(s.name)}</h3>
+    <div>${s.tags.map(t=>`<span class="tag ${t[1]}">${esc(t[0])}</span>`).join(' ')}</div>
+    <div class="pair"><img alt="" src="${thumb(s.wall[0])}"><div><span class="sku">${s.wall[0]}</span> · wall<small>${esc(s.wall[1])} · ${esc(s.wall[2])}</small></div></div>
+    <div class="pair"><img alt="" src="${thumb(s.floor[0])}"><div><span class="sku">${s.floor[0]}</span> · floor<small>${esc(s.floor[1])} · ${esc(s.floor[2])}</small></div></div>
+    <p style="font-size:13.5px;color:var(--muted)">Niche: ${esc(s.niche)}. Same in every option: clear brass-frame glass, white-oak vanity, white quartz, brass fixtures, SW 7008 Alabaster.</p>
+    <p>${esc(s.read)}</p>`;
+}
+$('#tabs').innerHTML = SCHEMES.map((s,i)=>`<button class="tab" role="tab" id="tab${s.id}" type="button">${s.id} · ${esc(s.name)}</button>`).join('');
+document.querySelectorAll('.tab').forEach((t,i)=>t.addEventListener('click',()=>renderSpec(i)));
+const row = r => `<div class="row"><img alt="" src="${thumb(r[0])}"><div><span class="sku">${r[0]}</span> · ${esc(r[1])} <span class="tag">${esc(r[3])}</span><p>${esc(r[2])}</p></div></div>`;
+$('#floorList').innerHTML = FLOORS.map(row).join('');
+$('#wallList').innerHTML = WALLS.map(row).join('');
+$('#upg').innerHTML = UPG.map(u=>`<tr><td>${esc(u[0])}</td><td class="num">${esc(u[1])}</td><td>${esc(u[2])}</td><td><span class="pri ${u[3]}">${u[3]==='must'?'Must':u[3]==='high'?'High':'Nice'}</span></td></tr>`).join('');
+renderSpec(0);
+$('#copyBtn').addEventListener('click',()=>{
+  const t=$('#prompt').textContent;
+  navigator.clipboard.writeText(t).then(()=>{$('#copyBtn').textContent='Copied'}).catch(()=>{
+    const r=document.createRange(); r.selectNodeContents($('#prompt')); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    $('#copyBtn').textContent='Selected. Press Ctrl+C';});
+});
+</script>
