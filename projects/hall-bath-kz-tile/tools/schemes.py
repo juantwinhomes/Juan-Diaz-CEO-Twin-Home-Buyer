@@ -17,8 +17,8 @@ SCHEMES = {
  'B': dict(floor=fl('ECBO-2447M.png', 47, 24, 1/3, (0.62, 0.55, 0.46), along_z=True),
            wall=fl('TCA-2448P_1.jpg', 48, 24, 1/3, (0.90, 0.88, 0.84)), niche=EKOT),
  'C': dict(floor=fl('MSMS-1224.jpg', 24, 12, 1/3, (0.66, 0.63, 0.59)),
-           wall=fl('MSGW-2448M.jpg', 48, 24, 1/3, (0.88, 0.86, 0.82)),
-           niche=fl('MSGW-2448M.jpg', 48, 24, 0, (0.88, 0.86, 0.82))),
+           wall=fl('TXPG-2448M.jpg', 48, 24, 1/3, (0.80, 0.78, 0.74)),
+           niche=fl('TXPG-2448M.jpg', 48, 24, 0, (0.80, 0.78, 0.74))),
  'D': dict(floor=fl('ESP-1224M.jpg', 24, 12, 1/3, (0.70, 0.68, 0.66)),
            wall=fl('TCP-2448P_1.jpg', 48, 24, 1/3, (0.90, 0.89, 0.86)), niche=EKOT),
 }
