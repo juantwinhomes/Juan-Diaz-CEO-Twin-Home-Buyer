@@ -1,0 +1,325 @@
+<title>1464 Sunrise Pkwy Inspections</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style id="css">
+:root{
+  color-scheme:dark;
+  --ground:#11151a;--surface:#181e25;--surface-2:#1f262f;--line:#2b343f;
+  --text:#e7ebf0;--muted:#94a0ae;--faint:#6b7684;
+  --green:#3fb97a;--green-bg:rgba(63,185,122,.12);
+  --yellow:#e8b53a;--yellow-bg:rgba(232,181,58,.12);
+  --red:#ef5b5f;--red-bg:rgba(239,91,95,.11);
+  --blue:#5aa2ff;--blue-bg:rgba(90,162,255,.11);
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--ground)}
+body{margin:0;background:var(--ground);color:var(--text);font:14px/1.5 var(--body);padding-block:28px 56px;padding-inline:16px}
+[hidden]{display:none!important}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:22px}
+h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:.01em;margin:0;text-wrap:balance}
+.eyebrow{font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+
+/* header */
+.head{display:grid;grid-template-columns:1fr auto;gap:18px 28px;align-items:end;padding-bottom:20px;border-bottom:1px solid var(--line)}
+.head h1{font-size:clamp(34px,6vw,52px);line-height:.95;font-weight:700;margin-top:10px}
+.head .loc{color:var(--muted);margin-top:6px}
+.head .loc b{color:var(--text);font-weight:500}
+.status-box{text-align:right;display:grid;gap:8px;justify-items:end}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;font:600 12px/1.2 var(--body);border:1px solid transparent;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.g{color:var(--green);background:var(--green-bg);border-color:rgba(63,185,122,.3)}
+.y{color:var(--yellow);background:var(--yellow-bg);border-color:rgba(232,181,58,.3)}
+.r{color:var(--red);background:var(--red-bg);border-color:rgba(239,91,95,.3)}
+.b{color:var(--blue);background:var(--blue-bg);border-color:rgba(90,162,255,.3)}
+.status-big{font:600 22px/1.1 var(--display)}
+
+/* blocker banner */
+.banner{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;background:var(--red-bg);border:1px solid rgba(239,91,95,.35);border-radius:10px;padding:14px 18px}
+.banner.done{background:var(--green-bg);border-color:rgba(63,185,122,.35)}
+.banner .tag{font:700 13px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--red);border:1.5px solid var(--red);padding:6px 9px;border-radius:4px}
+.banner.done .tag{color:var(--green);border-color:var(--green)}
+.banner .msg strong{display:block;font-size:15px}
+.banner .msg span{color:var(--muted)}
+.banner .owner{text-align:right}
+.banner .owner div:last-child{font-weight:600;margin-top:4px}
+
+/* path to final */
+.path{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 16px}
+.path-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.path-top h2{font-size:20px}
+.meter{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-bottom:16px}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#5fd39a);border-radius:99px;transition:width .4s}
+.steps{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;list-style:none;margin:0;padding:0}
+.steps li{display:grid;gap:6px;align-content:start}
+.steps .bar{height:4px;border-radius:2px;background:var(--line)}
+.steps li.ok .bar{background:var(--green)}
+.steps li.now .bar{background:var(--red)}
+.steps li.next .bar{background:var(--yellow);opacity:.55}
+.steps .lbl{font-size:11.5px;line-height:1.3;color:var(--muted)}
+.steps li.ok .lbl{color:var(--text)}
+.steps li.now .lbl{color:var(--red);font-weight:600}
+
+/* grids */
+.cols{display:grid;grid-template-columns:1.25fr 1fr;gap:22px;align-items:start}
+.stack{display:grid;gap:14px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.sec-h h2{font-size:22px}
+
+/* permit card */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.card-top h3{font-size:21px;line-height:1.05}
+.card-top .sub{color:var(--muted);font-size:12.5px;margin-top:4px}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;padding:12px 18px;border-bottom:1px solid var(--line);font-size:13px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.na{color:var(--faint);font-style:italic}
+.lists{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.lists>div{padding:12px 18px 16px}
+.lists>div+div{border-left:1px solid var(--line)}
+.lists ul{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:6px;font-size:13px}
+.lists li{display:grid;grid-template-columns:16px 1fr;gap:6px;align-items:start}
+.lists li::before{font-family:var(--mono);font-size:12px;line-height:1.55}
+.done-l li::before{content:"✓";color:var(--green)}
+.open-l li::before{content:"●";color:var(--yellow);font-size:9px;line-height:2.3}
+.open-l li.blk::before{color:var(--red)}
+.none{color:var(--faint);font-size:13px;margin-top:8px}
+
+/* blocker panel */
+.blocker{background:var(--surface);border:1px solid rgba(239,91,95,.4);border-radius:10px;overflow:hidden}
+.blocker.cleared{border-color:rgba(63,185,122,.4)}
+.blocker-h{background:var(--red-bg);padding:14px 18px;border-bottom:1px solid rgba(239,91,95,.3)}
+.blocker.cleared .blocker-h{background:var(--green-bg);border-color:rgba(63,185,122,.3)}
+.blocker-h h3{font-size:21px;margin-top:6px}
+.blocker dl{margin:0;display:grid}
+.blocker dl>div{padding:12px 18px;border-bottom:1px solid var(--line);display:grid;gap:3px}
+.blocker dl>div:last-child{border-bottom:0}
+.blocker dt{font:500 10.5px/1.2 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.blocker dd{margin:0;font-size:13.5px}
+
+/* checklist */
+.check{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.check-h{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.check-h h3{font-size:21px}
+.save{font:500 11px/1 var(--mono);color:var(--muted);letter-spacing:.04em}
+.save.err{color:var(--yellow)}
+.check ol{list-style:none;margin:0;padding:0}
+.check li+li{border-top:1px solid var(--line)}
+.check label{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;padding:13px 18px;cursor:pointer}
+.check label:hover{background:var(--surface-2)}
+.check input{appearance:none;width:22px;height:22px;border:1.5px solid var(--faint);border-radius:5px;margin:0;display:grid;place-items:center;cursor:pointer;background:var(--ground)}
+.check input:checked{background:var(--green);border-color:var(--green)}
+.check input:checked::after{content:"";width:6px;height:11px;border:solid #0d1a12;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+.check input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.check input:disabled{cursor:wait}
+.check .t{font-weight:500}
+.check .d{color:var(--muted);font-size:12.5px;margin-top:2px}
+.check li.is-done .t{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.who{font:500 11px/1.3 var(--mono);color:var(--muted);text-align:right;white-space:nowrap}
+.who .ts{display:block;color:var(--green);margin-top:3px}
+.check li.is-next label{background:linear-gradient(90deg,var(--yellow-bg),transparent 60%)}
+.nexttag{font:600 10px/1 var(--mono);letter-spacing:.08em;color:var(--yellow);margin-left:8px;vertical-align:2px}
+
+/* timeline */
+.tl{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}
+th{font:500 10.5px/1.2 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:12px 16px;border-bottom:1px solid var(--line)}
+td{padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.nm{font-weight:600;white-space:nowrap}
+td.nm .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:9px;vertical-align:1px}
+
+.info{display:flex;gap:10px;align-items:flex-start;background:var(--blue-bg);border:1px solid rgba(90,162,255,.3);border-radius:10px;padding:12px 16px;font-size:13px}
+.info b{color:var(--blue);font-family:var(--mono);font-size:11px;letter-spacing:.1em;padding-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+
+@media (max-width:860px){
+  .cols{grid-template-columns:1fr}
+  .steps{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:12px}
+}
+@media (max-width:560px){
+  .head{grid-template-columns:1fr}
+  .status-box{text-align:left;justify-items:start}
+  .banner{grid-template-columns:1fr}
+  .banner .owner{text-align:left}
+  .lists{grid-template-columns:1fr}
+  .lists>div+div{border-left:0;border-top:1px solid var(--line)}
+  .kv{grid-template-columns:100px 1fr}
+  .check label{grid-template-columns:28px 1fr}
+  .who{grid-column:2;text-align:left}
+}
+@media (prefers-reduced-motion:reduce){.meter i{transition:none}}
+</style>
+<script type="application/json" id="state">{"checks":{}}</script>
+<div class="wrap" id="app"></div>
+<script id="main">
+(function(){
+  var STATE = {checks:{}};
+  try { STATE = JSON.parse(document.getElementById('state').textContent) || STATE; } catch(e){}
+  STATE.checks = STATE.checks || {};
+
+  var CHECKLIST = [
+    {id:'repair',  t:'Complete ceiling sealing at water heater location', d:'Seal ceiling area above/around the water heater per inspector correction.', who:'Jairo / Field Team'},
+    {id:'photos',  t:'Take clear completion photos', d:'Wide shot for location + close-ups showing the sealed ceiling, no gaps.', who:'Jairo / Field Team'},
+    {id:'sent',    t:'Send photos to inspector', d:'Reference the Re-Roof permit and the water heater ceiling correction.', who:'Project Manager'},
+    {id:'review',  t:'Inspector reviews and accepts photos', d:'Wait for written confirmation the correction is acceptable.', who:'City Inspector'},
+    {id:'final',   t:'Confirm Re-Roof Permit shows Finaled', d:'Verify final status on the city permit record and save a screenshot.', who:'Project Manager'}
+  ];
+
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function fmt(iso){try{return new Date(iso).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return '';}}
+
+  function render(){
+    var c = STATE.checks;
+    var doneN = CHECKLIST.filter(function(i){return c[i.id];}).length;
+    var allDone = doneN === CHECKLIST.length;
+    var repairDone = !!c.repair;
+    var nextItem = CHECKLIST.filter(function(i){return !c[i.id];})[0];
+
+    // path to final: 4 closed milestones + 5 action steps
+    var steps = [
+      {l:'Building permit finaled', ok:true},
+      {l:'Mid-roof inspection', ok:true},
+      {l:'Final building inspection', ok:true},
+      {l:'Red tag removed', ok:true}
+    ].concat(CHECKLIST.map(function(i){return {l:i.t.replace('Complete ceiling sealing at water heater location','Ceiling sealed at water heater').replace('Take clear completion photos','Photos taken').replace('Send photos to inspector','Photos sent').replace('Inspector reviews and accepts photos','Inspector review').replace('Confirm Re-Roof Permit shows Finaled','Re-roof finaled'), ok:!!c[i.id], id:i.id};}));
+    var okN = steps.filter(function(s){return s.ok;}).length;
+    var firstOpen = true;
+    var stepsHtml = steps.map(function(s){
+      var cls = s.ok ? 'ok' : (firstOpen ? (firstOpen=false, 'now') : 'next');
+      return '<li class="'+cls+'"><div class="bar"></div><div class="lbl">'+esc(s.l)+'</div></li>';
+    }).join('');
+
+    var statusPill = allDone ? '<span class="pill g">All permits finaled</span>' : '<span class="pill y">Final permit pending</span>';
+    var statusText = allDone ? 'Complete — Project Closed Out' : 'Almost Complete';
+
+    var banner = allDone
+      ? '<div class="banner done"><div class="tag">Cleared</div><div class="msg"><strong>No remaining blockers</strong><span>Re-Roof Permit confirmed Finaled. All permits and inspections closed.</span></div><div class="owner"><div class="eyebrow">Status</div><div>Closed out</div></div></div>'
+      : '<div class="banner"><div class="tag">Blocker</div><div class="msg"><strong>Re-Roof Permit final approval pending</strong><span>Inspector correction: seal the ceiling at the water heater location, then send photos.</span></div><div class="owner"><div class="eyebrow">Next action · owner</div><div>'+esc(nextItem.who)+'</div></div></div>';
+
+    // re-roof permit card
+    var reroofDone = [], reroofOpen = [];
+    reroofDone.push('Mid-roof inspection completed (V. Sahagun)');
+    CHECKLIST.forEach(function(i){
+      var label = {repair:'Ceiling sealed at water heater',photos:'Completion photos taken',sent:'Photos sent to inspector',review:'Inspector accepted correction',final:'Permit finaled'}[i.id];
+      if (c[i.id]) reroofDone.push(label); else reroofOpen.push({l:label, blk:i.id==='repair'});
+    });
+    var reroofPill = allDone ? '<span class="pill g">Finaled</span>' : '<span class="pill y">Pending final</span>';
+
+    var h = '';
+    h += '<header class="head"><div><div class="eyebrow">Inspection snapshot · Residential remodel / alteration</div>'
+      + '<h1>1464 Sunrise Pkwy</h1><div class="loc"><b>Petaluma, CA 94554</b> &nbsp;·&nbsp; City of Petaluma</div></div>'
+      + '<div class="status-box"><div class="eyebrow">Overall status</div><div class="status-big">'+statusText+'</div>'+statusPill+'</div></header>';
+
+    h += banner;
+
+    h += '<section class="path"><div class="path-top"><h2>Path to final approval</h2><span class="mono muted">'+okN+' / '+steps.length+' complete</span></div>'
+      + '<div class="meter"><i style="width:'+Math.round(okN/steps.length*100)+'%"></i></div><ol class="steps">'+stepsHtml+'</ol></section>';
+
+    h += '<div class="cols"><div class="stack">';
+    h += '<div class="sec-h"><h2>Permits</h2><div class="legend"><span class="pill g">Completed</span><span class="pill y">Pending</span><span class="pill r">Blocker</span><span class="pill b">Info</span></div></div>';
+
+    // building permit
+    h += '<article class="card"><div class="card-top"><div><h3>Building Permit — Alteration</h3><div class="sub">Single Family (Alteration/Repair) – Alter</div></div><span class="pill g">Finaled</span></div>'
+      + '<dl class="kv"><dt>Permit no.</dt><dd class="na">Not on file</dd><dt>Final inspector</dt><dd>Victor Sahagun</dd><dt>Status</dt><dd>Completed and finalized</dd></dl>'
+      + '<div class="lists"><div><div class="eyebrow">Completed</div><ul class="done-l"><li>Residential alteration work</li><li>Interior remodel scope</li><li>Associated building work</li><li>Final building inspection passed</li></ul></div>'
+      + '<div><div class="eyebrow">Remaining</div><p class="none">Nothing remaining.</p></div></div></article>';
+
+    // re-roof permit
+    h += '<article class="card"><div class="card-top"><div><h3>Re-Roof Permit</h3><div class="sub">Final approval pending inspector correction</div></div>'+reroofPill+'</div>'
+      + '<dl class="kv"><dt>Permit no.</dt><dd class="na">Not on file</dd><dt>Mid-roof</dt><dd>Completed — Victor Sahagun</dd><dt>Correction</dt><dd>Seal ceiling above/around water heater</dd></dl>'
+      + '<div class="lists"><div><div class="eyebrow">Completed</div><ul class="done-l">'+reroofDone.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>'
+      + '<div><div class="eyebrow">Remaining</div>'+(reroofOpen.length?'<ul class="open-l">'+reroofOpen.map(function(x){return '<li'+(x.blk?' class="blk"':'')+'>'+esc(x.l)+'</li>';}).join('')+'</ul>':'<p class="none">Nothing remaining.</p>')+'</div></div></article>';
+
+    // red tag
+    h += '<article class="card"><div class="card-top"><div><h3>Red Tag</h3><div class="sub">Previous city restriction</div></div><span class="pill g">Removed by city</span></div>'
+      + '<dl class="kv"><dt>Status</dt><dd>Resolved — no remaining red-tag restrictions</dd></dl></article>';
+
+    h += '</div><div class="stack">';
+
+    // blocker panel
+    h += '<div class="sec-h"><h2>Blocker</h2></div>';
+    h += '<section class="blocker'+(allDone?' cleared':'')+'"><div class="blocker-h"><span class="pill '+(allDone?'g">Cleared':(repairDone?'y">Correction done — awaiting final':'r">Open'))+'</span><h3>Re-Roof Permit finalization</h3></div><dl>'
+      + '<div><dt>Remaining issue</dt><dd>Ceiling area above/around the water heater must be properly sealed (inspector correction).</dd></div>'
+      + '<div><dt>Why it matters</dt><dd>It is the last open permit item. Until the Re-Roof Permit is finaled, the project cannot be closed out.</dd></div>'
+      + '<div><dt>Who owns the action</dt><dd><b>Jairo / Field Team</b> — repair and photos.<br><span class="muted">Project Manager — send photos, confirm final.</span></dd></div>'
+      + '<div><dt>Required evidence</dt><dd>Clear photos showing the completed ceiling sealing at the water heater.</dd></div>'
+      + '<div><dt>Final decision</dt><dd>Inspector finalizes the permit after reviewing the correction photos.</dd></div>'
+      + '</dl></section>';
+
+    // checklist
+    h += '<section class="check"><div class="check-h"><h3>Next steps</h3><span class="save" id="save">'+doneN+' of '+CHECKLIST.length+' done</span></div><ol>';
+    CHECKLIST.forEach(function(i){
+      var v = c[i.id];
+      var isNext = nextItem && nextItem.id === i.id;
+      h += '<li class="'+(v?'is-done':'')+(isNext?' is-next':'')+'"><label for="ck-'+i.id+'"><input type="checkbox" id="ck-'+i.id+'" data-id="'+i.id+'"'+(v?' checked':'')+'>'
+        + '<div><div class="t">'+esc(i.t)+(isNext?'<span class="nexttag">NEXT</span>':'')+'</div><div class="d">'+esc(i.d)+'</div></div>'
+        + '<div class="who">'+esc(i.who)+(v&&v.at?'<span class="ts">✓ '+esc(fmt(v.at))+'</span>':'')+'</div></label></li>';
+    });
+    h += '</ol></section>';
+
+    h += '<div class="info"><b>INFO</b><div>Permit numbers and inspection dates are not on file yet. Add them from the city permit portal when available.</div></div>';
+    h += '</div></div>';
+
+    // timeline
+    h += '<section><div class="sec-h"><h2>Inspection timeline</h2></div><div class="tl"><table><thead><tr><th>Inspection</th><th>Inspector</th><th>Date</th><th>Result</th><th>Notes</th></tr></thead><tbody>'
+      + '<tr><td class="nm"><span class="dot" style="background:var(--green)"></span>Mid-Roof</td><td>Victor Sahagun</td><td class="na">Not on file</td><td><span class="pill g">Completed</span></td><td>Re-Roof Permit mid-roof inspection.</td></tr>'
+      + '<tr><td class="nm"><span class="dot" style="background:var(--green)"></span>Final Building</td><td>Victor Sahagun</td><td class="na">Not on file</td><td><span class="pill g">Passed</span></td><td>Building Permit (Alteration) finaled.</td></tr>'
+      + '<tr><td class="nm"><span class="dot" style="background:var(--green)"></span>Red Tag Clearance</td><td class="na">City</td><td class="na">Not on file</td><td><span class="pill g">Removed</span></td><td>No remaining red-tag restrictions.</td></tr>'
+      + '<tr><td class="nm"><span class="dot" style="background:var(--'+(allDone?'green':'yellow')+')"></span>Re-Roof Final</td><td class="muted">Inspector (photo review)</td><td class="'+(c.final&&c.final.at?'':'na')+'">'+(c.final&&c.final.at?esc(fmt(c.final.at)):'Pending')+'</td><td>'+(allDone?'<span class="pill g">Finaled</span>':(c.review?'<span class="pill y">Accepted — confirming</span>':(c.sent?'<span class="pill y">Under review</span>':'<span class="pill r">Correction required</span>')))+'</td><td>Seal ceiling at water heater; approval by photo review.</td></tr>'
+      + '</tbody></table></div></section>';
+
+    document.getElementById('app').innerHTML = h;
+  }
+
+  // ---- saving (page is the record: republish with new state) ----
+  var api = null, readOnly = false, busy = false;
+  function setSave(t, err){var el=document.getElementById('save'); if(el){el.textContent=t; el.className='save'+(err?' err':'');}}
+
+  function buildDoc(){
+    var css = document.getElementById('css').textContent;
+    var js = document.getElementById('main').textContent;
+    var json = JSON.stringify(STATE).replace(/</g,'\\u003c');
+    return '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+      + '<title>1464 Sunrise Pkwy Inspections</title>'
+      + '<link rel="preconnect" href="https://fonts.googleapis.com">'
+      + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">'
+      + '<style id="css">'+css+'</style></head><body>'
+      + '<script type="application/json" id="state">'+json+'<\/script>'
+      + '<div class="wrap" id="app"></div>'
+      + '<script id="main">'+js+'<\/script></body></html>';
+  }
+
+  document.addEventListener('change', function(e){
+    var t = e.target;
+    if (!t.matches || !t.matches('.check input[data-id]')) return;
+    var id = t.getAttribute('data-id');
+    if (t.checked) STATE.checks[id] = {at:new Date().toISOString()};
+    else delete STATE.checks[id];
+    render();
+    if (readOnly || !api) { setSave("View only — not saved", true); return; }
+    if (busy) return;
+    busy = true;
+    document.querySelectorAll('.check input').forEach(function(x){x.disabled=true;});
+    setSave('Saving…');
+    api.publish(buildDoc()).then(function(){ setSave('Saved'); }, function(err){
+      busy = false;
+      document.querySelectorAll('.check input').forEach(function(x){x.disabled=false;});
+      var code = err && err.code;
+      if (code === 'conflict') { setSave('Updated elsewhere — reloading'); return; }
+      if (code === 'not_writer' || code === 'not_granted' || code === 'consent_required' || code === 'capability_disabled' || code === 'not_declared') { readOnly = true; setSave('View only — not saved', true); return; }
+      setSave('Could not save — try again', true);
+    });
+  });
+
+  render();
+  if (window.claude && window.claude.use) {
+    window.claude.use('artifact').then(function(a){ api = a; }, function(){ api = null; });
+  }
+})();
+</script>

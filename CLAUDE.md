@@ -125,3 +125,11 @@ Durable knowledge about Juan and Twin Home Buyer lives in `knowledge/`. Read it
 at the start of substantive work and keep it current as you learn more. Key
 files: `juan-grok-prompting-profile.md` (how Juan communicates — match it),
 `deal-pattern-buybox.md` (deal screening), `marketing-postcard-kpis.md`.
+
+## Construction Control dashboard (live artifact)
+
+`apps/construction-dashboard/` — live property-ops board at
+https://claude.ai/artifact/8HfV89hQVeWduLoAC6pkbt. Data: `public/data/properties.json`
+(repo record) mirrored into the artifact's database (`properties/<id>`). When Juan
+or the team paste Monday.com notes, follow the update workflow in that app's README.
+Never invent facts; scheduled ≠ completed ≠ passed.
