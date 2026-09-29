@@ -35,6 +35,7 @@ header{display:grid;gap:6px}
 .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .tab{font:600 13.5px var(--body);border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 12px;border-radius:999px;cursor:pointer}
 .tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tblwrap a{color:var(--oak);font-weight:600}
 .tab:focus-visible,.copy:focus-visible{outline:2px solid var(--oak);outline-offset:2px}
 .spec{display:grid;gap:14px}
 .spec p{margin:0}
@@ -51,7 +52,7 @@ header{display:grid;gap:6px}
 .row img{width:56px;height:56px;object-fit:cover;border-radius:5px;border:1px solid var(--line)}
 .row p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
 .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
-table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+table{border-collapse:collapse;width:100%;min-width:820px;font-size:14px}
 th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font:500 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--chip)}
 td.num{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600}
@@ -84,6 +85,18 @@ section{display:grid;gap:14px}
     <div class="tabs" role="tablist" id="tabs"></div>
     <div class="spec" id="spec"></div>
   </div>
+</section>
+
+<section id="pkgSec">
+  <div><span class="eyebrow">Shopping list · Home Depot, checked 2026-09-29</span><h2 id="pkgTitle">Upgrade package</h2>
+  <p class="lede" id="pkgLede"></p></div>
+  <div class="tabs" role="tablist" id="pkgTabs"></div>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Item</th><th>Product</th><th>Price</th><th>Stock (zip 94607)</th><th>Notes</th></tr></thead>
+    <tbody id="pkg"></tbody>
+  </table></div>
+  <div class="totals" id="pkgTotals"></div>
+  <p class="lede" style="font-size:12.5px">B and C stock counts come from Home Depot's live product data for the San Carlos store (zip 94607). D pages were confirmed as live, buyable and not discontinued, but the local count didn't load, so check the ship date at checkout. Prices change; re-check before you order. Tile, bulbs, setting materials, supply lines and tax are not included.</p>
 </section>
 
 <section>
@@ -163,6 +176,7 @@ section{display:grid;gap:14px}
 
 <script>
 const A = {{ASSETS}};
+{{PKG}}
 const SCHEMES = [
   {id:'A', name:'Your KZ pick', img:'RA',
    floor:['TCL-2424P','24×24 light gray marble-look','3 boxes × $38.14 = $114.42'],
@@ -174,7 +188,7 @@ const SCHEMES = [
    floor:['ECBO-2447M','24×47 matte oak wood-look','≈ 3 boxes, price at counter'],
    wall:['TCA-2448P','24×48 warm white, soft beige vein','≈ 6 boxes, price at counter'],
    niche:'EKOT-0915 Oat stacked-stick accent',
-   read:'The warmest option and the most on-trend for 2026. Wood-look porcelain gives the look of a wood floor with no water risk. It photographs as a "spa" bath.',
+   read:'Japandi: matte black against warm oak and white. The most on-trend option for 2026. Wood-look porcelain gives the look of a wood floor with no water risk. It photographs as a "spa" bath.',
    tags:[['Top pick for resale','ok'],['Matte floor','ok']]},
   {id:'C', name:'Textured organic', img:'RC',
    floor:['MSMS-1224','12×24 matte sand stone-look','≈ 3 boxes, price at counter'],
@@ -230,22 +244,36 @@ function renderSpec(i){
   const s = SCHEMES[i];
   $('#rimg').src = A[s.img];
   $('#rimg').alt = 'Rendered bathroom, option '+s.id+': '+s.name;
-  document.querySelectorAll('.tab').forEach((t,j)=>t.setAttribute('aria-selected', j===i));
+  document.querySelectorAll('#tabs .tab').forEach((t,j)=>t.setAttribute('aria-selected', j===i));
   $('#spec').innerHTML = `
     <h3>Option ${s.id} · ${esc(s.name)}</h3>
     <div>${s.tags.map(t=>`<span class="tag ${t[1]}">${esc(t[0])}</span>`).join(' ')}</div>
     <div class="pair"><img alt="" src="${thumb(s.wall[0])}"><div><span class="sku">${s.wall[0]}</span> · wall<small>${esc(s.wall[1])} · ${esc(s.wall[2])}</small></div></div>
     <div class="pair"><img alt="" src="${thumb(s.floor[0])}"><div><span class="sku">${s.floor[0]}</span> · floor<small>${esc(s.floor[1])} · ${esc(s.floor[2])}</small></div></div>
-    <p style="font-size:13.5px;color:var(--muted)">Niche: ${esc(s.niche)}. Same in every option: clear brass-frame glass, white-oak vanity, white quartz, brass fixtures, SW 7008 Alabaster.</p>
+    <p style="font-size:13.5px;color:var(--muted)">Niche: ${esc(s.niche)}. Package: ${esc(PKG[s.id] ? PKG[s.id].finish : 'Brushed brass fixtures · white-oak vanity · pill mirror · clear brass-frame bypass glass')}. Walls SW 7008 Alabaster.</p>
     <p>${esc(s.read)}</p>`;
 }
 $('#tabs').innerHTML = SCHEMES.map((s,i)=>`<button class="tab" role="tab" id="tab${s.id}" type="button">${s.id} · ${esc(s.name)}</button>`).join('');
-document.querySelectorAll('.tab').forEach((t,i)=>t.addEventListener('click',()=>renderSpec(i)));
+document.querySelectorAll('#tabs .tab').forEach((t,i)=>t.addEventListener('click',()=>renderSpec(i)));
+document.querySelectorAll('#tabs .tab');
 const row = r => `<div class="row"><img alt="" src="${thumb(r[0])}"><div><span class="sku">${r[0]}</span> · ${esc(r[1])} <span class="tag">${esc(r[3])}</span><p>${esc(r[2])}</p></div></div>`;
 $('#floorList').innerHTML = FLOORS.map(row).join('');
 $('#wallList').innerHTML = WALLS.map(row).join('');
 $('#upg').innerHTML = UPG.map(u=>`<tr><td>${esc(u[0])}</td><td class="num">${esc(u[1])}</td><td>${esc(u[2])}</td><td><span class="pri ${u[3]}">${u[3]==='must'?'Must':u[3]==='high'?'High':'Nice'}</span></td></tr>`).join('');
-renderSpec(0);
+function renderPkg(id){
+  const p = PKG[id];
+  document.querySelectorAll('.ptab').forEach(t=>t.setAttribute('aria-selected', t.dataset.id===id));
+  $('#pkgTitle').textContent = 'Option '+id+' upgrade package';
+  $('#pkgLede').textContent = p.finish+'. No item repeats another option except the hidden exhaust fan in B and D.';
+  const link = u => `<a href="${u}" target="_blank" rel="noopener">View</a>`;
+  const note = n => esc(n).replace(/(https:\/\/\S+?)(\)|\s|$)/g,(m,u,e)=>`<a href="${u}" target="_blank" rel="noopener">link</a>${e}`);
+  $('#pkg').innerHTML = p.items.map(r=>`<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}<br><span class="sku">${esc(r[2])}</span> · <a href="${r[4]}" target="_blank" rel="noopener">View product</a></td><td class="num">${esc(r[3])}</td><td>${esc(r[5])}</td><td>${note(r[6])}</td></tr>`).join('');
+  $('#pkgTotals').innerHTML = `<div><b class="cost">${p.total}</b><span>Package materials before tax</span></div><div><b class="cost">${esc(p.tax)}</b><span>Bay Area sales tax ≈ 10.25%</span></div><div><b>${p.items.length}</b><span>Line items</span></div>`;
+}
+$('#pkgTabs').innerHTML = ['B','C','D'].map(id=>`<button class="tab ptab" type="button" data-id="${id}">${id} · ${esc(SCHEMES.find(s=>s.id===id).name)}</button>`).join('');
+document.querySelectorAll('.ptab').forEach(t=>t.addEventListener('click',()=>renderPkg(t.dataset.id)));
+document.querySelectorAll('#tabs .tab').forEach((t,i)=>t.addEventListener('click',()=>{ if(PKG[SCHEMES[i].id]) renderPkg(SCHEMES[i].id); }));
+renderSpec(0); renderPkg('B');
 $('#copyBtn').addEventListener('click',()=>{
   const t=$('#prompt').textContent;
   navigator.clipboard.writeText(t).then(()=>{$('#copyBtn').textContent='Copied'}).catch(()=>{

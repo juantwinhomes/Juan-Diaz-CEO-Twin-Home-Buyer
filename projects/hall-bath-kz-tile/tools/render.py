@@ -60,7 +60,9 @@ def ecyl(cx, cz, rx, rz, y0, y1, mat):
     prims.append(('c', cx, cz, rx, rz, y0, y1, mat))
 
 NICHE = (2.3, 3.3, 3.9, 5.1, 0.33)  # on left wall x=0: z0,z1,y0,y1,depth
-def build():
+CFG = dict(glass='slide', mirror='pill', vanity='wood')
+def build(S=None):
+    if S: CFG.update(glass=S.get('glass','slide'), mirror=S.get('mirror','pill'), vanity=S.get('vanity','wood'))
     prims.clear()
     rect(1, 0.0, (0, W, 0, D), 'floor')
     rect(1, H, (0, W, 0, D), 'ceil')
@@ -91,18 +93,27 @@ def build():
     rect(0, 0.22, (0.5, TUB_H, 0.25, D - 0.22), 'tubin'); rect(0, 2.2, (0.5, TUB_H, 0.25, D - 0.22), 'tubin')
     rect(2, 0.25, (0.22, 2.2, 0.5, TUB_H), 'tubin'); rect(2, D - 0.22, (0.22, 2.2, 0.5, TUB_H), 'tubin')
     # glass door frame (brushed brass) + handle
-    box(TUB_X - 0.05, TUB_X + 0.03, 6.55, 6.65, 0.0, D, 'gold')
-    box(TUB_X - 0.05, TUB_X + 0.03, TUB_H, 6.6, D - 0.05, D, 'gold')
-    box(TUB_X - 0.05, TUB_X + 0.03, TUB_H, 6.6, 0.0, 0.05, 'gold')
-    box(TUB_X + 0.03, TUB_X + 0.07, 4.1, 4.16, 0.6, 1.9, 'gold')
-    box(TUB_X + 0.03, TUB_X + 0.07, 4.05, 4.2, 0.6, 0.66, 'gold'); box(TUB_X + 0.03, TUB_X + 0.07, 4.05, 4.2, 1.84, 1.9, 'gold')
+    if CFG['glass'] == 'fixed':
+        for hy in (2.2, 5.3):
+            box(TUB_X - 0.05, TUB_X + 0.04, hy, hy + 0.3, D - 0.12, D, 'gold')
+    else:
+        box(TUB_X - 0.05, TUB_X + 0.03, 6.55, 6.65, 0.0, D, 'gold')
+        if CFG['glass'] == 'slide':
+            box(TUB_X - 0.05, TUB_X + 0.03, TUB_H, 6.6, D - 0.05, D, 'gold')
+            box(TUB_X - 0.05, TUB_X + 0.03, TUB_H, 6.6, 0.0, 0.05, 'gold')
+            box(TUB_X + 0.03, TUB_X + 0.07, 4.1, 4.16, 0.6, 1.9, 'gold')
+            box(TUB_X + 0.03, TUB_X + 0.07, 4.05, 4.2, 0.6, 0.66, 'gold'); box(TUB_X + 0.03, TUB_X + 0.07, 4.05, 4.2, 1.84, 1.9, 'gold')
+        else:  # frameless slider: top bar + rollers + knob pulls
+            for rz in (0.5, 2.1, 2.9, 4.5):
+                box(TUB_X - 0.06, TUB_X + 0.06, 6.4, 6.55, rz, rz + 0.18, 'gold')
+            ecyl(TUB_X + 0.06, 2.55, 0.035, 0.035, 3.6, 4.6, 'gold'); ecyl(TUB_X + 0.06, 2.75, 0.035, 0.035, 3.6, 4.6, 'gold')
     # shower fixtures on back wall
     box(1.13, 1.23, 6.5, 6.58, D - 0.55, D, 'gold')
     ecyl(1.18, D - 0.62, 0.3, 0.3, 6.42, 6.5, 'gold')
     ecyl(1.18, D - 0.03, 0.2, 0.03, 3.7, 4.1, 'gold')
     box(1.1, 1.26, 1.62, 1.72, D - 0.5, D, 'gold')
     # vanity: white-oak box, quartz top
-    box(VX0, VX1, 0.35, VH, D - VD, D, 'wood', skip=(3,))
+    box(VX0, VX1, 0.35, VH, D - VD, D, 'wood' if CFG['vanity'] == 'wood' else 'vanpaint', skip=(3,))
     box(VX0 + 0.06, VX1 - 0.06, 0.0, 0.35, D - VD + 0.2, D, 'shadow')
     box(VX0 - 0.03, VX1 + 0.03, VH, VH + 0.13, D - VD - 0.05, D, 'quartz', skip=(3,))
     rect(1, VH + 0.13, (VX0 - 0.03, VX1 + 0.03, D - VD - 0.05, D), 'quartz', hole=('sink',))
@@ -113,8 +124,9 @@ def build():
     box(VX0 + 0.05, VX1 - 0.05, 1.55, 1.58, D - VD - 0.02, D - VD + 0.01, 'woodgap')
     box(3.6, 4.75, 2.25, 2.29, D - VD - 0.06, D - VD, 'gold'); box(3.6, 4.75, 0.95, 0.99, D - VD - 0.06, D - VD, 'gold')
     # mirror + light
-    rect(2, D - 0.06, (3.47, 4.87, 3.55, 6.05), 'mirror', hole=('pill',))
-    rect(2, D - 0.055, (3.40, 4.94, 3.48, 6.12), 'gold', hole=('pillframe',))
+    mm = CFG['mirror']
+    rect(2, D - 0.06, (3.3, 5.05, 3.4, 6.2), 'mirror', hole=(mm,))
+    rect(2, D - 0.055, (3.2, 5.15, 3.3, 6.3), 'globe' if mm == 'rect' else 'gold', hole=(mm + 'frame',))
     box(3.35, 4.99, 6.4, 6.47, D - 0.35, D, 'gold')
     for cx in (3.6, 4.17, 4.74):
         ecyl(cx, D - 0.3, 0.13, 0.13, 6.05, 6.4, 'globe')
@@ -144,6 +156,15 @@ def holes(tag, P):
         return (x > 0.22) & (x < 2.2) & (z > 0.25) & (z < D - 0.22)
     if tag == 'sink':
         return ((x - 4.17) / 0.72) ** 2 + ((z - (D - VD / 2 - 0.05)) / 0.5) ** 2 < 1
+    if tag.startswith(('round', 'rect', 'arch')):
+        fr = tag.endswith('frame'); base = tag.replace('frame', '')
+        def inside(g):
+            if base == 'round': return (x - 4.17) ** 2 + (y - 4.85) ** 2 < (0.95 + g) ** 2
+            if base == 'rect': return (np.abs(x - 4.17) < 0.8 + g) & (y > 3.5 - g) & (y < 6.1 + g)
+            cy = 5.4
+            return (np.abs(x - 4.17) < 0.72 + g) & (y > 3.5 - g) & ((y < cy) | ((x - 4.17) ** 2 + (y - cy) ** 2 < (0.72 + g) ** 2))
+        if not fr: return ~inside(0)
+        return ~inside(0.07 if base != 'rect' else 0.04) | inside(0)
     if tag in ('pill', 'pillframe'):
         r = 0.7 if tag == 'pill' else 0.77
         cx, top, bot = 4.17, (6.05 if tag == 'pill' else 6.12) - r, (3.55 if tag == 'pill' else 3.48) + r
@@ -233,6 +254,7 @@ def albedo(S, mats, P, N, V):
     put('globe', np.array([1.0, 0.93, 0.78]))
     wd = S['wood']
     put('wood', lambda m: sample(wd, (np.where(np.abs(N[m, 0]) > .5, z[m], x[m]) / 30.0) % 1.0, (y[m] / 34.0) % 1.0))
+    put('vanpaint', np.array(S.get('vancol', [0.9, 0.9, 0.88])))
     put('woodgap', np.array([0.25, 0.2, 0.15]))
     put('shadow', np.array([0.12, 0.11, 0.10]))
     put('quartz', lambda m: sample(S['qtex'], (x[m] / 40) % 1, (z[m] / 40) % 1))
@@ -300,14 +322,16 @@ def shade(S, O, Dd, depth=0):
         with np.errstate(divide='ignore', invalid='ignore'):
             tg = (TUB_X - O[:, 0]) / Dd[:, 0]
         Pg = O + np.nan_to_num(tg)[:, None] * Dd
-        hitg = (tg > 0) & (tg < t) & (Pg[:, 1] > TUB_H) & (Pg[:, 1] < 6.55) & (Pg[:, 2] > 0.05) & (Pg[:, 2] < D - 0.05)
+        gz0 = D - 2.6 if CFG['glass'] == 'fixed' else 0.05
+        gy1 = 6.3 if CFG['glass'] == 'fixed' else 6.55
+        hitg = (tg > 0) & (tg < t) & (Pg[:, 1] > TUB_H) & (Pg[:, 1] < gy1) & (Pg[:, 2] > gz0) & (Pg[:, 2] < D - 0.05)
         out[hitg] = out[hitg] * 0.93 + 0.045
-        edge = hitg & ((np.abs(Pg[:, 2] - 2.75) < 0.012) | (np.abs(Pg[:, 2] - 2.35) < 0.012))
+        edge = hitg & (((np.abs(Pg[:, 2] - 2.75) < 0.012) | (np.abs(Pg[:, 2] - 2.35) < 0.012)) if CFG['glass'] != 'fixed' else ((np.abs(Pg[:, 2] - gz0) < 0.02) | (np.abs(Pg[:, 1] - gy1) < 0.02)))
         out[edge] = out[edge] * 0.75 + 0.18
     return np.clip(out, 0, 1.2)
 
 def render(S, out, w=1200, h=800, ss=2):
-    build()
+    build(S)
     cam = np.array(CAM)
     look = np.array(LOOK)
     f = look - cam; f /= np.linalg.norm(f)

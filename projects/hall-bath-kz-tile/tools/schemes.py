@@ -26,6 +26,10 @@ for k, s in SCHEMES.items():
     s.update(paint=ALABASTER, metal=BRASS, wood=WOOD, qtex=QTZ, quartz=[0.95, 0.94, 0.92],
              mat=[0.86, 0.80, 0.70], mat2=[0.72, 0.62, 0.50], towel=[0.93, 0.90, 0.84])
 
+SCHEMES['B'].update(metal=[0.13, 0.13, 0.13], vanity='paint', vancol=[0.93, 0.91, 0.86], mirror='round', glass='slide')
+SCHEMES['C'].update(metal=[0.74, 0.62, 0.48], vanity='wood', mirror='rect', glass='frameless')
+SCHEMES['D'].update(metal=[0.86, 0.68, 0.36], vanity='paint', vancol=[0.17, 0.29, 0.24], mirror='arch', glass='fixed')
+
 if __name__ == '__main__':
     which = sys.argv[1]; w = int(sys.argv[2]) if len(sys.argv) > 2 else 1200
     render(SCHEMES[which], f'render_{which}.jpg', w=w, h=w * 3 // 4, ss=int(sys.argv[3]) if len(sys.argv) > 3 else 2)
