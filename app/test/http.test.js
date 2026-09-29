@@ -42,7 +42,7 @@ test('API: learner must reason before answers are revealed', async t => {
   assert.ok(lesson.quiz.every(q => q.answer === undefined));
   const noReason = await call('/api/lessons/m1/quiz', { token: k, method: 'POST', body: { answers: [1, 2, 1, 2, 1], reasons: ['', '', '', '', ''] } });
   assert.equal(noReason.status, 400);
-  const scored = await call('/api/lessons/m1/quiz', { token: k, method: 'POST', body: { answers: [1, 2, 1, 2, 0], reasons: ['asset up', 'liability', 'incurred', 'both books', 'guess'], confidence: 'Somewhat sure' } });
+  const scored = await call('/api/lessons/m1/quiz', { token: k, method: 'POST', body: { answers: [1, 1, 1, 2, 0], reasons: ['asset up', 'bank up, income up', 'incurred', 'both books', 'guess'], confidence: 'Somewhat sure' } });
   assert.equal(scored.status, 200);
   assert.equal(scored.body.score, 4);
   assert.equal(scored.body.pass, true);

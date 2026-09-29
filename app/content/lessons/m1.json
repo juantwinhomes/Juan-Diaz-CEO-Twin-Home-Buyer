@@ -1,6 +1,6 @@
 {
   "id": "m1",
-  "weeks": "Weeks 1–2",
+  "weeks": "Weeks 1\u20132",
   "title": "Accounting foundations",
   "goal": "Explain where any transaction goes: which company, which account, debit or credit, and which report it shows up on.",
   "skills": [
@@ -15,15 +15,15 @@
   "qbo_steps": [
     {
       "title": "Switch between companies",
-      "html": "Gear icon <span class='path'>⚙ → Switch company</span>. Check the company name at the top left before you enter anything."
+      "html": "Gear icon <span class='path'>\u2699 \u2192 Switch company</span>. Check the company name at the top left before you enter anything."
     },
     {
       "title": "Open the chart of accounts",
-      "html": "<span class='path'>⚙ → Chart of accounts</span>. Look at each account's type and detail type. Print or export it; you'll build a cheat sheet from it."
+      "html": "<span class='path'>\u2699 \u2192 Chart of accounts</span>. Look at each account's type and detail type. Print or export it; you'll build a cheat sheet from it."
     },
     {
       "title": "Run the Balance Sheet and P&amp;L",
-      "html": "<span class='path'>Reports → Balance Sheet</span> and <span class='path'>Reports → Profit and Loss</span>. Set the dates to last month."
+      "html": "<span class='path'>Reports \u2192 Balance Sheet</span> and <span class='path'>Reports \u2192 Profit and Loss</span>. Set the dates to last month."
     },
     {
       "title": "Check the accounting basis",
@@ -38,7 +38,7 @@
     "text_html": "Equity Track PH has <span class=\"num\">$512,000</span> in assets: <span class=\"num\">$38,000</span> cash and one house held for sale at <span class=\"num\">$474,000</span>. It owes <span class=\"num\">$331,500</span> on a hard-money loan and <span class=\"num\">$1,500</span> in unpaid bills.",
     "ask": "What is the owner's equity?",
     "answer_cents": 17900000,
-    "explain": "Equity = Assets − Liabilities = $512,000 − ($331,500 + $1,500) = $179,000.",
+    "explain": "Equity = Assets \u2212 Liabilities = $512,000 \u2212 ($331,500 + $1,500) = $179,000.",
     "followup": "Peninsula Plumbing finishes a job on the 30th and invoices on the 2nd. Which month is the revenue in on accrual basis?"
   },
   "quiz": [
@@ -56,15 +56,15 @@
       "followup": "Twin Home Buyer pays a $600 insurance premium for 12 months up front. What gets debited on day one?"
     },
     {
-      "q": "Which of these increases with a credit?",
+      "q": "A customer pays Peninsula Plumbing $2,000 for a job. What is the entry?",
       "options": [
-        "Checking account",
-        "Fuel expense",
-        "Hard-money loan payable",
-        "Property held for sale"
+        "Debit Income, credit Bank",
+        "Debit Bank, credit Income",
+        "Debit Bank, credit Accounts Payable",
+        "No entry until the end of the month"
       ],
-      "answer": 2,
-      "why": "Liabilities, equity and income increase with credits. A loan is a liability.",
+      "answer": 1,
+      "why": "Money came into the bank, and the bank is an asset, so it goes up with a debit. The company earned the money, and income goes up with a credit.",
       "policy": "POL-BASIS",
       "followup": null
     },
@@ -95,7 +95,7 @@
       "followup": null
     },
     {
-      "q": "The Balance Sheet shows…",
+      "q": "The Balance Sheet shows\u2026",
       "options": [
         "Income and expenses for a month",
         "What the company owns and owes on one date",
