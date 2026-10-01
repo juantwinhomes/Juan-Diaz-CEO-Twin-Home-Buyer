@@ -1,0 +1,399 @@
+<title>751 27th Ave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Layout: one property. Header with Drive sync, summary tiles, then collapsible sections (Twin Calc, capital, lender, expenses). Same system as the expense ledger. */
+:root{
+  --ground:#EEF1F4; --surface:#FFFFFF; --surface-2:#F6F8FA;
+  --ink:#18242F; --muted:#5A6B78; --faint:#8794A1;
+  --line:#DCE2E8; --line-strong:#C6D0D8;
+  --accent:#0C6E6B; --accent-soft:#D6E9E7; --accent-ink:#094B49; --on-accent:#FFFFFF;
+  --warn:#9A5B0A; --warn-soft:#F5E6CE; --warn-line:#E4C68C;
+  --bad:#B42318; --bad-soft:#FBE3DF; --good:#1F7A44; --good-soft:#DDF0E4;
+  --shadow-sm:0 1px 2px rgba(24,36,47,.05);
+  --f-sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono","SF Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --ground:#0E141A; --surface:#161E26; --surface-2:#1C2732; --ink:#E7ECF1; --muted:#9DAAB6; --faint:#71808C;
+  --line:#28333E; --line-strong:#37424E; --accent:#33B3AE; --accent-soft:#12332F; --accent-ink:#8FD8D3; --on-accent:#0E141A;
+  --warn:#E0A85B; --warn-soft:#33280F; --warn-line:#5C4A22; --bad:#F2806F; --bad-soft:#3D1C18; --good:#5FBE84; --good-soft:#173325;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --ground:#0E141A; --surface:#161E26; --surface-2:#1C2732; --ink:#E7ECF1; --muted:#9DAAB6; --faint:#71808C;
+  --line:#28333E; --line-strong:#37424E; --accent:#33B3AE; --accent-soft:#12332F; --accent-ink:#8FD8D3; --on-accent:#0E141A;
+  --warn:#E0A85B; --warn-soft:#33280F; --warn-line:#5C4A22; --bad:#F2806F; --bad-soft:#3D1C18; --good:#5FBE84; --good-soft:#173325;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3); color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1100px;margin:0 auto;padding-inline:16px;padding-block:24px 64px}
+.mono,.amt{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .faint{color:var(--faint)}
+a{color:var(--accent-ink)}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance}
+header.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 16px;margin-bottom:18px}
+.eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{font-size:28px;font-weight:700;letter-spacing:-.02em;margin:4px 0 4px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.spacer{flex:1}
+.stack{display:flex;flex-direction:column;gap:14px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:18px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px;box-shadow:var(--shadow-sm);min-width:0}
+.tile .label{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tile .big{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:22px;letter-spacing:-.02em;margin-top:4px;line-height:1.15}
+.tile .big.bad{color:var(--bad)} .tile .big.good{color:var(--good)} .tile .big.warn{color:var(--warn)}
+.tile .foot{font-size:12.5px;color:var(--faint);margin-top:4px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);min-width:0}
+.btn{border:1px solid var(--line-strong);background:var(--surface);padding:6px 12px;border-radius:9px;cursor:pointer;font-weight:600;white-space:nowrap;font-size:13px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);background:var(--surface-2)}
+.btn.sm{padding:2px 8px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+select,input[type=text],input[type=date],textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:5px 8px;min-width:0}
+label.field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600;min-width:0}
+label.field input,label.field select{color:var(--ink);font-weight:400;font-size:14px}
+.check{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:9px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-weight:600;color:var(--muted);font-size:13px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink)}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.plain{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)} .pill.acc{background:var(--accent-soft);color:var(--accent-ink)}
+.note{background:var(--warn-soft);border:1px solid var(--warn-line);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:14px}
+.note.info{background:var(--surface-2);border-color:var(--line)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px;border-bottom:1px solid var(--line-strong);background:var(--surface-2);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:13px}
+tbody tr:last-child td{border-bottom:0}
+td.amt,th.amt{text-align:right;white-space:nowrap}
+td.d{white-space:nowrap;color:var(--muted);font-family:var(--f-mono);font-size:12px}
+tfoot td{font-weight:700;border-top:1px solid var(--line-strong);background:var(--surface-2)}
+.track{height:8px;background:var(--surface-2);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.fill{height:100%;background:var(--accent)} .fill.over{background:var(--bad)} .fill.warn{background:var(--warn)}
+details.sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm)}
+details.sec>summary{list-style:none;cursor:pointer;padding:14px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary h3{font-size:16px;font-weight:700}
+details.sec>summary .sum{margin-left:auto;font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+details .chev{transition:transform .15s;color:var(--muted)}
+details[open]>summary .chev{transform:rotate(90deg)}
+details.sec>.body{padding:0 18px 18px;display:flex;flex-direction:column;gap:14px}
+details.grp{border-top:1px solid var(--line)}
+details.grp:first-child{border-top:0}
+details.grp>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:14px minmax(0,1fr) 140px 120px 120px;gap:10px;align-items:center;padding:9px 2px}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary b{font-weight:600}
+details.grp>summary small{display:block;color:var(--faint);font-size:12px}
+details.grp>.gbody{padding:0 0 12px 24px}
+@media (max-width:720px){details.grp>summary{grid-template-columns:14px minmax(0,1fr) auto}details.grp>summary .track,details.grp>summary .gun{display:none}}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 22px}
+.kv .k{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.kv .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:20px;margin-top:2px}
+.kv .s{font-size:12.5px;color:var(--faint)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:10px;font-weight:600;max-width:calc(100% - 32px)}
+fieldset.ro{border:0;margin:0;padding:0;min-width:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Twin Home Buyer · Property</div>
+      <h1 id="h-addr"></h1>
+      <div class="row" id="h-meta"></div>
+    </div>
+    <div class="row" id="h-sync"></div>
+  </header>
+  <div id="app"></div>
+</div>
+<div id="toast" hidden></div>
+
+<script id="config" type="application/json">{"slug": "751-27th-ave", "address": "751 27th Ave, San Mateo, CA 94403", "sheetId": "1gWcuo0YCaBIj214ZldXWrh13E_a48-jE4qrkigqslkM", "status": "Active construction", "lender": "Kiavi", "ledgerUrl": "https://claude.ai/artifact/G43ef83x7Ap9S5MG1eAGP3"}</script>
+<script>
+const CFG=JSON.parse(document.getElementById('config').textContent);
+const TTAX={"ALAMEDA":["ALAMEDA",12.0,1.1],"ALBANY":["ALAMEDA",15.0,1.1],"BERKELEY":["ALAMEDA",15.0,1.1],"DUBLIN":["ALAMEDA",0.55,0.55],"EMERYVILLE":["ALAMEDA",12.0,1.1],"FREMONT":["ALAMEDA",0.55,0.55],"HAYWARD":["ALAMEDA",8.5,1.1],"LIVERMORE":["ALAMEDA",0.55,0.55],"NEWARK":["ALAMEDA",0.55,0.55],"OAKLAND":["ALAMEDA",15.0,1.1],"PIEDMONT":["ALAMEDA",13.0,1.1],"PLEASANTON":["ALAMEDA",0.55,0.55],"SAN LEANDRO":["ALAMEDA",11.0,1.1],"UNION CITY":["ALAMEDA",0.55,0.55],"ALPINE COUNTY":["ALPINE",0.0,1.1],"AMADOR":["AMADOR",0.55,0.55],"IONE":["AMADOR",0.55,0.55],"JACKSON":["AMADOR",0.55,0.55],"PLYMOUTH":["AMADOR",0.55,0.55],"SUTTER CREEK":["AMADOR",0.55,0.55],"BIGGS":["BUTTE",0.55,0.55],"CHICO":["BUTTE",0.55,0.55],"GRIDLEY":["BUTTE",0.55,0.55],"OROVILLE":["BUTTE",0.55,0.55],"PARADISE":["BUTTE",0.55,0.55],"ANGELS CAMP":["CALAVERAS",0.55,0.55],"COLUSA":["COLUSA",0.55,0.55],"WILLIAMS":["COLUSA",0.55,0.55],"ANTIOCH":["CONTRA COSTA",0.55,0.55],"BRENTWOOD":["CONTRA COSTA",0.55,0.55],"CLAYTON":["CONTRA COSTA",0.55,0.55],"CONCORD":["CONTRA COSTA",0.55,0.55],"DANVILLE":["CONTRA COSTA",0.55,0.55],"EL CERRITO":["CONTRA COSTA",12.0,1.1],"HERCULES":["CONTRA COSTA",0.55,0.55],"LAFAYETTE":["CONTRA COSTA",0.55,0.55],"MARTINEZ":["CONTRA COSTA",0.55,0.55],"MORAGA":["CONTRA COSTA",0.55,0.55],"OAKLEY":["CONTRA COSTA",0.55,0.55],"ORINDA":["CONTRA COSTA",0.55,0.55],"PINOLE":["CONTRA COSTA",0.55,0.55],"PITTSBURG":["CONTRA COSTA",0.55,0.55],"PLEASANT HILL":["CONTRA COSTA",0.55,0.55],"RICHMOND":["CONTRA COSTA",12.5,1.1],"SAN PABLO":["CONTRA COSTA",0.55,0.55],"SAN RAMON":["CONTRA COSTA",0.55,0.55],"WALNUT CREEK":["CONTRA COSTA",0.55,0.55],"CRESCENT CITY":["DEL NORTE",0.55,0.55],"PLACERVILLE":["EL DORADO",0.55,0.55],"SOUTH LAKE TAHOE":["EL DORADO",0.55,0.55],"CLOVIS":["FRESNO",0.55,0.55],"COALINGA":["FRESNO",0.55,0.55],"FIREBAUGH":["FRESNO",0.55,0.55],"FOWLER":["FRESNO",0.55,0.55],"FRESNO":["FRESNO",0.55,0.55],"HURON":["FRESNO",0.55,0.55],"KERMAN":["FRESNO",0.55,0.55],"KINGSBURG":["FRESNO",0.55,0.55],"MENDOTA":["FRESNO",0.55,0.55],"ORANGE COVE":["FRESNO",0.55,0.55],"PARLIER":["FRESNO",0.55,0.55],"REEDLEY":["FRESNO",0.55,0.55],"SANGER":["FRESNO",0.55,0.55],"SAN JOAQUIN":["FRESNO",0.55,0.55],"SELMA":["FRESNO",0.55,0.55],"ORLAND":["GLENN",0.55,0.55],"WILLOWS":["GLENN",0.55,0.55],"ARCATA":["HUMBOLDT",0.55,0.55],"BLUE LAKE":["HUMBOLDT",0.55,0.55],"EUREKA":["HUMBOLDT",0.55,0.55],"FERNDALE":["HUMBOLDT",0.55,0.55],"FORTUNA":["HUMBOLDT",0.55,0.55],"RIO DELL":["HUMBOLDT",0.55,0.55],"TRINIDAD":["HUMBOLDT",0.55,0.55],"BRAWLEY":["IMPERIAL",0.55,0.55],"CALEXICO":["IMPERIAL",0.55,0.55],"CALIPATRIA":["IMPERIAL",0.55,0.55],"EL CENTRO":["IMPERIAL",0.55,0.55],"HOLTVILLE":["IMPERIAL",0.55,0.55],"IMPERIAL":["IMPERIAL",0.55,0.55],"WESTMORLAND":["IMPERIAL",0.55,0.55],"BISHOP":["INYO",0.55,0.55],"ARVIN":["KERN",0.55,0.55],"BAKERSFIELD":["KERN",0.55,0.55],"CALIFORNIA CITY":["KERN",0.55,0.55],"DELANO":["KERN",0.55,0.55],"MARICOPA":["KERN",0.55,0.55],"MCFARLAND":["KERN",0.55,0.55],"RIDGECREST":["KERN",0.55,0.55],"SHAFTER":["KERN",0.55,0.55],"TAFT":["KERN",0.55,0.55],"TEHACHAPI":["KERN",0.55,0.55],"WASCO":["KERN",0.55,0.55],"AVENAL":["KINGS",0.55,0.55],"CORCORAN":["KINGS",0.55,0.55],"HANFORD":["KINGS",0.55,0.55],"LEMOORE":["KINGS",0.55,0.55],"CLEARLAKE":["LAKE",0.55,0.55],"LAKEPORT":["LAKE",0.55,0.55],"SUSANVILLE":["LASSEN",0.55,0.55],"AGOURA HILLS":["LOS ANGELES",0.55,0.55],"ALHAMBRA":["LOS ANGELES",0.55,0.55],"ARCADIA":["LOS ANGELES",0.55,0.55],"ARTESIA":["LOS ANGELES",0.55,0.55],"AVALON":["LOS ANGELES",0.55,0.55],"AZUSA":["LOS ANGELES",0.55,0.55],"BALDWIN PARK":["LOS ANGELES",0.55,0.55],"BELL":["LOS ANGELES",0.55,0.55],"BELLFLOWER":["LOS ANGELES",0.55,0.55],"BELL GARDENS":["LOS ANGELES",0.55,0.55],"BEVERLY HILLS":["LOS ANGELES",0.55,0.55],"BRADBURY":["LOS ANGELES",0.55,0.55],"BURBANK":["LOS ANGELES",0.55,0.55],"CALABASAS":["LOS ANGELES",0.55,0.55],"CARSON":["LOS ANGELES",0.55,0.55],"CERRITOS":["LOS ANGELES",0.55,0.55],"CLAREMONT":["LOS ANGELES",0.55,0.55],"COMMERCE":["LOS ANGELES",0.55,0.55],"COMPTON":["LOS ANGELES",0.55,0.55],"COVINA":["LOS ANGELES",0.55,0.55],"CUDAHY":["LOS ANGELES",0.55,0.55],"CULVER":["LOS ANGELES",19.5,1.1],"DIAMOND BAR":["LOS ANGELES",0.55,0.55],"DOWNEY":["LOS ANGELES",0.55,0.55],"DUARTE":["LOS ANGELES",0.55,0.55],"EL MONTE":["LOS ANGELES",0.55,0.55],"EL SEGUNDO":["LOS ANGELES",0.55,0.55],"GARDENA":["LOS ANGELES",0.55,0.55],"GLENDALE":["LOS ANGELES",0.55,0.55],"GLENDORA":["LOS ANGELES",0.55,0.55],"HAWAIIAN GARDENS":["LOS ANGELES",0.55,0.55],"HAWTHORNE":["LOS ANGELES",0.55,0.55],"HERMOSA BEACH":["LOS ANGELES",0.55,0.55],"HIDDEN HILLS":["LOS ANGELES",0.55,0.55],"HUNT INGTON PARK":["LOS ANGELES",0.55,0.55],"INDUST RY":["LOS ANGELES",0.55,0.55],"INGLEWOOD":["LOS ANGELES",0.55,0.55],"IRWINDALE":["LOS ANGELES",0.55,0.55],"LA CANADA FLINTRIDGE":["LOS ANGELES",0.55,0.55],"LA HABRA HEIGHTS":["LOS ANGELES",0.55,0.55],"LAKEWOOD":["LOS ANGELES",0.55,0.55],"LA MIRADA":["LOS ANGELES",0.55,0.55],"LANCASTER":["LOS ANGELES",0.55,0.55],"LA PUENTE":["LOS ANGELES",0.55,0.55],"LA VERNE":["LOS ANGELES",0.55,0.55],"LAWNDALE":["LOS ANGELES",0.55,0.55],"LOMITA":["LOS ANGELES",0.55,0.55],"LONG BEACH":["LOS ANGELES",0.55,0.55],"LOS ANGELES":["LOS ANGELES",4.5,1.1],"LYNWOOD":["LOS ANGELES",0.55,0.55],"MALIBU":["LOS ANGELES",0.55,0.55],"MANHATTAN BEACH":["LOS ANGELES",0.55,0.55],"MAYWOOD":["LOS ANGELES",0.55,0.55],"MONROVIA":["LOS ANGELES",0.55,0.55],"MONTEBELLO":["LOS ANGELES",0.55,0.55],"MONTEREY PARK":["LOS ANGELES",0.55,0.55],"NORWALK":["LOS ANGELES",0.55,0.55],"PALMDALE":["LOS ANGELES",0.55,0.55],"PALOS VERDES ESTATES":["LOS ANGELES",0.55,0.55],"PARAMOUNT":["LOS ANGELES",0.55,0.55],"PASADENA":["LOS ANGELES",0.55,0.55],"PICO RIVERA":["LOS ANGELES",0.55,0.55],"POMONA":["LOS ANGELES",2.2,1.1],"RANCHO PALOS VERDES":["LOS ANGELES",0.55,0.55],"REDONDO BEACH":["LOS ANGELES",2.2,1.1],"ROLLING HILLS":["LOS ANGELES",0.55,0.55],"ROLLING HILLS ESTATES":["LOS ANGELES",0.55,0.55],"ROSEMEAD":["LOS ANGELES",0.55,0.55],"SAN DIMAS":["LOS ANGELES",0.55,0.55],"SAN FERNANDO":["LOS ANGELES",0.55,0.55],"SAN GABRIEL":["LOS ANGELES",0.55,0.55],"SAN MARINO":["LOS ANGELES",0.55,0.55],"SANTA CLARITA":["LOS ANGELES",0.55,0.55],"SANTA FE SPRINGS":["LOS ANGELES",0.55,0.55],"SANTA MONICA":["LOS ANGELES",3.0,1.1],"SIERRA MADRE":["LOS ANGELES",0.55,0.55],"SIGNAL HILL":["LOS ANGELES",0.55,0.55],"SOUTH EL MONTE":["LOS ANGELES",0.55,0.55],"SOUTH GATE":["LOS ANGELES",0.55,0.55],"SOUTH PASADENA":["LOS ANGELES",0.55,0.55],"TEMPLE CITY":["LOS ANGELES",0.55,0.55],"TORRANCE":["LOS ANGELES",0.55,0.55],"VERNON":["LOS ANGELES",0.55,0.55],"WALNUT":["LOS ANGELES",0.55,0.55],"WEST COVINA":["LOS ANGELES",0.55,0.55],"WEST HOLLYWOOD":["LOS ANGELES",0.55,0.55],"WESTLAKE VILLAGE":["LOS ANGELES",0.55,0.55],"WHITTIER":["LOS ANGELES",0.55,0.55],"CHOWCHILLA":["MADERA",0.55,0.55],"MADERA":["MADERA",0.55,0.55],"BELVEDERE":["MARIN",0.55,0.55],"CORTE MADERA":["MARIN",0.55,0.55],"FAIRFAX":["MARIN",0.55,0.55],"LARKSPUR":["MARIN",0.55,0.55],"MILL VALLEY":["MARIN",0.55,0.55],"NOVATO":["MARIN",0.55,0.55],"ROSS":["MARIN",0.55,0.55],"SAN ANSELMO":["MARIN",0.55,0.55],"SAN RAFAEL":["MARIN",2.0,1.1],"SAUSALITO":["MARIN",0.55,0.55],"TIBURON":["MARIN",0.55,0.55],"MARIPOSA COUNTY":["MARIPOSA",0.0,1.1],"FORT BRAGG":["MENDOCINO",0.55,0.55],"POINT ARENA":["MENDOCINO",0.55,0.55],"UKIAH":["MENDOCINO",0.55,0.55],"WILLITS":["MENDOCINO",0.55,0.55],"ATWATER":["MERCED",0.55,0.55],"DOS PALOS":["MERCED",0.55,0.55],"GUSTINE":["MERCED",0.55,0.55],"LIVINGSTON":["MERCED",0.55,0.55],"LOS BANOS":["MERCED",0.55,0.55],"MERCED":["MERCED",0.55,0.55],"ALTURAS":["MODOC",0.55,0.55],"MAMMOTH LAKE":["MONO",0.55,0.55],"CARMEL-BY-THE-SEA":["MONTEREY",0.55,0.55],"DEL REY OAKS":["MONTEREY",0.55,0.55],"GONZALES":["MONTEREY",0.55,0.55],"GREENFIELD":["MONTEREY",0.55,0.55],"KING CITY":["MONTEREY",0.55,0.55],"MARINA":["MONTEREY",0.55,0.55],"MONTEREY":["MONTEREY",0.55,0.55],"PACIFIC GROVE":["MONTEREY",0.55,0.55],"SALINAS":["MONTEREY",0.55,0.55],"SAND CITY":["MONTEREY",0.55,0.55],"SEASIDE":["MONTEREY",0.55,0.55],"SOLEDAD":["MONTEREY",0.55,0.55],"AMERICAN CANYON":["NAPA",0.55,0.55],"CALISTOGA":["NAPA",0.55,0.55],"NAPA":["NAPA",0.55,0.55],"SAINT HELENA":["NAPA",0.55,0.55],"YOUNTVILLE":["NAPA",0.55,0.55],"GRASS VALLEY":["NEVADA",0.55,0.55],"NEVADA CITY":["NEVADA",0.55,0.55],"TRUCKEE":["NEVADA",0.55,0.55],"ALISO VIEJO":["ORANGE",0.55,0.55],"ANAHEIM":["ORANGE",0.55,0.55],"BREA":["ORANGE",0.55,0.55],"BUENA PARK":["ORANGE",0.55,0.55],"COSTA MESA":["ORANGE",0.55,0.55],"CYPRESS":["ORANGE",0.55,0.55],"DANA POINT":["ORANGE",0.55,0.55],"FOUNTAIN VALLEY":["ORANGE",0.55,0.55],"FULLERTON":["ORANGE",0.55,0.55],"GARDEN GROVE":["ORANGE",0.55,0.55],"HUNT INGTON BEACH":["ORANGE",0.55,0.55],"IRVINE":["ORANGE",0.55,0.55],"LAGUNA BEACH":["ORANGE",0.55,0.55],"LAGUNA HILLS":["ORANGE",0.55,0.55],"LAGUNA NIGUEL":["ORANGE",0.55,0.55],"LA HABRA":["ORANGE",0.55,0.55],"LAKE FOREST":["ORANGE",0.55,0.55],"LA PALMA":["ORANGE",0.55,0.55],"LOS ALAMITOS":["ORANGE",0.55,0.55],"MISSION VIEJO":["ORANGE",0.55,0.55],"NEWPORT BEACH":["ORANGE",0.55,0.55],"ORANGE":["ORANGE",0.55,0.55],"PLACENTIA":["ORANGE",0.55,0.55],"RANCHO SANTA MARGARIT A":["ORANGE",0.55,0.55],"SAN CLEMENTE":["ORANGE",0.55,0.55],"SAN JUAN CAPISTRANO":["ORANGE",0.55,0.55],"SANTA ANA":["ORANGE",0.55,0.55],"SEAL BEACH":["ORANGE",0.55,0.55],"STANTON":["ORANGE",0.55,0.55],"TUSTIN":["ORANGE",0.55,0.55],"VILLA PARK":["ORANGE",0.55,0.55],"WESTMINSTER":["ORANGE",0.55,0.55],"YORBA LINDA":["ORANGE",0.55,0.55],"AUBURN":["PLACER",0.55,0.55],"COLFAX":["PLACER",0.55,0.55],"LINCOLN":["PLACER",0.55,0.55],"LOOMIS":["PLACER",0.55,0.55],"ROCKLIN":["PLACER",0.55,0.55],"ROSEVILLE":["PLACER",0.55,0.55],"PORTOLA":["PLUMAS",0.55,0.55],"BANNING":["RIVERSIDE",0.55,0.55],"BEAUMONT":["RIVERSIDE",0.55,0.55],"BLYTHE":["RIVERSIDE",0.55,0.55],"CALIMESA":["RIVERSIDE",0.55,0.55],"CANYON LAKE":["RIVERSIDE",0.55,0.55],"CATHEDRAL CITY":["RIVERSIDE",0.55,0.55],"COACHELLA":["RIVERSIDE",0.55,0.55],"CORONA":["RIVERSIDE",0.55,0.55],"DESERT HOT SPRINGS":["RIVERSIDE",0.55,0.55],"EASTVALE":["RIVERSIDE",0.55,0.55],"HEMET":["RIVERSIDE",0.55,0.55],"INDIAN WELLS":["RIVERSIDE",0.55,0.55],"INDIO":["RIVERSIDE",0.55,0.55],"JURUPA VALLEY":["RIVERSIDE",0.55,0.55],"LAKE ELSINORE":["RIVERSIDE",0.55,0.55],"LA QUINTA":["RIVERSIDE",0.55,0.55],"MENIFEE":["RIVERSIDE",0.55,0.55],"MORENO VALLEY":["RIVERSIDE",0.55,0.55],"MURRIET A":["RIVERSIDE",0.55,0.55],"NORCO":["RIVERSIDE",0.55,0.55],"PALM DESERT":["RIVERSIDE",0.55,0.55],"PALM SPRINGS":["RIVERSIDE",0.55,0.55],"PERRIS":["RIVERSIDE",0.55,0.55],"RANCHO MIRAGE":["RIVERSIDE",0.55,0.55],"RIVERSIDE":["RIVERSIDE",1.1,1.1],"SAN JACINTO":["RIVERSIDE",0.55,0.55],"TEMECULA":["RIVERSIDE",0.55,0.55],"WILDOMAR":["RIVERSIDE",0.55,0.55],"CITRUS HEIGHTS":["SACRAMENTO",0.55,0.55],"ELK GROVE":["SACRAMENTO",0.55,0.55],"FOLSOM":["SACRAMENTO",0.55,0.55],"GALT":["SACRAMENTO",0.55,0.55],"ISLETON":["SACRAMENTO",0.55,0.55],"RANCHO CORDOVA":["SACRAMENTO",0.55,0.55],"SACRAMENTO":["SACRAMENTO",2.75,1.1],"HOLLISTER":["SAN BENITO",0.55,0.55],"SAN JUAN BAUTISTA":["SAN BENITO",0.55,0.55],"ADELANTO":["SAN BERNARDINO",0.55,0.55],"APPLE VALLEY":["SAN BERNARDINO",0.55,0.55],"BARSTOW":["SAN BERNARDINO",0.55,0.55],"BIG BEAR LAKE":["SAN BERNARDINO",0.55,0.55],"CHINO":["SAN BERNARDINO",0.55,0.55],"CHINO HILLS":["SAN BERNARDINO",0.55,0.55],"COLTON":["SAN BERNARDINO",0.55,0.55],"FONTANA":["SAN BERNARDINO",0.55,0.55],"GRAND TERRACE":["SAN BERNARDINO",0.55,0.55],"HESPERIA":["SAN BERNARDINO",0.55,0.55],"HIGHLAND":["SAN BERNARDINO",0.55,0.55],"LOMA LINDA":["SAN BERNARDINO",0.55,0.55],"MONTCLAIR":["SAN BERNARDINO",0.55,0.55],"NEEDLES":["SAN BERNARDINO",0.55,0.55],"ONTARIO":["SAN BERNARDINO",0.55,0.55],"RANCHO CUCAMONGA":["SAN BERNARDINO",0.55,0.55],"REDLANDS":["SAN BERNARDINO",0.55,0.55],"RIALTO":["SAN BERNARDINO",0.55,0.55],"SAN BERNARDINO":["SAN BERNARDINO",0.55,0.55],"TWENTYNINE PALMS":["SAN BERNARDINO",0.55,0.55],"LAGUNA WOODS":["SAN BERNARDINO",0.55,0.55],"UPLAND":["SAN BERNARDINO",0.55,0.55],"VICTORVILLE":["SAN BERNARDINO",0.55,0.55],"YUCAIPA":["SAN BERNARDINO",0.55,0.55],"YUCCA VALLEY":["SAN BERNARDINO",0.55,0.55],"CARLSBAD":["SAN DIEGO",0.55,0.55],"CHULA VISTA":["SAN DIEGO",0.55,0.55],"CORONADO":["SAN DIEGO",0.55,0.55],"DEL MAR":["SAN DIEGO",0.55,0.55],"EL CAJON":["SAN DIEGO",0.55,0.55],"ENCINITAS":["SAN DIEGO",0.55,0.55],"ESCONDIDO":["SAN DIEGO",0.55,0.55],"IMPERIAL BEACH":["SAN DIEGO",0.55,0.55],"LA MESA":["SAN DIEGO",0.55,0.55],"LEMON GROVE":["SAN DIEGO",0.55,0.55],"NATIONAL CITY":["SAN DIEGO",0.55,0.55],"OCEANSIDE":["SAN DIEGO",0.55,0.55],"POWAY":["SAN DIEGO",0.55,0.55],"SAN DIEGO":["SAN DIEGO",0.55,0.55],"SAN MARCOS":["SAN DIEGO",0.55,0.55],"SANTEE":["SAN DIEGO",0.55,0.55],"SOLANA BEACH":["SAN DIEGO",0.55,0.55],"VISTA":["SAN DIEGO",0.55,0.55],"SAN FRANCISCO":["SAN FRANCISCO",7.5,0.0],"ESCALON":["SAN JOAQUIN",0.55,0.55],"LATHROP":["SAN JOAQUIN",0.55,0.55],"LODI":["SAN JOAQUIN",0.55,0.55],"MANTECA":["SAN JOAQUIN",0.55,0.55],"RIPON":["SAN JOAQUIN",0.55,0.55],"STOCKTON":["SAN JOAQUIN",0.55,0.55],"TRACY":["SAN JOAQUIN",0.55,0.55],"ARROYO GRANDE":["SAN LUIS OBISPO",0.55,0.55],"ATASCADERO":["SAN LUIS OBISPO",0.55,0.55],"EL PASO DE ROBLES":["SAN LUIS OBISPO",0.55,0.55],"GROVER BEACH":["SAN LUIS OBISPO",0.55,0.55],"MORRO BAY":["SAN LUIS OBISPO",0.55,0.55],"PISMO BEACH":["SAN LUIS OBISPO",0.55,0.55],"SAN LUIS OBISPO":["SAN LUIS OBISPO",0.55,0.55],"ATHERTON":["SAN MATEO",0.55,0.55],"BELMONT":["SAN MATEO",0.55,0.55],"BRISBANE":["SAN MATEO",0.55,0.55],"BURLINGAME":["SAN MATEO",0.55,0.55],"COLMA":["SAN MATEO",0.55,0.55],"DALY CITY":["SAN MATEO",0.55,0.55],"EAST PALO ALTO":["SAN MATEO",0.55,0.55],"FOSTER CITY":["SAN MATEO",0.55,0.55],"HALF MOON BAY":["SAN MATEO",0.55,0.55],"HILLSBOROUGH":["SAN MATEO",0.55,0.55],"MENLO PARK":["SAN MATEO",0.55,0.55],"MILLBRAE":["SAN MATEO",0.55,0.55],"PACIFICA":["SAN MATEO",0.55,0.55],"PORTOLA VALLEY":["SAN MATEO",0.55,0.55],"REDWOOD CITY":["SAN MATEO",0.55,0.55],"SAN BRUNO":["SAN MATEO",0.55,0.55],"SAN CARLOS":["SAN MATEO",0.55,0.55],"SAN MATEO":["SAN MATEO",0.55,0.55],"SOUTH SAN FRANCISCO":["SAN MATEO",0.55,0.55],"WOODSIDE":["SAN MATEO",0.55,0.55],"BUELLTON":["SANTA BARBARA",0.55,0.55],"CARPINTERIA":["SANTA BARBARA",0.55,0.55],"GOLETA":["SANTA BARBARA",0.55,0.55],"GUADALUPE":["SANTA BARBARA",0.55,0.55],"LOMPOC":["SANTA BARBARA",0.55,0.55],"SANTA BARBARA":["SANTA BARBARA",0.55,0.55],"SANTA MARIA":["SANTA BARBARA",0.55,0.55],"SOLVANG":["SANTA BARBARA",0.55,0.55],"CAMPBELL":["SANTA CLARA",0.55,0.55],"CUPERTINO":["SANTA CLARA",0.55,0.55],"GILROY":["SANTA CLARA",0.55,0.55],"LOS ALTOS":["SANTA CLARA",0.55,0.55],"LOS ALTOS HILLS":["SANTA CLARA",0.55,0.55],"LOS GATOS":["SANTA CLARA",0.55,0.55],"MILPITAS":["SANTA CLARA",0.55,0.55],"MONTE SERENO":["SANTA CLARA",0.55,0.55],"MORGAN HILL":["SANTA CLARA",0.55,0.55],"MOUNTAIN VIEW":["SANTA CLARA",3.3,1.1],"PALO ALTO":["SANTA CLARA",3.3,1.1],"SAN JOSE":["SANTA CLARA",3.3,1.1],"SANTA CLARA":["SANTA CLARA",0.55,0.55],"SARATOGA":["SANTA CLARA",0.55,0.55],"SUNNYVALE":["SANTA CLARA",0.55,0.55],"CAPITOLA":["SANTA CRUZ",0.55,0.55],"SANTA CRUZ":["SANTA CRUZ",0.55,0.55],"SCOTTS VALLEY":["SANTA CRUZ",0.55,0.55],"WATSONVILLE":["SANTA CRUZ",0.55,0.55],"ANDERSON":["SHASTA",0.55,0.55],"REDDING":["SHASTA",0.55,0.55],"SHASTA LAKE":["SHASTA",0.55,0.55],"LOYALTON":["SIERRA",0.55,0.55],"DORRIS":["SISKIYOU",0.55,0.55],"DUNSMUIR":["SISKIYOU",0.55,0.55],"ETNA":["SISKIYOU",0.55,0.55],"FORT JONES":["SISKIYOU",0.55,0.55],"MONTAGUE":["SISKIYOU",0.55,0.55],"MOUNT SHASTA":["SISKIYOU",0.55,0.55],"TULELAKE":["SISKIYOU",0.55,0.55],"WEED":["SISKIYOU",0.55,0.55],"YREKA":["SISKIYOU",0.55,0.55],"BENICIA":["SOLANO",0.55,0.55],"DIXON":["SOLANO",0.55,0.55],"FAIRFIELD":["SOLANO",0.55,0.55],"RIO VISTA":["SOLANO",0.55,0.55],"SUISUN CITY":["SOLANO",0.55,0.55],"VACAVILLE":["SOLANO",0.55,0.55],"VALLEJO":["SOLANO",3.3,1.1],"CLOVERDALE":["SONOMA",0.55,0.55],"COTATI":["SONOMA",0.55,0.55],"HEALDSBURG":["SONOMA",0.55,0.55],"PETALUMA":["SONOMA",2.0,1.1],"ROHNERT PARK":["SONOMA",0.55,0.55],"SANTA ROSA":["SONOMA",2.0,1.1],"SEBASTOPOL":["SONOMA",0.55,0.55],"SONOMA":["SONOMA",0.55,0.55],"WINDSOR":["SONOMA",0.55,0.55],"CERES":["STANISLAUS",0.55,0.55],"HUGHSON":["STANISLAUS",0.55,0.55],"MODESTO":["STANISLAUS",0.55,0.55],"NEWMAN":["STANISLAUS",0.55,0.55],"OAKDALE":["STANISLAUS",0.55,0.55],"PATTERSON":["STANISLAUS",0.55,0.55],"RIVERBANK":["STANISLAUS",0.55,0.55],"TURLOCK":["STANISLAUS",0.55,0.55],"WATERFORD":["STANISLAUS",0.55,0.55],"LIVE OAK":["SUTTER",0.55,0.55],"YUBA":["SUTTER",0.55,0.55],"CORNING":["TEHAMA",0.55,0.55],"RED BLUFF":["TEHAMA",0.55,0.55],"TEHAMA":["TEHAMA",0.55,0.55],"TRINITY COUNTY":["TRINITY",0.0,1.1],"DINUBA":["TULARE",0.55,0.55],"EXETER":["TULARE",0.55,0.55],"FARMERSVILLE":["TULARE",0.55,0.55],"LINDSAY":["TULARE",0.55,0.55],"PORTERVILLE":["TULARE",0.55,0.55],"TULARE":["TULARE",0.55,0.55],"VISALIA":["TULARE",0.55,0.55],"WOODLAKE":["TULARE",0.55,0.55],"SONORA":["TUOLUMNE",0.55,0.55],"CAMARILLO":["VENTURA",0.55,0.55],"FILLMORE":["VENTURA",0.55,0.55],"MOORPARK":["VENTURA",0.55,0.55],"OJAI":["VENTURA",0.55,0.55],"OXNARD":["VENTURA",0.55,0.55],"PORT HUENEME":["VENTURA",0.55,0.55],"SAN BUENAVENTURA":["VENTURA",0.55,0.55],"SANTA PAULA":["VENTURA",0.55,0.55],"SIMI VALLEY":["VENTURA",0.55,0.55],"THOUSAND OAKS":["VENTURA",0.55,0.55],"DAVIS":["YOLO",0.55,0.55],"WEST SACRAMENTO":["YOLO",0.55,0.55],"WINTERS":["YOLO",0.55,0.55],"WOODLAND":["YOLO",0.55,0.55],"MARYSVILLE":["YUBA",0.55,0.55],"WHEATLAND":["YUBA",0.55,0.55]};
+const DRIVE='Google Drive';
+const CAP_TYPES=['EMD','Funds to close','Investor capital','Rehab paid out of pocket','Holding costs paid out of pocket','Other'];
+
+const S={deal:{}, capital:new Map(), draws:new Map(), cache:null, dbState:'connecting', readOnly:false, syncing:false, syncErr:'',
+  open:{calc:true,cap:true,lender:true,exp:false,lines:false}, linesPaid:'all', draft:{}, confirm:null};
+let db=null, mcp=null;
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>{n=Number(n)||0;return(n<0?'−':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+const money0=n=>{n=Number(n)||0;return(n<0?'−':'')+'$'+Math.round(Math.abs(n)).toLocaleString('en-US');};
+const num=v=>{let s=String(v??'').trim().replace(/[$,\s]/g,'');let neg=false;if(/^\(.*\)$/.test(s)){neg=true;s=s.slice(1,-1);}if(s.startsWith('-')){neg=!neg;s=s.slice(1);}const n=parseFloat(s);return isNaN(n)?0:(neg?-n:n);};
+const r2=n=>Math.round(n*100)/100;
+const sum=(a,f=x=>x.amount)=>r2(a.reduce((t,x)=>t+(Number(f(x))||0),0));
+const today=()=>new Date().toISOString().slice(0,10);
+const shortDate=d=>d?new Date(d+'T12:00').toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}):'';
+const byDate=(a,b)=>(b.date||'').localeCompare(a.date||'');
+const D=(k,f='')=>S.draft[k]??f;
+let tt; function toast(m){const el=$('#toast');el.textContent=m;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,3500);}
+async function write(fn){ if(!db){toast('This page is offline. Open it on claude.ai while signed in.');return false;}
+  try{await fn();return true;}catch(e){ if(e?.code==='invalid_argument'){S.readOnly=true;render();toast('You have view-only access, so changes are not saved.');} else toast('Could not save. Try again.'); return false; } }
+const sec=(key,title,sumTxt,body)=>`<details class="sec" data-sec="${key}"${S.open[key]?' open':''}><summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg><h3>${title}</h3><span class="sum">${sumTxt||''}</span></summary><div class="body">${body}</div></details>`;
+
+/* ---------- Drive tracker (live) ---------- */
+function isoDate(v){ if(v instanceof Date&&!isNaN(v)) return v.toISOString().slice(0,10); const s=String(v||'').trim(); let m;
+  if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})/)))return m[0];
+  if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))){let y=m[3];if(y.length===2)y='20'+y;if(y.length!==4||y<'1990')return '';return `${y}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;}
+  return ''; }
+function readSheet(wb,re){ const n=wb.SheetNames.find(x=>re.test(x)); if(!n) return null; return {name:n,ws:wb.Sheets[n]}; }
+function headerIdx(rows,need){ for(let i=0;i<Math.min(rows.length,12);i++){const r=(rows[i]||[]).map(c=>String(c??'').trim().toLowerCase()); if(need.every(n=>r.includes(n))) return i;} return -1; }
+function parseTracker(b64){
+  const wb=XLSX.read(b64,{type:'base64',cellDates:true});
+  const out={rows:[],capital:[],lender:[],lenderTab:''};
+  const ex=readSheet(wb,/expense breakdown/i);
+  if(ex){
+    const rows=XLSX.utils.sheet_to_json(ex.ws,{header:1,raw:true,defval:null});
+    const hi=headerIdx(rows,['date','amount']);
+    if(hi>=0){ const H=rows[hi].map(c=>String(c??'').trim().toLowerCase()); const col=n=>H.indexOf(n);
+      const cD=col('date'),cR=col('receipt'),cX=col('expense details'),cA=col('amount'),cP=col('paid'),cM=col('mode of payment'),cC=col('card used'),cK=col('category');
+      for(let i=hi+1;i<rows.length;i++){ const r=rows[i]||[]; const amt=Number(r[cA]); if(!amt&&amt!==0||r[cA]==null||r[cA]==='') continue; if(!r[cX]&&!r[cD]) continue;
+        const cell=cR>=0?ex.ws[XLSX.utils.encode_cell({r:i,c:cR})]:null;
+        out.rows.push({date:isoDate(r[cD]),desc:String(r[cX]??'').trim(),amount:r2(amt),paid:r[cP]===true||String(r[cP]).toUpperCase()==='TRUE',mode:String(r[cM]??''),card:String(r[cC]??''),cat:String(r[cK]??'').trim()||'Uncategorized',rc:cell?.l?.Target||''}); } }
+  }
+  const cap=readSheet(wb,/capital investment/i);
+  if(cap){ const rows=XLSX.utils.sheet_to_json(cap.ws,{header:1,raw:true,defval:null}); const hi=headerIdx(rows,['date','amount']);
+    if(hi>=0){ const H=rows[hi].map(c=>String(c??'').trim().toLowerCase()); const cD=H.indexOf('date'),cX=H.indexOf('expense details'),cA=H.indexOf('amount'),cM=H.indexOf('mode of payment');
+      for(let i=hi+1;i<rows.length;i++){const r=rows[i]||[]; const a=Number(r[cA]); if(!a) continue; out.capital.push({date:isoDate(r[cD]),desc:String(r[cX]??'').trim(),amount:r2(a),mode:String(r[cM]??'')});} } }
+  const ln=readSheet(wb,/^(anchor|kiavi|lender|.*lender.*)$/i);
+  if(ln){ out.lenderTab=ln.name; const rows=XLSX.utils.sheet_to_json(ln.ws,{header:1,raw:true,defval:null}); const hi=headerIdx(rows,['date','credit']);
+    if(hi>=0){ const H=rows[hi].map(c=>String(c??'').trim().toLowerCase()); const cD=H.indexOf('date'),cX=H.findIndex(h=>/details/.test(h)),cC=H.indexOf('credit'),cB=H.indexOf('debit');
+      for(let i=hi+1;i<rows.length;i++){const r=rows[i]||[]; const d=String(r[cX]??'').trim(); if(/^total$/i.test(d)) continue; const c=Number(r[cC])||0,b=Number(r[cB])||0; if(!c&&!b) continue; out.lender.push({date:isoDate(r[cD]),desc:d,credit:r2(c),debit:r2(b)});} } }
+  return out;
+}
+function mcpErr(e){ const c=e?.code;
+  if(c==='server_not_connected') return 'Google Drive is not connected. Add it in claude.ai Settings → Connectors.';
+  if(c==='needs_reauth') return 'Reconnect Google Drive in claude.ai Settings → Connectors.';
+  if(c==='not_in_manifest') return 'Google Drive is turned off for this page. Allow it when the page asks.';
+  if(c==='tool_error') return 'Google Drive could not open the tracker: '+(e.message||'');
+  return 'Could not reach Google Drive. Try again in a moment.'; }
+async function syncDrive(){
+  if(!mcp||S.syncing) return; S.syncing=true; S.syncErr=''; render();
+  try{
+    const r=await mcp.callTool(DRIVE,'download_file_content',{fileId:CFG.sheetId,exportMimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},{cache:false});
+    const b64=r.payload?.content; if(!b64) throw {code:'tool_error',message:'The download came back empty.'};
+    const t=parseTracker(b64);
+    const doc={fetchedAt:new Date().toISOString(),...t};
+    S.cache=doc;
+    if(db) await write(()=>db.doc('cache/tracker').set(doc));
+  }catch(e){ S.syncErr=e?.message&&!e.code?('The tracker could not be read: '+e.message):mcpErr(e); }
+  S.syncing=false; render();
+}
+
+/* ---------- Twin Calc (same formulas as "Profit Calc Updated") ---------- */
+function ttaxRates(city,price){ const c=TTAX[city]; if(!c) return [0,0]; let cr=c[1],co=c[2];
+  if(city==='BERKELEY') cr=price<2500000?15:25; if(city==='OAKLAND') cr=price<=300000?10:15; if(city==='RICHMOND') cr=price<1000000?7:12.5;
+  if(city==='CULVER') cr=price<1500000?4.5:19.5; if(city==='SAN FRANCISCO') cr=price>=1000000?7.5:6.8; return [cr,co]; }
+function cityFrom(addr){ const A=' '+String(addr||'').toUpperCase().replace(/[.,#]/g,' ').replace(/\s+/g,' ')+' '; let best=''; for(const k of Object.keys(TTAX)) if(A.includes(' '+k+' ')&&k.length>best.length) best=k; return best; }
+const CALC_DEF={months:3,commissionRate:5,liens:0,insurance:0,marketingFee:0,vtCommission:850,cesarCommission:1255,points:1,constLoan:0,constPoints:5,constRate:12,airbnb:0,engineering:0,admin:0,inspection:0,staging:0,escrow:1000,legal:0,inhouseRate:2.5,offer:0,redfin:0};
+function twin(c,sale){ const m=(Number(c.months)||0)/12, n=k=>Number(c[k])||0;
+  const commission=sale*n('commissionRate')/100;
+  const finance=n('points')/100*m*n('loan')+n('constPoints')/100*m*n('constLoan')+n('rate')/100*m*n('loan')+n('constRate')/100*m*n('constLoan');
+  const [cr,co]=ttaxRates(c.city,c.purchase); const transfer=(cr+co)*c.purchase/1000; const propTax=0.01*m*((sale+c.purchase)/2);
+  const soft=n('airbnb')+n('engineering')+n('admin')+n('inspection')+n('staging')+propTax+transfer+n('escrow')+n('legal');
+  const other=n('liens')+n('insurance')+n('marketingFee')+n('vtCommission')+n('cesarCommission');
+  const net=sale-commission-soft-finance-n('hardCosts')-other-c.purchase; const inhouse=sale*n('inhouseRate')/100;
+  const oop=(c.purchase-n('loan'))+finance+soft; const roi=oop>0&&m>0?(net/2)/oop/m:null;
+  return {sale,commission,finance,soft,other,hard:n('hardCosts'),net,gross:net+inhouse,oop,roi}; }
+function breakEven(c){const a=twin(c,0).net,b=twin(c,1e6).net,k=(b-a)/1e6;return k>0?-a/k:null;}
+
+/* ---------- numbers ---------- */
+function stats(){
+  const d=S.deal, t=S.cache||{rows:[],capital:[],lender:[]};
+  const rows=t.rows||[]; const total=sum(rows), paid=sum(rows.filter(x=>x.paid)), unpaid=r2(total-paid);
+  const byCat={}; for(const x of rows) byCat[x.cat]=(byCat[x.cat]||[]).concat(x);
+  const capSheet=(t.capital||[]).map(x=>({...x,src:'sheet'})), capHere=[...S.capital.values()].map(x=>({...x,src:'here'}));
+  const capital=[...capSheet,...capHere].sort(byDate); const capTotal=sum(capital);
+  const drawsSheet=(t.lender||[]).filter(x=>x.credit>0).map(x=>({date:x.date,desc:x.desc,amount:x.credit,status:'Received',src:'sheet'}));
+  const drawsHere=[...S.draws.values()].map(x=>({...x,src:'here'}));
+  const draws=[...drawsSheet,...drawsHere].sort(byDate);
+  const received=sum(draws.filter(x=>x.status==='Received')), requested=sum(draws.filter(x=>x.status==='Requested'));
+  const holdback=Number(d.holdback)||0, remaining=r2(holdback-received);
+  const loan=Number(d.loanAmount)||0, rate=Number(d.rate)||0;
+  const owed=r2(loan+received); const mortgageCalc=r2(owed*rate/100/12);
+  const mortgage=Number(d.mortgageMonthly)||mortgageCalc;
+  const monthsHeld=Number(d.monthsHeld)||0, mortgagePaid=r2(mortgage*monthsHeld);
+  const budget=Number(d.budget)||0;
+  const c={...CALC_DEF}; for(const [k,v] of Object.entries(d.calc||{})) if(v!=null&&v!=='') c[k]=v;
+  if(c.hardCosts==null) c.hardCosts=Math.max(budget,total);
+  if(c.loan==null) c.loan=owed; if(c.rate==null) c.rate=rate||9.95; if(c.city==null) c.city=cityFrom(CFG.address);
+  c.purchase=Number(d.purchasePrice)||0; c.sale=Number(d.salePrice)||0;
+  const profit=c.sale&&c.purchase?r2(twin(c,c.sale).net):null;
+  return {rows,total,paid,unpaid,byCat,capital,capTotal,draws,received,requested,holdback,remaining,loan,rate,owed,mortgage,mortgageCalc,monthsHeld,mortgagePaid,budget,calc:c,profit};
+}
+
+/* ---------- render ---------- */
+let pending=false;
+function scheduleRender(){const a=document.activeElement;if(a&&a.closest&&a.closest('#app')&&(a.tagName==='TEXTAREA'||(a.tagName==='INPUT'&&!['checkbox','file'].includes(a.type)))){pending=true;return;}pending=false;render();}
+document.addEventListener('focusout',()=>{if(pending)setTimeout(()=>{if(pending)scheduleRender();},0);});
+function dfield(k,label,isMoney=true,hint=''){const v=S.deal[k];return `<label class="field">${label}${hint?` <span class="faint" style="font-weight:400">${hint}</span>`:''}<input type="text" ${isMoney?'inputmode="decimal"':''} id="d-${k}" data-act="deal" data-f="${k}" data-num="${isMoney?1:0}" value="${esc(isMoney?(v||v===0?Number(v).toLocaleString('en-US',{maximumFractionDigits:2}):''):(v||''))}" placeholder="${isMoney?'0':''}"></label>`;}
+function cfield(c,k,label,unit){const v=c[k];return `<label class="field">${label}${unit?` <span class="faint" style="font-weight:400">${unit}</span>`:''}<input type="text" inputmode="decimal" id="c-${k}" data-act="calc" data-f="${k}" value="${esc(v==null||v===''?'':Number(v).toLocaleString('en-US',{maximumFractionDigits:2}))}" placeholder="0"></label>`;}
+function render(){
+  const s=stats(), d=S.deal;
+  $('#h-addr').textContent=CFG.address;
+  $('#h-meta').innerHTML=`<span class="pill acc">${esc(d.status||CFG.status)}</span>${d.lender||CFG.lender?`<span class="muted">Lender: ${esc(d.lender||CFG.lender)}</span>`:''}<a href="https://docs.google.com/spreadsheets/d/${esc(CFG.sheetId)}/edit" target="_blank" rel="noopener">Open Drive tracker</a>${CFG.ledgerUrl?`<a href="${esc(CFG.ledgerUrl)}" target="_blank" rel="noopener">Expense ledger</a>`:''}`;
+  $('#h-sync').innerHTML=`<span class="muted" style="font-size:12.5px">${S.cache?.fetchedAt?'Tracker read '+new Date(S.cache.fetchedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Not read from Drive yet'}</span>${mcp?`<button class="btn" data-act="sync"${S.syncing?' disabled':''}>${S.syncing?'Reading…':'Refresh from Drive'}</button>`:''}`;
+  let h='';
+  if(S.dbState==='off') h+=`<div class="note">This page could not connect. Open it on claude.ai while signed in.</div>`;
+  if(S.syncErr) h+=`<div class="note">${esc(S.syncErr)}</div>`;
+  if(!S.cache&&S.dbState==='live') h+=`<div class="note info">${mcp?'Reading the expense tracker from Google Drive…':'Open this page on claude.ai with Google Drive connected to load the expenses from the Drive tracker.'}</div>`;
+  const off=s.calc.offer&&s.calc.purchase?twin(s.calc,Number(s.calc.offer)):null;
+  h+=`<div class="summary">
+    <div class="tile"><div class="label">Total expenses</div><div class="big">${money0(s.total)}</div><div class="foot">${s.rows.length} lines in the Drive tracker</div></div>
+    <div class="tile"><div class="label">Paid</div><div class="big good">${money0(s.paid)}</div></div>
+    <div class="tile"><div class="label">Unpaid</div><div class="big ${s.unpaid?'bad':''}">${money0(s.unpaid)}</div></div>
+    <div class="tile"><div class="label">Capital invested</div><div class="big">${money0(s.capTotal)}</div><div class="foot">${s.capital.length} entries</div></div>
+    <div class="tile"><div class="label">Left at the lender</div><div class="big ${s.holdback&&s.remaining>0?'warn':''}">${s.holdback?money0(s.remaining):'—'}</div><div class="foot">${s.holdback?`of ${money0(s.holdback)} holdback`:`${money0(s.received)} drawn · set the holdback below`}</div></div>
+    <div class="tile"><div class="label">Projected profit</div><div class="big ${s.profit==null?'':s.profit<0?'bad':'good'}">${s.profit==null?'—':money0(s.profit)}</div><div class="foot">${s.profit==null?'add purchase price & estimated sale':'Twin Calc at estimated sale'}</div></div>
+  </div><div class="stack">`;
+  h+=sec('calc','Twin Calc · is this offer profitable?',off?`offer ${money0(s.calc.offer)} → ${off.net>=0?'profit':'loss'} ${money0(off.net)}`:(s.profit==null?'':`net ${money0(s.profit)} at estimated sale`),calcBody(s));
+  h+=sec('cap','Capital investment',money0(s.capTotal),capBody(s));
+  h+=sec('lender','Lender, draws & mortgage',`${money0(s.received)} drawn · ${money0(s.mortgage)}/mo`,lenderBody(s));
+  h+=sec('exp','Expenses by category',money0(s.total),expBody(s));
+  h+=sec('lines','Every expense line',`${s.rows.length} lines`,linesBody(s));
+  h+='</div>';
+  $('#app').innerHTML=`<fieldset class="ro"${S.readOnly?' disabled':''}>${h}</fieldset>`;
+}
+function calcBody(s){
+  const c=s.calc, est=c.sale&&c.purchase?twin(c,c.sale):null, off=c.offer&&c.purchase?twin(c,Number(c.offer)):null, be=c.purchase?breakEven(c):null;
+  const col=(r,k,neg)=>r?`<td class="amt">${neg?'− ':''}${money0(r[k])}</td>`:'<td class="amt faint">—</td>';
+  const line=(l,k,neg)=>`<tr><td>${l}</td>${col(est,k,neg)}${col(off,k,neg)}</tr>`;
+  return `<div class="form-grid">${dfield('purchasePrice','Purchase price')}${dfield('salePrice','Estimated sale (ARV)')}
+      <label class="field">Offer received <span class="faint" style="font-weight:400">price a buyer offers</span><input type="text" inputmode="decimal" id="c-offer" data-act="calc" data-f="offer" value="${c.offer?Number(c.offer).toLocaleString('en-US'):''}" placeholder="Type the offer"></label></div>
+    <div class="row">${off?`<span class="pill ${off.net>=0?'good':'bad'}">${off.net>=0?'Profit':'Loss'} ${money0(off.net)} at this offer</span>`:''}${be?`<span class="muted" style="font-size:13px">Break-even sale price <b class="mono">${money0(be)}</b>. Any offer above it makes a profit.</span>`:'<span class="faint" style="font-size:13px">Add the purchase price to run the calculator.</span>'}</div>
+    <div class="tbl"><table style="min-width:520px"><thead><tr><th></th><th class="amt">At estimated sale</th><th class="amt">At this offer</th></tr></thead><tbody>
+      <tr><td><b>Sale price</b></td>${col(est,'sale')}${col(off,'sale')}</tr>
+      ${line(`Real estate commission (${c.commissionRate}%)`,'commission',1)}
+      ${line('Soft costs (property tax, transfer tax, escrow…)','soft',1)}
+      ${line(`Finance costs (${c.months} mo on ${money0(c.loan)} loan)`,'finance',1)}
+      ${line(`Hard costs ${c.hardCosts===Math.max(s.budget,s.total)?'(expenses so far)':''}`,'hard',1)}
+      ${line('Liens, insurance, marketing, team & Cesar’s commission','other',1)}
+      <tr><td>Purchase price</td>${est?`<td class="amt">− ${money0(c.purchase)}</td>`:'<td class="amt faint">—</td>'}${off?`<td class="amt">− ${money0(c.purchase)}</td>`:'<td class="amt faint">—</td>'}</tr>
+    </tbody><tfoot>
+      <tr><td>Net profit</td>${est?`<td class="amt" style="color:${est.net<0?'var(--bad)':'var(--good)'}">${money0(est.net)}</td>`:'<td class="amt faint">—</td>'}${off?`<td class="amt" style="color:${off.net<0?'var(--bad)':'var(--good)'}">${money0(off.net)}</td>`:'<td class="amt faint">—</td>'}</tr>
+      <tr><td style="font-weight:500">+ Mariaelena’s commission (${c.inhouseRate}%) → gross profit</td>${col(est,'gross')}${col(off,'gross')}</tr>
+      <tr><td style="font-weight:500">Out of pocket · ROI annualized</td>${est?`<td class="amt">${money0(est.oop)} · ${est.roi==null?'—':(est.roi*100).toFixed(1)+'%'}</td>`:'<td class="amt faint">—</td>'}${off?`<td class="amt">${money0(off.oop)} · ${off.roi==null?'—':(off.roi*100).toFixed(1)+'%'}</td>`:'<td class="amt faint">—</td>'}</tr>
+    </tfoot></table></div>
+    <details><summary class="muted" style="cursor:pointer;font-weight:600">Calculator inputs</summary><div class="stack" style="margin-top:10px">
+      <div class="form-grid">${cfield(c,'months','Months till sale')}${cfield(c,'commissionRate','Commission','%')}${cfield(c,'hardCosts','Hard costs','default: expenses so far')}${cfield(c,'loan','Loan for finance cost','default: loan + draws')}${cfield(c,'points','Mortgage points')}${cfield(c,'rate','Mortgage rate','%')}${cfield(c,'constLoan','Construction loan')}${cfield(c,'constPoints','Construction points')}${cfield(c,'constRate','Construction rate','%')}
+      <label class="field">City (transfer tax)<input type="text" id="c-city" data-act="calc" data-f="city" data-text="1" list="cities" value="${esc(c.city||'')}"><datalist id="cities">${Object.keys(TTAX).map(k=>`<option value="${esc(k)}">`).join('')}</datalist></label></div>
+      <div class="form-grid">${cfield(c,'liens','Liens')}${cfield(c,'insurance','Insurance')}${cfield(c,'marketingFee','Marketing fee')}${cfield(c,'vtCommission','Virtual team commission')}${cfield(c,'cesarCommission','Cesar’s commission')}${cfield(c,'inhouseRate','Mariaelena’s commission','%')}${cfield(c,'escrow','Escrow & notary')}${cfield(c,'staging','Staging')}${cfield(c,'inspection','Inspection & permits')}${cfield(c,'engineering','Engineering')}${cfield(c,'legal','Legal fees')}</div>
+      <span class="faint" style="font-size:12.5px">Same formulas as the Profit Calc sheet, including its California transfer tax table.</span></div></details>
+    <div class="row"><label class="field" style="min-width:180px">Range offer · Redfin price<input type="text" inputmode="decimal" id="c-redfin" data-act="calc" data-f="redfin" value="${c.redfin?Number(c.redfin).toLocaleString('en-US'):''}" placeholder="0"></label>
+      ${c.redfin?[0.6,0.7,0.8,0.9].map(x=>`<div class="tile" style="padding:8px 12px"><div class="label">${x*100}%</div><div class="mono" style="font-weight:600">${money0(c.redfin*x)}</div></div>`).join(''):'<span class="faint" style="font-size:12.5px">Offer 60% to 80% of the Redfin price.</span>'}</div>`;
+}
+function capBody(s){
+  const by={}; for(const x of s.capital){const k=x.who||(/mike/i.test(x.desc)?'Mike':/issa/i.test(x.desc)?'Issa':/juan/i.test(x.desc)?'Juan':'Company');by[k]=(by[k]||0)+x.amount;}
+  return `<div class="kv">${Object.entries(by).map(([k,v])=>`<div><div class="k">${esc(k)}</div><div class="v">${money0(v)}</div></div>`).join('')||'<span class="faint">No capital entered yet.</span>'}</div>
+  <div class="form-grid">
+    <label class="field">Date<input type="date" id="nc-date" data-draft="nc-date" value="${esc(D('nc-date',today()))}"></label>
+    <label class="field">Who put the money in<input type="text" id="nc-who" data-draft="nc-who" value="${esc(D('nc-who'))}" placeholder="Mike, Issa, Juan, company…"></label>
+    <label class="field">Type<select id="nc-type" data-draft="nc-type">${CAP_TYPES.map(x=>`<option${D('nc-type','Investor capital')===x?' selected':''}>${esc(x)}</option>`).join('')}</select></label>
+    <label class="field">Amount<input type="text" inputmode="decimal" id="nc-amt" data-draft="nc-amt" value="${esc(D('nc-amt'))}" placeholder="0.00"></label>
+    <label class="field">Note<input type="text" id="nc-note" data-draft="nc-note" value="${esc(D('nc-note'))}" placeholder="Wire, what it covered…"></label>
+    <div style="align-self:end"><button class="btn primary" data-act="add-cap">Add capital</button></div></div>
+  <span class="faint" style="font-size:12.5px">Use this when there is no rehab or holding money from the lender and someone pays in. Rows from the tracker’s CAPITAL INVESTMENT tab show up here on their own.</span>
+  ${s.capital.length?`<div class="tbl"><table><thead><tr><th>Date</th><th>Who / what</th><th>Type</th><th>From</th><th class="amt">Amount</th><th></th></tr></thead><tbody>
+  ${s.capital.map(x=>`<tr data-cid="${esc(x.id||'')}"><td class="d">${shortDate(x.date)}</td><td>${esc(x.who||x.desc)}${x.note?` <span class="faint">· ${esc(x.note)}</span>`:''}</td><td>${esc(x.type||(/emd/i.test(x.desc)?'EMD':/funds to close/i.test(x.desc)?'Funds to close':'Capital'))}</td><td>${x.src==='sheet'?'<span class="pill plain">Drive tracker</span>':'<span class="pill acc">Added here</span>'}</td><td class="amt">${money(x.amount)}</td><td>${x.src==='here'?(S.confirm==='c-'+x.id?`<button class="btn sm danger" data-act="del-cap-yes">Delete</button>`:`<button class="btn sm ghost" data-act="del-cap" aria-label="Delete">✕</button>`):''}</td></tr>`).join('')}
+  </tbody><tfoot><tr><td colspan="4">Total capital invested</td><td class="amt">${money(s.capTotal)}</td><td></td></tr></tfoot></table></div>`:''}`;
+}
+function lenderBody(s){
+  const pct=s.holdback?Math.min(100,s.received/s.holdback*100):0;
+  return `<div class="form-grid">${dfield('lender','Lender',false)}${dfield('loanAmount','Loan funded at purchase')}${dfield('holdback','Rehab holdback at lender')}${dfield('rate','Interest rate','%')}${dfield('mortgageMonthly','Monthly payment','leave blank to estimate')}${dfield('monthsHeld','Months held so far',true)}</div>
+  <div class="kv">
+    <div><div class="k">Drawn from holdback</div><div class="v">${money0(s.received)}</div><div class="s">${s.requested?money0(s.requested)+' requested, not received':'nothing pending'}</div></div>
+    <div><div class="k">Still available at lender</div><div class="v" style="color:${s.holdback?(s.remaining<0?'var(--bad)':'var(--warn)'):'var(--faint)'}">${s.holdback?money0(s.remaining):'—'}</div><div class="s">${s.holdback?`holdback ${money0(s.holdback)} − drawn`:'enter the holdback amount'}</div></div>
+    <div><div class="k">Loan balance</div><div class="v">${money0(s.owed)}</div><div class="s">loan at purchase + draws</div></div>
+    <div><div class="k">Monthly mortgage</div><div class="v">${money0(s.mortgage)}</div><div class="s">${S.deal.mortgageMonthly?'entered payment':s.rate?`interest-only at ${s.rate}% on the loan balance`:'enter the rate or payment'}</div></div>
+    <div><div class="k">Mortgage paid so far</div><div class="v">${money0(s.mortgagePaid)}</div><div class="s">${s.monthsHeld} months</div></div>
+  </div>
+  ${s.holdback?`<div class="track" style="height:12px"><div class="fill" style="width:${pct}%"></div></div>`:''}
+  <div class="form-grid">
+    <label class="field">Draw date<input type="date" id="nd-date" data-draft="nd-date" value="${esc(D('nd-date',today()))}"></label>
+    <label class="field">Amount<input type="text" inputmode="decimal" id="nd-amt" data-draft="nd-amt" value="${esc(D('nd-amt'))}" placeholder="0.00"></label>
+    <label class="field">Status<select id="nd-status" data-draft="nd-status">${['Received','Requested'].map(x=>`<option${D('nd-status','Received')===x?' selected':''}>${x}</option>`).join('')}</select></label>
+    <label class="field">Note<input type="text" id="nd-note" data-draft="nd-note" value="${esc(D('nd-note'))}" placeholder="Draw 2, inspection…"></label>
+    <div style="align-self:end"><button class="btn primary" data-act="add-draw">Add draw</button></div></div>
+  ${s.draws.length?`<div class="tbl"><table><thead><tr><th>Date</th><th>Draw</th><th>Status</th><th>From</th><th class="amt">Amount</th><th></th></tr></thead><tbody>
+  ${s.draws.map(x=>`<tr data-did="${esc(x.id||'')}"><td class="d">${shortDate(x.date)}</td><td>${esc(x.desc||x.note||'Draw')}</td><td>${x.src==='here'?`<select data-act="draw-status" aria-label="Status">${['Received','Requested'].map(o=>`<option${x.status===o?' selected':''}>${o}</option>`).join('')}</select>`:`<span class="pill good">Received</span>`}</td><td>${x.src==='sheet'?`<span class="pill plain">${esc(S.cache?.lenderTab||'Drive')} tab</span>`:'<span class="pill acc">Added here</span>'}</td><td class="amt">${money(x.amount)}</td><td>${x.src==='here'?(S.confirm==='d-'+x.id?`<button class="btn sm danger" data-act="del-draw-yes">Delete</button>`:`<button class="btn sm ghost" data-act="del-draw" aria-label="Delete">✕</button>`):''}</td></tr>`).join('')}
+  </tbody></table></div>`:'<span class="faint">No draws yet. Draws on the lender tab of the Drive tracker show up here on their own.</span>'}`;
+}
+function lineTable(list){
+  return `<div class="tbl"><table><thead><tr><th>Paid</th><th>Date</th><th>Receipt</th><th>Expense</th><th>Paid with</th><th>Category</th><th class="amt">Amount</th></tr></thead><tbody>
+  ${list.map(x=>`<tr><td>${x.paid?'<span class="pill good">Paid</span>':'<span class="pill bad">Unpaid</span>'}</td><td class="d">${shortDate(x.date)}</td><td>${x.rc?`<a href="${esc(x.rc)}" target="_blank" rel="noopener">Receipt</a>`:'<span class="faint">—</span>'}</td><td>${esc(x.desc)}</td><td class="muted">${esc(x.card||x.mode)}</td><td>${esc(x.cat)}</td><td class="amt">${money(x.amount)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function expBody(s){
+  const list=Object.entries(s.byCat).map(([k,v])=>({k,v,total:sum(v),unpaid:sum(v.filter(x=>!x.paid))})).sort((a,b)=>b.total-a.total);
+  if(!list.length) return '<span class="faint">No expense lines read from the Drive tracker yet.</span>';
+  const max=Math.max(1,...list.map(x=>Math.abs(x.total)));
+  return `<div>${list.map(x=>{const key='g:'+x.k;return `<details class="grp" data-sec="${esc(key)}"${S.open[key]?' open':''}><summary><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M9 6l6 6-6 6"/></svg><span><b>${esc(x.k)}</b><small>${x.v.length} lines · ${x.v.filter(y=>y.rc).length} with receipts</small></span><span class="track"><span class="fill" style="display:block;width:${Math.max(1.5,Math.abs(x.total)/max*100)}%"></span></span><span class="amt gun" style="color:${x.unpaid?'var(--bad)':'var(--faint)'}">${x.unpaid?money0(x.unpaid)+' unpaid':'paid'}</span><span class="amt" style="font-weight:600">${money(x.total)}</span></summary><div class="gbody">${S.open[key]?lineTable(x.v.slice().sort(byDate)):''}</div></details>`;}).join('')}</div>`;
+}
+function linesBody(s){
+  const list=s.rows.filter(x=>S.linesPaid==='all'||(S.linesPaid==='paid')===x.paid).sort(byDate);
+  return `<div class="seg" role="group" aria-label="Paid">${['all','unpaid','paid'].map(v=>`<button data-act="lp" data-v="${v}" aria-pressed="${S.linesPaid===v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div>${S.open.lines?(list.length?lineTable(list):'<span class="faint">No lines.</span>'):''}`;
+}
+
+/* ---------- events ---------- */
+document.addEventListener('input',e=>{const k=e.target.dataset?.draft;if(k)S.draft[k]=e.target.value;});
+document.addEventListener('toggle',e=>{const d=e.target;if(!d.dataset?.sec)return;const was=!!S.open[d.dataset.sec];S.open[d.dataset.sec]=d.open;if(d.open&&!was&&(d.classList.contains('grp')||d.dataset.sec==='lines'))render();},true);
+document.addEventListener('change',async e=>{
+  const t=e.target, act=t.dataset.act; if(t.dataset.draft) S.draft[t.dataset.draft]=t.value; if(!act) return;
+  if(act==='deal'){const v=t.dataset.num==='1'?(t.value.trim()===''?null:num(t.value)):t.value.trim();await write(()=>db.doc('deal/main').set({...S.deal,[t.dataset.f]:v}));return;}
+  if(act==='calc'){const v=t.dataset.text?t.value.trim().toUpperCase():(t.value.trim()===''?null:num(t.value));await write(()=>db.doc('deal/main').set({...S.deal,calc:{...(S.deal.calc||{}),[t.dataset.f]:v}}));return;}
+  if(act==='draw-status'){const id=t.closest('tr').dataset.did;await write(()=>db.doc('draws/'+id).update({status:t.value}));return;}
+});
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-act]'); if(!b||b.tagName==='SELECT'||b.tagName==='INPUT') return;
+  const act=b.dataset.act; if(!/-yes$|^del-/.test(act)) S.confirm=null;
+  switch(act){
+    case 'sync': await syncDrive(); return;
+    case 'lp': S.linesPaid=b.dataset.v; break;
+    case 'add-cap': {const amount=r2(num(S.draft['nc-amt']));const who=(S.draft['nc-who']||'').trim();if(!amount||!who){toast('Fill in who put the money in and the amount.');return;}
+      if(await write(()=>db.collection('capital').add({date:S.draft['nc-date']||today(),who,type:S.draft['nc-type']||'Investor capital',amount,note:S.draft['nc-note']||'',desc:who,createdAt:new Date().toISOString()}))){S.draft['nc-amt']='';S.draft['nc-note']='';toast('Capital added');}break;}
+    case 'del-cap': S.confirm='c-'+b.closest('tr').dataset.cid; break;
+    case 'del-cap-yes': {const id=S.confirm.slice(2);S.confirm=null;await write(()=>db.doc('capital/'+id).delete());break;}
+    case 'add-draw': {const amount=r2(num(S.draft['nd-amt']));if(!amount){toast('Type the draw amount.');return;}
+      if(await write(()=>db.collection('draws').add({date:S.draft['nd-date']||today(),amount,status:S.draft['nd-status']||'Received',note:S.draft['nd-note']||'',desc:S.draft['nd-note']||'Draw',createdAt:new Date().toISOString()}))){S.draft['nd-amt']='';S.draft['nd-note']='';toast('Draw added');}break;}
+    case 'del-draw': S.confirm='d-'+b.closest('tr').dataset.did; break;
+    case 'del-draw-yes': {const id=S.confirm.slice(2);S.confirm=null;await write(()=>db.doc('draws/'+id).delete());break;}
+    default: return;
+  }
+  render();
+});
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+  const c=window.claude; if(!c?.use){S.dbState='off';render();return;}
+  db=await c.use('db'); if(!db){S.dbState='off';render();return;}
+  const user=await c.use('user'); try{if(user?.can&&await user.can('data.write')===false)S.readOnly=true;}catch{}
+  S.dbState='live';
+  const toMap=s=>new Map(s.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
+  let first=true;
+  db.doc('deal/main').onSnapshot(d=>{S.deal=d.exists?d.data():{};scheduleRender();});
+  db.collection('capital').onSnapshot(s=>{S.capital=toMap(s);scheduleRender();});
+  db.collection('draws').onSnapshot(s=>{S.draws=toMap(s);scheduleRender();});
+  db.doc('cache/tracker').onSnapshot(d=>{ if(d.exists&&!S.syncing) S.cache=d.data(); scheduleRender();
+    if(first){ first=false; const age=S.cache?.fetchedAt?Date.now()-Date.parse(S.cache.fetchedAt):Infinity; if(mcp&&age>10*60*1000) syncDrive(); } });
+  render();
+  try{ mcp=await c.use('mcp'); }catch{ mcp=null; }
+  render();
+  const age=S.cache?.fetchedAt?Date.now()-Date.parse(S.cache.fetchedAt):Infinity;
+  if(mcp&&!first&&age>10*60*1000) syncDrive();
+})();
+</script>

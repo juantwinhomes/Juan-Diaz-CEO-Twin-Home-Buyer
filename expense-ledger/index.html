@@ -2,6 +2,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* Layout: same system as Card Balances. Header, section tabs, a "View" dropdown or card tabs, then one working surface. */
 :root{
@@ -221,7 +222,7 @@ fieldset.ro{border:0;margin:0;padding:0;min-width:0}
 const DEFAULTS = {
   cards:[
     {k:'amex',n:'AmEx'},{k:'cap1p',n:'Capital One Personal'},{k:'cap1b',n:'Capital One Business'},{k:'disc2645',n:'Discover 2645'},
-    {k:'hd5253',n:'Home Depot 5253'},{k:'hd1511',n:'Home Depot 1511'},{k:'hd5880',n:'Home Depot 5880'},{k:'boa0475',n:'BOA 0475'}
+    {k:'hd5253',n:'Home Depot 5253'},{k:'hd1511',n:'Home Depot 1511'},{k:'hd5880',n:'Home Depot 5880'},{k:'hd8087',n:'Home Depot 8087'},{k:'boa0475',n:'BOA 0475'},{k:'citi2149',n:'Citi 2149'}
   ],
   types:['Overhead Expense','Property Expense','Marketing Expense','Overhead - Peninsula','Overhead - Prescott','Overhead - Daliaz','Overhead - Equity Track Inc','Overhead - Matrix Group One'],
   categories:['Office & Administrative Expense','Technology Expense','Marketing Tools','Sales Acquisition - Real Estate','PPS - Sales Acquisition','Direct Mail','Direct Mail - Checks (Real Estate)','Direct Mail - Postcards (Real Estate)','PPS - Postcards','PPC - Real Estate','PPC - PPS','Real Estate - Facebook Ads','PPS - Facebook Ads','Iriga Office - Facebook','PPS - Nextdoor Ads','PPS - Bing Ads','PPS - Yelp','PPS - Smarter Contact','PPS - QR Code','TV','Motivated Leads','Property Leads','LeadGeeks','Reddit','Peninsula Plumbing','Personal Expense'],
@@ -451,6 +452,73 @@ async function doImport(){
   toast((failed?`${failed} rows did not save. Import the file again to retry. `:'')+`${cardName(p.card)}: `+parts.join(', '));
 }
 
+/* ---------- import a month from the Daily Expense Tracker (Drive) ---------- */
+function cardForTab(name){
+  const n=String(name||'').toUpperCase().replace(/\s+/g,' ').trim();
+  if(/GIFT CARD|RELAY|WELLS|CALC|SETTINGS/.test(n)) return null;
+  const digits=(n.match(/\d{4}/)||[])[0];
+  for(const c of cards()){ const cn=c.n.toUpperCase(); if(digits&&cn.includes(digits)) return c.k; }
+  if(/AMEX|AMERICAN EXPRESS/.test(n)) return cards().find(c=>/amex|american express/i.test(c.n))?.k||null;
+  if(/CAPITAL ONE PERSONAL/.test(n)) return cards().find(c=>/capital one personal/i.test(c.n))?.k||null;
+  if(/CAPITAL ONE BUSINESS/.test(n)) return cards().find(c=>/capital one business/i.test(c.n))?.k||null;
+  if(/DISCOVER/.test(n)) return cards().find(c=>/discover/i.test(c.n))?.k||null;
+  if(/CITI/.test(n)) return cards().find(c=>/citi/i.test(c.n))?.k||null;
+  if(/BOA|BANK OF AMERICA/.test(n)) return cards().find(c=>/boa|bank of america/i.test(c.n))?.k||null;
+  return null;
+}
+const addrKey=a=>{const m=String(a||'').replace(/["']/g,'').toLowerCase().match(/^\s*(\d+)\s+([a-z0-9]+)/);return m?m[1]+' '+m[2]:'';};
+function propIdFor(addr){ const k=addrKey(addr); if(!k) return ''; for(const p of S.props.values()) if(addrKey(p.address)===k) return p.id; return ''; }
+function parseDailyWorkbook(wb){
+  const out={cards:{},skipped:[]};
+  for(const name of wb.SheetNames){
+    const ws=wb.Sheets[name]; const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+    const hi=rows.findIndex(r=>r&&r.some(c=>/^date$/i.test(String(c??'').trim()))&&r.some(c=>/^payee$/i.test(String(c??'').trim())));
+    if(hi<0) continue;
+    const card=cardForTab(name); if(!card){ out.skipped.push(name.trim()); continue; }
+    const H=rows[hi].map(c=>String(c??'').trim().toLowerCase()); const col=x=>H.indexOf(x);
+    const cD=col('date'),cR=col('receipt'),cP=col('payee'),cA=col('amount')>=0?col('amount'):cP+1,cW=col('what is this for?'),cS=col('status'),cC=col('category'),cU=col('sub category'),cT=col('expense type'),cX=col('property');
+    const list=[]; const seen={};
+    for(let i=hi+1;i<rows.length;i++){
+      const r=rows[i]||[]; const d=r[cD]; const desc=String(r[cP]??'').replace(/\s+/g,' ').trim(); if(!d||!desc) continue;
+      const date=d instanceof Date?d.toISOString().slice(0,10):normDate(d); if(!date) continue;
+      let amount=r[cA], bad=false; if(amount instanceof Date||amount==null||amount===''||isNaN(Number(amount))){bad=true;amount=0;} amount=r2(Number(amount));
+      const base=`${card}-${date}-${Math.round(amount*100)}-${hash(desc.toLowerCase())}`; seen[base]=(seen[base]||0)+1;
+      const id=(base+'-'+seen[base]).replace(/[^A-Za-z0-9_\-.~:@+]/g,'_');
+      const st=String(r[cS]??'').trim(); const status=/transferred/i.test(st)?'Transferred':/pend/i.test(st)?'Pending':'Posted';
+      const type=String(r[cT]??'').trim(), prop=String(r[cX]??'').trim();
+      const link=cR>=0?ws[XLSX.utils.encode_cell({r:i,c:cR})]?.l?.Target||'':'';
+      list.push({id,card,date,desc,amount,status,type,category:String(r[cC]??'').trim(),sub:String(r[cU]??'').trim(),propertyId:propIdFor(prop),propertyText:prop.replace(/["']/g,''),
+        notes:[String(r[cW]??'').trim(),bad?'Amount missing in the Daily Expense Tracker; fix it here.':''].filter(Boolean).join(' · '),receiptUrl:link,receiptName:'',paid:false});
+    }
+    out.cards[card]=(out.cards[card]||[]).concat(list);
+  }
+  return out;
+}
+async function importDailyFromDrive(){
+  const fid=(S.draft.dtLink||'').match(/\/d\/([\w-]{20,})/)?.[1]||(S.draft.dtLink||'').trim();
+  if(!fid){toast('Paste the Daily Expense Tracker link first.');return;}
+  if(!mcp||!window.XLSX){toast('Drive import needs this page open on claude.ai with Google Drive connected.');return;}
+  S.dtBusy='Reading the sheet from Drive…'; render();
+  try{
+    const r=await mcp.callTool(DRIVE,'download_file_content',{fileId:fid,exportMimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},{cache:false});
+    const wb=XLSX.read(r.payload?.content||'',{type:'base64',cellDates:true});
+    S.dtPreview=parseDailyWorkbook(wb); S.dtBusy='';
+  }catch(e){ S.dtBusy=''; toast(driveErr(e)); }
+  render();
+}
+async function commitDailyImport(){
+  const pv=S.dtPreview; if(!pv) return; const jobs=[]; let added=0, updated=0;
+  for(const list of Object.values(pv.cards)) for(const x of list){
+    const ex=S.txns.get(x.id); const {propertyText,...doc}=x;
+    if(!ex){ added++; jobs.push(()=>db.doc('txns/'+x.id).set({...doc,importedAt:new Date().toISOString(),source:'Daily Expense Tracker'})); }
+    else { const patch={}; for(const k of ['type','category','sub','propertyId','notes','receiptUrl']) if(!ex[k]&&doc[k]) patch[k]=doc[k]; if(doc.status==='Transferred'&&ex.status!=='Transferred') patch.status='Transferred';
+      if(Object.keys(patch).length){updated++; jobs.push(()=>db.doc('txns/'+x.id).update(patch));} }
+  }
+  S.dtBusy=`Saving ${jobs.length} rows…`; render(); let failed=0;
+  const q=[...jobs]; async function w(){while(q.length){const j=q.shift();try{await j();}catch{failed++;}}} await Promise.all([w(),w(),w(),w()]);
+  S.dtBusy=''; S.dtPreview=null; render(); toast(`Imported ${added} new, filled in ${updated}`+(failed?`, ${failed} failed (import again to retry)`:''));
+}
+
 /* ---------- render ---------- */
 let pending=false;
 function scheduleRender(){
@@ -565,6 +633,10 @@ function cardBalance(k){
   const has=info.siteBalance!=null&&info.siteBalance!=='';
   return {info,charges,payments,balance,py,site:has?Number(info.siteBalance):null,diff:has?r2(Number(info.siteBalance)-balance):null};
 }
+const _names={};let _namesBusy=false;
+function personName(id){ if(!id) return ''; if(id===S.uid) return 'You'; if(_names[id]!=null) return _names[id]||'Someone';
+  if(S.user?.profiles&&!_namesBusy){_namesBusy=true;S.user.profiles([id]).then(ps=>{_names[id]=ps?.[id]?.name||'';}).catch(()=>{_names[id]='';}).finally(()=>{_namesBusy=false;scheduleRender();});}
+  return '…'; }
 const reconPill=b=>b.diff==null?'<span class="pill plain">Website balance not entered</span>':Math.abs(b.diff)<0.01?'<span class="pill good">Matches the website</span>':`<span class="pill bad">Off by ${money(b.diff)}</span>`;
 function monthSelect(cur,act,months){
   const tm=today().slice(0,7), list=[...new Set([tm,...months])].sort().reverse();
@@ -591,7 +663,13 @@ function viewTracker(){
     const list=cards().map((c,i)=>{const r=T.filter(t=>t.card===c.k);return{...c,i,b:cardBalance(c.k),unpaid:sum(r.filter(t=>!t.paid))};});
     const max=Math.max(1,...list.map(c=>Math.abs(c.b.balance)));
     h+=`<div class="summary"><div class="tile"><div class="label">Balance · all cards</div><div class="big">${money(sum(list,c=>c.b.balance))}</div><div class="foot">charges − payments</div></div><div class="tile"><div class="label">Unpaid in tracker</div><div class="big bad">${money(sum(list,c=>c.unpaid))}</div></div><div class="tile"><div class="label">Cards matching the website</div><div class="big">${list.filter(c=>c.b.diff!=null&&Math.abs(c.b.diff)<0.01).length} of ${list.length}</div></div></div>
-    <div class="rows">${list.map(c=>`<button class="brow" data-act="tcard" data-k="${esc(c.k)}"><span class="name"><span class="chip" style="--c:var(--k${c.i%10})"><i></i></span><span>${esc(c.n)}<br>${reconPill(c.b)}</span></span><span class="track"><span class="fill" style="display:block;width:${Math.max(1.5,Math.abs(c.b.balance)/max*100)}%"></span></span><span class="amt paid">${money(c.unpaid)}<small>unpaid charges</small></span><span class="amt">${money(c.b.balance)}<small>balance</small></span></button>`).join('')}</div>`;
+    <div class="panel"><div class="panel-pad" style="padding-bottom:6px"><h3 style="font-size:16px">Website balance check</h3><div class="muted" style="font-size:13px">Type the balance each card’s website shows. The tracker balance next to it should match. Click a card name to open its tracker.</div></div>
+    <div class="tbl"><table style="min-width:900px"><thead><tr><th>Card</th><th class="amt">Balance on website</th><th>As of</th><th class="amt">Balance in tracker</th><th class="amt">Difference</th><th>Check</th><th>Updated by</th></tr></thead><tbody>
+    ${list.map(c=>`<tr data-ck="${esc(c.k)}"><td><button class="btn ghost" data-act="tcard" data-k="${esc(c.k)}" style="padding:2px 4px"><span class="chip" style="--c:var(--k${c.i%10})"><i></i>${esc(c.n)}</span></button></td>
+      <td class="amt"><input type="text" inputmode="decimal" class="mono" style="width:140px;text-align:right" id="ws-${esc(c.k)}" data-act="ci" data-f="siteBalance" data-num="1" value="${c.b.site==null?'':c.b.site.toLocaleString('en-US',{minimumFractionDigits:2})}" placeholder="0.00" aria-label="${esc(c.n)} balance on website"></td>
+      <td><input type="date" id="wd-${esc(c.k)}" data-act="ci" data-f="siteAsOf" value="${esc(c.b.info.siteAsOf||'')}" aria-label="As of"></td>
+      <td class="amt">${money(c.b.balance)}</td><td class="amt" style="color:${c.b.diff==null?'var(--faint)':Math.abs(c.b.diff)<0.01?'var(--good)':'var(--bad)'}">${c.b.diff==null?'—':money(c.b.diff)}</td><td>${reconPill(c.b)}</td>
+      <td class="muted" style="font-size:12px">${c.b.info.siteBy?esc(personName(c.b.info.siteBy))+(c.b.info.siteAt?' · '+esc(new Date(c.b.info.siteAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''):'—'}</td></tr>`).join('')}</tbody></table></div></div>`;
     return h;
   }
   const k=S.tCard, b=cardBalance(k), info=b.info;
@@ -606,6 +684,7 @@ function viewTracker(){
       <div><div class="k">Balance in this tracker</div><div class="v">${money(b.balance)}</div><div class="faint" style="font-size:12.5px">${info.openingDate?`${money0(info.opening)} on ${shortDate(info.openingDate)} + `:''}${money0(b.charges)} charges − ${money0(b.payments)} payments</div></div>
       <label class="field">Balance on the card website<input type="text" inputmode="decimal" id="ci-site" data-act="ci" data-f="siteBalance" data-num="1" value="${b.site==null?'':b.site.toLocaleString('en-US',{minimumFractionDigits:2})}" placeholder="Type what the website shows"></label>
       <label class="field">As of<input type="date" id="ci-asof" data-act="ci" data-f="siteAsOf" value="${esc(info.siteAsOf||'')}"></label>
+      <div class="faint" style="font-size:12px;grid-column:1/-1;order:9">${info.siteBy?`Website balance entered by ${esc(personName(info.siteBy))}${info.siteAt?' on '+esc(new Date(info.siteAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}`:''}</div>
       <div><div class="k">Difference</div><div class="v" style="color:${b.diff==null?'var(--faint)':Math.abs(b.diff)<0.01?'var(--good)':'var(--bad)'}">${b.diff==null?'—':money(b.diff)}</div></div>
     </div>
     ${sec('bal-how','How the balance is figured',`${b.py.length} card payment${b.py.length===1?'':'s'}`,`<span class="faint" style="font-size:12.5px">Charges come from every imported row on this card. Payments come from the CSV (lines like “Payment – thank you”) or the form below. If the tracker starts mid-cycle, enter the card balance on the day before your first import as the starting balance.</span>
@@ -708,8 +787,8 @@ function viewProperties(){
     const st=shown.map(p=>({p,s:propStats(p)}));
     h+=`<div class="toolbar"><div class="seg" role="group" aria-label="Group">${PGROUPS.map(g=>`<button data-act="pfilter" data-k="${g.k}" aria-pressed="${S.propFilter===g.k}">${g.n} (${counts[g.k]||0})</button>`).join('')}</div></div>
     <div class="summary"><div class="tile"><div class="label">Expenses · ${esc(PGROUPS.find(g=>g.k===S.propFilter).n)}</div><div class="big">${money0(sum(st,x=>x.s.total))}</div></div><div class="tile"><div class="label">Paid</div><div class="big good">${money0(sum(st,x=>x.s.paid))}</div></div><div class="tile"><div class="label">Unpaid</div><div class="big bad">${money0(sum(st,x=>x.s.unpaid))}</div></div><div class="tile"><div class="label">Over budget</div><div class="big ${st.some(x=>x.s.over)?'bad':''}">${st.filter(x=>x.s.over).length}</div><div class="foot">of ${shown.length} properties</div></div></div>
-    ${shown.length?`<div class="panel tbl"><table style="min-width:820px"><thead><tr><th>Property</th><th>Status</th><th class="amt">Budget</th><th class="amt">Spent</th><th class="amt">Unpaid</th><th class="amt">Balance</th><th class="amt">Projected profit</th><th>Tracker</th></tr></thead><tbody>
-    ${st.sort((a,b)=>(a.p.status||'').localeCompare(b.p.status||'')||b.s.total-a.s.total).map(({p,s})=>`<tr style="cursor:pointer" data-act="open-prop" data-id="${esc(p.id)}"><td><a href="#properties">${esc(p.address)}</a></td><td>${esc(p.status||'—')}</td><td class="amt">${s.budget?money0(s.budget):'—'}</td><td class="amt">${money0(s.total)}</td><td class="amt">${s.unpaid?money0(s.unpaid):'—'}</td><td class="amt" style="color:${s.over?'var(--bad)':'inherit'}">${s.budget?money0(s.budget-s.total):'—'}</td><td class="amt" style="color:${s.profit!=null&&s.profit<0?'var(--bad)':'inherit'}">${s.profit==null?'—':money0(s.profit)}</td><td>${p.sheetUrl?`<a href="${esc(p.sheetUrl)}" target="_blank" rel="noopener">Sheet</a>`:''}</td></tr>`).join('')}</tbody></table></div>`:`<div class="panel"><div class="empty"><b>No properties in this group</b>Set a property’s status on its page to move it here.</div></div>`}`;
+    ${shown.length?`<div class="panel tbl"><table style="min-width:820px"><thead><tr><th>Property</th><th>Status</th><th class="amt">Budget</th><th class="amt">Spent</th><th class="amt">Unpaid</th><th class="amt">Balance</th><th class="amt">Projected profit</th><th>Links</th></tr></thead><tbody>
+    ${st.sort((a,b)=>(a.p.status||'').localeCompare(b.p.status||'')||b.s.total-a.s.total).map(({p,s})=>`<tr style="cursor:pointer" data-act="open-prop" data-id="${esc(p.id)}"><td><a href="#properties">${esc(p.address)}</a></td><td>${esc(p.status||'—')}</td><td class="amt">${s.budget?money0(s.budget):'—'}</td><td class="amt">${money0(s.total)}</td><td class="amt">${s.unpaid?money0(s.unpaid):'—'}</td><td class="amt" style="color:${s.over?'var(--bad)':'inherit'}">${s.budget?money0(s.budget-s.total):'—'}</td><td class="amt" style="color:${s.profit!=null&&s.profit<0?'var(--bad)':'inherit'}">${s.profit==null?'—':money0(s.profit)}</td><td>${p.pageUrl?`<a href="${esc(p.pageUrl)}" target="_blank" rel="noopener">Property page</a> `:''}${p.sheetUrl?`<a href="${esc(p.sheetUrl)}" target="_blank" rel="noopener">Sheet</a>`:''}</td></tr>`).join('')}</tbody></table></div>`:`<div class="panel"><div class="empty"><b>No properties in this group</b>Set a property’s status on its page to move it here.</div></div>`}`;
     return h;
   }
   return h+viewProperty(S.props.get(S.propId));
@@ -753,7 +832,7 @@ function calcBody(p,s){
 function viewProperty(p){
   const s=propStats(p);
   const cats=Object.entries(s.byCat).sort((a,b)=>b[1]-a[1]); const max=Math.max(1,...cats.map(c=>Math.abs(c[1])));
-  let h=`<div class="row" style="margin-bottom:12px"><span class="muted">Status</span><select id="pf-status" data-act="pf" data-f="status" aria-label="Status">${opts(S.L.statuses,p.status||'','Choose…')}</select>${s.over?'<span class="pill bad">Over budget</span>':s.budget?'<span class="pill good">Within budget</span>':''}${s.holdPending?`<span class="pill warn">Holdback pending ${money0(s.holdPending)}</span>`:''}${p.sheetUrl?`<a href="${esc(p.sheetUrl)}" target="_blank" rel="noopener">Open Drive tracker</a>`:''}</div>
+  let h=`<div class="row" style="margin-bottom:12px"><span class="muted">Status</span><select id="pf-status" data-act="pf" data-f="status" aria-label="Status">${opts(S.L.statuses,p.status||'','Choose…')}</select>${s.over?'<span class="pill bad">Over budget</span>':s.budget?'<span class="pill good">Within budget</span>':''}${s.holdPending?`<span class="pill warn">Holdback pending ${money0(s.holdPending)}</span>`:''}${p.pageUrl?`<a class="btn primary sm" href="${esc(p.pageUrl)}" target="_blank" rel="noopener">Open property page</a>`:''}${p.sheetUrl?`<a href="${esc(p.sheetUrl)}" target="_blank" rel="noopener">Open Drive tracker</a>`:''}</div>
   <div class="summary">
     <div class="tile"><div class="label">Total expenses</div><div class="big">${money(s.total)}</div><div class="foot">${s.priorTotal?`Drive tracker ${money0(s.priorTotal)} · `:''}Cards ${money0(s.cardTotal)} · Other ${money0(s.otherTotal)}</div></div>
     <div class="tile"><div class="label">Paid</div><div class="big good">${money(s.paid)}</div></div>
@@ -809,8 +888,18 @@ function viewSettings(){
   return `<div class="toolbar"><h2 style="font-size:20px">Settings</h2><span class="spacer"></span><button class="btn primary" data-act="save-settings">Save changes</button></div>
   <div class="stack">
   <div class="panel panel-pad stack"><h3 style="font-size:16px">Cards</h3><span class="muted" style="font-size:13px">Each card gets its own tab in Daily Expenses and the Card Tracker.</span>
-    <div class="form-grid">${cards().map(c=>`<label class="field">Card name<input type="text" id="cn-${esc(c.k)}" data-draft="cn-${esc(c.k)}" value="${esc(D('cn-'+c.k,c.n))}"></label>`).join('')}
-    <label class="field">Add a card<input type="text" id="cn-new" data-draft="cn-new" value="${esc(D('cn-new'))}" placeholder="e.g. Home Depot 8087"></label></div></div>
+    <div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:640px"><thead><tr><th>Card name</th><th>Receipts folder in Company Receipts (Drive link)</th></tr></thead><tbody>${cards().map(c=>`<tr><td><input type="text" id="cn-${esc(c.k)}" data-draft="cn-${esc(c.k)}" value="${esc(D('cn-'+c.k,c.n))}" aria-label="Card name"></td><td><input type="text" style="width:100%" id="cf-${esc(c.k)}" data-draft="cf-${esc(c.k)}" value="${esc(D('cf-'+c.k,(L.cardFolders||{})[c.k]||''))}" placeholder="Blank = the receipts folder below" aria-label="${esc(c.n)} receipts folder"></td></tr>`).join('')}</tbody></table></div>
+    <span class="faint" style="font-size:12.5px">A receipt uploaded on a card’s row goes into that card’s folder, so AmEx receipts land in the AmEx folder and Capital One Business receipts in Capital One Business.</span>
+    <div class="form-grid"><label class="field">Add a card<input type="text" id="cn-new" data-draft="cn-new" value="${esc(D('cn-new'))}" placeholder="e.g. Home Depot 8087"></label></div></div>
+  <div class="panel panel-pad stack"><h3 style="font-size:16px">Import a month from the Daily Expense Tracker</h3>
+    <span class="muted" style="font-size:13px">Paste the link to a month’s Daily Expense Tracker sheet. Each card tab (AmEx, Capital One, Discover, Citi, Home Depot, BOA) goes onto its card here with its category, sub category, property, receipt link and status. Rows already here are skipped, so you can import the same month again after adding to the sheet.</span>
+    <div class="row"><input type="text" style="flex:1;min-width:260px" id="dt-link" data-draft="dtLink" value="${esc(D('dtLink'))}" placeholder="https://docs.google.com/spreadsheets/d/…"><button class="btn primary" data-act="dt-read"${S.dtBusy?' disabled':''}>Read sheet</button></div>
+    ${S.dtBusy?`<b>${esc(S.dtBusy)}</b>`:''}
+    ${S.dtPreview?(()=>{const pv=S.dtPreview;const rows=Object.entries(pv.cards);const all=rows.flatMap(([,l])=>l);const fresh=all.filter(x=>!S.txns.has(x.id));const noProp=all.filter(x=>bucketOf(x.type)==='property'&&!x.propertyId&&x.propertyText);
+      return `<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:520px"><thead><tr><th>Card</th><th class="amt">Rows</th><th class="amt">New</th><th class="amt">Transferred</th><th class="amt">With receipt</th><th class="amt">Total</th></tr></thead><tbody>${rows.map(([k,l])=>`<tr><td>${chip(k)}</td><td class="amt">${l.length}</td><td class="amt">${l.filter(x=>!S.txns.has(x.id)).length}</td><td class="amt">${l.filter(x=>x.status==='Transferred').length}</td><td class="amt">${l.filter(x=>x.receiptUrl).length}</td><td class="amt">${money(sum(l))}</td></tr>`).join('')}</tbody></table></div>
+      ${pv.skipped.length?`<span class="faint" style="font-size:12.5px">Skipped tabs: ${esc(pv.skipped.join(', '))}</span>`:''}${noProp.length?`<span class="faint" style="font-size:12.5px">${noProp.length} property rows name an address that is not in Properties: ${esc([...new Set(noProp.map(x=>x.propertyText))].slice(0,4).join('; '))}</span>`:''}
+      <div class="row"><button class="btn primary" data-act="dt-commit">Import ${fresh.length} new rows</button><button class="btn ghost" data-act="dt-cancel">Cancel</button></div>`;})():''}
+  </div>
   <div class="panel panel-pad stack"><h3 style="font-size:16px">Google Drive</h3>
     <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
     <label class="field">Receipts folder (link)<input type="text" id="ls-receiptFolder" data-draft="ls-receiptFolder" value="${esc(D('ls-receiptFolder',L.receiptFolder||''))}" placeholder="https://drive.google.com/drive/folders/…"></label>
@@ -822,6 +911,7 @@ function viewSettings(){
 }
 
 /* ---------- receipts (card charges and property payments) ---------- */
+function receiptParent(m){ const card=m.coll==='txns'?S.txns.get(m.rid)?.card:null; return folderId((S.L.cardFolders||{})[card])||folderId(S.L.receiptFolder); }
 function rcptRef(tr){ if(tr?.dataset.pid) return tr.dataset.kind==='pay'?{coll:'payments',rid:tr.dataset.pid}:{coll:'txns',rid:tr.dataset.pid}; return {coll:'txns',rid:tr?.dataset.id}; }
 function rcptRec(m){ if(m.coll==='payments'){const x=S.pays.get(m.rid);return x?{amount:Number(x.amount)||0,desc:x.payee}:null;} const t=S.txns.get(m.rid);return t?{amount:t.amount,desc:t.desc}:null; }
 async function saveReceipt(m,patch){ if(m.coll==='payments') await write(()=>db.doc('payments/'+m.rid).update(patch)); else await setTxn(m.rid,patch); render(); }
@@ -867,7 +957,9 @@ document.addEventListener('change',async e=>{
   if(act==='imp-gone'){S.preview.removeGone=t.checked;render();return;}
   if(act==='dmonth'){S.dMonth=t.value;render();return;}
   if(act==='tmonth'){S.tMonth=t.value;S.confirm=null;render();return;}
-  if(act==='ci'){const k=S.tCard;const v=t.dataset.num?(t.value.trim()===''?null:num(t.value)):t.value;const cur=S.cinfo.get(k)||{};const {id:_,...rest}=cur;await write(()=>db.doc('cardinfo/'+k).set({...rest,[t.dataset.f]:v}));return;}
+  if(act==='ci'){const k=t.closest('tr')?.dataset.ck||S.tCard;const f=t.dataset.f;const v=t.dataset.num?(t.value.trim()===''?null:num(t.value)):t.value;const cur=S.cinfo.get(k)||{};const {id:_,...rest}=cur;const patch={...rest,[f]:v};
+    if(f==='siteBalance'||f==='siteAsOf'){patch.siteBy=S.uid||'';patch.siteAt=new Date().toISOString();if(f==='siteBalance'&&!patch.siteAsOf)patch.siteAsOf=today();}
+    await write(()=>db.doc('cardinfo/'+k).set(patch));return;}
   if(act==='prop-pick'){S.propId=t.value;S.confirm=null;render();return;}
   if(act==='pf'&&S.propId!=='all'){const f=t.dataset.f;const v=t.type==='checkbox'?t.checked:t.dataset.num==='1'?num(t.value):t.value;if(f==='address'&&!String(v).trim()){render();return;}await write(()=>db.doc('properties/'+S.propId).update({[f]:v}));return;}
   if(act==='cf'&&S.propId!=='all'){const f=t.dataset.f;const v=t.dataset.text?t.value.trim().toUpperCase():(t.value.trim()===''?null:num(t.value));await write(()=>db.doc('properties/'+S.propId).update({calc:{[f]:v}}));return;}
@@ -913,7 +1005,7 @@ document.addEventListener('click',async e=>{
       const m=S.modal, t=rcptRec(m); if(!t||!m.file||m.busy) return;
       m.busy=true; m.err=''; renderModal();
       try{
-        const parent=folderId(S.L.receiptFolder);
+        const parent=receiptParent(m);
         const name=await uniqueName(amtStr(t.amount)+' - '+(m.vendor.trim()||'Vendor'),extOf(m.file),parent);
         const r=await uploadToDrive(m.file,name,parent);
         S.modal=null; renderModal(); await saveReceipt(m,{receiptUrl:r.url,receiptName:name}); toast('Saved to Drive as '+name);
@@ -960,10 +1052,14 @@ document.addEventListener('click',async e=>{
       const cs=cards().map(c=>({k:c.k,n:(S.draft['cn-'+c.k]??c.n).trim()||c.n}));
       const nw=(S.draft['cn-new']||'').trim(); if(nw) cs.push({k:(nw.toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,20)||'card')+Date.now().toString(36).slice(-3),n:nw});
       const data={cards:cs,types:lines('types'),categories:lines('categories'),subcategories:lines('subcategories'),methods:lines('methods'),statuses:lines('statuses'),
+        cardFolders:Object.fromEntries(cs.map(c=>[c.k,(S.draft['cf-'+c.k]??(S.L.cardFolders||{})[c.k]??'').trim()]).filter(x=>x[1])),
         receiptFolder:(S.draft['ls-receiptFolder']??S.L.receiptFolder??'').trim(),propertyFolder:(S.draft['ls-propertyFolder']??S.L.propertyFolder??'').trim(),requireReceipt:S.draft['ls-req']??S.L.requireReceipt};
-      if(await write(()=>db.doc('settings/lists').set(data))){for(const k of Object.keys(S.draft))if(/^(ls-|cn-)/.test(k))delete S.draft[k];toast('Settings saved');}
+      if(await write(()=>db.doc('settings/lists').set(data))){for(const k of Object.keys(S.draft))if(/^(ls-|cn-|cf-)/.test(k))delete S.draft[k];toast('Settings saved');}
       break;
     }
+    case 'dt-read': await importDailyFromDrive(); return;
+    case 'dt-commit': await commitDailyImport(); return;
+    case 'dt-cancel': S.dtPreview=null; break;
     case 'clear-ex': S.confirm='clear-ex'; break;
     case 'clear-ex-yes': {S.confirm=null;const jobs=[...[...S.txns.values()].filter(x=>x.example).map(x=>'txns/'+x.id),...[...S.pays.values()].filter(x=>x.example).map(x=>'payments/'+x.id)];for(const p of jobs)await write(()=>db.doc(p).delete());toast('Examples removed');break;}
     case 'cancel': S.confirm=null; break;
@@ -983,6 +1079,7 @@ render();
   const c=window.claude; if(!c?.use){S.dbState='off';render();return;}
   db=await c.use('db'); if(!db){S.dbState='off';render();return;}
   const user=await c.use('user');
+  try{S.uid=user?await user.id():null;S.user=user;}catch{}
   try{const can=user?.can?await user.can('data.write'):null;if(can===false)S.readOnly=true;}catch{}
   S.dbState='live';
   const onErr=e=>{if(e?.code==='revoked'){S.dbState='off';render();}};
