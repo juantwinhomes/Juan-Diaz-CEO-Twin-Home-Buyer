@@ -251,6 +251,16 @@ def load_invoices(path):
             if x.get("EPD Amount"):
                 it["epd"] = {"date": x["EPD Date"].strip(), "amount": money(x["EPD Amount"])}
             out.append(it)
+    # Accounting reallocations between properties (data/<card>/adjustments.csv)
+    adj = os.path.join(os.path.dirname(path), "adjustments.csv")
+    if os.path.exists(adj):
+        with open(adj, encoding="utf-8-sig", newline="") as f:
+            for n, x in enumerate(csv.DictReader(f), 1):
+                amt = money(x["Amount"])
+                for g, sign in ((x["From"].strip(), -1), (x["To"].strip(), 1)):
+                    bal[g] = bal.get(g, 0) + sign * amt
+                    out.append({"group": g, "date": x["Date"].strip(), "vendor": "Adjustment", "desc": x["Note"].strip(),
+                                "amount": sign * amt, "tag": "", "adj": True, "key": f"adj-{n}-{sign}"})
     return out, bal
 
 
@@ -271,12 +281,15 @@ def summarize(card, skey, items, bal):
             "id": hashlib.sha1(f"{card}|{skey}|{g}".encode()).hexdigest()[:16],
             "name": g,
             "owed": round(sum(i["amount"] for i in its), 2),
-            "count": len(its),
-            "credits": sum(1 for i in its if i["amount"] < 0),
+            "count": sum(1 for i in its if not i.get("adj")),
+            "credits": sum(1 for i in its if i["amount"] < 0 and not i.get("adj")),
             "payers": payers,
             "from": dates[0] if dates else "",
             "to": dates[-1] if dates else "",
         }
+        moved = round(sum(i["amount"] for i in its if i.get("adj")), 2)
+        if moved:
+            line["moved"] = moved
         if g in bal:
             line["balance"] = round(bal[g], 2)
         dues = [{"d": i["due"], "a": i["amount"], **({"ed": i["epd"]["date"], "ea": i["epd"]["amount"]} if i.get("epd") else {})}

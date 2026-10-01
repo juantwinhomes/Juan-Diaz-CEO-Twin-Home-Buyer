@@ -256,6 +256,7 @@ function lineHtml(l) {
   if (l.balance != null && Math.abs(l.balance - l.owed) > 0.005) meta.push(`Balance ${fmt(l.balance)}`);
   if (l.companies?.length) meta.push(l.companies.length === 1 ? esc(l.companies[0].name) : l.companies.map((x) => `${esc(x.name)} ${fmt(x.owed)}`).join(" · "));
   else if (l.payers?.length) meta.push(esc(l.payers.join(", ")));
+  if (l.moved) meta.push(`<b>${l.moved > 0 ? "Includes " + fmt(l.moved) + " moved in" : fmt(-l.moved) + " moved out"} by accounting</b>`);
   if (l.credits) meta.push(`${l.credits} credit${l.credits === 1 ? "" : "s"} included`);
   let metaHtml = meta.map((m) => `<span>${m}</span>`).join("");
   if (di) {

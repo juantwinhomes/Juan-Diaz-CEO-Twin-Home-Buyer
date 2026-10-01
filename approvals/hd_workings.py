@@ -48,10 +48,20 @@ for r in rows:
     r["prop"] = build.po_property(r["Purchase Order"])
     r["amt"] = float(r["Amount"])
 
+ADJ = os.path.join(HERE, "data", "home-depot-5253", "adjustments.csv")
+adjs = list(csv.DictReader(open(ADJ, encoding="utf-8"))) if os.path.exists(ADJ) else []
+moved = defaultdict(float)
+for a in adjs:
+    moved[a["From"]] -= float(a["Amount"])
+    moved[a["To"]] += float(a["Amount"])
+
 by = defaultdict(list)
 for r in rows:
     by[r["prop"]].append(r)
-props = sorted(by, key=lambda p: -sum(r["amt"] for r in by[p]))
+for p in moved:
+    by.setdefault(p, [])
+owed = {p: sum(r["amt"] for r in by[p]) + moved[p] for p in by}
+props = sorted(by, key=lambda p: -owed[p])
 
 inv = [r for r in rows if r["Type"] == "Invoice"]
 cr = [r for r in rows if r["Type"] == "Credit"]
@@ -68,7 +78,8 @@ summary_rows = "".join(
     f"<td class=n>{sum(1 for r in by[p] if r['Type']=='Credit')}</td>"
     f"<td class=n>{fmt(sum(r['amt'] for r in by[p] if r['Type']=='Invoice'))}</td>"
     f"<td class=n>{fmt(sum(r['amt'] for r in by[p] if r['Type']=='Credit'))}</td>"
-    f"<td class='n b'>{fmt(sum(r['amt'] for r in by[p]))}</td></tr>"
+    f"<td class=n>{fmt(moved[p]) if moved[p] else ''}</td>"
+    f"<td class='n b'>{fmt(owed[p])}</td></tr>"
     for p in props)
 
 rule_rows = "".join(
@@ -84,8 +95,12 @@ for p in props:
         f"<td>{('<span class=late>' + d(r['Due Date']) + ' past due</span>') if r['Due Date'] and r['Due Date'] < TODAY else d(r['Due Date'])}</td>"
         f"<td class=n>{fmt(r['amt'])}</td><td class=n>{fmt(float(r['EPD Amount'])) + ' by ' + d(r['EPD Date']) if r['EPD Amount'] else ''}</td>"
         f"<td class=n>{esc(r['PDF Page'])}</td></tr>" for r in rs)
-    detail.append(f"""<details class=prop><summary><span>{esc(p)}</span><span class=n>{len(rs)} rows · <b>{fmt(sum(r['amt'] for r in rs))}</b></span></summary>
+    detail.append(f"""<details class=prop><summary><span>{esc(p)}</span><span class=n>{len(rs)} rows · <b>{fmt(sum(r['amt'] for r in rs))}</b>{f" · {fmt(moved[p])} moved · owed <b>{fmt(owed[p])}</b>" if moved[p] else ""}</span></summary>
 <div class=scroll><table><thead><tr><th>Date</th><th>Invoice / credit</th><th>PO the runner typed</th><th>How it was placed</th><th>Due</th><th class=n>Amount</th><th class=n>Early-pay price</th><th class=n>PDF page</th></tr></thead><tbody>{body}</tbody></table></div></details>""")
+
+adj_html = ("<div class=scroll><table><thead><tr><th>Date</th><th>From</th><th>To</th><th class=n>Amount</th><th>Note</th></tr></thead><tbody>"
+            + "".join(f"<tr><td>{d(a['Date'])}</td><td>{esc(a['From'])}</td><td>{esc(a['To'])}</td><td class=n>{fmt(float(a['Amount']))}</td><td>{esc(a['Note'])}</td></tr>" for a in adjs)
+            + "</tbody></table></div>") if adjs else "<p class=muted>None.</p>"
 
 page = f"""<title>Home Depot 5253 Workings</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@600;700&family=Public+Sans:wght@400;600;700&display=swap">
@@ -137,7 +152,8 @@ details.prop[open] > summary {{ border-bottom:1px solid var(--line); background:
 <li><b>Read every row.</b> For each invoice: date, invoice number, the PO the runner typed, due date, amount, and the early-pay price. For each credit: date, reference number, PO, credit amount. The PDF page for each row is in the tables below so you can check it.</li>
 <li><b>Assign a property from the PO.</b> Runners type the job into the PO field with different spellings. Spaces and punctuation are ignored, then each PO is matched to a property (the spellings found are listed below). Five PO words had no street address, and you confirmed those on Oct 1.</li>
 <li><b>Credits reduce what's owed.</b> Each credit is subtracted from the property in its PO.</li>
-<li><b>Total per property</b> = its invoices minus its credits. That is the “Owed” number on each Home Depot line Juan approves.</li>
+<li><b>Accounting reallocations</b> move an amount from one property to another (listed below). They change the split, not the total.</li>
+<li><b>Total per property</b> = its invoices minus its credits, plus or minus any reallocation. That is the “Owed” number on each Home Depot line Juan approves.</li>
 </ol></section>
 
 <section><h2>Tie-out</h2>
@@ -153,10 +169,12 @@ details.prop[open] > summary {{ border-bottom:1px solid var(--line); background:
 </section>
 
 <section><h2>By property</h2><div class=scroll><table>
-<thead><tr><th>Property</th><th class=n>Invoices</th><th class=n>Credits</th><th class=n>Invoice total</th><th class=n>Credit total</th><th class=n>Owed</th></tr></thead>
+<thead><tr><th>Property</th><th class=n>Invoices</th><th class=n>Credits</th><th class=n>Invoice total</th><th class=n>Credit total</th><th class=n>Moved</th><th class=n>Owed</th></tr></thead>
 <tbody>{summary_rows}</tbody>
-<tfoot><tr><td>Total</td><td class=n>{len(inv)}</td><td class=n>{len(cr)}</td><td class=n>{fmt(tot_inv)}</td><td class=n>{fmt(tot_cr)}</td><td class=n>{fmt(tot_inv + tot_cr)}</td></tr></tfoot>
+<tfoot><tr><td>Total</td><td class=n>{len(inv)}</td><td class=n>{len(cr)}</td><td class=n>{fmt(tot_inv)}</td><td class=n>{fmt(tot_cr)}</td><td class=n>{fmt(sum(moved.values()))}</td><td class=n>{fmt(tot_inv + tot_cr)}</td></tr></tfoot>
 </table></div></section>
+
+<section><h2>Reallocations by accounting</h2>{adj_html}</section>
 
 <section><h2>PO spellings matched to each property</h2><div class=scroll><table class=rules>
 <thead><tr><th>Property</th><th>What runners typed in the PO</th></tr></thead><tbody>{rule_rows}</tbody></table></div>
