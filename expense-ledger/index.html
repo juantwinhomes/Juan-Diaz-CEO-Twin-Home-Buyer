@@ -1,0 +1,768 @@
+<title>Twin Home Expense Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a working ledger. Sticky tab bar, one working surface per tab, wide tables scroll inside their own frames. */
+:root{
+  --paper:#F3F5F1; --surface:#FFFFFF; --sunk:#E9EDE6; --ink:#17201B; --muted:#5B6860; --rule:#D6DDD3;
+  --accent:#2347B8; --accent-ink:#FFFFFF; --accent-weak:#E3E9FB;
+  --good:#1D7448; --good-weak:#DDF0E4; --warn:#9A5B00; --warn-weak:#FBEBD0; --bad:#B42318; --bad-weak:#FBE0DC;
+  --c-amex:#2A6FDB; --c-cap1p:#C2412E; --c-cap1b:#7A2E22; --c-disc:#E07B00; --c-hdp1:#E8650E; --c-hdp2:#B8500B; --c-hdc:#6B3A10; --c-boa:#8E1B3B;
+  --f-display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --f-body:"Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-num:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#0F1411; --surface:#171E19; --sunk:#1E2721; --ink:#E4EBE5; --muted:#96A39A; --rule:#2B362F;
+  --accent:#88A6FF; --accent-ink:#0F1411; --accent-weak:#1F2A47;
+  --good:#5CC48B; --good-weak:#173325; --warn:#E6A84B; --warn-weak:#3A2B12; --bad:#F2806F; --bad-weak:#3D1C18;
+  --c-amex:#6EA2F5; --c-cap1p:#EE7A66; --c-cap1b:#D08B7E; --c-disc:#F5A640; --c-hdp1:#F79554; --c-hdp2:#DB8A4E; --c-hdc:#C69766; --c-boa:#E3708F;
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --paper:#0F1411; --surface:#171E19; --sunk:#1E2721; --ink:#E4EBE5; --muted:#96A39A; --rule:#2B362F;
+  --accent:#88A6FF; --accent-ink:#0F1411; --accent-weak:#1F2A47;
+  --good:#5CC48B; --good-weak:#173325; --warn:#E6A84B; --warn-weak:#3A2B12; --bad:#F2806F; --bad-weak:#3D1C18;
+  --c-amex:#6EA2F5; --c-cap1p:#EE7A66; --c-cap1b:#D08B7E; --c-disc:#F5A640; --c-hdp1:#F79554; --c-hdp2:#DB8A4E; --c-hdc:#C69766; --c-boa:#E3708F;
+  color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:0 64px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;font-weight:700;letter-spacing:-.01em}
+h1{font-size:20px} h2{font-size:22px} h3{font-size:16px}
+.num,.amt,td.d{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--paper);border-bottom:1px solid var(--rule)}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding-block:12px}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand small{color:var(--muted);font-size:12px}
+.tabs{display:flex;gap:2px;overflow-x:auto;max-width:100%}
+.tabs a{padding:7px 12px;border-radius:var(--r);text-decoration:none;color:var(--muted);font-weight:600;white-space:nowrap}
+.tabs a:hover{color:var(--ink);background:var(--sunk)}
+.tabs a[aria-current="page"]{color:var(--accent-ink);background:var(--accent)}
+.tabs .badge{display:inline-block;min-width:18px;margin-left:6px;padding:0 5px;border-radius:9px;background:var(--warn-weak);color:var(--warn);font-size:11px;text-align:center}
+
+/* generic */
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.spread{justify-content:space-between}
+section.panel{background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);padding:16px;min-width:0}
+.head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:8px 16px;padding-block:20px 4px}
+.btn{border:1px solid var(--rule);background:var(--surface);padding:6px 12px;border-radius:var(--r);cursor:pointer;font-weight:600;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);background:var(--sunk)}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+select,input[type=text],input[type=date],input[type=number],textarea{background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);padding:5px 8px;min-width:0}
+select:hover,input:hover,textarea:hover{border-color:var(--muted)}
+textarea{width:100%;resize:vertical}
+label.field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600;min-width:0}
+label.field input,label.field select{color:var(--ink);font-weight:400;font-size:14px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:5px 12px;cursor:pointer;font-weight:600;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.chip{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:600}
+.chip i{width:9px;height:9px;border-radius:2px;background:var(--c);flex:none}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.pill.good{background:var(--good-weak);color:var(--good)} .pill.warn{background:var(--warn-weak);color:var(--warn)} .pill.bad{background:var(--bad-weak);color:var(--bad)} .pill.plain{background:var(--sunk);color:var(--muted)}
+.tag{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--warn);font-weight:700}
+.banner{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:var(--r);background:var(--warn-weak);color:var(--warn);font-weight:600}
+.banner.info{background:var(--accent-weak);color:var(--accent)}
+
+/* stat strip */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat b{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:19px;font-weight:600}
+.stat b.bad{color:var(--bad)} .stat b.good{color:var(--good)} .stat b.warn{color:var(--warn)}
+
+/* tables: ledger ruling */
+.tbl{overflow-x:auto;border:1px solid var(--rule);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:720px}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:2px solid var(--rule);background:var(--sunk);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:color-mix(in srgb,var(--accent-weak) 45%,transparent)}
+td.amt,th.amt{text-align:right;white-space:nowrap}
+td.desc{min-width:200px;max-width:340px}
+td.d{white-space:nowrap;color:var(--muted)}
+tr.ex td.desc{font-style:italic}
+tfoot td{font-weight:700;border-top:2px solid var(--rule);background:var(--sunk)}
+td select{max-width:190px}
+.needs{font-size:11px;color:var(--warn);white-space:nowrap}
+.empty{padding:36px 16px;text-align:center;color:var(--muted)}
+.empty h3{color:var(--ink);margin-bottom:6px}
+
+/* card tiles */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.ctile{border:1px solid var(--rule);background:var(--surface);border-radius:var(--r);padding:10px 12px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px;border-top:4px solid var(--c)}
+.ctile:hover{border-color:var(--muted);border-top-color:var(--c)}
+.ctile[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:-1px}
+.ctile .nm{font-weight:700;font-size:13px}
+.ctile .bal{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:16px;font-weight:600}
+.ctile .sub{font-size:11px;color:var(--muted)}
+
+/* bucket tabs */
+.btabs{display:flex;gap:0;border-bottom:2px solid var(--rule);overflow-x:auto}
+.btabs button{border:0;background:transparent;padding:10px 16px;cursor:pointer;font-weight:700;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;display:flex;gap:8px;align-items:baseline}
+.btabs button span{font-family:var(--f-num);font-weight:500;font-size:12px}
+.btabs button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.split{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start}
+@media (max-width:900px){.split{grid-template-columns:minmax(0,1fr)}}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;font-size:13px}
+.bar{grid-column:1/-1;height:6px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.bar>i.over{background:var(--bad)}
+
+/* properties */
+.props{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.ptile{border:1px solid var(--rule);background:var(--surface);border-radius:var(--r);padding:14px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:8px}
+.ptile:hover{border-color:var(--muted)}
+.ptile .addr{font-family:var(--f-display);font-weight:700;font-size:16px}
+.kv{display:grid;grid-template-columns:auto auto;justify-content:space-between;gap:2px 12px;font-size:13px}
+.kv span:nth-child(even){font-family:var(--f-num);font-variant-numeric:tabular-nums;text-align:right}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.pl{display:flex;flex-direction:column;gap:6px}
+.pl .line{display:flex;justify-content:space-between;gap:12px;font-size:13px}
+.pl .line b{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-weight:500}
+.pl .total{border-top:2px solid var(--ink);padding-top:6px;font-weight:700}
+.pl .total b{font-weight:700;font-size:17px}
+.check{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+
+/* import */
+.drop{border:2px dashed var(--rule);border-radius:var(--r);padding:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.drop.over{border-color:var(--accent);background:var(--accent-weak)}
+.file-btn{position:relative;overflow:hidden}
+.file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+/* toast + modal */
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;display:flex;gap:12px;align-items:center;background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:var(--r);font-weight:600;max-width:calc(100% - 32px);box-shadow:0 6px 24px rgb(0 0 0 / .2)}
+#toast button{background:transparent;border:1px solid currentColor;color:inherit;border-radius:4px;padding:2px 8px;cursor:pointer;font-weight:700}
+#modal{position:fixed;inset:0;z-index:60;background:rgb(0 0 0 / .4);display:flex;align-items:center;justify-content:center;padding:16px}
+#modal .box{background:var(--surface);border-radius:var(--r);padding:20px;width:min(420px,100%);display:flex;flex-direction:column;gap:12px}
+fieldset.ro{border:0;margin:0;padding:0;min-width:0}
+@media (prefers-reduced-motion:no-preference){ .bar>i{transition:width .3s ease} }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><h1>Twin Home Expense Ledger</h1><small id="sync">Connecting…</small></div>
+    <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  </div>
+</header>
+<div class="wrap"><div id="app"></div></div>
+<div id="toast" hidden></div>
+<div id="modal" hidden></div>
+
+<script>
+/* ---------- constants ---------- */
+const CARDS = [
+  {k:'amex',  n:'American Express'},
+  {k:'cap1p', n:'Capital One Personal'},
+  {k:'cap1b', n:'Capital One Business'},
+  {k:'disc',  n:'Discover'},
+  {k:'hdp1',  n:'Home Depot Personal 1'},
+  {k:'hdp2',  n:'Home Depot Personal 2'},
+  {k:'hdc',   n:'Home Depot Commercial'},
+  {k:'boa',   n:'Bank of America'},
+];
+const BUCKETS = {overhead:'Overhead', property:'Property', marketing:'Marketing'};
+const DEFAULT_LISTS = {
+  overhead:['Travel','Hotel','Meals','Insurance','Legal Fees','Accounting / Bookkeeping','Software & Subscriptions','Office Supplies','Phone & Internet','Utilities','Rent / Office','Bank & Card Fees','Education & Coaching','Vehicle','Owner\'s Pay','Other Business Expense'],
+  marketing:['Direct Mail','PPC / Digital Marketing','Facebook','InvestorBase','Cold Calling','SMS / Texting','Skip Tracing / Lists','Bandit Signs','Website / SEO','Other Marketing'],
+  property:['Materials','Auto Expense','Fuel','Virtual Team Payroll','Local Team Labor','Matrix Payroll','Contractor Service','Permits & Fees','Utilities','Insurance','Closing Costs','Other Property Expense'],
+  methods:['Check','Wire','ACH','Zelle','Cash','Lender Draw','Other'],
+  statuses:['Under contract','Rehab','Listed','Sold','Holding'],
+  requireReceipt:true,
+  cardLabels:{}
+};
+const TABS = [
+  {k:'daily', n:'Daily Expenses'},
+  {k:'tracker', n:'Card Tracker'},
+  {k:'properties', n:'Properties'},
+  {k:'lists', n:'Lists & Settings'},
+];
+
+/* ---------- state ---------- */
+const today = () => new Date().toISOString().slice(0,10);
+const S = {
+  txns:new Map(), props:new Map(), pays:new Map(), lists:{...DEFAULT_LISTS},
+  ready:{txns:false,props:false,pays:false}, dbState:'connecting', readOnly:false,
+  tab:(location.hash||'').replace('#','') || 'daily',
+  dailyView:'todo', dailyCard:'all', month:today().slice(0,7),
+  card:'all', bucket:'overhead', paidFilter:'unpaid', trkMonth:'all',
+  propId:null, preview:null, importing:null, confirm:null, draft:{}, modal:null
+};
+if(!TABS.some(t=>t.k===S.tab)) S.tab='daily';
+let db=null, assets=null;
+
+/* ---------- helpers ---------- */
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n=>{ n=Number(n)||0; return (n<0?'−':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+const money0 = n=>{ n=Number(n)||0; return (n<0?'−':'')+'$'+Math.round(Math.abs(n)).toLocaleString('en-US'); };
+const num = v=>{ let s=String(v??'').trim().replace(/[$,\s]/g,''); let neg=false; if(/^\(.*\)$/.test(s)){neg=true;s=s.slice(1,-1);} if(s.startsWith('-')){neg=!neg;s=s.slice(1);} const n=parseFloat(s); return isNaN(n)?0:(neg?-n:n); };
+const round2 = n=>Math.round(n*100)/100;
+const cardName = k=> (S.lists.cardLabels||{})[k] || CARDS.find(c=>c.k===k)?.n || k;
+const chip = k=>`<span class="chip" style="--c:var(--c-${esc(k)})"><i></i>${esc(cardName(k))}</span>`;
+const shortDate = d=> d ? new Date(d+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '';
+const monthLabel = m=> new Date(m+'-01T12:00').toLocaleDateString('en-US',{month:'long',year:'numeric'});
+const addMonth = (m,d)=>{ const [y,mo]=m.split('-').map(Number); const dt=new Date(y,mo-1+d,1); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'); };
+const sum = (arr,f=x=>x.amount)=>round2(arr.reduce((a,x)=>a+(Number(f(x))||0),0));
+const byDateDesc = (a,b)=> (b.date||'').localeCompare(a.date||'') || (a.desc||'').localeCompare(b.desc||'');
+const D = (k,fallback='')=> S.draft[k] ?? fallback;
+function opts(list, cur, placeholder){
+  const l = cur && !list.includes(cur) ? [...list,cur] : list;
+  return (placeholder!=null?`<option value="">${esc(placeholder)}</option>`:'') + l.map(x=>`<option value="${esc(x)}"${x===cur?' selected':''}>${esc(x)}</option>`).join('');
+}
+function propOpts(cur){
+  const ps=[...S.props.values()].sort((a,b)=>(a.address||'').localeCompare(b.address||''));
+  return `<option value="">Pick property…</option>`+ps.map(p=>`<option value="${esc(p.id)}"${p.id===cur?' selected':''}>${esc(p.address)}</option>`).join('')+`<option value="__new">＋ New property…</option>`;
+}
+const propName = id=> S.props.get(id)?.address || (id?'(removed property)':'');
+function missing(t){
+  const m=[]; if(!t.bucket) m.push('type'); if(!t.category) m.push('category');
+  if(t.bucket==='property' && !t.propertyId) m.push('property');
+  if(S.lists.requireReceipt && !t.receipt) m.push('receipt');
+  return m;
+}
+const isComplete = t=> missing(t).length===0;
+const posted = ()=>[...S.txns.values()].filter(t=>t.posted);
+const inbox = ()=>[...S.txns.values()].filter(t=>!t.posted);
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg, undo){
+  const el=$('#toast'); el.innerHTML=`<span>${esc(msg)}</span>`+(undo?`<button type="button" id="toast-undo">Undo</button>`:'');
+  el.hidden=false; clearTimeout(toastTimer);
+  if(undo) $('#toast-undo').onclick=()=>{ el.hidden=true; undo(); };
+  toastTimer=setTimeout(()=>el.hidden=true, undo?6000:3200);
+}
+
+/* ---------- writes ---------- */
+async function write(fn){
+  if(!db){ toast('The ledger is offline. Open this page signed in to claude.ai.'); return false; }
+  try{ await fn(); return true; }
+  catch(e){
+    if(e?.code==='invalid_argument'){ S.readOnly=true; render(); toast('You have view-only access, so changes are not saved.'); }
+    else if(e?.code==='quota_exceeded') toast('The ledger is full. Remove old example or test rows, then try again.');
+    else toast('Could not save. Check your connection and try again.');
+    return false;
+  }
+}
+async function setTxn(id, patch){
+  const t=S.txns.get(id); if(!t) return;
+  if(patch.propertyId==='__new'){ openModal({type:'newprop', txnId:id}); render(); return; }
+  if('bucket' in patch && patch.bucket!==t.bucket){ patch.category=''; if(patch.bucket!=='property') patch.propertyId=''; }
+  const next={...t,...patch}; let moved=false;
+  if(!t.posted && isComplete(next)){ patch.posted=true; patch.postedAt=new Date().toISOString(); moved=true; }
+  const ok=await write(()=>db.doc('txns/'+id).update(patch));
+  if(ok && moved) toast(`Moved to ${cardName(t.card)} › ${BUCKETS[next.bucket]}`+(next.bucket==='property'?` › ${propName(next.propertyId)}`:''), ()=>write(()=>db.doc('txns/'+id).update({posted:false})));
+}
+async function moveReady(){
+  const ready=inbox().filter(isComplete);
+  for(const t of ready) await write(()=>db.doc('txns/'+t.id).update({posted:true,postedAt:new Date().toISOString()}));
+  toast(`Moved ${ready.length} expense${ready.length===1?'':'s'} to the card tracker`);
+}
+
+/* ---------- CSV import ---------- */
+function parseCSV(text){
+  const firstLine=text.split(/\r?\n/)[0]||''; const sep = firstLine.includes('\t') && !firstLine.includes(',') ? '\t' : ',';
+  const rows=[]; let row=[], f='', q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true;
+    else if(c===sep){ row.push(f); f=''; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(f); rows.push(row); row=[]; f=''; }
+    else f+=c;
+  }
+  if(f!==''||row.length){ row.push(f); rows.push(row); }
+  return rows.map(r=>r.map(x=>x.trim())).filter(r=>r.some(x=>x!==''));
+}
+function normDate(s){
+  s=String(s||'').trim(); let m;
+  if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  if((m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/))){ let y=m[3]; if(y.length===2) y='20'+y; return `${y}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`; }
+  const d=new Date(s); return isNaN(d) ? '' : d.toISOString().slice(0,10);
+}
+function hash(s){ let h=2166136261; for(const ch of s){ h^=ch.charCodeAt(0); h=Math.imul(h,16777619); } return (h>>>0).toString(36); }
+function buildPreview(text, fileName){
+  const rows=parseCSV(text);
+  let hi=-1, cols=null;
+  for(let i=0;i<Math.min(rows.length,15);i++){
+    const h=rows[i].map(x=>x.toLowerCase());
+    const find=res=>{ for(const re of res){ const j=h.findIndex(x=>re.test(x)); if(j>=0) return j; } return -1; };
+    const date=find([/^trans(action)?\.? ?date/, /^date$/, /^posted? ?date/, /^posting date/, /date/]);
+    const desc=find([/^description/, /^merchant/, /^payee/, /^name/, /details|memo/]);
+    const amount=find([/^amount/]);
+    const debit=find([/^debit/, /^charges?$/]);
+    const credit=find([/^credit/, /^payments?$/]);
+    if(date>=0 && desc>=0 && (amount>=0||debit>=0)){ hi=i; cols={date,desc,amount,debit,credit}; break; }
+  }
+  if(hi<0) return {error:'Could not find Date, Description and Amount columns in this file. Export it as CSV from the card website, or paste rows that include a header line.'};
+  const parsed=[];
+  for(const r of rows.slice(hi+1)){
+    const date=normDate(r[cols.date]); if(!date) continue;
+    let amt;
+    if(cols.debit>=0 && (r[cols.debit]||'')!=='') amt=Math.abs(num(r[cols.debit]));
+    else if(cols.credit>=0 && (r[cols.credit]||'')!=='' && cols.amount<0) amt=-Math.abs(num(r[cols.credit]));
+    else if(cols.amount>=0) amt=num(r[cols.amount]);
+    else continue;
+    parsed.push({date, desc:(r[cols.desc]||'').replace(/\s+/g,' '), raw:amt});
+  }
+  if(!parsed.length) return {error:'The file had a header row but no transactions under it.'};
+  const negs=parsed.filter(p=>p.raw<0).length;
+  const flip = cols.debit<0 && negs > parsed.length/2;  // e.g. Bank of America shows charges as negatives
+  return {fileName, parsed, flip, includeCredits:false, card:S.preview?.card || (S.dailyCard!=='all'?S.dailyCard:'')};
+}
+function previewRows(p){
+  const seen={}, out=[]; let credits=0;
+  for(const r of p.parsed){
+    const amount=round2(p.flip?-r.raw:r.raw);
+    if(amount<=0 && !p.includeCredits){ credits++; continue; }
+    const base=`${p.card||'x'}-${r.date}-${Math.round(amount*100)}-${hash(r.desc.toLowerCase())}`;
+    seen[base]=(seen[base]||0)+1;
+    const id=(base+'-'+seen[base]).replace(/[^A-Za-z0-9_\-.~:@+]/g,'_');
+    out.push({...r, amount, id, dupe:S.txns.has(id)});
+  }
+  return {rows:out, credits};
+}
+async function doImport(){
+  const p=S.preview; if(!p||!p.card) return;
+  const {rows}=previewRows(p); const fresh=rows.filter(r=>!r.dupe);
+  S.importing={done:0,total:fresh.length,failed:0}; render();
+  const queue=[...fresh], now=new Date().toISOString();
+  async function worker(){
+    while(queue.length){
+      const r=queue.shift();
+      try{ await db.doc('txns/'+r.id).set({card:p.card,date:r.date,desc:r.desc,amount:r.amount,bucket:'',category:'',propertyId:'',receipt:false,receiptAsset:'',paid:false,notes:'',posted:false,importedAt:now,source:p.fileName||'paste'}); }
+      catch(e){ S.importing.failed++; if(e?.code==='invalid_argument'){ S.readOnly=true; queue.length=0; } }
+      S.importing.done++; const el=$('#imp-prog'); if(el) el.textContent=`Saving ${S.importing.done} of ${S.importing.total}…`;
+    }
+  }
+  await Promise.all([worker(),worker(),worker(),worker()]);
+  const {failed,total}=S.importing; S.importing=null; S.preview=null; S.draft.paste=''; S.dailyView='todo'; S.dailyCard=p.card;
+  render();
+  toast(failed ? `Imported ${total-failed} of ${total}. ${failed} did not save; import the file again to retry them.` : `Imported ${total} new expense${total===1?'':'s'} for ${cardName(p.card)}`);
+}
+
+/* ---------- render ---------- */
+let pending=false;
+function scheduleRender(){
+  const a=document.activeElement;
+  if(a && a.closest && a.closest('#app,#modal') && (a.tagName==='TEXTAREA' || (a.tagName==='INPUT' && !['checkbox','file','radio'].includes(a.type)))){ pending=true; return; }
+  pending=false; render();
+}
+document.addEventListener('focusout',()=>{ if(pending) setTimeout(()=>{ if(pending) scheduleRender(); },0); });
+
+function renderTabs(){
+  const n=inbox().length;
+  $('#tabs').innerHTML=TABS.map(t=>`<a href="#${t.k}" data-tab="${t.k}"${S.tab===t.k?' aria-current="page"':''}>${t.n}${t.k==='daily'&&n?`<span class="badge">${n}</span>`:''}</a>`).join('');
+  const sync=$('#sync');
+  sync.textContent = S.dbState==='live' ? (S.readOnly?'View only':'Saved & shared') : S.dbState==='off' ? 'Offline' : 'Connecting…';
+}
+function render(){
+  renderTabs();
+  let h='';
+  if(S.dbState==='off') h+=`<div class="banner" style="margin-top:16px">The ledger could not connect. Open this page on claude.ai while signed in to load and save expenses.</div>`;
+  if(S.readOnly) h+=`<div class="banner info" style="margin-top:16px">You can view this ledger but not change it. Ask the owner for Contributor access to categorize expenses.</div>`;
+  const ex=[...S.txns.values(),...S.props.values(),...S.pays.values()].filter(x=>x.example).length;
+  if(ex && !S.readOnly) h+=`<div class="banner info" style="margin-top:16px"><span>Example rows are showing so you can see how the ledger works. They are not real expenses.</span>${S.confirm==='clear-ex'?`<span class="row"><button class="btn sm danger" data-act="clear-ex-yes">Remove ${ex} example rows</button><button class="btn sm ghost" data-act="cancel">Keep</button></span>`:`<button class="btn sm" data-act="clear-ex">Remove examples</button>`}</div>`;
+  h+= S.tab==='daily'?viewDaily() : S.tab==='tracker'?viewTracker() : S.tab==='properties'?viewProperties() : viewLists();
+  $('#app').innerHTML = `<fieldset class="ro"${S.readOnly?' disabled':''}>${h}</fieldset>`;
+  renderModal();
+}
+
+/* ----- Daily expenses ----- */
+function viewDaily(){
+  const all=[...S.txns.values()];
+  const m=S.month, monthRows=all.filter(t=>(t.date||'').startsWith(m));
+  const todo=inbox(), ready=todo.filter(isComplete);
+  let h=`<div class="head"><div><div class="eyebrow">Daily expense log</div><h2>${monthLabel(m)}</h2></div>
+    <div class="row"><button class="btn" data-act="month" data-d="-1" aria-label="Previous month">‹</button><button class="btn" data-act="month" data-d="0">This month</button><button class="btn" data-act="month" data-d="1" aria-label="Next month">›</button></div></div>
+  <div class="stack">
+  <div class="stats">
+    <div class="stat"><span class="eyebrow">Spent in ${monthLabel(m).split(' ')[0]}</span><b>${money(sum(monthRows.filter(t=>t.amount>0)))}</b><span class="muted">${monthRows.length} expenses</span></div>
+    <div class="stat"><span class="eyebrow">Overhead</span><b>${money(sum(monthRows.filter(t=>t.posted&&t.bucket==='overhead')))}</b></div>
+    <div class="stat"><span class="eyebrow">Property</span><b>${money(sum(monthRows.filter(t=>t.posted&&t.bucket==='property')))}</b></div>
+    <div class="stat"><span class="eyebrow">Marketing</span><b>${money(sum(monthRows.filter(t=>t.posted&&t.bucket==='marketing')))}</b></div>
+    <div class="stat"><span class="eyebrow">Waiting to categorize</span><b class="${todo.length?'warn':'good'}">${todo.length}</b><span class="muted">${money(sum(todo))} across all months</span></div>
+  </div>
+  ${importPanel()}
+  <div class="row spread">
+    <div class="seg" role="group" aria-label="Show"><button data-act="dview" data-v="todo" aria-pressed="${S.dailyView==='todo'}">To categorize (${todo.length})</button><button data-act="dview" data-v="month" aria-pressed="${S.dailyView==='month'}">Everything in ${monthLabel(m).split(' ')[0]}</button></div>
+    <div class="row">${ready.length?`<button class="btn primary" data-act="move-ready">Move ${ready.length} ready</button>`:''}
+    <select id="daily-card" data-act="daily-card" aria-label="Card">${`<option value="all">All cards</option>`+CARDS.map(c=>`<option value="${c.k}"${S.dailyCard===c.k?' selected':''}>${esc(cardName(c.k))}</option>`).join('')}</select></div>
+  </div>`;
+  const filt = t=> S.dailyCard==='all' || t.card===S.dailyCard;
+  if(S.dailyView==='todo'){
+    const rows=todo.filter(filt).sort(byDateDesc);
+    h+= rows.length ? `<div class="tbl"><table><thead><tr><th>Date</th><th>Card</th><th>Description</th><th class="amt">Amount</th><th>Type</th><th>Category</th><th>Property</th><th>Receipt</th><th>Still needs</th><th></th></tr></thead><tbody>${rows.map(inboxRow).join('')}</tbody>
+      <tfoot><tr><td colspan="3">${rows.length} waiting</td><td class="amt num">${money(sum(rows))}</td><td colspan="6"></td></tr></tfoot></table></div>
+      <p class="muted" style="margin:0">Each row moves to its card in the Card Tracker as soon as it has a type, a category${S.lists.requireReceipt?', a receipt':''} and, for property expenses, an address.</p>`
+      : `<div class="tbl"><div class="empty"><h3>${S.ready.txns?'Nothing waiting to categorize':'Loading expenses…'}</h3>${S.ready.txns?'Import this week\'s export from a card above, or add an expense by hand. New rows land here until you categorize them.':''}</div></div>`;
+  } else {
+    const rows=monthRows.filter(filt).sort(byDateDesc);
+    h+= rows.length ? `<div class="tbl"><table><thead><tr><th>Date</th><th>Card</th><th>Description</th><th>Status</th><th>Filed under</th><th class="amt">Amount</th></tr></thead><tbody>${rows.map(t=>`<tr${t.example?' class="ex"':''}><td class="d">${shortDate(t.date)}</td><td>${chip(t.card)}</td><td class="desc">${esc(t.desc)}</td><td>${t.posted?`<span class="pill good">In tracker</span>`:`<span class="pill warn">To categorize</span>`}</td><td>${t.bucket?esc(BUCKETS[t.bucket])+(t.category?' › '+esc(t.category):'')+(t.bucket==='property'&&t.propertyId?' › '+esc(propName(t.propertyId)):''):'<span class="muted">—</span>'}</td><td class="amt">${money(t.amount)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="5">${rows.length} expenses</td><td class="amt num">${money(sum(rows))}</td></tr></tfoot></table></div>` : `<div class="tbl"><div class="empty"><h3>No expenses dated ${monthLabel(m)}</h3>Pick another month or import a card export.</div></div>`;
+  }
+  return h+`</div>`;
+}
+function inboxRow(t){
+  const cats=t.bucket?S.lists[t.bucket]:[];
+  const need=missing(t);
+  return `<tr data-id="${esc(t.id)}"${t.example?' class="ex"':''}>
+  <td class="d">${shortDate(t.date)}</td><td>${chip(t.card)}</td>
+  <td class="desc">${esc(t.desc)}${t.example?' <span class="tag">example</span>':''}</td>
+  <td class="amt">${money(t.amount)}</td>
+  <td><select data-act="tf" data-f="bucket" aria-label="Type"><option value="">Choose…</option>${Object.entries(BUCKETS).map(([k,v])=>`<option value="${k}"${t.bucket===k?' selected':''}>${v}</option>`).join('')}</select></td>
+  <td>${t.bucket?`<select data-act="tf" data-f="category" aria-label="Category">${opts(cats,t.category,'Choose…')}</select>`:'<span class="muted">—</span>'}</td>
+  <td>${t.bucket==='property'?`<select data-act="tf" data-f="propertyId" aria-label="Property">${propOpts(t.propertyId)}</select>`:'<span class="muted">—</span>'}</td>
+  <td>${receiptCell(t)}</td>
+  <td>${need.length?`<span class="needs">${need.join(', ')}</span>`:''}</td>
+  <td>${S.confirm===t.id?`<button class="btn sm danger" data-act="del-txn-yes">Delete</button>`:`<button class="btn sm ghost" data-act="del-txn" aria-label="Delete expense">✕</button>`}</td></tr>`;
+}
+function receiptCell(t){
+  return `<div class="row" style="gap:6px;flex-wrap:nowrap"><label class="check"><input type="checkbox" data-act="tf" data-f="receipt"${t.receipt?' checked':''}> On file</label>
+    ${t.receiptAsset?`<a href="/_blob/${esc(t.receiptAsset)}" target="_blank" rel="noopener">View</a>`:(assets?`<span class="btn sm ghost file-btn">Upload<input type="file" accept="image/*,application/pdf" data-act="rup" aria-label="Upload receipt"></span>`:'')}</div>`;
+}
+function importPanel(){
+  const p=S.preview;
+  let h=`<section class="panel stack" id="import"><div class="row spread"><div><h3>Import a card export</h3><div class="muted">CSV from American Express, Capital One, Discover, Home Depot or Bank of America. Rows you already imported are skipped, so overlapping weeks are fine.</div></div></div>`;
+  if(S.importing) return h+`<div class="row"><b id="imp-prog">Saving ${S.importing.done} of ${S.importing.total}…</b></div></section>`;
+  h+=`<div class="drop" id="drop">
+    <label class="field">Card<select id="imp-card" data-act="imp-card"><option value="">Which card is this?</option>${CARDS.map(c=>`<option value="${c.k}"${(p?.card||S.draft.impCard)===c.k?' selected':''}>${esc(cardName(c.k))}</option>`).join('')}</select></label>
+    <span class="btn file-btn">Choose CSV file<input type="file" id="imp-file" accept=".csv,text/csv,.txt" data-act="imp-file"></span>
+    <span class="muted">or drop it here, or</span>
+    <button class="btn ghost" data-act="toggle-paste">${S.draft.showPaste?'Hide paste box':'paste rows'}</button>
+    <button class="btn ghost" data-act="toggle-manual">${S.draft.showManual?'Hide manual entry':'add one by hand'}</button>
+  </div>`;
+  if(S.draft.showPaste) h+=`<div class="stack" style="gap:8px"><textarea id="paste" rows="5" data-draft="paste" placeholder="Date,Description,Amount&#10;09/28/2026,HOME DEPOT #6512,412.18">${esc(D('paste'))}</textarea><div><button class="btn" data-act="parse-paste">Read pasted rows</button></div></div>`;
+  if(S.draft.showManual) h+=`<div class="form-grid">
+    <label class="field">Card<select id="m-card" data-draft="m-card"><option value="">Choose card…</option>${CARDS.map(c=>`<option value="${c.k}"${D('m-card',p?.card||'')===c.k?' selected':''}>${esc(cardName(c.k))}</option>`).join('')}</select></label>
+    <label class="field">Date<input type="date" id="m-date" data-draft="m-date" value="${esc(D('m-date',today()))}"></label>
+    <label class="field" style="grid-column:span 2">Description<input type="text" id="m-desc" data-draft="m-desc" value="${esc(D('m-desc'))}" placeholder="Vendor or what it was for"></label>
+    <label class="field">Amount<input type="text" inputmode="decimal" id="m-amt" data-draft="m-amt" value="${esc(D('m-amt'))}" placeholder="0.00"></label>
+    <div style="align-self:end"><button class="btn primary" data-act="add-manual">Add expense</button></div></div>`;
+  if(p?.error) h+=`<div class="banner">${esc(p.error)}</div>`;
+  else if(p){
+    const {rows,credits}=previewRows(p); const fresh=rows.filter(r=>!r.dupe);
+    h+=`<div class="stack" style="gap:10px"><div class="row spread"><div><b>${esc(p.fileName||'Pasted rows')}</b> · ${fresh.length} new, ${rows.length-fresh.length} already imported${credits?`, ${credits} payments/credits skipped`:''}</div>
+      <div class="row"><label class="check"><input type="checkbox" data-act="imp-flip"${p.flip?' checked':''}> Charges are negative in this file</label>
+      <label class="check"><input type="checkbox" data-act="imp-credits"${p.includeCredits?' checked':''}> Include refunds/credits</label></div></div>
+      <div class="tbl"><table><thead><tr><th>Date</th><th>Description</th><th class="amt">Amount</th><th></th></tr></thead><tbody>${rows.slice(0,8).map(r=>`<tr><td class="d">${shortDate(r.date)}</td><td class="desc">${esc(r.desc)}</td><td class="amt">${money(r.amount)}</td><td>${r.dupe?'<span class="pill plain">Already in</span>':'<span class="pill good">New</span>'}</td></tr>`).join('')}${rows.length>8?`<tr><td colspan="4" class="muted">…and ${rows.length-8} more</td></tr>`:''}</tbody></table></div>
+      <div class="row"><button class="btn primary" data-act="do-import"${!p.card||!fresh.length?' disabled':''}>${!p.card?'Pick the card first':`Import ${fresh.length} to ${esc(cardName(p.card))}`}</button><button class="btn ghost" data-act="cancel-import">Cancel</button></div></div>`;
+  }
+  return h+`</section>`;
+}
+
+/* ----- Card tracker ----- */
+function viewTracker(){
+  const P=posted();
+  const cardRows = k=> k==='all'?P:P.filter(t=>t.card===k);
+  const tile = (k,name,c)=>{ const rows=cardRows(k); const unpaid=sum(rows.filter(t=>!t.paid)); const waiting=inbox().filter(t=>k==='all'||t.card===k).length;
+    return `<button class="ctile" style="--c:${c}" data-act="pick-card" data-k="${k}" aria-pressed="${S.card===k}"><span class="nm">${esc(name)}</span><span class="bal">${money(unpaid)}</span><span class="sub">unpaid${waiting?` · ${waiting} to categorize`:''}</span></button>`; };
+  let h=`<div class="head"><div><div class="eyebrow">Credit card tracker</div><h2>${S.card==='all'?'All cards':esc(cardName(S.card))}</h2></div></div>
+  <div class="stack"><div class="cards">${tile('all','All cards','var(--ink)')}${CARDS.map(c=>tile(c.k,cardName(c.k),`var(--c-${c.k})`)).join('')}</div>`;
+  const rowsCard=cardRows(S.card);
+  const months=[...new Set(rowsCard.map(t=>(t.date||'').slice(0,7)))].filter(Boolean).sort().reverse();
+  const inMonth=t=> S.trkMonth==='all' || (t.date||'').startsWith(S.trkMonth);
+  const scoped=rowsCard.filter(inMonth);
+  h+=`<div class="stats">
+    <div class="stat"><span class="eyebrow">Unpaid</span><b class="${sum(scoped.filter(t=>!t.paid))>0?'bad':''}">${money(sum(scoped.filter(t=>!t.paid)))}</b><span class="muted">${scoped.filter(t=>!t.paid).length} charges</span></div>
+    <div class="stat"><span class="eyebrow">Paid</span><b class="good">${money(sum(scoped.filter(t=>t.paid)))}</b><span class="muted">${scoped.filter(t=>t.paid).length} charges</span></div>
+    ${Object.entries(BUCKETS).map(([k,v])=>`<div class="stat"><span class="eyebrow">${v}</span><b>${money(sum(scoped.filter(t=>t.bucket===k)))}</b></div>`).join('')}
+  </div>
+  <div class="btabs" role="group" aria-label="Sheet">${Object.entries(BUCKETS).map(([k,v])=>`<button data-act="bucket" data-k="${k}" aria-pressed="${S.bucket===k}">${v}<span>${scoped.filter(t=>t.bucket===k).length}</span></button>`).join('')}</div>
+  <div class="row spread"><div class="seg" role="group" aria-label="Paid status">${['unpaid','paid','all'].map(v=>`<button data-act="paidf" data-v="${v}" aria-pressed="${S.paidFilter===v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div>
+    <select id="trk-month" data-act="trk-month" aria-label="Month"><option value="all">All months</option>${months.map(m=>`<option value="${m}"${S.trkMonth===m?' selected':''}>${monthLabel(m)}</option>`).join('')}</select></div>`;
+  const rows=scoped.filter(t=>t.bucket===S.bucket && (S.paidFilter==='all' || (S.paidFilter==='paid')===!!t.paid)).sort(byDateDesc);
+  const showCard=S.card==='all', isProp=S.bucket==='property';
+  const table = rows.length ? `<div class="tbl"><table><thead><tr><th>Paid</th><th>Date</th>${showCard?'<th>Card</th>':''}<th>Description</th><th>Category</th>${isProp?'<th>Property</th>':''}<th>Receipt</th><th class="amt">Amount</th><th></th></tr></thead><tbody>
+    ${rows.map(t=>`<tr data-id="${esc(t.id)}"${t.example?' class="ex"':''}><td><input type="checkbox" data-act="tf" data-f="paid"${t.paid?' checked':''} aria-label="Paid"></td><td class="d">${shortDate(t.date)}</td>${showCard?`<td>${chip(t.card)}</td>`:''}
+      <td class="desc">${esc(t.desc)}${t.example?' <span class="tag">example</span>':''}</td>
+      <td><select data-act="tf" data-f="category" aria-label="Category">${opts(S.lists[t.bucket]||[],t.category)}</select></td>
+      ${isProp?`<td><select data-act="tf" data-f="propertyId" aria-label="Property">${propOpts(t.propertyId)}</select></td>`:''}
+      <td>${receiptCell(t)}</td><td class="amt">${money(t.amount)}</td>
+      <td><button class="btn sm ghost" data-act="unpost" title="Send back to Daily Expenses to recategorize">Recategorize</button></td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="${showCard?3:2}">${rows.length} shown</td><td colspan="${isProp?4:3}">${S.paidFilter!=='paid'&&rows.some(t=>!t.paid)?(S.confirm==='payall'?`<button class="btn sm primary" data-act="payall-yes">Mark ${rows.filter(t=>!t.paid).length} as paid</button> <button class="btn sm ghost" data-act="cancel">Cancel</button>`:`<button class="btn sm" data-act="payall">Mark all shown as paid</button>`):''}</td><td class="amt num">${money(sum(rows))}</td><td></td></tr></tfoot></table></div>`
+    : `<div class="tbl"><div class="empty"><h3>No ${S.paidFilter==='all'?'':S.paidFilter+' '}${BUCKETS[S.bucket].toLowerCase()} charges${S.card==='all'?'':' on '+esc(cardName(S.card))}</h3>Expenses arrive here from Daily Expenses once they are categorized.</div></div>`;
+  // category breakdown
+  const bRows=scoped.filter(t=>t.bucket===S.bucket);
+  const groups={}; for(const t of bRows){ const g=isProp?propName(t.propertyId):(t.category||'Uncategorized'); groups[g]=(groups[g]||0)+t.amount; }
+  const gl=Object.entries(groups).sort((a,b)=>b[1]-a[1]); const max=gl[0]?.[1]||1;
+  const side=`<section class="panel stack"><div><div class="eyebrow">${BUCKETS[S.bucket]} by ${isProp?'property':'category'}</div><b class="num" style="font-size:18px">${money(sum(bRows))}</b></div>
+    ${gl.length?`<div class="bars">${gl.map(([g,v])=>`<div class="bar-row"><span>${esc(g)}</span><span class="num">${money0(v)}</span><div class="bar"><i style="width:${Math.max(2,v/max*100)}%"></i></div></div>`).join('')}</div>`:'<span class="muted">Nothing yet.</span>'}</section>`;
+  return h+`<div class="split">${`<div class="stack" style="min-width:0">${table}</div>`}${side}</div></div>`;
+}
+
+/* ----- Properties ----- */
+function propStats(p){
+  const cardRows=posted().filter(t=>t.bucket==='property'&&t.propertyId===p.id);
+  const payRows=[...S.pays.values()].filter(x=>x.propertyId===p.id);
+  const byCat={};
+  for(const t of cardRows) byCat[t.category||'Other']=(byCat[t.category||'Other']||0)+t.amount;
+  for(const x of payRows) byCat[x.category||'Other']=(byCat[x.category||'Other']||0)+(Number(x.amount)||0);
+  const spend=round2(sum(cardRows)+sum(payRows));
+  const budgets=p.budgets||{}; const budget=round2(Object.values(budgets).reduce((a,b)=>a+(Number(b)||0),0));
+  const g=k=>Number(p[k])||0;
+  const carrying=round2(g('mortgageMonthly')*g('monthsHeld'));
+  const holdPending=p.holdbackReceived?0:g('holdback');
+  const totalCost=round2(g('purchasePrice')+spend+carrying+g('sellingCosts'));
+  const profit=g('salePrice')?round2(g('salePrice')-totalCost):null;
+  const cashIn=round2(g('emd')+g('fundsToClose')+spend+carrying-(p.holdbackReceived?g('holdback'):0));
+  return {cardRows,payRows,byCat,spend,budget,carrying,holdPending,totalCost,profit,cashIn,over:budget>0&&spend>budget,unpaid:sum(payRows.filter(x=>!x.paid))};
+}
+function viewProperties(){
+  if(S.propId && S.props.get(S.propId)) return viewProperty(S.props.get(S.propId));
+  const ps=[...S.props.values()].sort((a,b)=>(a.address||'').localeCompare(b.address||''));
+  let h=`<div class="head"><div><div class="eyebrow">Property expense trackers</div><h2>${ps.length} propert${ps.length===1?'y':'ies'}</h2></div><button class="btn primary" data-act="new-prop">＋ Add property</button></div>`;
+  if(!ps.length) return h+`<div class="tbl"><div class="empty"><h3>${S.ready.props?'No properties yet':'Loading properties…'}</h3>${S.ready.props?'Add each property you acquire. Expenses you file as Property land on its tracker, next to its budget, financing and payment list.':''}</div></div>`;
+  return h+`<div class="props">${ps.map(p=>{ const s=propStats(p); const pct=s.budget?Math.min(100,s.spend/s.budget*100):0;
+    return `<button class="ptile" data-act="open-prop" data-id="${esc(p.id)}"><div class="row spread"><span class="addr">${esc(p.address)}</span><span class="pill plain">${esc(p.status||'—')}</span></div>
+      ${p.example?'<span class="tag">example</span>':''}
+      <div class="bar-row"><span>Spent ${money0(s.spend)}</span><span class="num muted">${s.budget?'of '+money0(s.budget):'no budget set'}</span><div class="bar"><i class="${s.over?'over':''}" style="width:${pct}%"></i></div></div>
+      <div class="kv"><span>Cash in deal</span><span>${money0(s.cashIn)}</span><span>Projected profit</span><span>${s.profit==null?'—':money0(s.profit)}</span></div>
+      <div class="row" style="gap:6px">${s.over?'<span class="pill bad">Over budget</span>':s.budget?'<span class="pill good">Within budget</span>':''}${s.holdPending?`<span class="pill warn">Holdback pending ${money0(s.holdPending)}</span>`:''}${s.unpaid?`<span class="pill warn">${money0(s.unpaid)} unpaid</span>`:''}</div></button>`;}).join('')}</div>`;
+}
+function pfield(p,k,label,isMoney=true){
+  return `<label class="field">${label}<input type="text" ${isMoney?'inputmode="decimal"':''} id="pf-${k}" data-act="pf" data-f="${k}" data-num="${isMoney?1:0}" value="${esc(isMoney?(p[k]?Number(p[k]).toLocaleString('en-US'):''):(p[k]||''))}" placeholder="${isMoney?'0':''}"></label>`;
+}
+function viewProperty(p){
+  const s=propStats(p);
+  const cats=[...new Set([...S.lists.property,...Object.keys(s.byCat),...Object.keys(p.budgets||{})])];
+  let h=`<div class="head"><div><button class="btn ghost sm" data-act="close-prop">‹ All properties</button><h2 style="margin-top:6px">${esc(p.address)}</h2></div>
+    <div class="row"><select id="pf-status" data-act="pf" data-f="status" aria-label="Status">${opts(S.lists.statuses,p.status||'')}</select>
+    ${s.over?'<span class="pill bad">Over budget</span>':s.budget?'<span class="pill good">Within budget</span>':''}</div></div>
+  <div class="stack">
+  <div class="stats">
+    <div class="stat"><span class="eyebrow">Budget</span><b>${money0(s.budget)}</b></div>
+    <div class="stat"><span class="eyebrow">Spent</span><b class="${s.over?'bad':''}">${money0(s.spend)}</b><span class="muted">${s.budget?(s.over?money0(s.spend-s.budget)+' over':money0(s.budget-s.spend)+' left'):'set budgets below'}</span></div>
+    <div class="stat"><span class="eyebrow">Cash in deal</span><b>${money0(s.cashIn)}</b></div>
+    <div class="stat"><span class="eyebrow">Holdback</span><b class="${s.holdPending?'warn':''}">${p.holdback?money0(p.holdback):'—'}</b><span class="muted">${p.holdback?(p.holdbackReceived?'Received from lender':'Waiting on lender'):'None'}</span></div>
+    <div class="stat"><span class="eyebrow">Projected profit</span><b class="${s.profit==null?'':s.profit>=0?'good':'bad'}">${s.profit==null?'—':money0(s.profit)}</b><span class="muted">${s.profit==null?'Add a sale price':''}</span></div>
+  </div>
+  <div class="split"><section class="panel stack"><h3>Purchase & financing</h3><div class="form-grid">
+    ${pfield(p,'address','Address',false)}
+    ${pfield(p,'purchasePrice','Purchase price')}${pfield(p,'emd','EMD')}${pfield(p,'fundsToClose','Funds to close (after EMD)')}
+    ${pfield(p,'loanAmount','Loan amount')}${pfield(p,'lender','Lender',false)}${pfield(p,'mortgageMonthly','Mortgage payment / month')}${pfield(p,'monthsHeld','Months held')}
+    ${pfield(p,'holdback','Lender holdback')}
+    <label class="field">Holdback status<span class="check" style="padding-block:6px;color:var(--ink);font-weight:400"><input type="checkbox" data-act="pf" data-f="holdbackReceived"${p.holdbackReceived?' checked':''}> Received from lender</span></label>
+    ${pfield(p,'salePrice','Sale price (expected or actual)')}${pfield(p,'sellingCosts','Selling costs')}
+  </div></section>
+  <section class="panel pl"><h3 style="margin-bottom:6px">Will it profit?</h3>
+    <div class="line"><span>Sale price</span><b>${money0(p.salePrice)}</b></div>
+    <div class="line"><span>− Purchase price</span><b>${money0(p.purchasePrice)}</b></div>
+    <div class="line"><span>− Property expenses</span><b>${money0(s.spend)}</b></div>
+    <div class="line"><span>− Mortgage (${Number(p.monthsHeld)||0} mo × ${money0(p.mortgageMonthly)})</span><b>${money0(s.carrying)}</b></div>
+    <div class="line"><span>− Selling costs</span><b>${money0(p.sellingCosts)}</b></div>
+    <div class="line total"><span>Profit</span><b>${s.profit==null?'—':money0(s.profit)}</b></div>
+    <p class="muted" style="font-size:12px;margin:6px 0 0">Cash in deal = EMD + funds to close + expenses + mortgage paid, minus holdback once the lender releases it.</p>
+  </section></div>
+  <section class="panel stack"><div class="row spread"><h3>Budget vs. spent</h3><span class="muted">Type a budget for each line. Mortgage is counted above from the monthly payment.</span></div>
+  <div class="tbl"><table style="min-width:520px"><thead><tr><th>Category</th><th class="amt">Budget</th><th class="amt">Spent</th><th class="amt">Left</th><th style="width:30%"></th></tr></thead><tbody>
+  ${cats.map(c=>{ const b=Number((p.budgets||{})[c])||0, sp=round2(s.byCat[c]||0); if(!b&&!sp&&!S.lists.property.includes(c)) return ''; const over=b>0&&sp>b;
+    return `<tr><td>${esc(c)}</td><td class="amt"><input type="text" inputmode="decimal" style="width:110px;text-align:right" class="num" id="pb-${hash(c)}" data-act="pb" data-cat="${esc(c)}" value="${b?b.toLocaleString('en-US'):''}" placeholder="0" aria-label="Budget for ${esc(c)}"></td><td class="amt">${money0(sp)}</td><td class="amt" style="color:${over?'var(--bad)':'inherit'}">${b?money0(b-sp):'—'}</td><td><div class="bar"><i class="${over?'over':''}" style="width:${b?Math.min(100,sp/b*100):0}%"></i></div></td></tr>`; }).join('')}
+  </tbody><tfoot><tr><td>Total</td><td class="amt num">${money0(s.budget)}</td><td class="amt num">${money0(s.spend)}</td><td class="amt num">${s.budget?money0(s.budget-s.spend):'—'}</td><td></td></tr></tfoot></table></div></section>
+  ${paymentsSection(p,s)}
+  <section class="panel row spread"><span class="muted">Notes</span><textarea id="pf-notes" rows="2" data-act="pf" data-f="notes" data-num="0" placeholder="Scope, contractor contacts, draw schedule…">${esc(p.notes||'')}</textarea>
+    <div>${S.confirm==='delprop'?`<button class="btn sm danger" data-act="del-prop-yes">Delete this property</button> <button class="btn sm ghost" data-act="cancel">Keep</button>`:`<button class="btn sm ghost" data-act="del-prop">Delete property</button>`}</div></section>
+  </div>`;
+  return h;
+}
+function paymentsSection(p,s){
+  const rows=[...s.cardRows.map(t=>({kind:'card',id:t.id,date:t.date,payee:t.desc,category:t.category,method:t.card,amount:t.amount,paid:true,billPaid:t.paid,example:t.example})),
+              ...s.payRows.map(x=>({kind:'pay',...x}))].sort(byDateDesc);
+  const methods=[...S.lists.methods];
+  return `<section class="panel stack"><div class="row spread"><h3>Payments made</h3><span class="muted">Card charges filed to this address appear here on their own. Add checks, wires and draws by hand.</span></div>
+  <div class="form-grid">
+    <label class="field">Date<input type="date" id="np-date" data-draft="np-date" value="${esc(D('np-date',today()))}"></label>
+    <label class="field">Paid to<input type="text" id="np-payee" data-draft="np-payee" value="${esc(D('np-payee'))}" placeholder="Contractor or vendor"></label>
+    <label class="field">Category<select id="np-cat" data-draft="np-cat">${opts(S.lists.property,D('np-cat',S.lists.property[0]))}</select></label>
+    <label class="field">Paid with<select id="np-method" data-draft="np-method">${opts(methods,D('np-method',methods[0]))}</select></label>
+    <label class="field">Amount<input type="text" inputmode="decimal" id="np-amt" data-draft="np-amt" value="${esc(D('np-amt'))}" placeholder="0.00"></label>
+    <div class="row" style="align-self:end"><label class="check"><input type="checkbox" id="np-paid" data-draft="np-paid"${D('np-paid',true)?' checked':''}> Paid</label><button class="btn primary" data-act="add-pay">Add payment</button></div>
+  </div>
+  ${rows.length?`<div class="tbl"><table><thead><tr><th>Paid</th><th>Date</th><th>Paid to</th><th>Category</th><th>Paid with</th><th class="amt">Amount</th><th></th></tr></thead><tbody>
+  ${rows.map(r=>`<tr data-pid="${esc(r.id)}"${r.example?' class="ex"':''}><td>${r.kind==='card'?'<span class="pill good">Card</span>':`<input type="checkbox" data-act="payf" data-f="paid"${r.paid?' checked':''} aria-label="Paid">`}</td>
+    <td class="d">${shortDate(r.date)}</td><td class="desc">${esc(r.payee)}${r.example?' <span class="tag">example</span>':''}</td><td>${esc(r.category)}</td>
+    <td>${r.kind==='card'?chip(r.method)+` <span class="muted" style="font-size:11px">bill ${r.billPaid?'paid':'unpaid'}</span>`:esc(r.method)}</td>
+    <td class="amt">${money(r.amount)}</td><td>${r.kind==='pay'?(S.confirm==='pay-'+r.id?`<button class="btn sm danger" data-act="del-pay-yes">Delete</button>`:`<button class="btn sm ghost" data-act="del-pay" aria-label="Delete payment">✕</button>`):''}</td></tr>`).join('')}
+  </tbody><tfoot><tr><td colspan="5">${rows.length} payments${s.unpaid?` · ${money(s.unpaid)} not yet paid`:''}</td><td class="amt num">${money(sum(rows))}</td><td></td></tr></tfoot></table></div>`
+  :`<div class="tbl"><div class="empty"><h3>No payments yet</h3>File a card charge as Property → this address, or add a check or wire above.</div></div>`}
+  </section>`;
+}
+
+/* ----- Lists ----- */
+function viewLists(){
+  const L=S.lists; const ta=(k,label)=>`<label class="field">${label}<textarea id="ls-${k}" rows="10" data-draft="ls-${k}">${esc(D('ls-'+k,(L[k]||[]).join('\n')))}</textarea></label>`;
+  return `<div class="head"><div><div class="eyebrow">Dropdown options</div><h2>Lists & settings</h2></div><button class="btn primary" data-act="save-lists">Save changes</button></div>
+  <div class="stack"><p class="muted" style="margin:0">One option per line. Renaming an option does not change expenses already filed under the old name.</p>
+  <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr))">${ta('overhead','Overhead categories')}${ta('marketing','Marketing categories')}${ta('property','Property expense categories')}${ta('methods','Payment methods (non-card)')}${ta('statuses','Property statuses')}</div>
+  <section class="panel stack"><h3>Card names</h3><span class="muted">Add the last four digits so everyone picks the right card.</span><div class="form-grid">
+  ${CARDS.map(c=>`<label class="field">${esc(c.n)}<input type="text" id="cl-${c.k}" data-draft="cl-${c.k}" value="${esc(D('cl-'+c.k,(L.cardLabels||{})[c.k]||''))}" placeholder="${esc(c.n)}"></label>`).join('')}</div></section>
+  <section class="panel"><label class="check"><input type="checkbox" id="ls-req" data-draft="ls-req"${D('ls-req',L.requireReceipt)?' checked':''}> Require a receipt before an expense moves to the card tracker</label></section></div>`;
+}
+
+/* ---------- modal ---------- */
+function openModal(m){ S.modal=m; S.draft['mp-addr']=''; }
+function renderModal(){
+  const el=$('#modal');
+  if(!S.modal){ el.hidden=true; el.innerHTML=''; return; }
+  if(el.hidden || !el.innerHTML){
+    el.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-labelledby="mp-h"><h3 id="mp-h">New property</h3>
+      <label class="field">Property address<input type="text" id="mp-addr" data-draft="mp-addr" value="${esc(D('mp-addr'))}" placeholder="1234 Oak St, Houston TX"></label>
+      <div class="row"><button class="btn primary" data-act="mp-create">Create property</button><button class="btn ghost" data-act="mp-cancel">Cancel</button></div></div>`;
+    el.hidden=false; setTimeout(()=>$('#mp-addr')?.focus(),0);
+  }
+}
+async function createProp(){
+  const addr=(S.draft['mp-addr']||'').trim(); if(!addr){ toast('Type the property address first.'); return; }
+  const ref=db.collection('properties').doc();
+  const ok=await write(()=>ref.set({address:addr,status:S.lists.statuses[0]||'',budgets:{},createdAt:new Date().toISOString()}));
+  if(!ok) return;
+  const m=S.modal; S.modal=null;
+  if(m.txnId){ S.props.set(ref.id,{id:ref.id,address:addr}); await setTxn(m.txnId,{propertyId:ref.id}); }
+  else { S.propId=ref.id; S.tab='properties'; history.replaceState(null,'','#properties'); }
+  render();
+}
+
+/* ---------- events ---------- */
+document.addEventListener('input',e=>{ const k=e.target.dataset?.draft; if(k) S.draft[k]=e.target.type==='checkbox'?e.target.checked:e.target.value; });
+document.addEventListener('change',async e=>{
+  const t=e.target, act=t.dataset.act;
+  if(t.dataset.draft){ S.draft[t.dataset.draft]=t.type==='checkbox'?t.checked:t.value; }
+  if(!act) return;
+  const tr=t.closest('tr'), id=tr?.dataset.id;
+  if(act==='tf' && id){ const f=t.dataset.f; await setTxn(id,{[f]: t.type==='checkbox'?t.checked:t.value}); return; }
+  if(act==='rup' && id && t.files[0]){
+    toast('Uploading receipt…');
+    try{ const a=await assets.upload(t.files[0]); await setTxn(id,{receipt:true,receiptAsset:a.id}); toast('Receipt attached'); }
+    catch(err){ toast(err?.code==='quota_exceeded'?'Receipt storage is full.':'Could not upload that file. Try a photo or PDF under 20 MB.'); }
+    return;
+  }
+  if(act==='imp-card'){ if(S.preview) S.preview.card=t.value; else S.preview=null; S.draft.impCard=t.value; if(S.preview) render(); return; }
+  if(act==='imp-file' && t.files[0]){ const f=t.files[0]; const txt=await f.text(); S.preview=buildPreview(txt,f.name); if(S.preview && !S.preview.card) S.preview.card=S.draft.impCard||''; render(); return; }
+  if(act==='imp-flip'){ S.preview.flip=t.checked; render(); return; }
+  if(act==='imp-credits'){ S.preview.includeCredits=t.checked; render(); return; }
+  if(act==='daily-card'){ S.dailyCard=t.value; render(); return; }
+  if(act==='trk-month'){ S.trkMonth=t.value; render(); return; }
+  if(act==='pf' && S.propId){
+    const f=t.dataset.f; let v = t.type==='checkbox'?t.checked : t.dataset.num==='1'?num(t.value):t.value;
+    if(f==='address' && !String(v).trim()){ render(); return; }
+    await write(()=>db.doc('properties/'+S.propId).update({[f]:v})); return;
+  }
+  if(act==='pb' && S.propId){ await write(()=>db.doc('properties/'+S.propId).update({budgets:{[t.dataset.cat]:num(t.value)}})); return; }
+  if(act==='payf'){ const pid=tr?.dataset.pid; if(pid) await write(()=>db.doc('payments/'+pid).update({paid:t.checked})); return; }
+});
+document.addEventListener('click',async e=>{
+  const tabA=e.target.closest('[data-tab]');
+  if(tabA){ e.preventDefault(); S.tab=tabA.dataset.tab; S.confirm=null; history.replaceState(null,'','#'+S.tab); render(); window.scrollTo(0,0); return; }
+  const b=e.target.closest('[data-act]'); if(!b || b.tagName==='SELECT' || (b.tagName==='INPUT')) return;
+  const act=b.dataset.act, tr=b.closest('tr'), id=tr?.dataset.id;
+  const keepConfirm=['del-txn-yes','clear-ex-yes','payall-yes','del-prop-yes','del-pay-yes'];
+  if(!keepConfirm.includes(act) && !['del-txn','clear-ex','payall','del-prop','del-pay'].includes(act)) S.confirm=null;
+  switch(act){
+    case 'month': S.month = b.dataset.d==='0'?today().slice(0,7):addMonth(S.month,Number(b.dataset.d)); S.dailyView='month'; break;
+    case 'dview': S.dailyView=b.dataset.v; break;
+    case 'move-ready': await moveReady(); break;
+    case 'toggle-paste': S.draft.showPaste=!S.draft.showPaste; break;
+    case 'toggle-manual': S.draft.showManual=!S.draft.showManual; break;
+    case 'parse-paste': { const txt=S.draft.paste||''; if(!txt.trim()){ toast('Paste rows from the card statement first.'); return; } S.preview=buildPreview(txt,'Pasted rows'); if(!S.preview.card) S.preview.card=S.draft.impCard||''; break; }
+    case 'cancel-import': S.preview=null; break;
+    case 'do-import': await doImport(); return;
+    case 'add-manual': {
+      const card=S.draft['m-card']||'', date=S.draft['m-date']||today(), desc=(S.draft['m-desc']||'').trim(), amount=round2(num(S.draft['m-amt']));
+      if(!card||!desc||!amount){ toast('Pick a card and fill in the description and amount.'); return; }
+      const ok=await write(()=>db.collection('txns').doc('m-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6)).set({card,date,desc,amount,bucket:'',category:'',propertyId:'',receipt:false,receiptAsset:'',paid:false,notes:'',posted:false,importedAt:new Date().toISOString(),source:'manual'}));
+      if(ok){ S.draft['m-desc']=''; S.draft['m-amt']=''; toast('Expense added. Categorize it below.'); }
+      break;
+    }
+    case 'del-txn': S.confirm=id; break;
+    case 'del-txn-yes': { const cid=S.confirm; S.confirm=null; await write(()=>db.doc('txns/'+cid).delete()); break; }
+    case 'unpost': await write(()=>db.doc('txns/'+id).update({posted:false})); toast('Sent back to Daily Expenses'); break;
+    case 'pick-card': S.card=b.dataset.k; S.trkMonth='all'; break;
+    case 'bucket': S.bucket=b.dataset.k; break;
+    case 'paidf': S.paidFilter=b.dataset.v; break;
+    case 'payall': S.confirm='payall'; break;
+    case 'payall-yes': {
+      S.confirm=null;
+      const rows=posted().filter(t=>(S.card==='all'||t.card===S.card)&&t.bucket===S.bucket&&!t.paid&&(S.trkMonth==='all'||(t.date||'').startsWith(S.trkMonth)));
+      for(const t of rows) await write(()=>db.doc('txns/'+t.id).update({paid:true,paidDate:today()}));
+      toast(`Marked ${rows.length} charges as paid`); break;
+    }
+    case 'new-prop': openModal({type:'newprop'}); break;
+    case 'mp-create': await createProp(); return;
+    case 'mp-cancel': S.modal=null; break;
+    case 'open-prop': S.propId=b.dataset.id; window.scrollTo(0,0); break;
+    case 'close-prop': S.propId=null; break;
+    case 'del-prop': S.confirm='delprop'; break;
+    case 'del-prop-yes': { const pid=S.propId; S.confirm=null; S.propId=null; await write(()=>db.doc('properties/'+pid).delete()); toast('Property deleted. Its card charges stay on their cards.'); break; }
+    case 'add-pay': {
+      const amount=round2(num(S.draft['np-amt'])), payee=(S.draft['np-payee']||'').trim();
+      if(!amount||!payee){ toast('Fill in who was paid and the amount.'); return; }
+      const ok=await write(()=>db.collection('payments').add({propertyId:S.propId,date:S.draft['np-date']||today(),payee,category:S.draft['np-cat']||S.lists.property[0],method:S.draft['np-method']||S.lists.methods[0],amount,paid:S.draft['np-paid']??true,createdAt:new Date().toISOString()}));
+      if(ok){ S.draft['np-payee']=''; S.draft['np-amt']=''; toast('Payment added'); }
+      break;
+    }
+    case 'del-pay': S.confirm='pay-'+tr.dataset.pid; break;
+    case 'del-pay-yes': { const pid=S.confirm.slice(4); S.confirm=null; await write(()=>db.doc('payments/'+pid).delete()); break; }
+    case 'save-lists': {
+      const lines=k=>{ const v=S.draft['ls-'+k]; return v==null?S.lists[k]:v.split('\n').map(x=>x.trim()).filter(Boolean); };
+      const cardLabels={}; for(const c of CARDS){ const v=(S.draft['cl-'+c.k] ?? (S.lists.cardLabels||{})[c.k] ?? '').trim(); if(v) cardLabels[c.k]=v; }
+      const data={overhead:lines('overhead'),marketing:lines('marketing'),property:lines('property'),methods:lines('methods'),statuses:lines('statuses'),cardLabels,requireReceipt:S.draft['ls-req']??S.lists.requireReceipt};
+      if(await write(()=>db.doc('settings/lists').set(data))){ for(const k of Object.keys(S.draft)) if(k.startsWith('ls-')||k.startsWith('cl-')) delete S.draft[k]; toast('Lists saved'); }
+      break;
+    }
+    case 'clear-ex': S.confirm='clear-ex'; break;
+    case 'clear-ex-yes': {
+      S.confirm=null;
+      const jobs=[...[...S.txns.values()].filter(x=>x.example).map(x=>'txns/'+x.id),...[...S.props.values()].filter(x=>x.example).map(x=>'properties/'+x.id),...[...S.pays.values()].filter(x=>x.example).map(x=>'payments/'+x.id)];
+      for(const p of jobs) await write(()=>db.doc(p).delete());
+      toast('Example rows removed'); break;
+    }
+    case 'cancel': S.confirm=null; break;
+    default: return;
+  }
+  render();
+});
+// drag & drop CSV
+document.addEventListener('dragover',e=>{ const d=e.target.closest?.('#drop'); if(d){ e.preventDefault(); d.classList.add('over'); } });
+document.addEventListener('dragleave',e=>{ const d=e.target.closest?.('#drop'); if(d) d.classList.remove('over'); });
+document.addEventListener('drop',async e=>{ const d=e.target.closest?.('#drop'); if(!d) return; e.preventDefault(); const f=e.dataTransfer.files[0]; if(!f) return; const card=S.preview?.card||S.draft.impCard||''; S.preview=buildPreview(await f.text(),f.name); if(!S.preview.card) S.preview.card=card; render(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && S.modal){ S.modal=null; render(); } if(e.key==='Enter' && e.target.id==='mp-addr'){ e.preventDefault(); createProp(); } });
+window.addEventListener('hashchange',()=>{ const t=location.hash.slice(1); if(TABS.some(x=>x.k===t)){ S.tab=t; render(); } });
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+  const c=window.claude;
+  if(!c?.use){ S.dbState='off'; render(); return; }
+  db = await c.use('db');
+  if(!db){ S.dbState='off'; render(); return; }
+  const user = await c.use('user');
+  try{ const can = user?.can ? await user.can('data.write') : null; if(can===false) S.readOnly=true; }catch{}
+  try{ assets = await c.use('assets'); }catch{ assets=null; }
+  S.dbState='live';
+  const onErr = e=>{ if(e?.code==='revoked'){ S.dbState='off'; render(); } };
+  const toMap = snap=> new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
+  db.collection('txns').onSnapshot(s=>{ S.txns=toMap(s); S.ready.txns=true; scheduleRender(); }, onErr);
+  db.collection('properties').onSnapshot(s=>{ S.props=toMap(s); S.ready.props=true; scheduleRender(); }, onErr);
+  db.collection('payments').onSnapshot(s=>{ S.pays=toMap(s); S.ready.pays=true; scheduleRender(); }, onErr);
+  db.doc('settings/lists').onSnapshot(d=>{ S.lists = d.exists ? {...DEFAULT_LISTS, ...d.data()} : {...DEFAULT_LISTS}; scheduleRender(); }, onErr);
+  render();
+})();
+</script>
