@@ -1,0 +1,479 @@
+<title>THB Card Approvals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a statement desk. Card tabs on top, a running tally, then each expense type as folded ledgers (one per property / company / marketing type) with a decision column on the right. */
+:root {
+  --bg: #f3f4f1;
+  --paper: #ffffff;
+  --ink: #1d2a2a;
+  --muted: #5e6b69;
+  --line: #dde2dd;
+  --soft: #eaeee9;
+  --accent: #1f5f5b;
+  --accent-ink: #ffffff;
+  --ok: #2c7a44;   --ok-bg: #e3f1e6;
+  --note: #9a6a00; --note-bg: #fbf0d4;
+  --no: #b23b2e;   --no-bg: #f8e1dd;
+  --focus: #2f7f9a;
+  --f-display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --f-num: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121817; --paper: #1a2221; --ink: #e3e9e6; --muted: #98a6a2; --line: #2c3735; --soft: #222c2a;
+  --accent: #6cbcb3; --accent-ink: #0f1716;
+  --ok: #73c78c; --ok-bg: #1d3325; --note: #e2b54e; --note-bg: #3a2f14; --no: #ef8a7c; --no-bg: #3d211d; --focus: #7cc6dc;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #121817; --paper: #1a2221; --ink: #e3e9e6; --muted: #98a6a2; --line: #2c3735; --soft: #222c2a;
+  --accent: #6cbcb3; --accent-ink: #0f1716;
+  --ok: #73c78c; --ok-bg: #1d3325; --note: #e2b54e; --note-bg: #3a2f14; --no: #ef8a7c; --no-bg: #3d211d; --focus: #7cc6dc;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.45; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 64px; display: grid; gap: 20px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 30px; line-height: 1.1; margin: 4px 0 0; text-wrap: balance; letter-spacing: -.01em; }
+.who { color: var(--muted); font-size: 13px; }
+
+.cards { display: flex; flex-wrap: wrap; gap: 8px; }
+.cardtab { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 8px 14px; cursor: pointer; display: flex; gap: 10px; align-items: baseline; }
+.cardtab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.cardtab small { font-family: var(--f-num); font-size: 12px; opacity: .75; }
+
+.tally { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 12px; }
+.tally-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.t-cell { display: grid; gap: 2px; min-width: 0; }
+.t-cell .lab { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.t-cell .val { font-family: var(--f-num); font-size: 20px; font-weight: 500; }
+.t-cell .cnt { color: var(--muted); font-size: 12px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: inline-block; }
+.dot.ok { background: var(--ok); } .dot.note { background: var(--note); } .dot.no { background: var(--no); } .dot.pend { background: var(--muted); }
+.bar { height: 8px; border-radius: 4px; background: var(--soft); display: flex; overflow: hidden; }
+.bar span { display: block; height: 100%; }
+.bar .ok { background: var(--ok); } .bar .note { background: var(--note); } .bar .no { background: var(--no); }
+
+.sections { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.sectab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 14px 9px; cursor: pointer; display: grid; gap: 1px; text-align: left; white-space: nowrap; color: var(--muted); }
+.sectab b { font-family: var(--f-display); font-size: 17px; font-weight: 600; color: var(--ink); }
+.sectab small { font-size: 12px; }
+.sectab[aria-selected="true"] { border-bottom-color: var(--accent); }
+.sectab[aria-selected="true"] small { color: var(--ink); }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.toolbar select, .toolbar input[type="search"] { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.toolbar select { max-width: 100%; }
+.toolbar input[type="search"] { flex: 1 1 200px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.spacer { flex: 1 1 auto; }
+.ghost { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+
+.groups { display: grid; gap: 10px; }
+details.group { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; }
+details.group > summary { list-style: none; cursor: pointer; padding: 14px 16px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; }
+details.group > summary::-webkit-details-marker { display: none; }
+.chev { width: 22px; height: 22px; border-radius: 6px; background: var(--soft); display: grid; place-items: center; transition: transform .15s; }
+.chev::before { content: ""; border: solid var(--ink); border-width: 0 2px 2px 0; padding: 3px; transform: rotate(-45deg); margin-left: -2px; }
+details[open] > summary .chev { transform: rotate(90deg); }
+.g-name { font-family: var(--f-display); font-weight: 600; font-size: 16px; min-width: 0; overflow-wrap: anywhere; }
+.g-meta { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 2px; }
+.g-right { display: grid; justify-items: end; gap: 6px; }
+.g-total { font-family: var(--f-num); font-size: 16px; font-weight: 500; }
+.g-bar { width: 140px; }
+.g-body { border-top: 1px solid var(--line); }
+.g-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; background: var(--soft); font-size: 13px; }
+.g-actions .muted { color: var(--muted); }
+.bulk { border: 1px solid var(--ok); color: var(--ok); background: var(--paper); border-radius: 6px; padding: 5px 10px; cursor: pointer; font-weight: 600; font-size: 13px; }
+.bulk.confirm { background: var(--ok); color: var(--paper); }
+.bulk:disabled { opacity: .5; cursor: default; }
+
+.month { padding: 8px 16px 4px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between; border-top: 1px solid var(--line); }
+.month:first-child { border-top: 0; }
+.row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 110px auto; gap: 4px 14px; padding: 10px 16px; border-top: 1px solid var(--line); align-items: start; border-left: 4px solid transparent; }
+.month + .row { border-top: 0; }
+.row[data-s="approve"] { border-left-color: var(--ok); }
+.row[data-s="note"] { border-left-color: var(--note); }
+.row[data-s="no"] { border-left-color: var(--no); }
+.r-date { color: var(--muted); font-size: 13px; padding-top: 2px; }
+.r-main { min-width: 0; }
+.r-vendor { font-weight: 600; overflow-wrap: anywhere; }
+.r-desc { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.r-tag { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.r-tag span { background: var(--soft); border-radius: 4px; padding: 1px 6px; }
+.r-amt { text-align: right; font-family: var(--f-num); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.r-amt.neg { color: var(--ok); }
+.dec { display: flex; gap: 4px; }
+.dec button { border: 1px solid var(--line); background: var(--paper); border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); }
+.dec button:hover { border-color: var(--ink); color: var(--ink); }
+.dec button[aria-pressed="true"][data-v="approve"] { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+.dec button[aria-pressed="true"][data-v="note"] { background: var(--note-bg); border-color: var(--note); color: var(--note); }
+.dec button[aria-pressed="true"][data-v="no"] { background: var(--no-bg); border-color: var(--no); color: var(--no); }
+.r-note { grid-column: 2 / -1; display: grid; gap: 6px; }
+.r-note textarea { width: 100%; min-height: 54px; resize: vertical; border: 1px solid var(--note); background: var(--note-bg); border-radius: 8px; padding: 8px 10px; }
+.r-note .n-foot { display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.r-note .n-foot button { border: 0; background: var(--ink); color: var(--bg); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+.r-by { grid-column: 2 / -1; font-size: 12px; color: var(--muted); }
+.addnote { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font-size: 12px; text-decoration: underline; }
+
+.empty, .banner { background: var(--paper); border: 1px dashed var(--line); border-radius: 10px; padding: 18px; color: var(--muted); }
+.banner { border-style: solid; border-color: var(--note); background: var(--note-bg); color: var(--ink); }
+.foot { color: var(--muted); font-size: 12px; }
+
+@media (max-width: 760px) {
+  .tally-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .row { grid-template-columns: minmax(0, 1fr) auto; }
+  .r-date { grid-column: 1; grid-row: 1; padding: 0; }
+  .r-amt { grid-column: 2; grid-row: 1; }
+  .r-main { grid-column: 1 / -1; }
+  .dec { grid-column: 1 / -1; }
+  .dec button { flex: 1; padding: 8px; }
+  .r-note, .r-by { grid-column: 1 / -1; }
+  .g-bar { width: 90px; }
+  h1 { font-size: 24px; }
+  .sectab { flex: 1 1 0; min-width: 0; white-space: normal; padding: 8px 6px; }
+  .sectab b { font-size: 15px; }
+  .sectab small { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Twin Home Buyer · Unpaid card charges</div>
+      <h1>Card Approvals for Juan</h1>
+    </div>
+    <div class="who" id="who">Connecting…</div>
+  </header>
+
+  <nav class="cards" id="cards" role="tablist" aria-label="Credit cards"></nav>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="tally" aria-label="Decision totals">
+    <div class="tally-grid" id="tally"></div>
+    <div class="bar" id="tallybar"></div>
+  </section>
+
+  <nav class="sections" id="sections" role="tablist" aria-label="Expense type"></nav>
+
+  <div class="toolbar">
+    <label class="sr" for="groupSel" hidden>Show</label>
+    <select id="groupSel" aria-label="Jump to group"></select>
+    <div class="chips" id="statusChips" role="group" aria-label="Filter by decision"></div>
+    <input type="search" id="q" placeholder="Search vendor or description" aria-label="Search">
+    <button class="ghost" id="expand">Open all</button>
+    <button class="ghost" id="export" hidden>Download CSV</button>
+  </div>
+
+  <div class="groups" id="groups"></div>
+
+  <p class="foot">Approve = OK to pay. Note = question or instruction for accounting. No = do not pay. Tap a selected choice again to clear it. Decisions save instantly and everyone with this page sees them.</p>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const STATUSES = [["approve","Approve"],["note","Note"],["no","No"]];
+const FILTERS = [["all","All"],["pending","Pending"],["approve","Approved"],["note","Notes"],["no","No"]];
+const GROUP_WORD = { overhead: "company", property: "property", marketing: "marketing type" };
+
+const st = { card: DATA.cards[0].key, section: null, group: "__all", filter: "all", q: "", open: new Set() };
+const decisions = new Map(); // id -> {status, note, by, at}
+const byId = new Map();      // id -> {item, card, section}
+let db = null, user = null, myId = null, names = {};
+try { const s = JSON.parse(localStorage.getItem("thb-approvals-ui") || "{}"); if (s.card) st.card = s.card; if (s.section) st.section = s.section; } catch (e) {}
+
+for (const c of DATA.cards) for (const s of c.sections) for (const it of s.items) byId.set(it.id, { item: it, card: c.key, section: s.key });
+
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => (n < 0 ? "−$" : "$") + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const card = () => DATA.cards.find((c) => c.key === st.card) || DATA.cards[0];
+const section = () => { const c = card(); return c.sections.find((s) => s.key === st.section) || c.sections[0]; };
+const statusOf = (id) => decisions.get(id)?.status || "pending";
+const fmtDate = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ""); return m ? `${m[2]}/${m[3]}/${m[1].slice(2)}` : (d || "No date"); };
+const monthKey = (d) => { const m = /^(\d{4})-(\d{2})/.exec(d || ""); return m ? m[1] + "-" + m[2] : "none"; };
+const monthLabel = (k) => k === "none" ? "No date" : new Date(+k.slice(0, 4), +k.slice(5) - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" });
+function saveUi() { try { localStorage.setItem("thb-approvals-ui", JSON.stringify({ card: st.card, section: st.section })); } catch (e) {} }
+
+function stats(items) {
+  const s = { pending: [0, 0], approve: [0, 0], note: [0, 0], no: [0, 0], total: 0, n: items.length };
+  for (const it of items) { const k = statusOf(it.id); s[k][0]++; s[k][1] += it.amount; s.total += it.amount; }
+  return s;
+}
+function barHtml(s) {
+  const t = s.n || 1;
+  return `<span class="ok" style="width:${s.approve[0] / t * 100}%"></span><span class="note" style="width:${s.note[0] / t * 100}%"></span><span class="no" style="width:${s.no[0] / t * 100}%"></span>`;
+}
+
+function groupsOf(sec) {
+  const m = new Map();
+  for (const it of sec.items) { if (!m.has(it.group)) m.set(it.group, []); m.get(it.group).push(it); }
+  return [...m.entries()].map(([name, items]) => ({ name, items })).sort((a, b) => b.items.length - a.items.length || a.name.localeCompare(b.name));
+}
+function matches(it) {
+  if (st.filter !== "all" && statusOf(it.id) !== st.filter) return false;
+  if (st.q) { const q = st.q.toLowerCase(); if (!(`${it.vendor} ${it.desc} ${it.tag || ""} ${it.payer || ""} ${decisions.get(it.id)?.note || ""}`.toLowerCase().includes(q))) return false; }
+  return true;
+}
+
+// ---------- render ----------
+function renderCards() {
+  $("cards").innerHTML = DATA.cards.map((c) => {
+    const all = c.sections.flatMap((s) => s.items); const s = stats(all);
+    return `<button class="cardtab" role="tab" aria-selected="${c.key === st.card}" data-card="${c.key}"><span>${esc(c.name)}</span><small>${s.pending[0]} pending</small></button>`;
+  }).join("");
+}
+function renderTally() {
+  const s = stats(card().sections.flatMap((x) => x.items));
+  const cell = (cls, lab, v) => `<div class="t-cell"><span class="lab"><i class="dot ${cls}"></i>${lab}</span><span class="val">${fmt(v[1])}</span><span class="cnt">${v[0]} charge${v[0] === 1 ? "" : "s"}</span></div>`;
+  $("tally").innerHTML = cell("pend", "Waiting on Juan", s.pending) + cell("ok", "Approved", s.approve) + cell("note", "Noted", s.note) + cell("no", "Not approved", s.no);
+  $("tallybar").innerHTML = barHtml(s);
+}
+function renderSections() {
+  const c = card(), cur = section();
+  st.section = cur.key;
+  $("sections").innerHTML = c.sections.map((s) => {
+    const x = stats(s.items);
+    return `<button class="sectab" role="tab" aria-selected="${s.key === cur.key}" data-sec="${s.key}"><b>${esc(s.name)}</b><small>${x.pending[0]} pending · ${fmt(x.pending[1])}</small></button>`;
+  }).join("");
+}
+function renderToolbar() {
+  const sec = section(), gs = groupsOf(sec), word = GROUP_WORD[sec.key] || "group";
+  if (st.group !== "__all" && !gs.some((g) => g.name === st.group)) st.group = "__all";
+  $("groupSel").innerHTML = `<option value="__all">All ${word === "property" ? "properties" : word === "company" ? "companies" : "marketing types"} (${gs.length})</option>` +
+    gs.map((g) => `<option value="${esc(g.name)}"${g.name === st.group ? " selected" : ""}>${esc(g.name)} · ${g.items.length}</option>`).join("");
+  $("statusChips").innerHTML = FILTERS.map(([k, l]) => `<button class="chip" aria-pressed="${st.filter === k}" data-f="${k}">${l}</button>`).join("");
+}
+
+function rowHtml(it) {
+  const d = decisions.get(it.id), s = d?.status || "pending";
+  const tag = [it.payer ? `Paid by ${it.payer}` : "", it.tag || ""].filter(Boolean);
+  return `<div class="row" data-id="${it.id}" data-s="${s}">
+    <div class="r-date num">${esc(fmtDate(it.date))}</div>
+    <div class="r-main"><div class="r-vendor">${esc(it.vendor || "Unknown vendor")}</div>${it.desc ? `<div class="r-desc">${esc(it.desc)}</div>` : ""}${tag.length ? `<div class="r-tag">${tag.map((t) => `<span>${esc(t)}</span>`).join(" ")}</div>` : ""}</div>
+    <div class="r-amt${it.amount < 0 ? " neg" : ""}">${fmt(it.amount)}</div>
+    <div class="dec" role="group" aria-label="Decision">${STATUSES.map(([v, l]) => `<button data-v="${v}" aria-pressed="${s === v}">${l}</button>`).join("")}</div>
+    ${noteHtml(it.id)}
+  </div>`;
+}
+function noteHtml(id) {
+  const d = decisions.get(id);
+  const showBox = d?.status === "note" || (d?.note && d.note.length) || openNotes.has(id);
+  let by = "";
+  if (d?.by) by = `<div class="r-by">${d.status === "approve" ? "Approved" : d.status === "no" ? "Marked no" : "Noted"} by ${esc(names[d.by] || "a reviewer")}${d.at ? " · " + esc(new Date(d.at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })) : ""}</div>`;
+  if (showBox) return `<div class="r-note"><textarea id="note-${id}" placeholder="Note for accounting (e.g. pay half, ask vendor for receipt, charge to another entity)">${esc(d?.note || "")}</textarea><div class="n-foot"><button data-save="${id}">Save note</button><span data-ns="${id}"></span></div></div>${by}`;
+  return d?.status ? `${by}<div class="r-by"><button class="addnote" data-addnote="${id}">Add a note</button></div>` : "";
+}
+const openNotes = new Set();
+
+function groupBodyHtml(g) {
+  const items = g.items.filter(matches);
+  if (!items.length) return `<div class="g-actions"><span class="muted">Nothing matches the current filter.</span></div>`;
+  const pend = g.items.filter((it) => statusOf(it.id) === "pending");
+  let html = `<div class="g-actions"><button class="bulk" data-bulk="${esc(g.name)}"${pend.length ? "" : " disabled"}>Approve all ${pend.length} pending</button><span class="muted">${pend.length ? fmt(pend.reduce((a, b) => a + b.amount, 0)) + " still waiting" : "Everything here has a decision"}</span></div>`;
+  const useMonths = items.length > 12;
+  let lastM = null;
+  for (const it of items) {
+    if (useMonths) {
+      const m = monthKey(it.date);
+      if (m !== lastM) {
+        const mt = items.filter((x) => monthKey(x.date) === m);
+        html += `<div class="month"><span>${monthLabel(m)}</span><span class="num">${mt.length} · ${fmt(mt.reduce((a, b) => a + b.amount, 0))}</span></div>`;
+        lastM = m;
+      }
+    }
+    html += rowHtml(it);
+  }
+  return html;
+}
+function groupSummaryHtml(g) {
+  const s = stats(g.items), vis = g.items.filter(matches).length;
+  const payers = [...new Set(g.items.map((i) => i.payer).filter(Boolean))];
+  return `<span class="chev" aria-hidden="true"></span>
+    <div style="min-width:0"><div class="g-name">${esc(g.name)}</div>
+      <div class="g-meta"><span>${g.items.length} charge${g.items.length === 1 ? "" : "s"}${vis !== g.items.length ? ` · ${vis} shown` : ""}</span><span>${s.pending[0]} pending</span>${s.note[0] ? `<span>${s.note[0]} with notes</span>` : ""}${s.no[0] ? `<span>${s.no[0]} no</span>` : ""}${payers.length ? `<span>${esc(payers.join(", "))}</span>` : ""}</div></div>
+    <div class="g-right"><span class="g-total">${fmt(s.total)}</span><span class="bar g-bar">${barHtml(s)}</span></div>`;
+}
+function renderGroups() {
+  const sec = section();
+  let gs = groupsOf(sec);
+  if (st.group !== "__all") gs = gs.filter((g) => g.name === st.group);
+  if (st.filter !== "all" || st.q) gs = gs.filter((g) => g.items.some(matches));
+  if (!gs.length) { $("groups").innerHTML = `<div class="empty">No ${esc(sec.name.toLowerCase())} charges match this filter.</div>`; return; }
+  const forceOpen = st.group !== "__all" || gs.length === 1;
+  $("groups").innerHTML = gs.map((g) => {
+    const open = forceOpen || st.open.has(sec.key + "|" + g.name);
+    return `<details class="group" data-g="${esc(g.name)}"${open ? " open" : ""}><summary>${groupSummaryHtml(g)}</summary><div class="g-body">${open ? groupBodyHtml(g) : ""}</div></details>`;
+  }).join("");
+  $("expand").textContent = gs.every((g) => st.open.has(sec.key + "|" + g.name)) ? "Close all" : "Open all";
+}
+function renderAll() { renderCards(); renderTally(); renderSections(); renderToolbar(); renderGroups(); }
+
+// Light refresh after a decision changes: keeps open note boxes and focus intact.
+function refresh(changedIds) {
+  renderCards(); renderTally(); renderSections();
+  const sec = section();
+  const touched = new Set();
+  for (const id of changedIds) {
+    const ref = byId.get(id); if (!ref || ref.section !== sec.key || ref.card !== st.card) continue;
+    touched.add(ref.item.group);
+    const row = document.querySelector(`.row[data-id="${id}"]`);
+    if (!row) continue;
+    const ta = row.querySelector("textarea");
+    if (ta && document.activeElement === ta) { // only update chrome around a note being typed
+      const s = statusOf(id); row.dataset.s = s;
+      row.querySelectorAll(".dec button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === s)));
+      continue;
+    }
+    const tmp = document.createElement("div"); tmp.innerHTML = rowHtml(ref.item); row.replaceWith(tmp.firstElementChild);
+  }
+  const gs = groupsOf(sec);
+  document.querySelectorAll("details.group").forEach((el) => {
+    if (!touched.has(el.dataset.g)) return;
+    const g = gs.find((x) => x.name === el.dataset.g); if (!g) return;
+    el.querySelector("summary").innerHTML = groupSummaryHtml(g);
+    const act = el.querySelector(".g-actions");
+    if (act && el.open) {
+      const pend = g.items.filter((it) => statusOf(it.id) === "pending");
+      const tmp = document.createElement("div");
+      tmp.innerHTML = `<div class="g-actions"><button class="bulk" data-bulk="${esc(g.name)}"${pend.length ? "" : " disabled"}>Approve all ${pend.length} pending</button><span class="muted">${pend.length ? fmt(pend.reduce((a, b) => a + b.amount, 0)) + " still waiting" : "Everything here has a decision"}</span></div>`;
+      act.replaceWith(tmp.firstElementChild);
+    }
+  });
+}
+
+// ---------- writes ----------
+function docRef(id) { const r = byId.get(id); return db.collection(`cards/${r.card}/${r.section}`).doc(id); }
+function showBanner(msg) { const b = $("banner"); b.textContent = msg; b.hidden = !msg; }
+async function setStatus(id, status) {
+  if (!db) { showBanner("Decisions can't be saved in this view. Open the page signed in to claude.ai."); return; }
+  const prev = decisions.get(id);
+  const next = status ? { status, note: prev?.note || "", by: myId || "", at: new Date().toISOString(), section: byId.get(id).section } : null;
+  if (next) decisions.set(id, next); else decisions.delete(id);
+  if (status === "note") openNotes.add(id);
+  refresh([id]);
+  try {
+    if (next) await docRef(id).set(next);
+    else if (prev?.note) { const keep = { status: "", note: prev.note, by: myId || "", at: new Date().toISOString(), section: byId.get(id).section }; decisions.set(id, keep); await docRef(id).set(keep); }
+    else await docRef(id).delete();
+  } catch (e) {
+    if (prev) decisions.set(id, prev); else decisions.delete(id);
+    refresh([id]);
+    showBanner(e?.code === "not_granted" ? "You have view-only access, so decisions aren't saved. Ask for edit access to approve." : "That decision didn't save. Check your connection and try again.");
+  }
+}
+async function saveNote(id) {
+  const ta = document.getElementById("note-" + id); if (!ta || !db) return;
+  const prev = decisions.get(id);
+  const text = ta.value.trim();
+  if ((prev?.note || "") === text) return;
+  const next = { status: prev?.status || (text ? "note" : ""), note: text, by: myId || "", at: new Date().toISOString(), section: byId.get(id).section };
+  decisions.set(id, next);
+  const tag = document.querySelector(`[data-ns="${id}"]`); if (tag) tag.textContent = "Saving…";
+  try { await docRef(id).set(next); const t = document.querySelector(`[data-ns="${id}"]`); if (t) t.textContent = "Saved"; refresh([id]); }
+  catch (e) { if (prev) decisions.set(id, prev); else decisions.delete(id); const t = document.querySelector(`[data-ns="${id}"]`); if (t) t.textContent = "Not saved. Try again."; }
+}
+async function bulkApprove(groupName, btn) {
+  if (!btn.classList.contains("confirm")) {
+    btn.classList.add("confirm"); const n = btn.textContent.match(/\d+/)?.[0];
+    btn.textContent = `Tap again to approve ${n}`; setTimeout(() => { if (btn.isConnected && btn.classList.contains("confirm")) { btn.classList.remove("confirm"); btn.textContent = `Approve all ${n} pending`; } }, 4000);
+    return;
+  }
+  if (!db) { showBanner("Decisions can't be saved in this view. Open the page signed in to claude.ai."); return; }
+  btn.disabled = true;
+  const sec = section();
+  const items = sec.items.filter((it) => it.group === groupName && statusOf(it.id) === "pending");
+  const now = new Date().toISOString();
+  for (const it of items) decisions.set(it.id, { status: "approve", note: "", by: myId || "", at: now, section: sec.key });
+  refresh(items.map((i) => i.id));
+  let failed = 0;
+  for (let i = 0; i < items.length; i += 10) {
+    await Promise.all(items.slice(i, i + 10).map((it) => docRef(it.id).set(decisions.get(it.id)).catch(() => { failed++; decisions.delete(it.id); })));
+  }
+  if (failed) { showBanner(`${failed} approvals didn't save. Try "Approve all" again.`); renderAll(); }
+}
+
+// ---------- events ----------
+$("cards").addEventListener("click", (e) => { const b = e.target.closest("[data-card]"); if (!b) return; st.card = b.dataset.card; st.section = null; st.group = "__all"; saveUi(); renderAll(); });
+$("sections").addEventListener("click", (e) => { const b = e.target.closest("[data-sec]"); if (!b) return; st.section = b.dataset.sec; st.group = "__all"; saveUi(); renderAll(); });
+$("groupSel").addEventListener("change", (e) => { st.group = e.target.value; renderGroups(); });
+$("statusChips").addEventListener("click", (e) => { const b = e.target.closest("[data-f]"); if (!b) return; st.filter = b.dataset.f; renderToolbar(); renderGroups(); });
+let qT; $("q").addEventListener("input", (e) => { clearTimeout(qT); qT = setTimeout(() => { st.q = e.target.value.trim(); renderGroups(); }, 150); });
+$("expand").addEventListener("click", () => {
+  const sec = section(), gs = groupsOf(sec), keys = gs.map((g) => sec.key + "|" + g.name);
+  const close = keys.every((k) => st.open.has(k));
+  keys.forEach((k) => close ? st.open.delete(k) : st.open.add(k));
+  renderGroups();
+});
+$("groups").addEventListener("toggle", (e) => {
+  const el = e.target; if (!el.matches || !el.matches("details.group")) return;
+  const key = section().key + "|" + el.dataset.g;
+  if (el.open) { st.open.add(key); const body = el.querySelector(".g-body"); if (!body.innerHTML) { const g = groupsOf(section()).find((x) => x.name === el.dataset.g); body.innerHTML = groupBodyHtml(g); } }
+  else st.open.delete(key);
+}, true);
+$("groups").addEventListener("click", (e) => {
+  const d = e.target.closest(".dec button");
+  if (d) { const id = d.closest(".row").dataset.id; setStatus(id, statusOf(id) === d.dataset.v ? null : d.dataset.v); return; }
+  const s = e.target.closest("[data-save]"); if (s) { saveNote(s.dataset.save); return; }
+  const a = e.target.closest("[data-addnote]"); if (a) { openNotes.add(a.dataset.addnote); refresh([a.dataset.addnote]); document.getElementById("note-" + a.dataset.addnote)?.focus(); return; }
+  const b = e.target.closest("[data-bulk]"); if (b) { e.preventDefault(); bulkApprove(b.dataset.bulk, b); }
+});
+$("groups").addEventListener("focusout", (e) => { if (e.target.matches("textarea[id^='note-']")) saveNote(e.target.id.slice(5)); });
+
+// ---------- export ----------
+async function setupExport() {
+  const dl = await claude.use("downloads"); if (!dl) return;
+  const btn = $("export"); btn.hidden = false;
+  btn.addEventListener("click", async () => {
+    const c = card(); const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = [["Card", "Expense type", "Group", "Date", "Vendor", "Description", "Amount", "Paid by", "Decision", "Note", "Decided at"].map(q).join(",")];
+    for (const s of c.sections) for (const it of s.items) {
+      const d = decisions.get(it.id);
+      lines.push([c.name, s.name, it.group, it.date, it.vendor, it.desc, it.amount.toFixed(2), it.payer || "", ({ approve: "Approved", note: "Note", no: "No" })[d?.status] || "Pending", d?.note || "", d?.at || ""].map(q).join(","));
+    }
+    try { await dl.save({ filename: `${c.key}-approvals-${new Date().toISOString().slice(0, 10)}.csv`, data: lines.join("\n") }); } catch (e) {}
+  });
+}
+
+// ---------- boot ----------
+renderAll();
+(async () => {
+  const [d, u] = await Promise.all([claude.use("db"), claude.use("user")]);
+  db = d; user = u;
+  if (user) { try { myId = await user.id(); } catch (e) {} }
+  const me = user ? await user.me().catch(() => null) : null;
+  $("who").textContent = db ? (me?.name ? `Signed in as ${me.name}` : "Signed in") : "View only — sign in to claude.ai to record decisions";
+  if (!db) return;
+  const pendingIds = new Set(); let t = null;
+  const flush = async () => {
+    t = null; const ids = [...pendingIds]; pendingIds.clear();
+    const who = [...new Set([...decisions.values()].map((x) => x.by).filter((x) => x && !(x in names)))];
+    if (who.length && user) { try { const ps = await user.profiles(who); for (const k of who) names[k] = ps[k]?.name || ""; } catch (e) {} }
+    refresh(ids);
+  };
+  for (const c of DATA.cards) for (const s of c.sections) {
+    db.collection(`cards/${c.key}/${s.key}`).limit(1000).onSnapshot((snap) => {
+      for (const ch of snap.docChanges()) {
+        const id = ch.doc.id;
+        if (ch.type === "removed") decisions.delete(id);
+        else { const v = ch.doc.data(); if (v && (v.status || v.note)) decisions.set(id, v); else decisions.delete(id); }
+        pendingIds.add(id);
+      }
+      if (!t) t = setTimeout(flush, 60);
+    }, () => showBanner("Live updates paused. Reload the page to see the latest decisions."));
+  }
+  setupExport();
+})();
+</script>
