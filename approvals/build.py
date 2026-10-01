@@ -20,6 +20,7 @@ import re
 from collections import Counter
 
 from overhead_categories import categorize
+from purpose import about
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
@@ -287,6 +288,7 @@ def summarize(card, skey, items, bal):
             "from": dates[0] if dates else "",
             "to": dates[-1] if dates else "",
         }
+        line["about"] = about(skey, its)
         moved = round(sum(i["amount"] for i in its if i.get("adj")), 2)
         if moved:
             line["moved"] = moved
