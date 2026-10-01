@@ -18,9 +18,11 @@ from collections import Counter
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
 
-# Card key -> display name. Add new cards here as they are uploaded.
+# Card key, display name, statement minimum payment due (None if not given).
+# Add new cards here as they are uploaded.
 CARDS = [
-    ("amex", "American Express"),
+    ("amex", "American Express", 30887.76),
+    ("capone-business", "Capital One Business", None),
 ]
 
 
@@ -62,44 +64,71 @@ def col(cells, name, start=0):
     return cells.index(name.lower(), start)
 
 
+def flag_col(h, data, preferred):
+    """Index of the TRUE/FALSE paid flag. Some exports keep it under another header."""
+    if preferred in h:
+        return h.index(preferred)
+    for j in range(len(h)):
+        vals = {x[j].strip().upper() for x in data if j < len(x) and x[j].strip()}
+        if vals and vals <= {"TRUE", "FALSE"}:
+            return j
+    raise ValueError("paid flag column not found")
+
+
+def opt(x, c, k):
+    return x[c[k]] if c.get(k) is not None else ""
+
+
 def tidy(s):
     return re.sub(r"\s+", " ", (s or "").strip())
 
 
 def load_property(path):
     r = rows(path)
-    i, h = find_header(r, ["property", "who will pay", "paid"])
-    c = {k: col(h, k) for k in ["property", "who will pay", "date", "description", "vendor", "amount", "paid"]}
-    out = []
+    i, h = find_header(r, ["property", "who will pay", "amount"])
+    c = {k: col(h, k) for k in ["property", "who will pay", "date", "description", "vendor", "amount"]}
+    c["paid"] = flag_col(h, r[i + 1:], "paid")
+    out, bal = [], {}
     for x in r[i + 1:]:
         x += [""] * (len(h) - len(x))
         amt = money(x[c["amount"]])
-        if amt is None or x[c["paid"]].strip().upper() == "TRUE":
+        if amt is None:
+            continue
+        g = tidy(x[c["property"]]) or "No property listed"
+        bal[g] = bal.get(g, 0) + amt
+        if x[c["paid"]].strip().upper() == "TRUE":
             continue
         out.append({
-            "group": tidy(x[c["property"]]) or "No property listed",
+            "group": g,
             "date": norm_date(x[c["date"]]),
             "vendor": tidy(x[c["vendor"]]),
             "desc": tidy(x[c["description"]]),
             "amount": amt,
             "payer": tidy(x[c["who will pay"]]),
         })
-    return out
+    return out, bal
 
 
 def load_overhead(path):
     r = rows(path)
-    i, h = find_header(r, ["who will pay", "company", "paid"])
-    c = {k: col(h, k) for k in ["who will pay", "date", "vendor", "description", "amount", "company", "bucket", "expense type", "paid"]}
-    out = []
+    i, h = find_header(r, ["who will pay", "company", "amount"])
+    c = {k: col(h, k) for k in ["who will pay", "date", "vendor", "description", "amount", "company"]}
+    for k in ["bucket", "expense type"]:
+        c[k] = h.index(k) if k in h else None
+    c["paid"] = flag_col(h, r[i + 1:], "paid")
+    out, bal = [], {}
     for x in r[i + 1:]:
         x += [""] * (len(h) - len(x))
         amt = money(x[c["amount"]])
-        if amt is None or x[c["paid"]].strip().upper() == "TRUE":
+        if amt is None:
             continue
-        tags = [t for t in (tidy(x[c["bucket"]]), tidy(x[c["expense type"]])) if t]
+        g = tidy(x[c["company"]]) or "No company listed"
+        bal[g] = bal.get(g, 0) + amt
+        if x[c["paid"]].strip().upper() == "TRUE":
+            continue
+        tags = [t for t in (tidy(opt(x, c, "bucket")), tidy(opt(x, c, "expense type"))) if t]
         out.append({
-            "group": tidy(x[c["company"]]) or "No company listed",
+            "group": g,
             "date": norm_date(x[c["date"]]),
             "vendor": tidy(x[c["vendor"]]),
             "desc": tidy(x[c["description"]]),
@@ -107,34 +136,39 @@ def load_overhead(path):
             "payer": tidy(x[c["who will pay"]]),
             "tag": " · ".join(tags),
         })
-    return out
+    return out, bal
 
 
 def load_marketing(path):
     r = rows(path)
     i, h = find_header(r, ["date", "marketing type", "vendor name", "paid"])
     paid_flag = col(h, "paid", col(h, "paid") + 1)  # second PAID column is the TRUE/FALSE flag
-    c = {k: col(h, k) for k in ["date", "marketing type", "vendor name", "simple charge description", "marketing category", "lead channel"]}
+    c = {k: col(h, k) for k in ["date", "marketing type", "vendor name"]}
+    for k in ["simple charge description", "marketing category", "lead channel"]:
+        c[k] = h.index(k) if k in h else None
     amount_col = col(h, "paid")  # first "Paid" column holds the amount
     canon = {}
-    out = []
+    out, bal = [], {}
     for x in r[i + 1:]:
         x += [""] * (len(h) - len(x))
         amt = money(x[amount_col])
-        if amt is None or x[paid_flag].strip().upper() == "TRUE":
+        if amt is None:
             continue
         g = tidy(x[c["marketing type"]]) or "No type listed"
         g = canon.setdefault(g.lower(), g)  # "InvestorBase" / "Investorbase" -> one group
-        tags = [t for t in (tidy(x[c["marketing category"]]), tidy(x[c["lead channel"]])) if t]
+        bal[g] = bal.get(g, 0) + amt
+        if x[paid_flag].strip().upper() == "TRUE":
+            continue
+        tags = [t for t in (tidy(opt(x, c, "marketing category")), tidy(opt(x, c, "lead channel"))) if t]
         out.append({
             "group": g,
             "date": norm_date(x[c["date"]]),
             "vendor": tidy(x[c["vendor name"]]),
-            "desc": tidy(x[c["simple charge description"]]),
+            "desc": tidy(opt(x, c, "simple charge description")),
             "amount": amt,
             "tag": " · ".join(tags),
         })
-    return out
+    return out, bal
 
 
 LOADERS = [("overhead", "Overhead", load_overhead), ("property", "Property", load_property), ("marketing", "Marketing", load_marketing)]
@@ -151,17 +185,18 @@ def assign_ids(card, section, items):
 
 def build():
     cards = []
-    for key, name in CARDS:
+    for key, name, min_due in CARDS:
         sections = []
         for skey, sname, loader in LOADERS:
             p = os.path.join(DATA, key, f"{skey}.csv")
             if not os.path.exists(p):
                 continue
-            items = loader(p)
+            items, bal = loader(p)
             items.sort(key=lambda it: (it["group"].lower(), it["date"] or "9999"))
             assign_ids(key, skey, items)
-            sections.append({"key": skey, "name": sname, "items": items})
-        cards.append({"key": key, "name": name, "sections": sections})
+            balances = {g: round(v, 2) for g, v in bal.items() if any(it["group"] == g for it in items)}
+            sections.append({"key": skey, "name": sname, "items": items, "balances": balances})
+        cards.append({"key": key, "name": name, "minDue": min_due, "sections": sections})
     tpl = open(os.path.join(HERE, "template.html"), encoding="utf-8").read()
     html = tpl.replace("/*__DATA__*/null", json.dumps({"cards": cards}, separators=(",", ":")))
     out = os.path.join(HERE, "card-approvals.html")
