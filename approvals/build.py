@@ -4,8 +4,12 @@ Each card lives in data/<card-key>/ with up to three files:
   overhead.csv   - "Overhead Expenses" tab export
   property.csv   - "Property Expenses" tab export
   marketing.csv  - "Marketing Expenses" tab export
+or, for store accounts billed by invoice (Home Depot):
+  invoices.csv   - open invoices and credits; the runner-typed PO is mapped
+                   to a property with PO_RULES below
 
-Only unpaid charges (PAID != TRUE) with an amount are sent for approval.
+Only unpaid charges (PAID != TRUE) with an amount count. The page shows one
+total per property / company / marketing type, not the individual charges.
 Run:  python3 approvals/build.py   ->  writes approvals/card-approvals.html
 """
 import csv
@@ -23,7 +27,45 @@ DATA = os.path.join(HERE, "data")
 CARDS = [
     ("amex", "American Express", 30887.76),
     ("capone-business", "Capital One Business", None),
+    ("home-depot-5253", "Home Depot 5253", None),
 ]
+
+# Statement facts shown under the card total (label, value).
+CARD_FACTS = {
+    "home-depot-5253": [
+        ("Last statement balance (Sep 13, 2026)", 26742.84),
+        ("Last payment (Sep 1, 2026)", 10904.75),
+    ],
+}
+
+# One-line caveat shown on a card's summary.
+CARD_NOTES = {
+    "home-depot-5253": "Read from the invoice-page screenshot: 79 of the 84 open invoices were legible; "
+                       "5 are missing until the CSV export is added.",
+}
+
+# Runners type the job location into the Home Depot PO field with many spellings.
+# First matching pattern (on the PO with spaces/punctuation removed) wins.
+# A PO that matches nothing lands in "Location to confirm".
+PO_RULES = [
+    (r"^27PR?A[A-Z]*|^27PAGUE", "27 Prague St"),
+    (r"1464|SUNRISE", "1464 Sunrise Pkwy"),
+    (r"^52PAR|PARAMO|PARMOU", "52 Paramount Ter"),
+    (r"UMLAND", "492 Umland Dr, Santa Rosa"),
+    (r"^4605TH", "460 5th Ave, Redwood City"),
+    (r"^751TH27|^75127TH", "751 27th Ave"),
+    (r"170GLENN", "170 Glenn Way"),
+]
+UNMATCHED = "Location to confirm"
+
+
+def po_property(po):
+    k = re.sub(r"[^A-Z0-9]", "", (po or "").upper())
+    for pat, prop in PO_RULES:
+        if re.search(pat, k):
+            return prop
+    return UNMATCHED
+
 
 
 def money(s):
@@ -171,16 +213,71 @@ def load_marketing(path):
     return out, bal
 
 
-LOADERS = [("overhead", "Overhead", load_overhead), ("property", "Property", load_property), ("marketing", "Marketing", load_marketing)]
+def load_invoices(path):
+    """Home Depot open invoices + credits. Everything listed is unpaid."""
+    out, bal = [], {}
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        for x in csv.DictReader(f):
+            amt = money(x["Amount"])
+            if amt is None:
+                continue
+            g = po_property(x["Purchase Order"])
+            bal[g] = bal.get(g, 0) + amt
+            credit = x["Type"].strip().lower() == "credit"
+            tags = [f'PO {x["Purchase Order"].strip()}']
+            if x.get("CSA"):
+                tags.append(f'CSA {x["CSA"].strip()}')
+            it = {
+                "group": g,
+                "date": x["Date"].strip(),
+                "vendor": ("Credit #" if credit else "Invoice #") + x["Invoice/Ref"].strip(),
+                "desc": "Return / credit applied to account" if credit else "",
+                "amount": amt,
+                "tag": " · ".join(tags),
+                "key": x["Invoice/Ref"].strip(),
+            }
+            if x.get("Due Date"):
+                it["due"] = x["Due Date"].strip()
+            if x.get("EPD Amount"):
+                it["epd"] = {"date": x["EPD Date"].strip(), "amount": money(x["EPD Amount"])}
+            out.append(it)
+    return out, bal
 
 
-def assign_ids(card, section, items):
-    """Stable ids: same charge -> same id across rebuilds, so decisions stick."""
-    seen = Counter()
+LOADERS = [("overhead", "Overhead", load_overhead), ("property", "Property", load_property), ("marketing", "Marketing", load_marketing),
+           ("invoices", "Property", load_invoices)]
+
+
+def summarize(card, skey, items, bal):
+    """One approval line per property / company / marketing type: totals only."""
+    groups = {}
     for it in items:
-        base = "|".join([card, section, it["group"], it["date"], it["vendor"], it["desc"], f'{it["amount"]:.2f}'])
-        seen[base] += 1
-        it["id"] = hashlib.sha1(f"{base}|{seen[base]}".encode()).hexdigest()[:16]
+        groups.setdefault(it["group"], []).append(it)
+    lines = []
+    for g, its in groups.items():
+        payers = sorted({i["payer"] for i in its if i.get("payer")})
+        dates = sorted(i["date"] for i in its if re.match(r"^\d{4}-\d{2}-\d{2}$", i["date"] or ""))
+        line = {
+            "id": hashlib.sha1(f"{card}|{skey}|{g}".encode()).hexdigest()[:16],
+            "name": g,
+            "owed": round(sum(i["amount"] for i in its), 2),
+            "count": len(its),
+            "credits": sum(1 for i in its if i["amount"] < 0),
+            "payers": payers,
+            "from": dates[0] if dates else "",
+            "to": dates[-1] if dates else "",
+        }
+        if g in bal:
+            line["balance"] = round(bal[g], 2)
+        dues = [{"d": i["due"], "a": i["amount"], **({"ed": i["epd"]["date"], "ea": i["epd"]["amount"]} if i.get("epd") else {})}
+                for i in its if i.get("due")]
+        if dues:
+            line["dues"] = dues
+        if g == UNMATCHED:
+            line["pos"] = sorted({re.sub(r"^PO ", "", i["tag"].split(" · ")[0]) for i in its})
+        lines.append(line)
+    lines.sort(key=lambda l: ((l["name"] != UNMATCHED), -abs(l["owed"]), l["name"]))
+    return lines
 
 
 def build():
@@ -192,18 +289,17 @@ def build():
             if not os.path.exists(p):
                 continue
             items, bal = loader(p)
-            items.sort(key=lambda it: (it["group"].lower(), it["date"] or "9999"))
-            assign_ids(key, skey, items)
-            balances = {g: round(v, 2) for g, v in bal.items() if any(it["group"] == g for it in items)}
-            sections.append({"key": skey, "name": sname, "items": items, "balances": balances})
-        cards.append({"key": key, "name": name, "minDue": min_due, "sections": sections})
+            lines = summarize(key, skey, items, bal)
+            sections.append({"key": skey, "name": sname, "lines": lines})
+        cards.append({"key": key, "name": name, "minDue": min_due,
+                      "note": CARD_NOTES.get(key, ""), "facts": [{"label": l, "amount": v} for l, v in CARD_FACTS.get(key, [])], "sections": sections})
     tpl = open(os.path.join(HERE, "template.html"), encoding="utf-8").read()
     html = tpl.replace("/*__DATA__*/null", json.dumps({"cards": cards}, separators=(",", ":")))
     out = os.path.join(HERE, "card-approvals.html")
     open(out, "w", encoding="utf-8").write(html)
     for c in cards:
         for s in c["sections"]:
-            print(c["name"], s["name"], len(s["items"]), round(sum(i["amount"] for i in s["items"]), 2))
+            print(c["name"], s["name"], len(s["lines"]), "lines", round(sum(l["owed"] for l in s["lines"]), 2))
     print("wrote", out)
 
 
