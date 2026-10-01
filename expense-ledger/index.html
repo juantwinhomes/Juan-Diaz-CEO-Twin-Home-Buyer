@@ -157,6 +157,21 @@ tfoot td{font-weight:700;border-top:1px solid var(--line-strong);background:var(
 .bd-row .track{grid-column:1/-1;height:8px}
 .bd-row b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:500}
 
+/* tracker groups */
+details.grp{border-top:1px solid var(--line)}
+details.grp:first-child{border-top:0}
+details.grp>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:16px minmax(0,1fr) 140px 110px 120px;gap:10px;align-items:center;padding:10px 4px}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary .chev{transition:transform .15s;color:var(--muted)}
+details.grp[open]>summary .chev{transform:rotate(90deg)}
+details.grp>summary .gname{font-weight:600}
+details.grp>summary .gname small{display:block;font-weight:400;color:var(--faint);font-size:12px}
+details.grp>summary .amt{text-align:right}
+details.grp>.gbody{padding:0 0 12px 26px}
+@media (max-width:760px){details.grp>summary{grid-template-columns:16px minmax(0,1fr) auto}details.grp>summary .track,details.grp>summary .gun{display:none}}
+.recon{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px 22px;align-items:end}
+.recon .k{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.recon .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:26px;line-height:1.15;margin-top:2px}
 /* collapsible sections */
 details.sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm)}
 details.sec>summary{list-style:none;cursor:pointer;padding:14px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
@@ -224,11 +239,11 @@ const DRIVE='Google Drive';
 /* ---------- state ---------- */
 const today=()=>new Date().toISOString().slice(0,10);
 const S={
-  txns:new Map(), props:new Map(), pays:new Map(), L:{...DEFAULTS},
+  txns:new Map(), props:new Map(), pays:new Map(), cpays:new Map(), cinfo:new Map(), L:{...DEFAULTS},
   ready:{txns:false,props:false}, dbState:'connecting', readOnly:false,
   tab:(location.hash||'').slice(1)||'daily',
   dCard:null, dView:'todo', dMonth:'all',
-  tCard:'all', tBucket:'overhead', tPaid:'unpaid',
+  tCard:'all', tBucket:'overhead', tPaid:'unpaid', tMonth:today().slice(0,7),
   propId:'all', propFilter:'active', sel:new Set(), open:{calc:true,fin:false,budget:false,pays:false,files:false},
   preview:null, importing:false, confirm:null, draft:{}, modal:null
 };
@@ -320,7 +335,7 @@ async function driveTitles(base,parent){
   try{ const r=await mcp.callTool(DRIVE,'search_files',{query:q,pageSize:50,excludeContentSnippets:true},{cache:false}); return (r.payload?.files||[]).map(f=>f.title||''); }catch{ return []; }
 }
 async function uniqueName(base,ext,parent){
-  const used=new Set([...S.txns.values()].map(t=>(t.receiptName||'').toLowerCase()).filter(Boolean));
+  const used=new Set([...S.txns.values(),...S.pays.values()].map(t=>(t.receiptName||'').toLowerCase()).filter(Boolean));
   for(const t of await driveTitles(base,parent)) used.add(t.toLowerCase());
   const nameFor=n=>n===1?base+ext:`${base}.${n}${ext}`;
   let n=1; while(used.has(nameFor(n).toLowerCase())) n++;
@@ -394,10 +409,10 @@ function buildPreview(text,fileName,card){
   return {fileName,card,parsed,flip:cols.debit<0&&negs>parsed.length/2,removeGone:true};
 }
 function previewRows(p){
-  const seen={},rows=[];let payments=0;
+  const seen={},rows=[],pays=[];let payments=0;
   for(const r of p.parsed){
     const amount=r2(p.flip?-r.raw:r.raw);
-    if(amount<0&&isCardPayment(r.desc)){payments++;continue;}
+    if(amount<0&&isCardPayment(r.desc)){payments++;const pid=(`${p.card}-${r.date}-${Math.round(-amount*100)}-pay`).replace(/[^A-Za-z0-9_\-.~:@+]/g,'_');pays.push({id:pid,date:r.date,amount:-amount,desc:r.desc,dupe:S.cpays.has(pid)});continue;}
     const base=`${p.card}-${r.date}-${Math.round(amount*100)}-${hash(r.desc.toLowerCase())}`;
     seen[base]=(seen[base]||0)+1;
     const id=(base+'-'+seen[base]).replace(/[^A-Za-z0-9_\-.~:@+]/g,'_');
@@ -407,11 +422,11 @@ function previewRows(p){
   const ids=new Set(rows.map(r=>r.id)); const dates=rows.map(r=>r.date).sort();
   const lo=dates[0],hi=dates[dates.length-1];
   const gone=lo?[...S.txns.values()].filter(t=>t.card===p.card&&t.status!=='Transferred'&&t.source!=='manual'&&!t.example&&t.date>=lo&&t.date<=hi&&!ids.has(t.id)):[];
-  return {rows,payments,gone,lo,hi};
+  return {rows,payments,pays,gone,lo,hi};
 }
 async function doImport(){
   const p=S.preview; if(!p) return;
-  const {rows,gone}=previewRows(p); const fresh=rows.filter(r=>!r.dupe), upd=rows.filter(r=>r.statusChange);
+  const {rows,gone,pays}=previewRows(p); const fresh=rows.filter(r=>!r.dupe), upd=rows.filter(r=>r.statusChange), newPays=pays.filter(x=>!x.dupe);
   S.importing=true; render();
   const now=new Date().toISOString(); let failed=0, carried=0;
   // keep work done on a pending row whose amount changed when it posted
@@ -424,14 +439,15 @@ async function doImport(){
       await db.doc('txns/'+r.id).set({card:p.card,date:r.date,desc:r.desc,amount:r.amount,status:r.status,type:'',category:'',sub:'',propertyId:'',notes:'',receiptUrl:'',receiptName:'',paid:false,importedAt:now,source:p.fileName||'paste',...carry});
     }),
     ...upd.map(r=>async()=>{ const t=S.txns.get(r.id); const patch={status:'Posted'}; await db.doc('txns/'+r.id).update(patch); }),
-    ...(p.removeGone?gone.map(g=>async()=>db.doc('txns/'+g.id).delete()):[])
+    ...(p.removeGone?gone.map(g=>async()=>db.doc('txns/'+g.id).delete()):[]),
+    ...newPays.map(x=>async()=>db.doc('cardpays/'+x.id).set({card:p.card,date:x.date,amount:x.amount,desc:x.desc,source:p.fileName||'paste'}))
   ];
   let i=0; const total=jobs.length;
   async function worker(){ while(jobs.length){ const j=jobs.shift(); try{await j();}catch(e){failed++; if(e?.code==='invalid_argument'){S.readOnly=true;jobs.length=0;}} i++; const el=$('#imp-prog'); if(el) el.textContent=`Saving ${i} of ${total}…`; } }
   await Promise.all([worker(),worker(),worker(),worker()]);
   S.importing=false; S.preview=null; S.draft.paste=''; S.dView='todo';
   render();
-  const parts=[`${fresh.length} new`]; if(upd.length) parts.push(`${upd.length} now posted`); if(p.removeGone&&gone.length) parts.push(`${gone.length} removed`); if(carried) parts.push(`${carried} kept your edits`);
+  const parts=[`${fresh.length} new`]; if(newPays.length) parts.push(`${newPays.length} card payment${newPays.length===1?'':'s'} recorded`); if(upd.length) parts.push(`${upd.length} now posted`); if(p.removeGone&&gone.length) parts.push(`${gone.length} removed`); if(carried) parts.push(`${carried} kept your edits`);
   toast((failed?`${failed} rows did not save. Import the file again to retry. `:'')+`${cardName(p.card)}: `+parts.join(', '));
 }
 
@@ -530,52 +546,91 @@ function importPanel(k){
   if(p?.error) h+=`<div class="note">${esc(p.error)}</div>`;
   else if(p){
     const {rows,payments,gone,lo,hi}=previewRows(p); const fresh=rows.filter(r=>!r.dupe), upd=rows.filter(r=>r.statusChange);
-    h+=`<div class="row" style="justify-content:space-between"><div><b>${esc(p.fileName)}</b> · <b>${fresh.length}</b> new · ${rows.length-fresh.length} already here${upd.length?` (${upd.length} now posted)`:''}${payments?` · ${payments} card payments skipped`:''}</div>
+    h+=`<div class="row" style="justify-content:space-between"><div><b>${esc(p.fileName)}</b> · <b>${fresh.length}</b> new · ${rows.length-fresh.length} already here${upd.length?` (${upd.length} now posted)`:''}${payments?` · ${payments} card payment${payments===1?'':'s'} (counted in the balance)`:''}</div>
       <label class="check"><input type="checkbox" data-act="imp-flip"${p.flip?' checked':''}> Charges show as negative in this file</label></div>
       ${gone.length?`<div class="note" style="margin:0"><span><b>${gone.length}</b> uncategorized row${gone.length===1?'':'s'} from ${shortDate(lo)}–${shortDate(hi)} ${gone.length===1?'is':'are'} no longer in this export (usually pending charges that changed or dropped): ${gone.slice(0,4).map(g=>esc(g.desc)+' '+money(g.amount)).join(', ')}${gone.length>4?'…':''}</span><label class="check"><input type="checkbox" data-act="imp-gone"${p.removeGone?' checked':''}> Remove them</label></div>`:''}
       <div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:520px"><thead><tr><th>Date</th><th>Payee</th><th class="amt">Amount</th><th>Status</th><th></th></tr></thead><tbody>${rows.slice(0,6).map(r=>`<tr><td class="d">${shortDate(r.date)}</td><td>${esc(r.desc)}</td><td class="amt">${money(r.amount)}</td><td>${r.status}</td><td>${r.dupe?'<span class="pill plain">Already here</span>':'<span class="pill good">New</span>'}</td></tr>`).join('')}${rows.length>6?`<tr><td colspan="5" class="faint">…and ${rows.length-6} more</td></tr>`:''}</tbody></table></div>
-      <div class="row"><button class="btn primary" data-act="do-import"${!fresh.length&&!upd.length&&!(p.removeGone&&gone.length)?' disabled':''}>Import to ${esc(cardName(k))}</button><button class="btn ghost" data-act="cancel-import">Cancel</button></div>`;
+      <div class="row"><button class="btn primary" data-act="do-import"${!fresh.length&&!upd.length&&!(p.removeGone&&gone.length)&&!previewRows(p).pays.some(x=>!x.dupe)?' disabled':''}>Import to ${esc(cardName(k))}</button><button class="btn ghost" data-act="cancel-import">Cancel</button></div>`;
   }
   return h+`</div>`;
 }
 
 /* ----- Card Tracker ----- */
+function cardBalance(k){
+  const info=S.cinfo.get(k)||{}, from=info.openingDate||'';
+  const ch=[...S.txns.values()].filter(t=>t.card===k&&(!from||t.date>from));
+  const py=[...S.cpays.values()].filter(x=>x.card===k&&(!from||x.date>from)).sort(byDate);
+  const charges=sum(ch), payments=sum(py,x=>x.amount);
+  const balance=r2((Number(info.opening)||0)+charges-payments);
+  const has=info.siteBalance!=null&&info.siteBalance!=='';
+  return {info,charges,payments,balance,py,site:has?Number(info.siteBalance):null,diff:has?r2(Number(info.siteBalance)-balance):null};
+}
+const reconPill=b=>b.diff==null?'<span class="pill plain">Website balance not entered</span>':Math.abs(b.diff)<0.01?'<span class="pill good">Matches the website</span>':`<span class="pill bad">Off by ${money(b.diff)}</span>`;
+function monthSelect(cur,act,months){
+  const tm=today().slice(0,7), list=[...new Set([tm,...months])].sort().reverse();
+  return `<select id="${act}" data-act="${act}" aria-label="Month"><option value="all"${cur==='all'?' selected':''}>All months</option>${list.map(m=>`<option value="${m}"${cur===m?' selected':''}>${m===tm?'This month · ':''}${monthLabel(m)}</option>`).join('')}</select>`;
+}
+function chargeTable(list,showCard,cols){
+  if(!list.length) return '<div class="faint" style="padding:6px 0">No charges.</div>';
+  return `<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:760px"><thead><tr><th>Paid</th><th>Date</th>${showCard?'<th>Card</th>':''}<th>Receipt</th><th>Payee</th><th>What is this for?</th>${cols.map(c=>`<th>${c[0]}</th>`).join('')}<th class="amt">Amount</th><th></th></tr></thead><tbody>
+  ${list.map(t=>`<tr data-id="${esc(t.id)}"><td><input type="checkbox" data-act="tf" data-f="paid"${t.paid?' checked':''} aria-label="Paid"></td><td class="d">${shortDate(t.date)}</td>${showCard?`<td>${chip(t.card)}</td>`:''}<td>${receiptCell(t)}</td><td class="payee">${esc(t.desc)}${t.example?' <span class="tag">example</span>':''}</td>
+    <td><input class="notes" type="text" id="tn-${esc(t.id)}" data-act="tf" data-f="notes" value="${esc(t.notes||'')}" placeholder="Add a note" aria-label="What is this for?"></td>
+    ${cols.map(c=>`<td>${c[1](t)}</td>`).join('')}<td class="amt${t.amount<0?' neg':''}">${money(t.amount)}</td><td><button class="btn sm ghost" data-act="untransfer" title="Send back to Daily Expenses">Recategorize</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+function groupList(rows,keyFn,bucket,cols,showCard){
+  const g={}; for(const t of rows){const k=keyFn(t)||'Uncategorized';(g[k]=g[k]||[]).push(t);}
+  const list=Object.entries(g).map(([k,v])=>({k,v,total:sum(v),unpaid:sum(v.filter(t=>!t.paid))})).sort((a,b)=>b.total-a.total);
+  if(!list.length) return '<div class="faint">Nothing filed here for this period.</div>';
+  const max=Math.max(1,...list.map(x=>Math.abs(x.total)));
+  return `<div>${list.map(x=>{const key='g:'+bucket+':'+x.k;return `<details class="grp" data-sec="${esc(key)}"${S.open[key]?' open':''}><summary><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M9 6l6 6-6 6"/></svg><span class="gname">${esc(x.k)}<small>${x.v.length} charge${x.v.length===1?'':'s'}${x.v.filter(t=>!t.receiptUrl).length?` · ${x.v.filter(t=>!t.receiptUrl).length} without receipt`:''}</small></span><span class="track"><span class="fill" style="display:block;width:${Math.max(1.5,Math.abs(x.total)/max*100)}%"></span></span><span class="amt gun" style="color:${x.unpaid?'var(--bad)':'var(--faint)'}">${x.unpaid?money0(x.unpaid)+' unpaid':'paid'}</span><span class="amt" style="font-weight:600">${money(x.total)}</span></summary><div class="gbody">${S.open[key]?chargeTable(x.v.sort(byDate),showCard,cols):''}</div></details>`;}).join('')}</div>`;
+}
 function viewTracker(){
   const T=transferred();
   let h=cardTabs(S.tCard,null,'tcard');
   if(S.tCard==='all'){
-    const list=cards().map((c,i)=>{const r=T.filter(t=>t.card===c.k);return{...c,i,total:sum(r),unpaid:sum(r.filter(t=>!t.paid)),paid:sum(r.filter(t=>t.paid))};});
-    const max=Math.max(1,...list.map(c=>c.unpaid));
-    h+=`<div class="summary"><div class="tile"><div class="label">Unpaid · all cards</div><div class="big bad">${money(sum(list,c=>c.unpaid))}</div></div><div class="tile"><div class="label">Paid</div><div class="big good">${money(sum(list,c=>c.paid))}</div></div><div class="tile"><div class="label">Total transferred</div><div class="big">${money(sum(list,c=>c.total))}</div></div></div>
-    <div class="rows">${list.map(c=>`<button class="brow" data-act="tcard" data-k="${esc(c.k)}"><span class="name"><span class="chip" style="--c:var(--k${c.i%10})"><i></i></span>${esc(c.n)}</span><span class="track"><span class="fill" style="display:block;width:${Math.max(1.5,c.unpaid/max*100)}%"></span></span><span class="amt paid">${money(c.paid)}<small>paid</small></span><span class="amt">${money(c.unpaid)}<small>unpaid</small></span></button>`).join('')}</div>`;
+    const list=cards().map((c,i)=>{const r=T.filter(t=>t.card===c.k);return{...c,i,b:cardBalance(c.k),unpaid:sum(r.filter(t=>!t.paid))};});
+    const max=Math.max(1,...list.map(c=>Math.abs(c.b.balance)));
+    h+=`<div class="summary"><div class="tile"><div class="label">Balance · all cards</div><div class="big">${money(sum(list,c=>c.b.balance))}</div><div class="foot">charges − payments</div></div><div class="tile"><div class="label">Unpaid in tracker</div><div class="big bad">${money(sum(list,c=>c.unpaid))}</div></div><div class="tile"><div class="label">Cards matching the website</div><div class="big">${list.filter(c=>c.b.diff!=null&&Math.abs(c.b.diff)<0.01).length} of ${list.length}</div></div></div>
+    <div class="rows">${list.map(c=>`<button class="brow" data-act="tcard" data-k="${esc(c.k)}"><span class="name"><span class="chip" style="--c:var(--k${c.i%10})"><i></i></span><span>${esc(c.n)}<br>${reconPill(c.b)}</span></span><span class="track"><span class="fill" style="display:block;width:${Math.max(1.5,Math.abs(c.b.balance)/max*100)}%"></span></span><span class="amt paid">${money(c.unpaid)}<small>unpaid charges</small></span><span class="amt">${money(c.b.balance)}<small>balance</small></span></button>`).join('')}</div>`;
     return h;
   }
-  const mine=T.filter(t=>t.card===S.tCard);
-  const by=b=>mine.filter(t=>bucketOf(t.type)===b);
-  h+=`<div class="summary">
-    <div class="tile"><div class="label">Unpaid</div><div class="big bad">${money(sum(mine.filter(t=>!t.paid)))}</div><div class="foot">${mine.filter(t=>!t.paid).length} charges</div></div>
-    <div class="tile"><div class="label">Paid</div><div class="big good">${money(sum(mine.filter(t=>t.paid)))}</div></div>
-    <div class="tile"><div class="label">Total</div><div class="big">${money(sum(mine))}</div></div>
-    ${Object.entries(BUCKETS).map(([b,n])=>`<div class="tile"><div class="label">${n}</div><div class="big" style="font-size:19px">${money(sum(by(b)))}</div></div>`).join('')}
-  </div>`;
-  const list=by(S.tBucket).filter(t=>S.tPaid==='all'||(S.tPaid==='paid')===!!t.paid).sort(byDate);
-  const isP=S.tBucket==='property', isO=S.tBucket==='overhead';
-  h+=`<div class="panel"><div class="btabs" role="group" aria-label="Sheet">${Object.entries(BUCKETS).map(([b,n])=>`<button data-act="tbucket" data-k="${b}" aria-pressed="${S.tBucket===b}">${n}<span>${by(b).length}</span></button>`).join('')}</div>
-    <div class="toolbar" style="padding:12px 14px 0"><div class="seg" role="group" aria-label="Paid">${['unpaid','paid','all'].map(v=>`<button data-act="tpaid" data-v="${v}" aria-pressed="${S.tPaid===v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div><span class="spacer"></span>
-    ${S.tPaid!=='paid'&&list.some(t=>!t.paid)?(S.confirm==='payall'?`<button class="btn primary sm" data-act="payall-yes">Mark ${list.filter(t=>!t.paid).length} as paid</button><button class="btn ghost sm" data-act="cancel">Cancel</button>`:`<button class="btn sm" data-act="payall">Mark all shown as paid</button>`):''}</div>
-    ${list.length?`<div class="tbl"><table><thead><tr><th>Paid</th><th>Date</th><th>Receipt</th><th>Payee</th><th>What is this for?</th>${isO?'<th>Expense type</th>':''}<th>Category</th><th>Sub category</th>${isP?'<th>Property</th>':''}<th class="amt">Amount</th><th></th></tr></thead><tbody>
-    ${list.map(t=>`<tr data-id="${esc(t.id)}"><td><input type="checkbox" data-act="tf" data-f="paid"${t.paid?' checked':''} aria-label="Paid"></td><td class="d">${shortDate(t.date)}</td><td>${receiptCell(t)}</td><td class="payee">${esc(t.desc)}${t.example?' <span class="tag">example</span>':''}</td>
-      <td><input class="notes" type="text" id="tn-${esc(t.id)}" data-act="tf" data-f="notes" value="${esc(t.notes||'')}" placeholder="Add a note" aria-label="What is this for?"></td>
-      ${isO?`<td>${esc(t.type)}</td>`:''}<td>${esc(t.category||'—')}</td>
-      <td><select data-act="tf" data-f="sub" aria-label="Sub category">${opts(S.L.subcategories,t.sub)}</select></td>
-      ${isP?`<td><select data-act="tf" data-f="propertyId" aria-label="Property">${propOpts(t.propertyId)}</select></td>`:''}
-      <td class="amt${t.amount<0?' neg':''}">${money(t.amount)}</td><td><button class="btn sm ghost" data-act="untransfer" title="Send back to Daily Expenses">Recategorize</button></td></tr>`).join('')}</tbody>
-    <tfoot><tr><td colspan="${isP||isO?8:7}">${list.length} shown</td><td class="amt">${money(sum(list))}</td><td></td></tr></tfoot></table></div>`
-    :`<div class="empty"><b>No ${S.tPaid==='all'?'':S.tPaid+' '}${BUCKETS[S.tBucket].toLowerCase()} charges on ${esc(cardName(S.tCard))}</b>Charges arrive here from Daily Expenses once they are categorized.</div>`}</div>`;
-  return h;
+  const k=S.tCard, b=cardBalance(k), info=b.info;
+  const mineAll=T.filter(t=>t.card===k);
+  const months=[...new Set([...S.txns.values()].filter(t=>t.card===k).map(t=>(t.date||'').slice(0,7)))].filter(Boolean);
+  const inM=t=>S.tMonth==='all'||(t.date||'').startsWith(S.tMonth);
+  const mine=mineAll.filter(inM), waiting=todo().filter(t=>t.card===k&&inM(t));
+  const by=bk=>mine.filter(t=>bucketOf(t.type)===bk);
+  const period=S.tMonth==='all'?'all months':monthLabel(S.tMonth);
+  h+=`<div class="panel panel-pad stack" style="margin-bottom:16px"><div class="row" style="justify-content:space-between"><h3 style="font-size:16px">${esc(cardName(k))} balance</h3>${reconPill(b)}</div>
+    <div class="recon">
+      <div><div class="k">Balance in this tracker</div><div class="v">${money(b.balance)}</div><div class="faint" style="font-size:12.5px">${info.openingDate?`${money0(info.opening)} on ${shortDate(info.openingDate)} + `:''}${money0(b.charges)} charges − ${money0(b.payments)} payments</div></div>
+      <label class="field">Balance on the card website<input type="text" inputmode="decimal" id="ci-site" data-act="ci" data-f="siteBalance" data-num="1" value="${b.site==null?'':b.site.toLocaleString('en-US',{minimumFractionDigits:2})}" placeholder="Type what the website shows"></label>
+      <label class="field">As of<input type="date" id="ci-asof" data-act="ci" data-f="siteAsOf" value="${esc(info.siteAsOf||'')}"></label>
+      <div><div class="k">Difference</div><div class="v" style="color:${b.diff==null?'var(--faint)':Math.abs(b.diff)<0.01?'var(--good)':'var(--bad)'}">${b.diff==null?'—':money(b.diff)}</div></div>
+    </div>
+    ${sec('bal-how','How the balance is figured',`${b.py.length} card payment${b.py.length===1?'':'s'}`,`<span class="faint" style="font-size:12.5px">Charges come from every imported row on this card. Payments come from the CSV (lines like “Payment – thank you”) or the form below. If the tracker starts mid-cycle, enter the card balance on the day before your first import as the starting balance.</span>
+      <div class="form-grid"><label class="field">Starting balance<input type="text" inputmode="decimal" id="ci-open" data-act="ci" data-f="opening" data-num="1" value="${info.opening?Number(info.opening).toLocaleString('en-US',{minimumFractionDigits:2}):''}" placeholder="0.00"></label><label class="field">Starting date<input type="date" id="ci-opend" data-act="ci" data-f="openingDate" value="${esc(info.openingDate||'')}"></label>
+      <label class="field">Payment date<input type="date" id="cp-date" data-draft="cp-date" value="${esc(D('cp-date',today()))}"></label><label class="field">Payment amount<input type="text" inputmode="decimal" id="cp-amt" data-draft="cp-amt" value="${esc(D('cp-amt'))}" placeholder="0.00"></label><div style="align-self:end"><button class="btn" data-act="add-cpay">Record payment</button></div></div>
+      ${b.py.length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:420px"><thead><tr><th>Date</th><th>Payment</th><th class="amt">Amount</th><th></th></tr></thead><tbody>${b.py.slice(0,24).map(x=>`<tr data-cp="${esc(x.id)}"><td class="d">${shortDate(x.date)}</td><td>${esc(x.desc||'Payment')}</td><td class="amt">${money(x.amount)}</td><td>${S.confirm==='cp-'+x.id?`<button class="btn sm danger" data-act="del-cpay-yes">Delete</button>`:`<button class="btn sm ghost" data-act="del-cpay" aria-label="Delete payment">✕</button>`}</td></tr>`).join('')}</tbody></table></div>`:''}`)}
+  </div>
+  <div class="toolbar"><span class="lbl">Period</span>${monthSelect(S.tMonth,'tmonth',months)}<span class="spacer"></span>${waiting.length?`<a href="#daily" data-tab="daily" class="muted" style="font-size:13px">${waiting.length} not transferred yet (${money0(sum(waiting))}) →</a>`:''}</div>
+  <div class="summary">
+    <div class="tile"><div class="label">Total · ${esc(period)}</div><div class="big">${money(sum(mine))}</div><div class="foot">${mine.length} charges</div></div>
+    ${Object.entries(BUCKETS).map(([bk,n])=>`<div class="tile"><div class="label">${n}</div><div class="big" style="font-size:20px">${money(sum(by(bk)))}</div></div>`).join('')}
+    <div class="tile"><div class="label">Unpaid</div><div class="big bad" style="font-size:20px">${money(sum(mine.filter(t=>!t.paid)))}</div><div class="foot">paid ${money0(sum(mine.filter(t=>t.paid)))}</div></div>
+  </div>
+  <div class="stack">`;
+  const subCol=['Sub category',t=>`<select data-act="tf" data-f="sub" aria-label="Sub category">${opts(S.L.subcategories,t.sub)}</select>`];
+  const catCol=['Category',t=>esc(t.category||'—')], typeCol=['Expense type',t=>esc(t.type)];
+  const propCol=['Property',t=>`<select data-act="tf" data-f="propertyId" aria-label="Property">${propOpts(t.propertyId)}</select>`];
+  h+=sec('t-ov','Overhead',money(sum(by('overhead'))),`<span class="faint" style="font-size:12.5px">Grouped by sub category: legal, insurance, meals, travel, hotel…</span>`+groupList(by('overhead'),t=>t.sub,'ov',[typeCol,catCol,subCol]));
+  h+=sec('t-pr','Property',money(sum(by('property'))),`<span class="faint" style="font-size:12.5px">One line per property. Open a property to see its charges.</span>`+groupList(by('property'),t=>propName(t.propertyId),'pr',[subCol,propCol]));
+  h+=sec('t-mk','Marketing',money(sum(by('marketing'))),`<span class="faint" style="font-size:12.5px">Grouped by category: direct mail, PPC / digital, Facebook…</span>`+groupList(by('marketing'),t=>t.category,'mk',[catCol,subCol]));
+  const flat=mine.filter(t=>S.tPaid==='all'||(S.tPaid==='paid')===!!t.paid).sort(byDate);
+  h+=sec('t-all','Every charge (detailed)',`${mine.length} charges`,`<div class="toolbar" style="margin:0"><div class="seg" role="group" aria-label="Paid">${['unpaid','paid','all'].map(v=>`<button data-act="tpaid" data-v="${v}" aria-pressed="${S.tPaid===v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div><span class="spacer"></span>
+    ${S.tPaid!=='paid'&&flat.some(t=>!t.paid)?(S.confirm==='payall'?`<button class="btn primary sm" data-act="payall-yes">Mark ${flat.filter(t=>!t.paid).length} as paid</button><button class="btn ghost sm" data-act="cancel">Cancel</button>`:`<button class="btn sm" data-act="payall">Mark all shown as paid</button>`):''}</div>`+chargeTable(flat,false,[['Type',t=>esc(BUCKETS[bucketOf(t.type)]||'')],catCol,['Sub category',t=>esc(t.sub||'—')],['Property',t=>esc(propName(t.propertyId)||'—')]]));
+  return h+'</div>';
 }
-
-/* ----- Properties ----- */
 /* ----- Twin Calc (from "Profit Calc Updated") ----- */
 const TTAX={"ALAMEDA":["ALAMEDA",12.0,1.1],"ALBANY":["ALAMEDA",15.0,1.1],"BERKELEY":["ALAMEDA",15.0,1.1],"DUBLIN":["ALAMEDA",0.55,0.55],"EMERYVILLE":["ALAMEDA",12.0,1.1],"FREMONT":["ALAMEDA",0.55,0.55],"HAYWARD":["ALAMEDA",8.5,1.1],"LIVERMORE":["ALAMEDA",0.55,0.55],"NEWARK":["ALAMEDA",0.55,0.55],"OAKLAND":["ALAMEDA",15.0,1.1],"PIEDMONT":["ALAMEDA",13.0,1.1],"PLEASANTON":["ALAMEDA",0.55,0.55],"SAN LEANDRO":["ALAMEDA",11.0,1.1],"UNION CITY":["ALAMEDA",0.55,0.55],"ALPINE COUNTY":["ALPINE",0.0,1.1],"AMADOR":["AMADOR",0.55,0.55],"IONE":["AMADOR",0.55,0.55],"JACKSON":["AMADOR",0.55,0.55],"PLYMOUTH":["AMADOR",0.55,0.55],"SUTTER CREEK":["AMADOR",0.55,0.55],"BIGGS":["BUTTE",0.55,0.55],"CHICO":["BUTTE",0.55,0.55],"GRIDLEY":["BUTTE",0.55,0.55],"OROVILLE":["BUTTE",0.55,0.55],"PARADISE":["BUTTE",0.55,0.55],"ANGELS CAMP":["CALAVERAS",0.55,0.55],"COLUSA":["COLUSA",0.55,0.55],"WILLIAMS":["COLUSA",0.55,0.55],"ANTIOCH":["CONTRA COSTA",0.55,0.55],"BRENTWOOD":["CONTRA COSTA",0.55,0.55],"CLAYTON":["CONTRA COSTA",0.55,0.55],"CONCORD":["CONTRA COSTA",0.55,0.55],"DANVILLE":["CONTRA COSTA",0.55,0.55],"EL CERRITO":["CONTRA COSTA",12.0,1.1],"HERCULES":["CONTRA COSTA",0.55,0.55],"LAFAYETTE":["CONTRA COSTA",0.55,0.55],"MARTINEZ":["CONTRA COSTA",0.55,0.55],"MORAGA":["CONTRA COSTA",0.55,0.55],"OAKLEY":["CONTRA COSTA",0.55,0.55],"ORINDA":["CONTRA COSTA",0.55,0.55],"PINOLE":["CONTRA COSTA",0.55,0.55],"PITTSBURG":["CONTRA COSTA",0.55,0.55],"PLEASANT HILL":["CONTRA COSTA",0.55,0.55],"RICHMOND":["CONTRA COSTA",12.5,1.1],"SAN PABLO":["CONTRA COSTA",0.55,0.55],"SAN RAMON":["CONTRA COSTA",0.55,0.55],"WALNUT CREEK":["CONTRA COSTA",0.55,0.55],"CRESCENT CITY":["DEL NORTE",0.55,0.55],"PLACERVILLE":["EL DORADO",0.55,0.55],"SOUTH LAKE TAHOE":["EL DORADO",0.55,0.55],"CLOVIS":["FRESNO",0.55,0.55],"COALINGA":["FRESNO",0.55,0.55],"FIREBAUGH":["FRESNO",0.55,0.55],"FOWLER":["FRESNO",0.55,0.55],"FRESNO":["FRESNO",0.55,0.55],"HURON":["FRESNO",0.55,0.55],"KERMAN":["FRESNO",0.55,0.55],"KINGSBURG":["FRESNO",0.55,0.55],"MENDOTA":["FRESNO",0.55,0.55],"ORANGE COVE":["FRESNO",0.55,0.55],"PARLIER":["FRESNO",0.55,0.55],"REEDLEY":["FRESNO",0.55,0.55],"SANGER":["FRESNO",0.55,0.55],"SAN JOAQUIN":["FRESNO",0.55,0.55],"SELMA":["FRESNO",0.55,0.55],"ORLAND":["GLENN",0.55,0.55],"WILLOWS":["GLENN",0.55,0.55],"ARCATA":["HUMBOLDT",0.55,0.55],"BLUE LAKE":["HUMBOLDT",0.55,0.55],"EUREKA":["HUMBOLDT",0.55,0.55],"FERNDALE":["HUMBOLDT",0.55,0.55],"FORTUNA":["HUMBOLDT",0.55,0.55],"RIO DELL":["HUMBOLDT",0.55,0.55],"TRINIDAD":["HUMBOLDT",0.55,0.55],"BRAWLEY":["IMPERIAL",0.55,0.55],"CALEXICO":["IMPERIAL",0.55,0.55],"CALIPATRIA":["IMPERIAL",0.55,0.55],"EL CENTRO":["IMPERIAL",0.55,0.55],"HOLTVILLE":["IMPERIAL",0.55,0.55],"IMPERIAL":["IMPERIAL",0.55,0.55],"WESTMORLAND":["IMPERIAL",0.55,0.55],"BISHOP":["INYO",0.55,0.55],"ARVIN":["KERN",0.55,0.55],"BAKERSFIELD":["KERN",0.55,0.55],"CALIFORNIA CITY":["KERN",0.55,0.55],"DELANO":["KERN",0.55,0.55],"MARICOPA":["KERN",0.55,0.55],"MCFARLAND":["KERN",0.55,0.55],"RIDGECREST":["KERN",0.55,0.55],"SHAFTER":["KERN",0.55,0.55],"TAFT":["KERN",0.55,0.55],"TEHACHAPI":["KERN",0.55,0.55],"WASCO":["KERN",0.55,0.55],"AVENAL":["KINGS",0.55,0.55],"CORCORAN":["KINGS",0.55,0.55],"HANFORD":["KINGS",0.55,0.55],"LEMOORE":["KINGS",0.55,0.55],"CLEARLAKE":["LAKE",0.55,0.55],"LAKEPORT":["LAKE",0.55,0.55],"SUSANVILLE":["LASSEN",0.55,0.55],"AGOURA HILLS":["LOS ANGELES",0.55,0.55],"ALHAMBRA":["LOS ANGELES",0.55,0.55],"ARCADIA":["LOS ANGELES",0.55,0.55],"ARTESIA":["LOS ANGELES",0.55,0.55],"AVALON":["LOS ANGELES",0.55,0.55],"AZUSA":["LOS ANGELES",0.55,0.55],"BALDWIN PARK":["LOS ANGELES",0.55,0.55],"BELL":["LOS ANGELES",0.55,0.55],"BELLFLOWER":["LOS ANGELES",0.55,0.55],"BELL GARDENS":["LOS ANGELES",0.55,0.55],"BEVERLY HILLS":["LOS ANGELES",0.55,0.55],"BRADBURY":["LOS ANGELES",0.55,0.55],"BURBANK":["LOS ANGELES",0.55,0.55],"CALABASAS":["LOS ANGELES",0.55,0.55],"CARSON":["LOS ANGELES",0.55,0.55],"CERRITOS":["LOS ANGELES",0.55,0.55],"CLAREMONT":["LOS ANGELES",0.55,0.55],"COMMERCE":["LOS ANGELES",0.55,0.55],"COMPTON":["LOS ANGELES",0.55,0.55],"COVINA":["LOS ANGELES",0.55,0.55],"CUDAHY":["LOS ANGELES",0.55,0.55],"CULVER":["LOS ANGELES",19.5,1.1],"DIAMOND BAR":["LOS ANGELES",0.55,0.55],"DOWNEY":["LOS ANGELES",0.55,0.55],"DUARTE":["LOS ANGELES",0.55,0.55],"EL MONTE":["LOS ANGELES",0.55,0.55],"EL SEGUNDO":["LOS ANGELES",0.55,0.55],"GARDENA":["LOS ANGELES",0.55,0.55],"GLENDALE":["LOS ANGELES",0.55,0.55],"GLENDORA":["LOS ANGELES",0.55,0.55],"HAWAIIAN GARDENS":["LOS ANGELES",0.55,0.55],"HAWTHORNE":["LOS ANGELES",0.55,0.55],"HERMOSA BEACH":["LOS ANGELES",0.55,0.55],"HIDDEN HILLS":["LOS ANGELES",0.55,0.55],"HUNT INGTON PARK":["LOS ANGELES",0.55,0.55],"INDUST RY":["LOS ANGELES",0.55,0.55],"INGLEWOOD":["LOS ANGELES",0.55,0.55],"IRWINDALE":["LOS ANGELES",0.55,0.55],"LA CANADA FLINTRIDGE":["LOS ANGELES",0.55,0.55],"LA HABRA HEIGHTS":["LOS ANGELES",0.55,0.55],"LAKEWOOD":["LOS ANGELES",0.55,0.55],"LA MIRADA":["LOS ANGELES",0.55,0.55],"LANCASTER":["LOS ANGELES",0.55,0.55],"LA PUENTE":["LOS ANGELES",0.55,0.55],"LA VERNE":["LOS ANGELES",0.55,0.55],"LAWNDALE":["LOS ANGELES",0.55,0.55],"LOMITA":["LOS ANGELES",0.55,0.55],"LONG BEACH":["LOS ANGELES",0.55,0.55],"LOS ANGELES":["LOS ANGELES",4.5,1.1],"LYNWOOD":["LOS ANGELES",0.55,0.55],"MALIBU":["LOS ANGELES",0.55,0.55],"MANHATTAN BEACH":["LOS ANGELES",0.55,0.55],"MAYWOOD":["LOS ANGELES",0.55,0.55],"MONROVIA":["LOS ANGELES",0.55,0.55],"MONTEBELLO":["LOS ANGELES",0.55,0.55],"MONTEREY PARK":["LOS ANGELES",0.55,0.55],"NORWALK":["LOS ANGELES",0.55,0.55],"PALMDALE":["LOS ANGELES",0.55,0.55],"PALOS VERDES ESTATES":["LOS ANGELES",0.55,0.55],"PARAMOUNT":["LOS ANGELES",0.55,0.55],"PASADENA":["LOS ANGELES",0.55,0.55],"PICO RIVERA":["LOS ANGELES",0.55,0.55],"POMONA":["LOS ANGELES",2.2,1.1],"RANCHO PALOS VERDES":["LOS ANGELES",0.55,0.55],"REDONDO BEACH":["LOS ANGELES",2.2,1.1],"ROLLING HILLS":["LOS ANGELES",0.55,0.55],"ROLLING HILLS ESTATES":["LOS ANGELES",0.55,0.55],"ROSEMEAD":["LOS ANGELES",0.55,0.55],"SAN DIMAS":["LOS ANGELES",0.55,0.55],"SAN FERNANDO":["LOS ANGELES",0.55,0.55],"SAN GABRIEL":["LOS ANGELES",0.55,0.55],"SAN MARINO":["LOS ANGELES",0.55,0.55],"SANTA CLARITA":["LOS ANGELES",0.55,0.55],"SANTA FE SPRINGS":["LOS ANGELES",0.55,0.55],"SANTA MONICA":["LOS ANGELES",3.0,1.1],"SIERRA MADRE":["LOS ANGELES",0.55,0.55],"SIGNAL HILL":["LOS ANGELES",0.55,0.55],"SOUTH EL MONTE":["LOS ANGELES",0.55,0.55],"SOUTH GATE":["LOS ANGELES",0.55,0.55],"SOUTH PASADENA":["LOS ANGELES",0.55,0.55],"TEMPLE CITY":["LOS ANGELES",0.55,0.55],"TORRANCE":["LOS ANGELES",0.55,0.55],"VERNON":["LOS ANGELES",0.55,0.55],"WALNUT":["LOS ANGELES",0.55,0.55],"WEST COVINA":["LOS ANGELES",0.55,0.55],"WEST HOLLYWOOD":["LOS ANGELES",0.55,0.55],"WESTLAKE VILLAGE":["LOS ANGELES",0.55,0.55],"WHITTIER":["LOS ANGELES",0.55,0.55],"CHOWCHILLA":["MADERA",0.55,0.55],"MADERA":["MADERA",0.55,0.55],"BELVEDERE":["MARIN",0.55,0.55],"CORTE MADERA":["MARIN",0.55,0.55],"FAIRFAX":["MARIN",0.55,0.55],"LARKSPUR":["MARIN",0.55,0.55],"MILL VALLEY":["MARIN",0.55,0.55],"NOVATO":["MARIN",0.55,0.55],"ROSS":["MARIN",0.55,0.55],"SAN ANSELMO":["MARIN",0.55,0.55],"SAN RAFAEL":["MARIN",2.0,1.1],"SAUSALITO":["MARIN",0.55,0.55],"TIBURON":["MARIN",0.55,0.55],"MARIPOSA COUNTY":["MARIPOSA",0.0,1.1],"FORT BRAGG":["MENDOCINO",0.55,0.55],"POINT ARENA":["MENDOCINO",0.55,0.55],"UKIAH":["MENDOCINO",0.55,0.55],"WILLITS":["MENDOCINO",0.55,0.55],"ATWATER":["MERCED",0.55,0.55],"DOS PALOS":["MERCED",0.55,0.55],"GUSTINE":["MERCED",0.55,0.55],"LIVINGSTON":["MERCED",0.55,0.55],"LOS BANOS":["MERCED",0.55,0.55],"MERCED":["MERCED",0.55,0.55],"ALTURAS":["MODOC",0.55,0.55],"MAMMOTH LAKE":["MONO",0.55,0.55],"CARMEL-BY-THE-SEA":["MONTEREY",0.55,0.55],"DEL REY OAKS":["MONTEREY",0.55,0.55],"GONZALES":["MONTEREY",0.55,0.55],"GREENFIELD":["MONTEREY",0.55,0.55],"KING CITY":["MONTEREY",0.55,0.55],"MARINA":["MONTEREY",0.55,0.55],"MONTEREY":["MONTEREY",0.55,0.55],"PACIFIC GROVE":["MONTEREY",0.55,0.55],"SALINAS":["MONTEREY",0.55,0.55],"SAND CITY":["MONTEREY",0.55,0.55],"SEASIDE":["MONTEREY",0.55,0.55],"SOLEDAD":["MONTEREY",0.55,0.55],"AMERICAN CANYON":["NAPA",0.55,0.55],"CALISTOGA":["NAPA",0.55,0.55],"NAPA":["NAPA",0.55,0.55],"SAINT HELENA":["NAPA",0.55,0.55],"YOUNTVILLE":["NAPA",0.55,0.55],"GRASS VALLEY":["NEVADA",0.55,0.55],"NEVADA CITY":["NEVADA",0.55,0.55],"TRUCKEE":["NEVADA",0.55,0.55],"ALISO VIEJO":["ORANGE",0.55,0.55],"ANAHEIM":["ORANGE",0.55,0.55],"BREA":["ORANGE",0.55,0.55],"BUENA PARK":["ORANGE",0.55,0.55],"COSTA MESA":["ORANGE",0.55,0.55],"CYPRESS":["ORANGE",0.55,0.55],"DANA POINT":["ORANGE",0.55,0.55],"FOUNTAIN VALLEY":["ORANGE",0.55,0.55],"FULLERTON":["ORANGE",0.55,0.55],"GARDEN GROVE":["ORANGE",0.55,0.55],"HUNT INGTON BEACH":["ORANGE",0.55,0.55],"IRVINE":["ORANGE",0.55,0.55],"LAGUNA BEACH":["ORANGE",0.55,0.55],"LAGUNA HILLS":["ORANGE",0.55,0.55],"LAGUNA NIGUEL":["ORANGE",0.55,0.55],"LA HABRA":["ORANGE",0.55,0.55],"LAKE FOREST":["ORANGE",0.55,0.55],"LA PALMA":["ORANGE",0.55,0.55],"LOS ALAMITOS":["ORANGE",0.55,0.55],"MISSION VIEJO":["ORANGE",0.55,0.55],"NEWPORT BEACH":["ORANGE",0.55,0.55],"ORANGE":["ORANGE",0.55,0.55],"PLACENTIA":["ORANGE",0.55,0.55],"RANCHO SANTA MARGARIT A":["ORANGE",0.55,0.55],"SAN CLEMENTE":["ORANGE",0.55,0.55],"SAN JUAN CAPISTRANO":["ORANGE",0.55,0.55],"SANTA ANA":["ORANGE",0.55,0.55],"SEAL BEACH":["ORANGE",0.55,0.55],"STANTON":["ORANGE",0.55,0.55],"TUSTIN":["ORANGE",0.55,0.55],"VILLA PARK":["ORANGE",0.55,0.55],"WESTMINSTER":["ORANGE",0.55,0.55],"YORBA LINDA":["ORANGE",0.55,0.55],"AUBURN":["PLACER",0.55,0.55],"COLFAX":["PLACER",0.55,0.55],"LINCOLN":["PLACER",0.55,0.55],"LOOMIS":["PLACER",0.55,0.55],"ROCKLIN":["PLACER",0.55,0.55],"ROSEVILLE":["PLACER",0.55,0.55],"PORTOLA":["PLUMAS",0.55,0.55],"BANNING":["RIVERSIDE",0.55,0.55],"BEAUMONT":["RIVERSIDE",0.55,0.55],"BLYTHE":["RIVERSIDE",0.55,0.55],"CALIMESA":["RIVERSIDE",0.55,0.55],"CANYON LAKE":["RIVERSIDE",0.55,0.55],"CATHEDRAL CITY":["RIVERSIDE",0.55,0.55],"COACHELLA":["RIVERSIDE",0.55,0.55],"CORONA":["RIVERSIDE",0.55,0.55],"DESERT HOT SPRINGS":["RIVERSIDE",0.55,0.55],"EASTVALE":["RIVERSIDE",0.55,0.55],"HEMET":["RIVERSIDE",0.55,0.55],"INDIAN WELLS":["RIVERSIDE",0.55,0.55],"INDIO":["RIVERSIDE",0.55,0.55],"JURUPA VALLEY":["RIVERSIDE",0.55,0.55],"LAKE ELSINORE":["RIVERSIDE",0.55,0.55],"LA QUINTA":["RIVERSIDE",0.55,0.55],"MENIFEE":["RIVERSIDE",0.55,0.55],"MORENO VALLEY":["RIVERSIDE",0.55,0.55],"MURRIET A":["RIVERSIDE",0.55,0.55],"NORCO":["RIVERSIDE",0.55,0.55],"PALM DESERT":["RIVERSIDE",0.55,0.55],"PALM SPRINGS":["RIVERSIDE",0.55,0.55],"PERRIS":["RIVERSIDE",0.55,0.55],"RANCHO MIRAGE":["RIVERSIDE",0.55,0.55],"RIVERSIDE":["RIVERSIDE",1.1,1.1],"SAN JACINTO":["RIVERSIDE",0.55,0.55],"TEMECULA":["RIVERSIDE",0.55,0.55],"WILDOMAR":["RIVERSIDE",0.55,0.55],"CITRUS HEIGHTS":["SACRAMENTO",0.55,0.55],"ELK GROVE":["SACRAMENTO",0.55,0.55],"FOLSOM":["SACRAMENTO",0.55,0.55],"GALT":["SACRAMENTO",0.55,0.55],"ISLETON":["SACRAMENTO",0.55,0.55],"RANCHO CORDOVA":["SACRAMENTO",0.55,0.55],"SACRAMENTO":["SACRAMENTO",2.75,1.1],"HOLLISTER":["SAN BENITO",0.55,0.55],"SAN JUAN BAUTISTA":["SAN BENITO",0.55,0.55],"ADELANTO":["SAN BERNARDINO",0.55,0.55],"APPLE VALLEY":["SAN BERNARDINO",0.55,0.55],"BARSTOW":["SAN BERNARDINO",0.55,0.55],"BIG BEAR LAKE":["SAN BERNARDINO",0.55,0.55],"CHINO":["SAN BERNARDINO",0.55,0.55],"CHINO HILLS":["SAN BERNARDINO",0.55,0.55],"COLTON":["SAN BERNARDINO",0.55,0.55],"FONTANA":["SAN BERNARDINO",0.55,0.55],"GRAND TERRACE":["SAN BERNARDINO",0.55,0.55],"HESPERIA":["SAN BERNARDINO",0.55,0.55],"HIGHLAND":["SAN BERNARDINO",0.55,0.55],"LOMA LINDA":["SAN BERNARDINO",0.55,0.55],"MONTCLAIR":["SAN BERNARDINO",0.55,0.55],"NEEDLES":["SAN BERNARDINO",0.55,0.55],"ONTARIO":["SAN BERNARDINO",0.55,0.55],"RANCHO CUCAMONGA":["SAN BERNARDINO",0.55,0.55],"REDLANDS":["SAN BERNARDINO",0.55,0.55],"RIALTO":["SAN BERNARDINO",0.55,0.55],"SAN BERNARDINO":["SAN BERNARDINO",0.55,0.55],"TWENTYNINE PALMS":["SAN BERNARDINO",0.55,0.55],"LAGUNA WOODS":["SAN BERNARDINO",0.55,0.55],"UPLAND":["SAN BERNARDINO",0.55,0.55],"VICTORVILLE":["SAN BERNARDINO",0.55,0.55],"YUCAIPA":["SAN BERNARDINO",0.55,0.55],"YUCCA VALLEY":["SAN BERNARDINO",0.55,0.55],"CARLSBAD":["SAN DIEGO",0.55,0.55],"CHULA VISTA":["SAN DIEGO",0.55,0.55],"CORONADO":["SAN DIEGO",0.55,0.55],"DEL MAR":["SAN DIEGO",0.55,0.55],"EL CAJON":["SAN DIEGO",0.55,0.55],"ENCINITAS":["SAN DIEGO",0.55,0.55],"ESCONDIDO":["SAN DIEGO",0.55,0.55],"IMPERIAL BEACH":["SAN DIEGO",0.55,0.55],"LA MESA":["SAN DIEGO",0.55,0.55],"LEMON GROVE":["SAN DIEGO",0.55,0.55],"NATIONAL CITY":["SAN DIEGO",0.55,0.55],"OCEANSIDE":["SAN DIEGO",0.55,0.55],"POWAY":["SAN DIEGO",0.55,0.55],"SAN DIEGO":["SAN DIEGO",0.55,0.55],"SAN MARCOS":["SAN DIEGO",0.55,0.55],"SANTEE":["SAN DIEGO",0.55,0.55],"SOLANA BEACH":["SAN DIEGO",0.55,0.55],"VISTA":["SAN DIEGO",0.55,0.55],"SAN FRANCISCO":["SAN FRANCISCO",7.5,0.0],"ESCALON":["SAN JOAQUIN",0.55,0.55],"LATHROP":["SAN JOAQUIN",0.55,0.55],"LODI":["SAN JOAQUIN",0.55,0.55],"MANTECA":["SAN JOAQUIN",0.55,0.55],"RIPON":["SAN JOAQUIN",0.55,0.55],"STOCKTON":["SAN JOAQUIN",0.55,0.55],"TRACY":["SAN JOAQUIN",0.55,0.55],"ARROYO GRANDE":["SAN LUIS OBISPO",0.55,0.55],"ATASCADERO":["SAN LUIS OBISPO",0.55,0.55],"EL PASO DE ROBLES":["SAN LUIS OBISPO",0.55,0.55],"GROVER BEACH":["SAN LUIS OBISPO",0.55,0.55],"MORRO BAY":["SAN LUIS OBISPO",0.55,0.55],"PISMO BEACH":["SAN LUIS OBISPO",0.55,0.55],"SAN LUIS OBISPO":["SAN LUIS OBISPO",0.55,0.55],"ATHERTON":["SAN MATEO",0.55,0.55],"BELMONT":["SAN MATEO",0.55,0.55],"BRISBANE":["SAN MATEO",0.55,0.55],"BURLINGAME":["SAN MATEO",0.55,0.55],"COLMA":["SAN MATEO",0.55,0.55],"DALY CITY":["SAN MATEO",0.55,0.55],"EAST PALO ALTO":["SAN MATEO",0.55,0.55],"FOSTER CITY":["SAN MATEO",0.55,0.55],"HALF MOON BAY":["SAN MATEO",0.55,0.55],"HILLSBOROUGH":["SAN MATEO",0.55,0.55],"MENLO PARK":["SAN MATEO",0.55,0.55],"MILLBRAE":["SAN MATEO",0.55,0.55],"PACIFICA":["SAN MATEO",0.55,0.55],"PORTOLA VALLEY":["SAN MATEO",0.55,0.55],"REDWOOD CITY":["SAN MATEO",0.55,0.55],"SAN BRUNO":["SAN MATEO",0.55,0.55],"SAN CARLOS":["SAN MATEO",0.55,0.55],"SAN MATEO":["SAN MATEO",0.55,0.55],"SOUTH SAN FRANCISCO":["SAN MATEO",0.55,0.55],"WOODSIDE":["SAN MATEO",0.55,0.55],"BUELLTON":["SANTA BARBARA",0.55,0.55],"CARPINTERIA":["SANTA BARBARA",0.55,0.55],"GOLETA":["SANTA BARBARA",0.55,0.55],"GUADALUPE":["SANTA BARBARA",0.55,0.55],"LOMPOC":["SANTA BARBARA",0.55,0.55],"SANTA BARBARA":["SANTA BARBARA",0.55,0.55],"SANTA MARIA":["SANTA BARBARA",0.55,0.55],"SOLVANG":["SANTA BARBARA",0.55,0.55],"CAMPBELL":["SANTA CLARA",0.55,0.55],"CUPERTINO":["SANTA CLARA",0.55,0.55],"GILROY":["SANTA CLARA",0.55,0.55],"LOS ALTOS":["SANTA CLARA",0.55,0.55],"LOS ALTOS HILLS":["SANTA CLARA",0.55,0.55],"LOS GATOS":["SANTA CLARA",0.55,0.55],"MILPITAS":["SANTA CLARA",0.55,0.55],"MONTE SERENO":["SANTA CLARA",0.55,0.55],"MORGAN HILL":["SANTA CLARA",0.55,0.55],"MOUNTAIN VIEW":["SANTA CLARA",3.3,1.1],"PALO ALTO":["SANTA CLARA",3.3,1.1],"SAN JOSE":["SANTA CLARA",3.3,1.1],"SANTA CLARA":["SANTA CLARA",0.55,0.55],"SARATOGA":["SANTA CLARA",0.55,0.55],"SUNNYVALE":["SANTA CLARA",0.55,0.55],"CAPITOLA":["SANTA CRUZ",0.55,0.55],"SANTA CRUZ":["SANTA CRUZ",0.55,0.55],"SCOTTS VALLEY":["SANTA CRUZ",0.55,0.55],"WATSONVILLE":["SANTA CRUZ",0.55,0.55],"ANDERSON":["SHASTA",0.55,0.55],"REDDING":["SHASTA",0.55,0.55],"SHASTA LAKE":["SHASTA",0.55,0.55],"LOYALTON":["SIERRA",0.55,0.55],"DORRIS":["SISKIYOU",0.55,0.55],"DUNSMUIR":["SISKIYOU",0.55,0.55],"ETNA":["SISKIYOU",0.55,0.55],"FORT JONES":["SISKIYOU",0.55,0.55],"MONTAGUE":["SISKIYOU",0.55,0.55],"MOUNT SHASTA":["SISKIYOU",0.55,0.55],"TULELAKE":["SISKIYOU",0.55,0.55],"WEED":["SISKIYOU",0.55,0.55],"YREKA":["SISKIYOU",0.55,0.55],"BENICIA":["SOLANO",0.55,0.55],"DIXON":["SOLANO",0.55,0.55],"FAIRFIELD":["SOLANO",0.55,0.55],"RIO VISTA":["SOLANO",0.55,0.55],"SUISUN CITY":["SOLANO",0.55,0.55],"VACAVILLE":["SOLANO",0.55,0.55],"VALLEJO":["SOLANO",3.3,1.1],"CLOVERDALE":["SONOMA",0.55,0.55],"COTATI":["SONOMA",0.55,0.55],"HEALDSBURG":["SONOMA",0.55,0.55],"PETALUMA":["SONOMA",2.0,1.1],"ROHNERT PARK":["SONOMA",0.55,0.55],"SANTA ROSA":["SONOMA",2.0,1.1],"SEBASTOPOL":["SONOMA",0.55,0.55],"SONOMA":["SONOMA",0.55,0.55],"WINDSOR":["SONOMA",0.55,0.55],"CERES":["STANISLAUS",0.55,0.55],"HUGHSON":["STANISLAUS",0.55,0.55],"MODESTO":["STANISLAUS",0.55,0.55],"NEWMAN":["STANISLAUS",0.55,0.55],"OAKDALE":["STANISLAUS",0.55,0.55],"PATTERSON":["STANISLAUS",0.55,0.55],"RIVERBANK":["STANISLAUS",0.55,0.55],"TURLOCK":["STANISLAUS",0.55,0.55],"WATERFORD":["STANISLAUS",0.55,0.55],"LIVE OAK":["SUTTER",0.55,0.55],"YUBA":["SUTTER",0.55,0.55],"CORNING":["TEHAMA",0.55,0.55],"RED BLUFF":["TEHAMA",0.55,0.55],"TEHAMA":["TEHAMA",0.55,0.55],"TRINITY COUNTY":["TRINITY",0.0,1.1],"DINUBA":["TULARE",0.55,0.55],"EXETER":["TULARE",0.55,0.55],"FARMERSVILLE":["TULARE",0.55,0.55],"LINDSAY":["TULARE",0.55,0.55],"PORTERVILLE":["TULARE",0.55,0.55],"TULARE":["TULARE",0.55,0.55],"VISALIA":["TULARE",0.55,0.55],"WOODLAKE":["TULARE",0.55,0.55],"SONORA":["TUOLUMNE",0.55,0.55],"CAMARILLO":["VENTURA",0.55,0.55],"FILLMORE":["VENTURA",0.55,0.55],"MOORPARK":["VENTURA",0.55,0.55],"OJAI":["VENTURA",0.55,0.55],"OXNARD":["VENTURA",0.55,0.55],"PORT HUENEME":["VENTURA",0.55,0.55],"SAN BUENAVENTURA":["VENTURA",0.55,0.55],"SANTA PAULA":["VENTURA",0.55,0.55],"SIMI VALLEY":["VENTURA",0.55,0.55],"THOUSAND OAKS":["VENTURA",0.55,0.55],"DAVIS":["YOLO",0.55,0.55],"WEST SACRAMENTO":["YOLO",0.55,0.55],"WINTERS":["YOLO",0.55,0.55],"WOODLAND":["YOLO",0.55,0.55],"MARYSVILLE":["YUBA",0.55,0.55],"WHEATLAND":["YUBA",0.55,0.55]};
 function ttaxRates(city,price){
@@ -623,8 +678,9 @@ const groupOf=p=>{const g=PGROUPS.find(g=>g.st.includes(p.status));return g?g.k:
 function propStats(p){
   const cardRows=transferred().filter(t=>bucketOf(t.type)==='property'&&t.propertyId===p.id);
   const payRows=[...S.pays.values()].filter(x=>x.propertyId===p.id);
-  const all=[...cardRows.map(t=>({amount:t.amount,paid:!!t.paid,sub:t.sub})),...payRows.map(x=>({amount:Number(x.amount)||0,paid:!!x.paid,sub:x.sub}))];
-  const prior=p.prior||null, priorTotal=prior?r2(Object.values(prior.byCat||{}).reduce((a,b)=>a+(Number(b)||0),0)):0;
+  const prior=p.prior||null, after=d=>!prior?.asOf||(d||'')>prior.asOf; // the Drive tracker already counts anything on or before its date
+  const all=[...cardRows.filter(t=>after(t.date)).map(t=>({amount:t.amount,paid:!!t.paid,sub:t.sub})),...payRows.filter(x=>after(x.date)).map(x=>({amount:Number(x.amount)||0,paid:!!x.paid,sub:x.sub}))];
+  const priorTotal=prior?r2(Object.values(prior.byCat||{}).reduce((a,b)=>a+(Number(b)||0),0)):0;
   const byCat={}; for(const x of all){const k=x.sub||'Uncategorized'; byCat[k]=r2((byCat[k]||0)+x.amount);}
   if(prior) for(const [k,v] of Object.entries(prior.byCat||{})) byCat[k]=r2((byCat[k]||0)+(Number(v)||0));
   const priorUnpaid=prior?Number(prior.unpaid)||0:0;
@@ -632,7 +688,7 @@ function propStats(p){
   const budget=r2(Object.values(p.budgets||{}).reduce((a,b)=>a+(Number(b)||0),0));
   const g=k=>Number(p[k])||0, carrying=r2(g('mortgageMonthly')*g('monthsHeld'));
   const cashIn=r2(g('emd')+g('fundsToClose')+total+carrying-(p.holdbackReceived?g('holdback'):0));
-  const st={cardRows,payRows,byCat,total,paid,unpaid,priorTotal,cardTotal:sum(cardRows),otherTotal:sum(payRows,x=>x.amount),budget,carrying,cashIn,over:budget>0&&total>budget,holdPending:p.holdbackReceived?0:g('holdback')};
+  const st={cardRows,payRows,byCat,total,paid,unpaid,priorTotal,cardTotal:sum(cardRows.filter(t=>after(t.date))),otherTotal:sum(payRows.filter(x=>after(x.date)),x=>x.amount),budget,carrying,cashIn,over:budget>0&&total>budget,holdPending:p.holdbackReceived?0:g('holdback')};
   const c=calcInputs(p,st); st.calc=c; st.profit=c.sale?r2(twin(c,c.sale).net):null;
   return st;
 }
@@ -736,10 +792,10 @@ function paymentsBody(p,s){
     <label class="field">Amount<input type="text" inputmode="decimal" id="np-amt" data-draft="np-amt" value="${esc(D('np-amt'))}" placeholder="0.00"></label>
     <label class="field">Note<input type="text" id="np-notes" data-draft="np-notes" value="${esc(D('np-notes'))}" placeholder="Draw 1, invoice #…"></label>
     <div class="row" style="align-self:end"><label class="check"><input type="checkbox" id="np-paid" data-draft="np-paid"${D('np-paid',true)?' checked':''}> Paid</label><button class="btn primary" data-act="add-pay">Add payment</button></div></div>
-  ${rows.length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:820px"><thead><tr><th>Paid</th><th>Date</th><th>Paid to</th><th>Category</th><th>Paid with</th><th>Note</th><th class="amt">Amount</th><th></th></tr></thead><tbody>
-  ${rows.map(r=>`<tr data-pid="${esc(r.id)}" data-kind="${r.kind}"><td><input type="checkbox" data-act="payf"${r.paid?' checked':''} aria-label="Paid"></td><td class="d">${shortDate(r.date)}</td><td class="payee">${r.receiptUrl?`<a href="${esc(r.receiptUrl)}" target="_blank" rel="noopener">${esc(r.payee)}</a>`:esc(r.payee)}${r.example?' <span class="tag">example</span>':''}</td><td>${esc(r.sub||'—')}</td><td>${r.kind==='card'?chip(r.method):esc(r.method)}</td><td class="muted">${esc(r.notes||'')}</td><td class="amt">${money(r.amount)}</td>
+  ${rows.length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:820px"><thead><tr><th>Paid</th><th>Date</th><th>Receipt</th><th>Paid to</th><th>Category</th><th>Paid with</th><th>Note</th><th class="amt">Amount</th><th></th></tr></thead><tbody>
+  ${rows.map(r=>`<tr data-pid="${esc(r.id)}" data-kind="${r.kind}"><td><input type="checkbox" data-act="payf"${r.paid?' checked':''} aria-label="Paid"></td><td class="d">${shortDate(r.date)}</td><td>${receiptCell(r)}</td><td class="payee">${esc(r.payee)}${r.example?' <span class="tag">example</span>':''}</td><td>${esc(r.sub||'—')}</td><td>${r.kind==='card'?chip(r.method):esc(r.method)}</td><td class="muted">${esc(r.notes||'')}</td><td class="amt">${money(r.amount)}</td>
     <td>${r.kind==='pay'?(S.confirm==='pay-'+r.id?`<button class="btn sm danger" data-act="del-pay-yes">Delete</button>`:`<button class="btn sm ghost" data-act="del-pay" aria-label="Delete">✕</button>`):''}</td></tr>`).join('')}
-  </tbody><tfoot><tr><td colspan="6">Paid ${money(s.paid)} · Unpaid ${money(s.unpaid)}</td><td class="amt">${money(s.total)}</td><td></td></tr></tfoot></table></div>`:`<div class="faint">No payments yet. File a card charge as Property Expense → this address, or add a check, wire or draw above.</div>`}`;
+  </tbody><tfoot><tr><td colspan="7">Paid ${money(s.paid)} · Unpaid ${money(s.unpaid)}</td><td class="amt">${money(s.total)}</td><td></td></tr></tfoot></table></div>`:`<div class="faint">No payments yet. File a card charge as Property Expense → this address, or add a check, wire or draw above.</div>`}`;
 }
 function filesBody(p){
   return `<label class="field">Notes<textarea id="pf-notes" rows="3" data-act="pf" data-f="notes" data-num="0" placeholder="Scope, contractor contacts, draw schedule…">${esc(p.notes||'')}</textarea></label>
@@ -765,6 +821,10 @@ function viewSettings(){
   <p class="faint" style="font-size:12.5px">One option per line. Renaming an option does not change rows already filed under the old name.</p></div>`;
 }
 
+/* ---------- receipts (card charges and property payments) ---------- */
+function rcptRef(tr){ if(tr?.dataset.pid) return tr.dataset.kind==='pay'?{coll:'payments',rid:tr.dataset.pid}:{coll:'txns',rid:tr.dataset.pid}; return {coll:'txns',rid:tr?.dataset.id}; }
+function rcptRec(m){ if(m.coll==='payments'){const x=S.pays.get(m.rid);return x?{amount:Number(x.amount)||0,desc:x.payee}:null;} const t=S.txns.get(m.rid);return t?{amount:t.amount,desc:t.desc}:null; }
+async function saveReceipt(m,patch){ if(m.coll==='payments') await write(()=>db.doc('payments/'+m.rid).update(patch)); else await setTxn(m.rid,patch); render(); }
 /* ---------- modal ---------- */
 function openModal(m){S.modal=m;renderModal();}
 function closeModal(){S.modal=null;renderModal();render();}
@@ -774,7 +834,7 @@ function renderModal(){
   if(m.type==='prop'){
     el.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-labelledby="mh"><h3 id="mh">New property</h3><label class="field">Address<input type="text" id="mp-addr" value="${esc(m.addr||'')}" placeholder="492 Umland Dr, Santa Rosa, CA 95401"></label><div class="row"><button class="btn primary" data-act="mp-create">Create property</button><button class="btn ghost" data-act="m-close">Cancel</button></div></div>`;
   } else if(m.type==='rcpt'){
-    const t=S.txns.get(m.txnId); if(!t){S.modal=null;el.hidden=true;return;}
+    const t=rcptRec(m); if(!t){S.modal=null;el.hidden=true;return;}
     el.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-labelledby="mh"><h3 id="mh">Receipt · ${esc(t.desc)} · ${money(t.amount)}</h3>
       ${mcp?`<label class="field">Receipt file<input type="file" id="mr-file" accept="image/*,application/pdf" data-act="mr-file"></label>
       <label class="field">Vendor name for the file<input type="text" id="mr-vendor" value="${esc(m.vendor)}"></label>
@@ -792,9 +852,9 @@ function renderModal(){
 /* ---------- events ---------- */
 document.addEventListener('input',e=>{const t=e.target;const k=t.dataset?.draft;if(k)S.draft[k]=t.type==='checkbox'?t.checked:t.value;
   if(!S.modal) return;
-  if(t.id==='mr-vendor'){S.modal.vendor=t.value;const tx=S.txns.get(S.modal.txnId);$('#mr-name').textContent=amtStr(tx.amount)+' - '+t.value.trim()+extOf(S.modal.file);}
+  if(t.id==='mr-vendor'){S.modal.vendor=t.value;const tx=rcptRec(S.modal);$('#mr-name').textContent=amtStr(tx.amount)+' - '+t.value.trim()+extOf(S.modal.file);}
   if(t.id==='mr-link') S.modal.link=t.value; if(t.id==='mp-addr') S.modal.addr=t.value;});
-document.addEventListener('toggle',e=>{const d=e.target;if(d.dataset?.sec)S.open[d.dataset.sec]=d.open;},true);
+document.addEventListener('toggle',e=>{const d=e.target;if(!d.dataset?.sec)return;const was=!!S.open[d.dataset.sec];S.open[d.dataset.sec]=d.open;if(d.classList.contains('grp')&&d.open&&!was)render();},true);
 document.addEventListener('change',async e=>{
   const t=e.target, act=t.dataset.act; if(t.dataset.draft) S.draft[t.dataset.draft]=t.type==='checkbox'?t.checked:t.value;
   if(!act) return;
@@ -806,6 +866,8 @@ document.addEventListener('change',async e=>{
   if(act==='imp-flip'){S.preview.flip=t.checked;render();return;}
   if(act==='imp-gone'){S.preview.removeGone=t.checked;render();return;}
   if(act==='dmonth'){S.dMonth=t.value;render();return;}
+  if(act==='tmonth'){S.tMonth=t.value;S.confirm=null;render();return;}
+  if(act==='ci'){const k=S.tCard;const v=t.dataset.num?(t.value.trim()===''?null:num(t.value)):t.value;const cur=S.cinfo.get(k)||{};const {id:_,...rest}=cur;await write(()=>db.doc('cardinfo/'+k).set({...rest,[t.dataset.f]:v}));return;}
   if(act==='prop-pick'){S.propId=t.value;S.confirm=null;render();return;}
   if(act==='pf'&&S.propId!=='all'){const f=t.dataset.f;const v=t.type==='checkbox'?t.checked:t.dataset.num==='1'?num(t.value):t.value;if(f==='address'&&!String(v).trim()){render();return;}await write(()=>db.doc('properties/'+S.propId).update({[f]:v}));return;}
   if(act==='cf'&&S.propId!=='all'){const f=t.dataset.f;const v=t.dataset.text?t.value.trim().toUpperCase():(t.value.trim()===''?null:num(t.value));await write(()=>db.doc('properties/'+S.propId).update({calc:{[f]:v}}));return;}
@@ -827,7 +889,7 @@ document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]'); if(!b||b.tagName==='SELECT'||b.tagName==='INPUT') return;
   if(e.target.closest('a[href^="#"]')) e.preventDefault();
   const act=b.dataset.act, tr=b.closest('tr'), id=tr?.dataset.id;
-  if(!/-yes$|^(del|clear-ex|payall|del-prop|del-pay)$/.test(act)) S.confirm=null;
+  if(!/-yes$|^(del|clear-ex|payall|del-prop|del-pay|del-cpay)$/.test(act)) S.confirm=null;
   switch(act){
     case 'dcard': S.dCard=b.dataset.k; S.dMonth='all'; S.sel.clear(); break;
     case 'dview': S.dView=b.dataset.v; break;
@@ -845,29 +907,32 @@ document.addEventListener('click',async e=>{
     case 'del-yes': {const c=S.confirm;S.confirm=null;await write(()=>db.doc('txns/'+c).delete());break;}
     case 'transfer': await transferSelected(); return;
     case 'untransfer': await write(()=>db.doc('txns/'+id).update({status:'Posted'})); toast('Back in Daily Expenses to edit'); break;
-    case 'rcpt': { const t=S.txns.get(id); openModal({type:'rcpt',txnId:id,vendor:vendorFrom(t.desc),file:null,link:''}); return; }
-    case 'rcpt-clear': await setTxn(id,{receiptUrl:'',receiptName:''}); break;
+    case 'rcpt': { const ref=rcptRef(tr); const r=rcptRec(ref); if(!r) return; openModal({type:'rcpt',...ref,vendor:vendorFrom(r.desc),file:null,link:''}); return; }
+    case 'rcpt-clear': await saveReceipt(rcptRef(tr),{receiptUrl:'',receiptName:''}); break;
     case 'mr-upload': {
-      const m=S.modal, t=S.txns.get(m.txnId); if(!m.file||m.busy) return;
+      const m=S.modal, t=rcptRec(m); if(!t||!m.file||m.busy) return;
       m.busy=true; m.err=''; renderModal();
       try{
         const parent=folderId(S.L.receiptFolder);
         const name=await uniqueName(amtStr(t.amount)+' - '+(m.vendor.trim()||'Vendor'),extOf(m.file),parent);
         const r=await uploadToDrive(m.file,name,parent);
-        S.modal=null; renderModal(); await setTxn(t.id,{receiptUrl:r.url,receiptName:name}); toast('Saved to Drive as '+name);
+        S.modal=null; renderModal(); await saveReceipt(m,{receiptUrl:r.url,receiptName:name}); toast('Saved to Drive as '+name);
       }catch(err){ m.busy=false; m.err=err?.code==='too_big'?'That file is too large for this viewer. Upload it in Drive and paste the link below.':driveErr(err); renderModal(); }
       return;
     }
     case 'mr-link': {
       const m=S.modal, link=(m.link||'').trim(); if(!/^https:\/\/(drive|docs)\.google\.com\//.test(link)){m.err='Paste a Google Drive link that starts with https://drive.google.com/';renderModal();return;}
-      const tid=m.txnId; S.modal=null; renderModal(); await setTxn(tid,{receiptUrl:link,receiptName:''}); break;
+      S.modal=null; renderModal(); await saveReceipt(m,{receiptUrl:link,receiptName:''}); break;
     }
     case 'm-close': closeModal(); return;
-    case 'tcard': S.tCard=b.dataset.k; break;
+    case 'tcard': S.tCard=b.dataset.k; S.confirm=null; break;
+    case 'add-cpay': {const amount=r2(num(S.draft['cp-amt']));if(!amount){toast('Type the payment amount.');return;}if(await write(()=>db.collection('cardpays').add({card:S.tCard,date:S.draft['cp-date']||today(),amount,desc:'Payment (entered by hand)',source:'manual'}))){S.draft['cp-amt']='';toast('Payment recorded');}break;}
+    case 'del-cpay': S.confirm='cp-'+b.closest('tr').dataset.cp; break;
+    case 'del-cpay-yes': {const pid=S.confirm.slice(3);S.confirm=null;await write(()=>db.doc('cardpays/'+pid).delete());break;}
     case 'tbucket': S.tBucket=b.dataset.k; break;
     case 'tpaid': S.tPaid=b.dataset.v; break;
     case 'payall': S.confirm='payall'; break;
-    case 'payall-yes': {S.confirm=null;const rows=transferred().filter(t=>t.card===S.tCard&&bucketOf(t.type)===S.tBucket&&!t.paid);for(const t of rows)await write(()=>db.doc('txns/'+t.id).update({paid:true,paidDate:today()}));toast(`Marked ${rows.length} as paid`);break;}
+    case 'payall-yes': {S.confirm=null;const rows=transferred().filter(t=>t.card===S.tCard&&!t.paid&&(S.tMonth==='all'||(t.date||'').startsWith(S.tMonth)));for(const t of rows)await write(()=>db.doc('txns/'+t.id).update({paid:true,paidDate:today()}));toast(`Marked ${rows.length} as paid`);break;}
     case 'new-prop': openModal({type:'prop',addr:''}); return;
     case 'mp-create': {
       const m=S.modal, addr=(m.addr||'').trim(); if(!addr){toast('Type the address first.');return;}
@@ -925,6 +990,8 @@ render();
   db.collection('txns').onSnapshot(s=>{S.txns=toMap(s);S.ready.txns=true;scheduleRender();},onErr);
   db.collection('properties').onSnapshot(s=>{S.props=toMap(s);S.ready.props=true;scheduleRender();},onErr);
   db.collection('payments').onSnapshot(s=>{S.pays=toMap(s);scheduleRender();},onErr);
+  db.collection('cardpays').onSnapshot(s=>{S.cpays=toMap(s);scheduleRender();},onErr);
+  db.collection('cardinfo').onSnapshot(s=>{S.cinfo=toMap(s);scheduleRender();},onErr);
   db.doc('settings/lists').onSnapshot(d=>{S.L=d.exists?{...DEFAULTS,...d.data()}:{...DEFAULTS};scheduleRender();},onErr);
   render();
   try{ mcp=await c.use('mcp'); if(mcp){ const lt=await mcp.listTools().catch(()=>null); fileArgs=!!lt?.fileArgs; } }catch{ mcp=null; }
