@@ -7,6 +7,7 @@ PROPERTY_RULES = [
     ("Dump & disposal", r"sanitary|recycling|landfill|recology|garbage|disposal|south bayside|bee green"),
     ("Utilities", r"pg&e|pacific gas|\bpge\b|comcast|xfinity|water|sewer|utility"),
     ("Permits & inspections", r"city of|county|planning|building ?planning|cdd|bus tax|inspection|getitrecorded|laboratory|3r report|dept of bldg|mygovpay|petaluma"),
+    ("Returns & credits", r"^credit #"),
     ("Building materials", r"home depot|lumber|supply|placemakers|ferguson|garden materials|lyngso|lyons|tile|stone|plastics|sod farm|pace supply|ogawa|build\.com|hardware|^invoice #"),
     ("Contractors & repairs", r"garage door|gutter|termite|recovery|enviro|bass and sons|sustainable|glass|windows|empire today|flooring|cabinet|plumb|electric(?!al co)|roof|clean"),
     ("Appliances & furnishings", r"amazon|wayfair|t ?j ?maxx|appliance|sleepyhead|furniture|target"),
@@ -60,8 +61,12 @@ def about(section, items, top=3):
     agg = {}
     for i in items:
         if i.get("adj"):
+            if section not in ("later", "invoices"):
+                continue
+            k = "Building materials"  # Home Depot reallocation between properties
+            agg[k] = agg.get(k, 0) + i["amount"]
             continue
-        k = property_purpose(i["vendor"], i.get("desc", "")) if section in ("property", "invoices") else brand(i["vendor"])
+        k = property_purpose(i["vendor"], i.get("desc", "")) if section in ("property", "invoices", "pastdue", "epd", "later", "credits") else brand(i["vendor"])
         agg[k] = agg.get(k, 0) + i["amount"]
     ranked = sorted(agg.items(), key=lambda kv: -kv[1])
     out = [{"label": k, "amount": round(v, 2)} for k, v in ranked[:top] if v > 0]

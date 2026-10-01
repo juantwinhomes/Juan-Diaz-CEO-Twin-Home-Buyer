@@ -106,6 +106,30 @@ h1 { font-family: var(--f-money); font-weight: 800; font-size: 30px; line-height
 .bn-msg .warn { color: #ffb4a8; font-weight: 700; }
 .bn-msg .min { color: var(--gold); font-weight: 700; }
 
+/* What must be paid */
+.req { position: relative; min-width: 290px; background: linear-gradient(160deg, #f6e7b0, #d9b552); color: #2a1f05; border-radius: 12px; padding: 14px 18px 12px;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.35), 0 8px 24px -12px rgba(0,0,0,.6); }
+.req::after { content: ""; position: absolute; inset: 5px; border: 1px dashed rgba(42,31,5,.35); border-radius: 8px; pointer-events: none; }
+.req-label { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; }
+.req-amt { font-family: var(--f-money); font-weight: 800; font-size: clamp(34px, 6vw, 46px); line-height: 1.05; font-variant-numeric: lining-nums tabular-nums; margin: 2px 0 8px; }
+.req-bar { height: 8px; border-radius: 4px; background: rgba(42,31,5,.18); overflow: hidden; }
+.req-bar i { display: block; height: 100%; background: #1d5a3c; }
+.req-status { font-size: 13px; font-weight: 800; margin-top: 6px; color: #7a2a1d; }
+.req.met .req-status { color: #1d5a3c; }
+.bn-msg .epdmsg { color: #9fe0b6; font-weight: 700; }
+.slip-req { display: grid; gap: 1px; background: linear-gradient(160deg, #f6e7b0, #d9b552); color: #2a1f05; border-radius: 10px; padding: 5px 12px; }
+.slip-req span { font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+.slip-req b { font-family: var(--f-money); font-size: 17px; color: #7a2a1d; }
+.slip-req.met b { color: #1d5a3c; }
+.bill .bs b { font-family: var(--f-money); font-size: 13px; }
+.lg-blurb { font-size: 13px; color: var(--ink); margin: 2px 0 1px; }
+details.ledger[data-sec="pastdue"] { border: 2px solid var(--warn); }
+details.ledger[data-sec="pastdue"] > summary { background-image: linear-gradient(90deg, rgba(176,57,43,.12), transparent 70%); }
+details.ledger[data-sec="pastdue"] .lg-name { color: var(--warn); }
+details.ledger[data-sec="epd"] { border: 2px solid var(--gold); }
+details.ledger[data-sec="epd"] > summary { background-image: linear-gradient(90deg, var(--gold-bg), transparent 70%); }
+.ln-owed s.full { display: block; font-size: 13px; color: var(--muted); }
+
 /* Ledgers */
 .ledgers { display: grid; gap: 14px; }
 details.ledger { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
@@ -171,6 +195,7 @@ details[open] > summary .chev { transform: rotate(90deg); }
 
 @media (max-width: 720px) {
   .bn-grid { grid-template-columns: 1fr; }
+  .req { min-width: 0; }
   .seal { display: none; }
   .bn-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ln { grid-template-columns: minmax(0, 1fr); }
@@ -206,8 +231,9 @@ details[open] > summary .chev { transform: rotate(90deg); }
 
 <script>
 const DATA = /*__DATA__*/null;
-const LABEL = { overhead: ["category", "categories"], property: ["property", "properties"], invoices: ["property", "properties"], marketing: ["marketing type", "marketing types"] };
-const st = { card: DATA.cards[0].key, open: new Set(), notesOpen: new Set() };
+const LABEL = { overhead: ["category", "categories"], property: ["property", "properties"], pastdue: ["line", "lines"], epd: ["property", "properties"], later: ["property", "properties"], marketing: ["marketing type", "marketing types"] };
+const st = { card: DATA.cards[0].key, open: new Set(), closed: new Set(), notesOpen: new Set() };
+const OPEN_BY_DEFAULT = new Set(["pastdue", "epd"]);
 const dec = new Map();
 const lineRef = new Map();
 let db = null, myId = null;
@@ -224,16 +250,18 @@ const card = () => DATA.cards.find((c) => c.key === st.card) || DATA.cards[0];
 const statusOf = (id) => dec.get(id)?.status || "pending";
 // A dollar amount written in a note ("pay $500", "1,200") is the amount to pay on that line.
 function noteAmount(t) { const m = /\$?\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/.exec(t || ""); return m ? Math.round(parseFloat(m[1].replace(/,/g, "")) * 100) / 100 : null; }
-function payOf(l) { const d = dec.get(l.id); if (!d) return 0; if (d.status === "approve") return l.owed; if (d.status === "note") return noteAmount(d.note) ?? 0; return 0; }
+// Early-pay lines cost the discounted price until each invoice's early-pay date passes.
+function owedOf(l) { if (l.kind !== "epd" || !l.dues) return l.owed; return Math.round(l.dues.reduce((a, d) => a + (d.ed && d.ed >= today ? d.ea : d.a), 0) * 100) / 100; }
+function payOf(l) { const d = dec.get(l.id); if (!d) return 0; if (d.status === "approve") return owedOf(l); if (d.status === "note") return noteAmount(d.note) ?? 0; return 0; }
 function saveUi() { try { localStorage.setItem("thb-approvals-v2", JSON.stringify({ card: st.card })); } catch (e) {} }
 const plural = (n, key) => { const w = LABEL[key] || ["line", "lines"]; return `${n} ${n === 1 ? w[0] : w[1]}`; };
 
 function stats(lines) {
   const s = { owed: 0, pay: 0, approve: 0, approveN: 0, nt: 0, ntN: 0, hold: 0, holdN: 0, wait: 0, waitN: 0, n: lines.length };
   for (const l of lines) {
-    s.owed += l.owed; const k = statusOf(l.id), p = payOf(l); s.pay += p;
+    s.owed += owedOf(l); const k = statusOf(l.id), p = payOf(l); s.pay += p;
     if (k === "approve") { s.approve += p; s.approveN++; } else if (k === "note") { s.nt += p; s.ntN++; }
-    else if (k === "hold") { s.hold += l.owed; s.holdN++; } else { s.wait += l.owed; s.waitN++; }
+    else if (k === "hold") { s.hold += owedOf(l); s.holdN++; } else { s.wait += owedOf(l); s.waitN++; }
   }
   return s;
 }
@@ -247,27 +275,38 @@ function dueInfo(l) {
 function renderCards() {
   $("cards").innerHTML = DATA.cards.map((c, i) => {
     const s = stats(cardLines(c));
-    return `<button class="bill" role="tab" aria-selected="${c.key === st.card}" data-card="${c.key}"><span class="corner">${["I", "II", "III", "IV", "V", "VI"][i] || i + 1}</span><span class="bn">${esc(c.name)}</span><span class="bo">${fmt(s.owed)}</span><span class="bs">${s.waitN ? `${s.waitN} of ${s.n} lines waiting` : "All lines decided"}</span></button>`;
+    return `<button class="bill" role="tab" aria-selected="${c.key === st.card}" data-card="${c.key}"><span class="corner">${["I", "II", "III", "IV", "V", "VI"][i] || i + 1}</span><span class="bn">${esc(c.name)}</span><span class="bo">${fmt(s.owed)}</span><span class="bs">${c.required ? `${esc(c.required.label.split(" · ")[0])} <b>${fmt(c.required.kind === "owed" ? s.owed : c.required.amount)}</b>` : (s.waitN ? `${s.waitN} of ${s.n} lines waiting` : "All lines decided")}</span></button>`;
   }).join("");
 }
+function requiredInfo(c) {
+  const r = c.required; if (!r) return null;
+  let paid;
+  if (r.kind === "pastdue") paid = c.sections.filter((x) => x.key === "pastdue").flatMap((x) => x.lines).filter((l) => l.owed > 0).reduce((a, l) => a + payOf(l), 0);
+  else paid = stats(cardLines(c)).pay;
+  const amount = r.kind === "owed" ? stats(cardLines(c)).owed : r.amount;
+  return { label: r.label, amount, paid, short: Math.max(0, amount - paid), pct: amount > 0 ? Math.min(100, (paid / amount) * 100) : 100 };
+}
 function renderNote() {
-  const c = card(), s = stats(cardLines(c));
+  const c = card(), s = stats(cardLines(c)), req = requiredInfo(c);
   const pct = (v) => (s.owed > 0 ? Math.max(0, Math.min(100, (v / s.owed) * 100)) : 0);
   const msgs = [];
-  if (c.minDue != null) msgs.push(s.pay >= c.minDue ? `<span class="min">Covers the ${fmt(c.minDue)} minimum payment</span>` : `<span class="min">Minimum payment ${fmt(c.minDue)} · ${fmt(c.minDue - s.pay)} to go</span>`);
   for (const f of c.facts || []) msgs.push(`<span>${esc(f.label)}: ${fmt(f.amount)}</span>`);
   const di = cardLines(c).map(dueInfo).filter(Boolean);
   if (di.length) {
     const ln = di.reduce((a, b) => a + b.lateN, 0), la = di.reduce((a, b) => a + b.late, 0), sv = di.reduce((a, b) => a + b.save, 0);
-    if (ln) msgs.push(`<span class="warn">${ln} invoices past due · ${fmt(la)}</span>`);
-    if (sv > 0) msgs.push(`<span>Early-pay discounts available: ${fmt(sv)}</span>`);
+    if (sv > 0) msgs.push(`<span class="epdmsg">Early-pay discount available: save ${fmt(sv)} on ${di.reduce((a, b) => a + b.epdN, 0)} invoices</span>`);
   }
   $("note").innerHTML = `<div class="bn-grid">
       <div><div class="bn-label">Total to pay · ${esc(c.name)}</div>
         <div class="bn-total">${fmt(s.pay)}</div>
         <div class="bn-sub">of <b>${fmt(s.owed)}</b> owed on this card</div>
         <div class="bn-serial">THB · ${esc(c.key.toUpperCase())} · ${today.replace(/-/g, "")}</div></div>
-      <div class="seal" aria-hidden="true"><span>${Math.round(pct(s.pay))}%<small>APPROVED</small></span></div>
+      ${req ? `<div class="req ${req.short <= 0.005 ? "met" : ""}">
+          <div class="req-label">${esc(req.label)}</div>
+          <div class="req-amt">${fmt(req.amount)}</div>
+          <div class="req-bar" aria-hidden="true"><i style="width:${req.pct}%"></i></div>
+          <div class="req-status">${req.short <= 0.005 ? "✓ Covered by what's approved" : `${fmt(req.short)} still needed`}</div>
+        </div>` : `<div class="seal" aria-hidden="true"><span>${Math.round(pct(s.pay))}%<small>APPROVED</small></span></div>`}
     </div>
     <div class="bn-stats">
       <div class="bn-stat ok"><span>Approved</span><b>${fmt0(s.approve)}</b><small>${s.approveN} line${s.approveN === 1 ? "" : "s"}</small></div>
@@ -281,7 +320,9 @@ function renderNote() {
 function renderSlip() {
   const c = card(), s = stats(cardLines(c));
   const all = stats(DATA.cards.flatMap(cardLines));
+  const req = requiredInfo(c);
   $("slip").innerHTML = `<div><div class="lab">Total to pay · ${esc(c.name)}</div><div class="tot">${fmt(s.pay)}</div></div>
+    ${req ? `<div class="slip-req ${req.short <= 0.005 ? "met" : ""}"><span>${esc(req.label.split(" · ")[0])} ${fmt(req.amount)}</span><b>${req.short <= 0.005 ? "✓ Covered" : fmt(req.short) + " short"}</b></div>` : ""}
     <div class="side">${s.approveN + s.ntN} of ${s.n} lines set to pay${DATA.cards.length > 1 ? `<br>All cards: ${fmt(all.pay)} of ${fmt(all.owed)}` : ""}</div>
     <button class="ghost" id="export" hidden>Download</button>`;
   if (exportReady) { $("export").hidden = false; }
@@ -292,23 +333,23 @@ function sectionHead(sec) {
 }
 function bulkHtml(sec) {
   const pend = sec.lines.filter((l) => statusOf(l.id) === "pending");
-  return `<span>${pend.length ? `${pend.length} waiting · ${fmt(pend.reduce((a, b) => a + b.owed, 0))}` : "Every line has a decision"}</span><button class="bulk" data-bulk="${sec.key}"${pend.length ? "" : " disabled"}>Approve all ${pend.length} waiting</button>`;
+  return `<span>${pend.length ? `${pend.length} waiting · ${fmt(pend.reduce((a, b) => a + owedOf(b), 0))}` : "Every line has a decision"}</span><button class="bulk" data-bulk="${sec.key}"${pend.length ? "" : " disabled"}>Approve all ${pend.length} waiting</button>`;
 }
 function lineHtml(l) {
   const d = dec.get(l.id), s = d?.status || "pending", di = dueInfo(l);
-  let charges = `${l.count} charge${l.count === 1 ? "" : "s"}`;
-  if (l.from) charges += ` · ${l.from === l.to ? fmtDate(l.from) : `${fmtDate(l.from)} – ${fmtDate(l.to)}`}`;
+  let charges = l.count ? `${l.count} charge${l.count === 1 ? "" : "s"}` : "Home Depot charges";
+  if (l.from && l.count) charges += ` · ${l.from === l.to ? fmtDate(l.from) : `${fmtDate(l.from)} – ${fmtDate(l.to)}`}`;
   if (di?.lateN) charges += ` · <span class="warn">${di.lateN} past due</span>`;
-  if (di?.save > 0) charges += ` · <span class="save">pay by ${fmtDate(di.epdBy)} to save ${fmt(di.save)}</span>`;
+  if (di?.save > 0) charges += ` · <span class="save">pay by ${fmtDate(di.epdBy)}, save ${fmt(di.save)}</span>`;
   const about = (l.about || []).map((a) => `<span class="${/ more$/.test(a.label) ? "more" : ""}">${esc(a.label)}${a.amount != null ? `<b>${fmt0(a.amount)}</b>` : ""}</span>`).join("");
   let tag = "";
-  if (s === "approve") tag = `<span class="pay ok">Paying ${fmt(l.owed)}</span>`;
+  if (s === "approve") tag = `<span class="pay ok">Paying ${fmt(owedOf(l))}</span>`;
   else if (s === "note") { const a = noteAmount(d.note); tag = a != null ? `<span class="pay nt">Paying ${fmt(a)}</span>` : `<span class="pay nt">Note</span>`; }
   else if (s === "hold") tag = `<span class="pay hold">On hold</span>`;
   const showNote = s === "note" || st.notesOpen.has(l.id);
   return `<div class="ln" data-id="${l.id}" data-s="${s}">
     <div style="min-width:0"><div class="ln-name">${esc(l.name)}</div><div class="ln-charges">${charges}</div>${about ? `<div class="about">${about}</div>` : ""}</div>
-    <div class="ln-owed"><small>Owed</small><span class="amt">${fmt(l.owed)}</span>${tag}</div>
+    <div class="ln-owed"><small>${l.kind === "epd" && owedOf(l) < l.owed ? "Early-pay price" : "Owed"}</small><span class="amt">${fmt(owedOf(l))}</span>${l.kind === "epd" && owedOf(l) < l.owed ? `<s class="full">${fmt(l.owed)}</s>` : ""}${tag}</div>
     <div class="dec" role="group" aria-label="Decision for ${esc(l.name)}">
       <button data-v="approve" aria-pressed="${s === "approve"}">Approve</button>
       <button data-v="hold" aria-pressed="${s === "hold"}">Hold</button>
@@ -321,10 +362,10 @@ function renderLedgers() {
   const c = card();
   $("ledgers").innerHTML = c.sections.map((sec) => {
     const key = c.key + "|" + sec.key, s = stats(sec.lines);
-    const open = st.open.has(key) || c.sections.length === 1 || sec.lines.length === 1;
+    const open = st.open.has(key) || (!st.closed.has(key) && (OPEN_BY_DEFAULT.has(sec.key) || c.sections.length === 1 || sec.lines.length === 1));
     return `<details class="ledger" data-sec="${sec.key}"${open ? " open" : ""}>
       <summary><span class="chev" aria-hidden="true"></span>
-        <div style="min-width:0"><div class="lg-name">${esc(sec.name)}</div><div class="lg-meta">${plural(sec.lines.length, sec.key)} · <span data-pend>${s.waitN ? `${s.waitN} waiting` : "all decided"}</span></div></div>
+        <div style="min-width:0"><div class="lg-name">${esc(sec.name)}</div>${sec.blurb ? `<div class="lg-blurb">${esc(sec.blurb)}</div>` : ""}<div class="lg-meta">${plural(sec.lines.length, sec.key)} · <span data-pend>${s.waitN ? `${s.waitN} waiting` : "all decided"}</span></div></div>
         <div class="lg-right">${sectionHead(sec)}</div></summary>
       ${sec.lines.length > 1 ? `<div class="lg-bulk">${bulkHtml(sec)}</div>` : ""}
       <div class="lines">${sec.lines.map(lineHtml).join("")}</div>
@@ -361,9 +402,9 @@ const ref = (id) => db.collection(`approvals/${lineRef.get(id).card}/lines`).doc
 function banner(msg) { const b = $("banner"); b.textContent = msg; b.hidden = !msg; }
 function build(id, patch) {
   const r = lineRef.get(id), prev = dec.get(id) || {};
-  const next = { status: "", note: "", ...prev, ...patch, by: myId || "", at: new Date().toISOString(), section: r.section, line: r.line.name, owed: r.line.owed };
+  const next = { status: "", note: "", ...prev, ...patch, by: myId || "", at: new Date().toISOString(), section: r.section, line: r.line.name, owed: owedOf(r.line) };
   delete next.pay;
-  const p = next.status === "approve" ? r.line.owed : next.status === "note" ? noteAmount(next.note) : null;
+  const p = next.status === "approve" ? owedOf(r.line) : next.status === "note" ? noteAmount(next.note) : null;
   if (p != null) next.toPay = p; else delete next.toPay;
   return next;
 }
@@ -410,7 +451,7 @@ async function bulk(secKey, btn) {
 
 // ---------- events ----------
 $("cards").addEventListener("click", (e) => { const b = e.target.closest("[data-card]"); if (!b) return; st.card = b.dataset.card; saveUi(); renderAll(); });
-$("ledgers").addEventListener("toggle", (e) => { const el = e.target; if (!el.matches?.("details.ledger")) return; const k = st.card + "|" + el.dataset.sec; if (el.open) st.open.add(k); else st.open.delete(k); }, true);
+$("ledgers").addEventListener("toggle", (e) => { const el = e.target; if (!el.matches?.("details.ledger")) return; const k = st.card + "|" + el.dataset.sec; if (el.open) { st.open.add(k); st.closed.delete(k); } else { st.open.delete(k); st.closed.add(k); } }, true);
 $("ledgers").addEventListener("click", (e) => {
   const d = e.target.closest(".dec button"); if (d) { setStatus(d.closest(".ln").dataset.id, d.dataset.v); return; }
   const b = e.target.closest("[data-bulk]"); if (b) { e.preventDefault(); bulk(b.dataset.bulk, b); }
@@ -432,7 +473,7 @@ async function setupExport() {
     const rows = [["Card", "Expense type", "Line", "Charges", "Owed", "Decision", "To pay", "Note"].map(q).join(",")];
     for (const c of DATA.cards) for (const s of c.sections) for (const l of s.lines) {
       const d = dec.get(l.id);
-      rows.push([c.name, s.name, l.name, l.count, l.owed.toFixed(2), ({ approve: "Approve", hold: "Hold", note: "Note" })[d?.status] || "Waiting", payOf(l).toFixed(2), d?.note || ""].map(q).join(","));
+      rows.push([c.name, s.name, l.name, l.count, owedOf(l).toFixed(2), ({ approve: "Approve", hold: "Hold", note: "Note" })[d?.status] || "Waiting", payOf(l).toFixed(2), d?.note || ""].map(q).join(","));
     }
     try { await dl.save({ filename: `card-approvals-${today}.csv`, data: rows.join("\n") }); } catch (err) {}
   });

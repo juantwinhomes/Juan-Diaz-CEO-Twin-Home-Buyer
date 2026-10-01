@@ -13,6 +13,7 @@ total per property / company / marketing type, not the individual charges.
 Run:  python3 approvals/build.py   ->  writes approvals/card-approvals.html
 """
 import csv
+import datetime
 import hashlib
 import json
 import os
@@ -311,6 +312,51 @@ def summarize(card, skey, items, bal):
     return lines
 
 
+# What has to be paid on each card, shown large at the top of the page.
+#   ("Minimum payment due", 30887.76) -> fixed amount from the statement
+#   ("Total due", "owed")             -> everything owed on the card
+#   (label, "pastdue")                -> invoices already past their due date
+REQUIRED = {
+    "amex": ("Minimum payment due", 30887.76),
+    "capone-business": ("Total due", "owed"),
+    "home-depot-5253": ("Past due · pay to keep 5253 open", "pastdue"),
+}
+BUILD_DAY = "2026-10-01"
+
+
+def invoice_sections(key, items, bal):
+    """Home Depot: split open invoices by what they need (pay now / early-pay / due later)."""
+    late, epd, later, credits = [], [], [], []
+    for it in items:
+        if it.get("adj"):
+            later.append(it)  # reallocation between properties rides with the not-yet-due invoices
+        elif it["amount"] < 0:
+            credits.append(dict(it, group="Returns & credits on account"))
+        elif it.get("due", "") < BUILD_DAY:
+            late.append(it)
+        elif it.get("epd") and it["epd"]["date"] >= BUILD_DAY:
+            epd.append(it)
+        else:
+            later.append(it)
+    secs = []
+    if late or credits:
+        secs.append({"key": "pastdue", "name": "Past due · pay now",
+                     "blurb": "These were due Sep 30. Pay them to keep using card 5253.",
+                     "lines": summarize(key, "pastdue", late, bal) + summarize(key, "credits", credits, {})})
+    if epd:
+        lines = summarize(key, "epd", epd, bal)
+        for l in lines:
+            l["kind"] = "epd"
+        secs.append({"key": "epd", "name": "Early-pay discount",
+                     "blurb": "Pay by the early-pay date and Home Depot takes a little off. Approve pays the discounted price.",
+                     "lines": lines})
+    if later:
+        due = sorted({i["due"] for i in later if i.get("due")})
+        secs.append({"key": "later", "name": f"Due {datetime.date.fromisoformat(due[0]).strftime('%b %-d') if due else 'later'}",
+                     "blurb": "Not due yet. Pay now or leave for the next cycle.", "lines": summarize(key, "later", later, bal)})
+    return secs
+
+
 def build():
     cards = []
     for key, name, min_due in CARDS:
@@ -320,9 +366,23 @@ def build():
             if not os.path.exists(p):
                 continue
             items, bal = loader(p)
+            if skey == "invoices":
+                sections.extend(invoice_sections(key, items, bal))
+                continue
             lines = summarize(key, skey, items, bal)
             sections.append({"key": skey, "name": sname, "lines": lines})
-        cards.append({"key": key, "name": name, "minDue": min_due,
+        req = REQUIRED.get(key)
+        required = None
+        if req:
+            label, how = req
+            if how == "owed":
+                amt = sum(l["owed"] for s_ in sections for l in s_["lines"])
+            elif how == "pastdue":
+                amt = sum(l["owed"] for s_ in sections if s_["key"] == "pastdue" for l in s_["lines"] if l["owed"] > 0)
+            else:
+                amt = how
+            required = {"label": label, "amount": round(amt, 2), "kind": how if isinstance(how, str) else "fixed"}
+        cards.append({"key": key, "name": name, "minDue": min_due, "required": required,
                       "note": CARD_NOTES.get(key, ""), "facts": [{"label": l, "amount": v} for l, v in CARD_FACTS.get(key, [])], "sections": sections})
     tpl = open(os.path.join(HERE, "template.html"), encoding="utf-8").read()
     html = tpl.replace("/*__DATA__*/null", json.dumps({"cards": cards}, separators=(",", ":")))
