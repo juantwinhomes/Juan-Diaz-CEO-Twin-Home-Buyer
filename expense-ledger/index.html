@@ -362,7 +362,8 @@ function vendorFrom(desc){
   s=s.replace(/[\/\\:*?"<>|]/g,' ').trim();
   return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()).slice(0,40)||'Vendor';
 }
-const amtStr=a=>(Number(a)||0).toFixed(2);
+// Company Receipts naming: "$722.96 - Amazon.pdf", "$325 - South bay.pdf", "$2,918.13 - Homewise.pdf"
+const amtStr=a=>{const n=Number(a)||0,v=Math.abs(n);return (n<0?'-':'')+'$'+v.toLocaleString('en-US',{minimumFractionDigits:Number.isInteger(v)?0:2,maximumFractionDigits:2});};
 const extOf=f=>f?('.'+(f.name.split('.').pop()||'pdf').toLowerCase()):'.pdf';
 
 /* ---------- CSV import ---------- */
@@ -904,14 +905,31 @@ function viewSettings(){
     <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
     <label class="field">Receipts folder (link)<input type="text" id="ls-receiptFolder" data-draft="ls-receiptFolder" value="${esc(D('ls-receiptFolder',L.receiptFolder||''))}" placeholder="https://drive.google.com/drive/folders/…"></label>
     <label class="field">Property files folder (link)<input type="text" id="ls-propertyFolder" data-draft="ls-propertyFolder" value="${esc(D('ls-propertyFolder',L.propertyFolder||''))}" placeholder="Leave blank to use the receipts folder"></label></div>
-    <span class="faint" style="font-size:12.5px">Receipts are named “Amount - Vendor”, for example 352.15 - Home Depot.pdf. A repeat gets .2, .3 and so on, as in the receipt SOP.</span>
+    <span class="faint" style="font-size:12.5px">Receipts are named “$Amount - Vendor”, the way the Company Receipts folders already are (for example $722.96 - Amazon.pdf), and go into the card’s folder, then the month folder (SEPTEMBER 2026). A missing month folder is created. A repeat gets .2, .3 and so on, as in the receipt SOP.</span>
     <label class="check"><input type="checkbox" id="ls-req" data-draft="ls-req"${D('ls-req',L.requireReceipt)?' checked':''}> Require a receipt before a row transfers</label></div>
   <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">${ta('types','Expense types')}${ta('categories','Categories',10)}${ta('subcategories','Sub categories',10)}${ta('methods','Payment methods (non-card)')}${ta('statuses','Property statuses')}</div>
   <p class="faint" style="font-size:12.5px">One option per line. Renaming an option does not change rows already filed under the old name.</p></div>`;
 }
 
 /* ---------- receipts (card charges and property payments) ---------- */
-function receiptParent(m){ const card=m.coll==='txns'?S.txns.get(m.rid)?.card:null; return folderId((S.L.cardFolders||{})[card])||folderId(S.L.receiptFolder); }
+const MONTHS=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+const _monthFolders={};
+// Card folder → month folder ("SEPTEMBER 2026"), created when it doesn't exist yet
+async function receiptParent(m){
+  const t=m.coll==='txns'?S.txns.get(m.rid):S.pays.get(m.rid);
+  const cardF=m.coll==='txns'?folderId((S.L.cardFolders||{})[t?.card]):'';
+  const base=cardF||folderId(S.L.receiptFolder); if(!cardF||!t?.date||!mcp) return base;
+  const label=MONTHS[Number(t.date.slice(5,7))-1]+' '+t.date.slice(0,4), key=cardF+'|'+label;
+  if(_monthFolders[key]) return _monthFolders[key];
+  try{
+    const r=await mcp.callTool(DRIVE,'search_files',{query:`parentId = '${cardF}' and mimeType = 'application/vnd.google-apps.folder' and title contains '${label}'`,pageSize:10,excludeContentSnippets:true},{cache:false});
+    const hit=(r.payload?.files||[]).find(f=>String(f.title||'').trim().toUpperCase()===label);
+    if(hit?.id) return _monthFolders[key]=hit.id;
+    const c=await mcp.callTool(DRIVE,'create_file',{title:label,parentId:cardF,mimeType:'application/vnd.google-apps.folder'});
+    const id=(c.payload?.file||c.payload||{}).id; if(id) return _monthFolders[key]=id;
+  }catch{}
+  return cardF;
+}
 function rcptRef(tr){ if(tr?.dataset.pid) return tr.dataset.kind==='pay'?{coll:'payments',rid:tr.dataset.pid}:{coll:'txns',rid:tr.dataset.pid}; return {coll:'txns',rid:tr?.dataset.id}; }
 function rcptRec(m){ if(m.coll==='payments'){const x=S.pays.get(m.rid);return x?{amount:Number(x.amount)||0,desc:x.payee}:null;} const t=S.txns.get(m.rid);return t?{amount:t.amount,desc:t.desc}:null; }
 async function saveReceipt(m,patch){ if(m.coll==='payments') await write(()=>db.doc('payments/'+m.rid).update(patch)); else await setTxn(m.rid,patch); render(); }
@@ -1005,7 +1023,7 @@ document.addEventListener('click',async e=>{
       const m=S.modal, t=rcptRec(m); if(!t||!m.file||m.busy) return;
       m.busy=true; m.err=''; renderModal();
       try{
-        const parent=receiptParent(m);
+        const parent=await receiptParent(m);
         const name=await uniqueName(amtStr(t.amount)+' - '+(m.vendor.trim()||'Vendor'),extOf(m.file),parent);
         const r=await uploadToDrive(m.file,name,parent);
         S.modal=null; renderModal(); await saveReceipt(m,{receiptUrl:r.url,receiptName:name}); toast('Saved to Drive as '+name);
