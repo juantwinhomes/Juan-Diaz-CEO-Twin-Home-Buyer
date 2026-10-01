@@ -411,19 +411,30 @@ function buildPreview(text,fileName,card){
   return {fileName,card,parsed,flip:cols.debit<0&&negs>parsed.length/2,removeGone:true};
 }
 function previewRows(p){
+  // A file row counts as already here when the same card has a charge for the same amount within 3 days,
+  // in the ledger (any status, any source) or in the card's tracker sheet. Each existing charge can match one file row,
+  // so two real identical charges in the file still come in as two.
   const seen={},rows=[],pays=[];let payments=0;
+  const near=(a,b)=>Math.abs(dayNum(a)-dayNum(b))<=3;
+  const ledger=[...S.txns.values()].filter(t=>t.card===p.card), sheet=S.sheetRows.filter(r=>r.card===p.card);
+  const claimedL=new Set(), claimedS=new Set();
   for(const r of p.parsed){
     const amount=r2(p.flip?-r.raw:r.raw);
     if(amount<0&&isCardPayment(r.desc)){payments++;const pid=(`${p.card}-${r.date}-${Math.round(-amount*100)}-pay`).replace(/[^A-Za-z0-9_\-.~:@+]/g,'_');pays.push({id:pid,date:r.date,amount:-amount,desc:r.desc,dupe:S.cpays.has(pid)});continue;}
     const base=`${p.card}-${r.date}-${Math.round(amount*100)}-${hash(r.desc.toLowerCase())}`;
     seen[base]=(seen[base]||0)+1;
     const id=(base+'-'+seen[base]).replace(/[^A-Za-z0-9_\-.~:@+]/g,'_');
-    const ex=S.txns.get(id);
-    rows.push({...r,amount,id,dupe:!!ex,statusChange:!!(ex&&ex.status==='Pending'&&r.status==='Posted')});
+    const cents=Math.round(amount*100);
+    let ex=S.txns.get(id); if(ex&&claimedL.has(ex.id)) ex=null;
+    if(!ex) ex=ledger.find(t=>!claimedL.has(t.id)&&Math.round(t.amount*100)===cents&&near(t.date,r.date))||null;
+    let why='';
+    if(ex){ claimedL.add(ex.id); why='Already here'; }
+    else { const sr=sheet.find(x=>!claimedS.has(x.id)&&Math.round(x.amount*100)===cents&&near(x.date,r.date)); if(sr){ claimedS.add(sr.id); why='In card sheet'; } }
+    rows.push({...r,amount,id,matchId:ex?.id||'',dupe:!!why,why,statusChange:!!(ex&&ex.status==='Pending'&&r.status==='Posted')});
   }
-  const ids=new Set(rows.map(r=>r.id)); const dates=rows.map(r=>r.date).sort();
-  const lo=dates[0],hi=dates[dates.length-1];
-  const gone=lo?[...S.txns.values()].filter(t=>t.card===p.card&&t.status!=='Transferred'&&t.source!=='manual'&&!t.example&&t.date>=lo&&t.date<=hi&&!ids.has(t.id)):[];
+  const dates=rows.map(r=>r.date).sort(); const lo=dates[0],hi=dates[dates.length-1];
+  const csvSource=t=>t.source&&!['manual','example','Daily Expense Tracker'].includes(t.source)&&!/^Daily Expense Tracker/.test(t.source);
+  const gone=lo?ledger.filter(t=>t.status!=='Transferred'&&csvSource(t)&&!t.example&&t.date>=lo&&t.date<=hi&&!claimedL.has(t.id)):[];
   return {rows,payments,pays,gone,lo,hi};
 }
 async function doImport(){
@@ -440,7 +451,7 @@ async function doImport(){
       if(prev) carried++;
       await db.doc('txns/'+r.id).set({card:p.card,date:r.date,desc:r.desc,amount:r.amount,status:r.status,type:'',category:'',sub:'',propertyId:'',notes:'',receiptUrl:'',receiptName:'',paid:false,importedAt:now,source:p.fileName||'paste',...carry});
     }),
-    ...upd.map(r=>async()=>{ const t=S.txns.get(r.id); const patch={status:'Posted'}; await db.doc('txns/'+r.id).update(patch); }),
+    ...upd.map(r=>async()=>{ await db.doc('txns/'+r.matchId).update({status:'Posted'}); }),
     ...(p.removeGone?gone.map(g=>async()=>db.doc('txns/'+g.id).delete()):[]),
     ...newPays.map(x=>async()=>db.doc('cardpays/'+x.id).set({card:p.card,date:x.date,amount:x.amount,desc:x.desc,source:p.fileName||'paste'}))
   ];
@@ -605,7 +616,7 @@ function importPanel(k){
     <span class="muted">or drop it here ·</span>
     <button class="btn ghost" data-act="toggle" data-k="showPaste">${S.draft.showPaste?'Hide paste box':'Paste rows'}</button>
     <button class="btn ghost" data-act="toggle" data-k="showManual">${S.draft.showManual?'Hide':'Add one by hand'}</button>
-    <span class="faint" style="font-size:12.5px">Rows already here are skipped. Pending rows that dropped off the new export are removed.</span></div>`;
+    <span class="faint" style="font-size:12.5px">Charges already here, or already in the card’s tracker sheet (same amount within 3 days), are skipped. Pending rows that dropped off the new export are removed.</span></div>`;
   if(S.draft.showPaste) h+=`<textarea id="paste" rows="4" data-draft="paste" placeholder="Date,Description,Amount&#10;09/28/2026,THE HOME DEPOT #6512,412.18">${esc(D('paste'))}</textarea><div><button class="btn" data-act="parse-paste">Read pasted rows</button></div>`;
   if(S.draft.showManual) h+=`<div class="form-grid">
     <label class="field">Date<input type="date" id="m-date" data-draft="m-date" value="${esc(D('m-date',today()))}"></label>
@@ -618,7 +629,7 @@ function importPanel(k){
     h+=`<div class="row" style="justify-content:space-between"><div><b>${esc(p.fileName)}</b> · <b>${fresh.length}</b> new · ${rows.length-fresh.length} already here${upd.length?` (${upd.length} now posted)`:''}${payments?` · ${payments} card payment${payments===1?'':'s'} (counted in the balance)`:''}</div>
       <label class="check"><input type="checkbox" data-act="imp-flip"${p.flip?' checked':''}> Charges show as negative in this file</label></div>
       ${gone.length?`<div class="note" style="margin:0"><span><b>${gone.length}</b> uncategorized row${gone.length===1?'':'s'} from ${shortDate(lo)}–${shortDate(hi)} ${gone.length===1?'is':'are'} no longer in this export (usually pending charges that changed or dropped): ${gone.slice(0,4).map(g=>esc(g.desc)+' '+money(g.amount)).join(', ')}${gone.length>4?'…':''}</span><label class="check"><input type="checkbox" data-act="imp-gone"${p.removeGone?' checked':''}> Remove them</label></div>`:''}
-      <div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:520px"><thead><tr><th>Date</th><th>Payee</th><th class="amt">Amount</th><th>Status</th><th></th></tr></thead><tbody>${rows.slice(0,6).map(r=>`<tr><td class="d">${shortDate(r.date)}</td><td>${esc(r.desc)}</td><td class="amt">${money(r.amount)}</td><td>${r.status}</td><td>${r.dupe?'<span class="pill plain">Already here</span>':'<span class="pill good">New</span>'}</td></tr>`).join('')}${rows.length>6?`<tr><td colspan="5" class="faint">…and ${rows.length-6} more</td></tr>`:''}</tbody></table></div>
+      <div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:520px"><thead><tr><th>Date</th><th>Payee</th><th class="amt">Amount</th><th>Status</th><th></th></tr></thead><tbody>${rows.slice(0,6).map(r=>`<tr><td class="d">${shortDate(r.date)}</td><td>${esc(r.desc)}</td><td class="amt">${money(r.amount)}</td><td>${r.status}</td><td>${r.dupe?`<span class="pill plain">${esc(r.why)}</span>`:'<span class="pill good">New</span>'}</td></tr>`).join('')}${rows.length>6?`<tr><td colspan="5" class="faint">…and ${rows.length-6} more</td></tr>`:''}</tbody></table></div>
       <div class="row"><button class="btn primary" data-act="do-import"${!fresh.length&&!upd.length&&!(p.removeGone&&gone.length)&&!previewRows(p).pays.some(x=>!x.dupe)?' disabled':''}>Import to ${esc(cardName(k))}</button><button class="btn ghost" data-act="cancel-import">Cancel</button></div>`;
   }
   return h+`</div>`;
