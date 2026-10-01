@@ -323,6 +323,14 @@ REQUIRED = {
 }
 BUILD_DAY = "2026-10-01"
 
+# Charges recorded on two tabs of the same card. Drop the copy listed here.
+# (card, section): [(date, vendor, amount, why)]
+EXCLUDE = {
+    ("capone-business", "property"): [
+        ("2026-09-10", "Williams Business Park", 2325.03, "office rent already under Overhead > Office Rent"),
+    ],
+}
+
 
 def invoice_sections(key, items, bal):
     """Home Depot: split open invoices by what they need (pay now / early-pay / due later)."""
@@ -366,6 +374,12 @@ def build():
             if not os.path.exists(p):
                 continue
             items, bal = loader(p)
+            for date, vendor, amount, _why in EXCLUDE.get((key, skey), []):
+                hit = next((i for i in items if i["date"] == date and i["vendor"] == vendor and abs(i["amount"] - amount) < 0.005), None)
+                if hit is None:
+                    raise SystemExit(f"EXCLUDE entry not found: {key}/{skey} {date} {vendor} {amount}")
+                items.remove(hit)
+                bal[hit["group"]] = bal.get(hit["group"], 0) - amount
             if skey == "invoices":
                 sections.extend(invoice_sections(key, items, bal))
                 continue
