@@ -233,7 +233,7 @@ const DEFAULTS = {
   receiptFolder:'https://drive.google.com/drive/folders/1Ps4suRRPe33QgBj35QEZt6smAj0sScoe',
   propertyFolder:''
 };
-const SECTIONS = [{k:'daily',n:'Daily Expenses'},{k:'tracker',n:'Card Tracker'},{k:'properties',n:'Properties'},{k:'settings',n:'Settings'}];
+const SECTIONS = [{k:'daily',n:'Daily Expenses'},{k:'tracker',n:'Card Tracker'},{k:'marketing',n:'Marketing'},{k:'properties',n:'Properties'},{k:'settings',n:'Settings'}];
 const BUCKETS = {overhead:'Overhead',property:'Property',marketing:'Marketing'};
 const DRIVE='Google Drive';
 
@@ -244,7 +244,7 @@ const S={
   ready:{txns:false,props:false}, dbState:'connecting', readOnly:false,
   tab:(location.hash||'').slice(1)||'daily',
   dCard:null, dView:'todo', dMonth:'all',
-  tCard:'all', tBucket:'overhead', tPaid:'unpaid', tMonth:today().slice(0,7),
+  tCard:'all', tBucket:'overhead', tPaid:'unpaid', tMonth:today().slice(0,7), mMonth:today().slice(0,7), sheets:{}, sheetRows:[], csMeta:new Map(), csChunks:new Map(), csSync:'', csErr:'',
   propId:'all', propFilter:'active', sel:new Set(), open:{calc:true,fin:false,budget:false,pays:false,files:false},
   preview:null, importing:false, confirm:null, draft:{}, modal:null
 };
@@ -542,7 +542,7 @@ function render(){
   if(S.dbState==='off') h+=`<div class="note">The ledger could not connect. Open this page on claude.ai while signed in.</div>`;
   const ex=[...S.txns.values(),...S.pays.values()].filter(x=>x.example).length;
   if(ex&&!S.readOnly) h+=`<div class="note info"><span>Rows marked <span class="tag">example</span> show how the ledger works. They are not real expenses.</span>${S.confirm==='clear-ex'?`<span class="row"><button class="btn sm danger" data-act="clear-ex-yes">Remove ${ex} example rows</button><button class="btn sm ghost" data-act="cancel">Keep</button></span>`:`<button class="btn sm" data-act="clear-ex">Remove examples</button>`}</div>`;
-  h+=S.tab==='daily'?viewDaily():S.tab==='tracker'?viewTracker():S.tab==='properties'?viewProperties():viewSettings();
+  h+=S.tab==='daily'?viewDaily():S.tab==='tracker'?viewTracker():S.tab==='marketing'?viewMarketing():S.tab==='properties'?viewProperties():viewSettings();
   $('#app').innerHTML=`<fieldset class="ro"${S.readOnly?' disabled':''}>${h}</fieldset>`;
 }
 function cardTabs(cur,counts,act){
@@ -625,14 +625,91 @@ function importPanel(k){
 }
 
 /* ----- Card Tracker ----- */
+/* ----- card tracker sheets (Drive), merged with the ledger ----- */
+/* Card tracker sheets in Drive: which tab feeds which card and bucket. Marketing lives in the THB marketing file. */
+const CARD_SHEETS=[
+  {file:'1RgA-aQHe3e77MWRMHXIxQkSzXoZEwlnS',name:'AmEx Expense Tracker',tabs:[['Copy of Overhead Expenses','amex','overhead'],['Property Expenses','amex','property'],['PPS Expenses','amex','overhead']]},
+  {file:'1D-5V4R9whYkX0bCrTuZp4sztdUeALttJ',name:'Capital One Expense Tracker',tabs:[['Personal Overhead Expenses','cap1p','overhead'],['Property Expenses - Cap One Per','cap1p','property'],['Business - Overhead Expense','cap1b','overhead'],['Capital One Business Property E','cap1b','property']]},
+  {file:'125bkXWAu6v5CwCBPvncLdQRqEx50VN5f',name:'Discover Expense Tracker',tabs:[['Copy of Overhead Expenses','disc2645','overhead'],['Property Expenses','disc2645','property'],['PPS Expenses','disc2645','overhead']]},
+  {file:'1oBnBWVC7gFYA_UIUkDdZfxGXp953GJNe',name:'Citi Expense Tracker',xlsx:true,tabs:[['Copy of Overhead Expenses','citi2149','overhead'],['Property Expenses','citi2149','property']]},
+  {file:'1oRyqyx6g8VlnTvYkrM0_w45b12058QLl',name:'Bank of America Expense Tracker',xlsx:true,tabs:[['Overhead Expenses','boa0475','overhead'],['Property Expenses','boa0475','property'],['PPS Expenses','boa0475','overhead']]},
+  {file:'1sIBMZbtKUcbdgGRX5D_WLzKSECPVSQb8',name:'Home Depot Expense Tracker',xlsx:true,tabs:[['5253','hd5253','property'],['1511','hd1511','property'],['8087','hd8087','property']]},
+  {file:'1dmvRz8Zly1MVYMZ9yeJaVFfByKrMHoan',name:'THB Real Estate Marketing Expenses 2026',xlsx:true,marketing:true,tabs:[['5004 American Express','amex','marketing'],['Capital One - Business','cap1b','marketing'],['Capital One Personal','cap1p','marketing'],['Discover','disc2645','marketing'],['Bank of America','boa0475','marketing']]},
+];
+function sheetDate(v){ if(v instanceof Date&&!isNaN(v)) return v.toISOString().slice(0,10); const s=String(v??'').trim(); let m;
+  if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return m[0];
+  if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/))&&m[3]>='1990') return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`; return ''; }
+function parseCardSheet(wb,src){
+  const out=[]; const notes=[];
+  for(const [tab,card,bucket] of src.tabs){
+    const ws=wb.Sheets[tab]; if(!ws){notes.push(`Tab “${tab}” not found`);continue;}
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+    const hi=rows.slice(0,15).findIndex(r=>r&&r.some(c=>/^date$/i.test(String(c??'').trim()))); if(hi<0){notes.push(`No header on “${tab}”`);continue;}
+    const H=rows[hi].map(c=>String(c??'').trim().toLowerCase()); const ix=n=>H.indexOf(n);
+    let cA,cP,cDesc,cVen,cCat,cProp=ix('property'),cRc=ix('receipts link'),cSub=-1;
+    if(src.marketing){ const u=ix('usage frequency'); cA=u+1; cP=u+2; cDesc=ix('simple charge description'); cVen=ix('vendor name'); cCat=ix('marketing type'); cSub=ix('lead channel'); }
+    else { cP=H.findIndex(h=>h==='paid'); cA=ix('amount')>=0?ix('amount'):(cP>=0?cP+1:-1); cDesc=ix('description'); cVen=ix('vendor'); cCat=ix('category')>=0?ix('category'):ix('bucket'); cSub=ix('expense type'); }
+    const cD=H.findIndex(h=>h==='date');
+    if(cA<0){notes.push(`No amount column on “${tab}”`);continue;}
+    const noPaid=cP<0; if(noPaid) notes.push(`“${tab}” has no Paid column, so its rows count as paid`);
+    for(let i=hi+1;i<rows.length;i++){ const r=rows[i]||[]; const a=r[cA]; if(a==null||a===''||typeof a==='boolean'||a instanceof Date||isNaN(Number(a))) continue;
+      const amount=Math.round(Number(a)*100)/100; if(!amount) continue; const date=sheetDate(r[cD]); if(!date) continue;
+      const pv=noPaid?true:r[cP]; const paid=pv===true||String(pv).toUpperCase()==='TRUE';
+      const vendor=String(r[cVen]??'').trim(), desc=String(r[cDesc]??'').trim();
+      const rc=cRc>=0?(ws[XLSX.utils.encode_cell({r:i,c:cRc})]?.l?.Target||(/^https?:/.test(String(r[cRc]??''))?String(r[cRc]):'')):'';
+      out.push({card,bucket,tab,date,vendor,desc,amount,paid,cat:String(r[cCat]??'').trim(),sub:cSub>=0?String(r[cSub]??'').trim():'',prop:cProp>=0?String(r[cProp]??'').replace(/["']/g,'').trim():'',rc});
+    }
+  }
+  return {rows:out,notes};
+}
+
+const PACK=['card','bucket','tab','date','vendor','desc','amount','paid','cat','sub','prop','rc'];
+const pack=r=>PACK.map(k=>r[k]);
+const unpack=a=>Object.fromEntries(PACK.map((k,i)=>[k,a[i]]));
+async function syncCardSheets(){
+  if(!mcp||!window.XLSX||S.csSync) return; S.csSync='Reading card tracker sheets from Drive…'; S.csErr=''; render();
+  const at=new Date().toISOString(); let ok=0;
+  for(const src of CARD_SHEETS){
+    S.csSync=`Reading ${src.name}…`; render();
+    try{
+      const r=await mcp.callTool(DRIVE,'download_file_content',{fileId:src.file,exportMimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},{cache:false});
+      const wb=XLSX.read(r.payload?.content||'',{type:'base64',cellDates:true});
+      const {rows,notes}=parseCardSheet(wb,src);
+      const packed=rows.map(pack), size=700, chunks=Math.max(1,Math.ceil(packed.length/size));
+      S.sheets[src.file]={fetchedAt:at,notes,rows};
+      if(db){ for(let i=0;i<chunks;i++) await db.doc(`cardsheet/${src.file}-${i}`).set({file:src.file,i,rows:packed.slice(i*size,(i+1)*size)});
+        await db.doc(`cardsheetmeta/${src.file}`).set({file:src.file,name:src.name,fetchedAt:at,chunks,notes,count:rows.length}); }
+      ok++;
+    }catch(e){ S.csErr=`${src.name}: ${driveErr(e)}`; }
+  }
+  S.csSync=''; rebuildSheetRows(); render(); if(ok) toast(`Read ${ok} card tracker sheets from Drive`);
+}
+function rebuildSheetRows(){
+  // from the db cache unless a fresh read is in memory
+  const out=[];
+  for(const src of CARD_SHEETS){
+    if(S.sheets[src.file]?.rows){ out.push(...S.sheets[src.file].rows.map((r,i)=>({...r,id:'s:'+src.file+':'+i,src:'sheet'}))); continue; }
+    const meta=S.csMeta.get(src.file); if(!meta) continue;
+    for(let i=0;i<meta.chunks;i++){ const ch=S.csChunks.get(`${src.file}-${i}`); if(!ch) continue; ch.rows.forEach((a,j)=>out.push({...unpack(a),id:`s:${src.file}:${i}:${j}`,src:'sheet'})); }
+  }
+  S.sheetRows=out;
+}
+const dayNum=d=>Math.round(Date.parse(d+'T12:00:00Z')/864e5);
+function ledgerView(t){ return {...t,src:'ledger',bucket:bucketOf(t.type)||'uncat',cat:t.category||'',sub:t.sub||'',prop:propName(t.propertyId),vendor:'',rc:t.receiptUrl||''}; }
+function mergedRows(card){
+  const sheet=S.sheetRows.filter(r=>r.card===card).map(r=>({...r,ledger:null}));
+  const byAmt=new Map(); for(const r of sheet){const k=Math.round(r.amount*100);if(!byAmt.has(k))byAmt.set(k,[]);byAmt.get(k).push(r);}
+  const extra=[];
+  for(const t of S.txns.values()){ if(t.card!==card) continue;
+    const m=(byAmt.get(Math.round(t.amount*100))||[]).find(r=>!r.ledger&&Math.abs(dayNum(r.date)-dayNum(t.date))<=3);
+    if(m){ m.ledger=t; if(!m.rc&&t.receiptUrl) m.rc=t.receiptUrl; } else extra.push(ledgerView(t)); }
+  return [...sheet,...extra];
+}
 function cardBalance(k){
-  const info=S.cinfo.get(k)||{}, from=info.openingDate||'';
-  const ch=[...S.txns.values()].filter(t=>t.card===k&&(!from||t.date>from));
-  const py=[...S.cpays.values()].filter(x=>x.card===k&&(!from||x.date>from)).sort(byDate);
-  const charges=sum(ch), payments=sum(py,x=>x.amount);
-  const balance=r2((Number(info.opening)||0)+charges-payments);
-  const has=info.siteBalance!=null&&info.siteBalance!=='';
-  return {info,charges,payments,balance,py,site:has?Number(info.siteBalance):null,diff:has?r2(Number(info.siteBalance)-balance):null};
+  const info=S.cinfo.get(k)||{}, rows=mergedRows(k);
+  const sheetUnpaid=sum(rows.filter(r=>r.src==='sheet'&&!r.paid)), ledgerUnpaid=sum(rows.filter(r=>r.src==='ledger'&&!r.paid));
+  const balance=r2(sheetUnpaid+ledgerUnpaid), has=info.siteBalance!=null&&info.siteBalance!=='';
+  return {info,rows,sheetUnpaid,ledgerUnpaid,balance,site:has?Number(info.siteBalance):null,diff:has?r2(Number(info.siteBalance)-balance):null};
 }
 const _names={};let _namesBusy=false;
 function personName(id){ if(!id) return ''; if(id===S.uid) return 'You'; if(_names[id]!=null) return _names[id]||'Someone';
@@ -643,74 +720,104 @@ function monthSelect(cur,act,months){
   const tm=today().slice(0,7), list=[...new Set([tm,...months])].sort().reverse();
   return `<select id="${act}" data-act="${act}" aria-label="Month"><option value="all"${cur==='all'?' selected':''}>All months</option>${list.map(m=>`<option value="${m}"${cur===m?' selected':''}>${m===tm?'This month · ':''}${monthLabel(m)}</option>`).join('')}</select>`;
 }
-function chargeTable(list,showCard,cols){
+function csFreshness(){
+  const metas=[...S.csMeta.values()]; const at=metas.map(m=>m.fetchedAt).sort()[0];
+  return `<span class="muted" style="font-size:12.5px">${at?'Card sheets read '+new Date(at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Card sheets not read from Drive yet'}</span>${mcp?`<button class="btn sm" data-act="cs-sync"${S.csSync?' disabled':''}>${S.csSync?esc(S.csSync):'Refresh from Drive'}</button>`:''}`;
+}
+const statusOf=r=>r.src==='sheet'?(r.ledger?'Transferred':'In card sheet'):(r.status||'Posted');
+function rowTable(list,opts={}){
   if(!list.length) return '<div class="faint" style="padding:6px 0">No charges.</div>';
-  return `<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:760px"><thead><tr><th>Paid</th><th>Date</th>${showCard?'<th>Card</th>':''}<th>Receipt</th><th>Payee</th><th>What is this for?</th>${cols.map(c=>`<th>${c[0]}</th>`).join('')}<th class="amt">Amount</th><th></th></tr></thead><tbody>
-  ${list.map(t=>`<tr data-id="${esc(t.id)}"><td><input type="checkbox" data-act="tf" data-f="paid"${t.paid?' checked':''} aria-label="Paid"></td><td class="d">${shortDate(t.date)}</td>${showCard?`<td>${chip(t.card)}</td>`:''}<td>${receiptCell(t)}</td><td class="payee">${esc(t.desc)}${t.example?' <span class="tag">example</span>':''}</td>
-    <td><input class="notes" type="text" id="tn-${esc(t.id)}" data-act="tf" data-f="notes" value="${esc(t.notes||'')}" placeholder="Add a note" aria-label="What is this for?"></td>
-    ${cols.map(c=>`<td>${c[1](t)}</td>`).join('')}<td class="amt${t.amount<0?' neg':''}">${money(t.amount)}</td><td><button class="btn sm ghost" data-act="untransfer" title="Send back to Daily Expenses">Recategorize</button></td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:820px"><thead><tr><th>Paid</th><th>Date</th>${opts.card?'<th>Card</th>':''}<th>Receipt</th><th>Payee</th><th>What is this for?</th><th>Category</th>${opts.prop?'<th>Property</th>':''}<th>Where</th><th class="amt">Amount</th></tr></thead><tbody>
+  ${list.map(r=>{const led=r.src==='ledger'?r:r.ledger; return `<tr${led?` data-id="${esc(led.id)}"`:''}>
+    <td>${r.src==='ledger'?`<input type="checkbox" data-act="tf" data-f="paid"${r.paid?' checked':''} aria-label="Paid">`:(r.paid?'<span class="pill good">Paid</span>':'<span class="pill bad">Unpaid</span>')}</td>
+    <td class="d">${shortDate(r.date)}</td>${opts.card?`<td>${chip(r.card)}</td>`:''}
+    <td>${led?receiptCell({...led,receiptUrl:led.receiptUrl||r.rc}):(r.rc?`<a href="${esc(r.rc)}" target="_blank" rel="noopener">Receipt</a>`:'<span class="faint">—</span>')}</td>
+    <td class="payee">${esc(r.src==='sheet'?(r.vendor||r.desc):r.desc)}</td>
+    <td>${led?`<input class="notes" type="text" id="tn-${esc(led.id)}" data-act="tf" data-f="notes" value="${esc(led.notes||'')}" placeholder="Add a note" aria-label="What is this for?">`:`<span class="muted">${esc(r.vendor&&r.desc&&r.desc!==r.vendor?r.desc:'')}</span>`}</td>
+    <td>${esc([r.cat,r.sub].filter(Boolean).join(' · ')||'—')}</td>${opts.prop?`<td>${esc(r.prop||'—')}</td>`:''}
+    <td>${r.src==='sheet'?`<span class="pill plain" title="${esc(r.tab)}">Card sheet</span>`:`<span class="pill ${r.status==='Transferred'?'good':'warn'}">${esc(r.status||'Posted')}</span>`}</td>
+    <td class="amt${r.amount<0?' neg':''}">${money(r.amount)}</td></tr>`;}).join('')}</tbody></table></div>`;
 }
-function groupList(rows,keyFn,bucket,cols,showCard){
-  const g={}; for(const t of rows){const k=keyFn(t)||'Uncategorized';(g[k]=g[k]||[]).push(t);}
-  const list=Object.entries(g).map(([k,v])=>({k,v,total:sum(v),unpaid:sum(v.filter(t=>!t.paid))})).sort((a,b)=>b.total-a.total);
-  if(!list.length) return '<div class="faint">Nothing filed here for this period.</div>';
+function groupRows(rows,keyFn,ns,opts){
+  const g={}; for(const r of rows){const k=keyFn(r)||'Uncategorized';(g[k]=g[k]||[]).push(r);}
+  const list=Object.entries(g).map(([k,v])=>({k,v,total:sum(v),unpaid:sum(v.filter(r=>!r.paid))})).sort((a,b)=>b.total-a.total);
+  if(!list.length) return '<div class="faint">Nothing here for this period.</div>';
   const max=Math.max(1,...list.map(x=>Math.abs(x.total)));
-  return `<div>${list.map(x=>{const key='g:'+bucket+':'+x.k;return `<details class="grp" data-sec="${esc(key)}"${S.open[key]?' open':''}><summary><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M9 6l6 6-6 6"/></svg><span class="gname">${esc(x.k)}<small>${x.v.length} charge${x.v.length===1?'':'s'}${x.v.filter(t=>!t.receiptUrl).length?` · ${x.v.filter(t=>!t.receiptUrl).length} without receipt`:''}</small></span><span class="track"><span class="fill" style="display:block;width:${Math.max(1.5,Math.abs(x.total)/max*100)}%"></span></span><span class="amt gun" style="color:${x.unpaid?'var(--bad)':'var(--faint)'}">${x.unpaid?money0(x.unpaid)+' unpaid':'paid'}</span><span class="amt" style="font-weight:600">${money(x.total)}</span></summary><div class="gbody">${S.open[key]?chargeTable(x.v.sort(byDate),showCard,cols):''}</div></details>`;}).join('')}</div>`;
+  return `<div>${list.map(x=>{const key='g:'+ns+':'+x.k;return `<details class="grp" data-sec="${esc(key)}"${S.open[key]?' open':''}><summary><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M9 6l6 6-6 6"/></svg><span class="gname">${esc(x.k)}<small>${x.v.length} charge${x.v.length===1?'':'s'}</small></span><span class="track"><span class="fill" style="display:block;width:${Math.max(1.5,Math.abs(x.total)/max*100)}%"></span></span><span class="amt gun" style="color:${x.unpaid?'var(--bad)':'var(--faint)'}">${x.unpaid?money0(x.unpaid)+' unpaid':'paid'}</span><span class="amt" style="font-weight:600">${money(x.total)}</span></summary><div class="gbody">${S.open[key]?rowTable(x.v.sort(byDate),opts):''}</div></details>`;}).join('')}</div>`;
 }
+const propKey=r=>{ if(r.src==='ledger') return r.prop||'No property chosen'; const id=propIdFor(r.prop); return id?propName(id):(r.prop||'No property named'); };
 function viewTracker(){
-  const T=transferred();
-  let h=cardTabs(S.tCard,null,'tcard');
+  let h=cardTabs(S.tCard,null,'tcard')+`<div class="toolbar" style="margin-top:-6px">${csFreshness()}</div>`;
+  if(S.csErr) h+=`<div class="note">${esc(S.csErr)}</div>`;
   if(S.tCard==='all'){
-    const list=cards().map((c,i)=>{const r=T.filter(t=>t.card===c.k);return{...c,i,b:cardBalance(c.k),unpaid:sum(r.filter(t=>!t.paid))};});
-    const max=Math.max(1,...list.map(c=>Math.abs(c.b.balance)));
-    h+=`<div class="summary"><div class="tile"><div class="label">Balance · all cards</div><div class="big">${money(sum(list,c=>c.b.balance))}</div><div class="foot">charges − payments</div></div><div class="tile"><div class="label">Unpaid in tracker</div><div class="big bad">${money(sum(list,c=>c.unpaid))}</div></div><div class="tile"><div class="label">Cards matching the website</div><div class="big">${list.filter(c=>c.b.diff!=null&&Math.abs(c.b.diff)<0.01).length} of ${list.length}</div></div></div>
-    <div class="panel"><div class="panel-pad" style="padding-bottom:6px"><h3 style="font-size:16px">Website balance check</h3><div class="muted" style="font-size:13px">Type the balance each card’s website shows. The tracker balance next to it should match. Click a card name to open its tracker.</div></div>
-    <div class="tbl"><table style="min-width:900px"><thead><tr><th>Card</th><th class="amt">Balance on website</th><th>As of</th><th class="amt">Balance in tracker</th><th class="amt">Difference</th><th>Check</th><th>Updated by</th></tr></thead><tbody>
+    const list=cards().map((c,i)=>({...c,i,b:cardBalance(c.k)}));
+    h+=`<div class="summary"><div class="tile"><div class="label">Balance owed · all cards</div><div class="big bad">${money(sum(list,c=>c.b.balance))}</div><div class="foot">unpaid charges</div></div><div class="tile"><div class="label">Cards matching the website</div><div class="big">${list.filter(c=>c.b.diff!=null&&Math.abs(c.b.diff)<0.01).length} of ${list.length}</div></div></div>
+    <div class="panel"><div class="panel-pad" style="padding-bottom:6px"><h3 style="font-size:16px">Website balance check</h3><div class="muted" style="font-size:13px">Type the balance each card’s website shows. The tracker balance is every unpaid charge: Overhead and Property from the card’s tracker sheet, Marketing from the THB marketing file, plus ledger charges not in those sheets yet.</div></div>
+    <div class="tbl"><table style="min-width:980px"><thead><tr><th>Card</th><th class="amt">Balance on website</th><th>As of</th><th class="amt">Balance in tracker</th><th class="amt">Difference</th><th>Check</th><th>Updated by</th></tr></thead><tbody>
     ${list.map(c=>`<tr data-ck="${esc(c.k)}"><td><button class="btn ghost" data-act="tcard" data-k="${esc(c.k)}" style="padding:2px 4px"><span class="chip" style="--c:var(--k${c.i%10})"><i></i>${esc(c.n)}</span></button></td>
       <td class="amt"><input type="text" inputmode="decimal" class="mono" style="width:140px;text-align:right" id="ws-${esc(c.k)}" data-act="ci" data-f="siteBalance" data-num="1" value="${c.b.site==null?'':c.b.site.toLocaleString('en-US',{minimumFractionDigits:2})}" placeholder="0.00" aria-label="${esc(c.n)} balance on website"></td>
       <td><input type="date" id="wd-${esc(c.k)}" data-act="ci" data-f="siteAsOf" value="${esc(c.b.info.siteAsOf||'')}" aria-label="As of"></td>
-      <td class="amt">${money(c.b.balance)}</td><td class="amt" style="color:${c.b.diff==null?'var(--faint)':Math.abs(c.b.diff)<0.01?'var(--good)':'var(--bad)'}">${c.b.diff==null?'—':money(c.b.diff)}</td><td>${reconPill(c.b)}</td>
+      <td class="amt" title="Card sheets ${money(c.b.sheetUnpaid)} + ledger ${money(c.b.ledgerUnpaid)}">${money(c.b.balance)}</td><td class="amt" style="color:${c.b.diff==null?'var(--faint)':Math.abs(c.b.diff)<0.01?'var(--good)':'var(--bad)'}">${c.b.diff==null?'—':money(c.b.diff)}</td><td>${reconPill(c.b)}</td>
       <td class="muted" style="font-size:12px">${c.b.info.siteBy?esc(personName(c.b.info.siteBy))+(c.b.info.siteAt?' · '+esc(new Date(c.b.info.siteAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''):'—'}</td></tr>`).join('')}</tbody></table></div></div>`;
     return h;
   }
   const k=S.tCard, b=cardBalance(k), info=b.info;
-  const mineAll=T.filter(t=>t.card===k);
-  const months=[...new Set([...S.txns.values()].filter(t=>t.card===k).map(t=>(t.date||'').slice(0,7)))].filter(Boolean);
-  const inM=t=>S.tMonth==='all'||(t.date||'').startsWith(S.tMonth);
-  const mine=mineAll.filter(inM), waiting=todo().filter(t=>t.card===k&&inM(t));
-  const by=bk=>mine.filter(t=>bucketOf(t.type)===bk);
-  const period=S.tMonth==='all'?'all months':monthLabel(S.tMonth);
+  const months=[...new Set(b.rows.map(r=>(r.date||'').slice(0,7)))].filter(Boolean);
+  const inM=r=>S.tMonth==='all'||(r.date||'').startsWith(S.tMonth);
+  const rows=b.rows.filter(inM), by=bk=>rows.filter(r=>r.bucket===bk), period=S.tMonth==='all'?'all months':monthLabel(S.tMonth);
+  const waiting=rows.filter(r=>r.src==='ledger'&&r.status!=='Transferred');
   h+=`<div class="panel panel-pad stack" style="margin-bottom:16px"><div class="row" style="justify-content:space-between"><h3 style="font-size:16px">${esc(cardName(k))} balance</h3>${reconPill(b)}</div>
     <div class="recon">
-      <div><div class="k">Balance in this tracker</div><div class="v">${money(b.balance)}</div><div class="faint" style="font-size:12.5px">${info.openingDate?`${money0(info.opening)} on ${shortDate(info.openingDate)} + `:''}${money0(b.charges)} charges − ${money0(b.payments)} payments</div></div>
+      <div><div class="k">Balance in this tracker</div><div class="v">${money(b.balance)}</div><div class="faint" style="font-size:12.5px">${money0(b.sheetUnpaid)} unpaid in the card sheets + ${money0(b.ledgerUnpaid)} unpaid in the ledger only</div></div>
       <label class="field">Balance on the card website<input type="text" inputmode="decimal" id="ci-site" data-act="ci" data-f="siteBalance" data-num="1" value="${b.site==null?'':b.site.toLocaleString('en-US',{minimumFractionDigits:2})}" placeholder="Type what the website shows"></label>
       <label class="field">As of<input type="date" id="ci-asof" data-act="ci" data-f="siteAsOf" value="${esc(info.siteAsOf||'')}"></label>
-      <div class="faint" style="font-size:12px;grid-column:1/-1;order:9">${info.siteBy?`Website balance entered by ${esc(personName(info.siteBy))}${info.siteAt?' on '+esc(new Date(info.siteAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}`:''}</div>
       <div><div class="k">Difference</div><div class="v" style="color:${b.diff==null?'var(--faint)':Math.abs(b.diff)<0.01?'var(--good)':'var(--bad)'}">${b.diff==null?'—':money(b.diff)}</div></div>
-    </div>
-    ${sec('bal-how','How the balance is figured',`${b.py.length} card payment${b.py.length===1?'':'s'}`,`<span class="faint" style="font-size:12.5px">Charges come from every imported row on this card. Payments come from the CSV (lines like “Payment – thank you”) or the form below. If the tracker starts mid-cycle, enter the card balance on the day before your first import as the starting balance.</span>
-      <div class="form-grid"><label class="field">Starting balance<input type="text" inputmode="decimal" id="ci-open" data-act="ci" data-f="opening" data-num="1" value="${info.opening?Number(info.opening).toLocaleString('en-US',{minimumFractionDigits:2}):''}" placeholder="0.00"></label><label class="field">Starting date<input type="date" id="ci-opend" data-act="ci" data-f="openingDate" value="${esc(info.openingDate||'')}"></label>
-      <label class="field">Payment date<input type="date" id="cp-date" data-draft="cp-date" value="${esc(D('cp-date',today()))}"></label><label class="field">Payment amount<input type="text" inputmode="decimal" id="cp-amt" data-draft="cp-amt" value="${esc(D('cp-amt'))}" placeholder="0.00"></label><div style="align-self:end"><button class="btn" data-act="add-cpay">Record payment</button></div></div>
-      ${b.py.length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:420px"><thead><tr><th>Date</th><th>Payment</th><th class="amt">Amount</th><th></th></tr></thead><tbody>${b.py.slice(0,24).map(x=>`<tr data-cp="${esc(x.id)}"><td class="d">${shortDate(x.date)}</td><td>${esc(x.desc||'Payment')}</td><td class="amt">${money(x.amount)}</td><td>${S.confirm==='cp-'+x.id?`<button class="btn sm danger" data-act="del-cpay-yes">Delete</button>`:`<button class="btn sm ghost" data-act="del-cpay" aria-label="Delete payment">✕</button>`}</td></tr>`).join('')}</tbody></table></div>`:''}`)}
-  </div>
-  <div class="toolbar"><span class="lbl">Period</span>${monthSelect(S.tMonth,'tmonth',months)}<span class="spacer"></span>${waiting.length?`<a href="#daily" data-tab="daily" class="muted" style="font-size:13px">${waiting.length} not transferred yet (${money0(sum(waiting))}) →</a>`:''}</div>
+      <div class="faint" style="font-size:12px;grid-column:1/-1">${info.siteBy?`Website balance entered by ${esc(personName(info.siteBy))}${info.siteAt?' on '+esc(new Date(info.siteAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}`:''}</div>
+    </div></div>
+  <div class="toolbar"><span class="lbl">Period</span>${monthSelect(S.tMonth,'tmonth',months)}<span class="spacer"></span>${waiting.length?`<span class="muted" style="font-size:13px">${waiting.length} charge${waiting.length===1?'':'s'} (${money0(sum(waiting))}) not transferred yet, included below</span>`:''}</div>
   <div class="summary">
-    <div class="tile"><div class="label">Total · ${esc(period)}</div><div class="big">${money(sum(mine))}</div><div class="foot">${mine.length} charges</div></div>
-    ${Object.entries(BUCKETS).map(([bk,n])=>`<div class="tile"><div class="label">${n}</div><div class="big" style="font-size:20px">${money(sum(by(bk)))}</div></div>`).join('')}
-    <div class="tile"><div class="label">Unpaid</div><div class="big bad" style="font-size:20px">${money(sum(mine.filter(t=>!t.paid)))}</div><div class="foot">paid ${money0(sum(mine.filter(t=>t.paid)))}</div></div>
-  </div>
-  <div class="stack">`;
-  const subCol=['Sub category',t=>`<select data-act="tf" data-f="sub" aria-label="Sub category">${opts(S.L.subcategories,t.sub)}</select>`];
-  const catCol=['Category',t=>esc(t.category||'—')], typeCol=['Expense type',t=>esc(t.type)];
-  const propCol=['Property',t=>`<select data-act="tf" data-f="propertyId" aria-label="Property">${propOpts(t.propertyId)}</select>`];
-  h+=sec('t-ov','Overhead',money(sum(by('overhead'))),`<span class="faint" style="font-size:12.5px">Grouped by sub category: legal, insurance, meals, travel, hotel…</span>`+groupList(by('overhead'),t=>t.sub,'ov',[typeCol,catCol,subCol]));
-  h+=sec('t-pr','Property',money(sum(by('property'))),`<span class="faint" style="font-size:12.5px">One line per property. Open a property to see its charges.</span>`+groupList(by('property'),t=>propName(t.propertyId),'pr',[subCol,propCol]));
-  h+=sec('t-mk','Marketing',money(sum(by('marketing'))),`<span class="faint" style="font-size:12.5px">Grouped by category: direct mail, PPC / digital, Facebook…</span>`+groupList(by('marketing'),t=>t.category,'mk',[catCol,subCol]));
-  const flat=mine.filter(t=>S.tPaid==='all'||(S.tPaid==='paid')===!!t.paid).sort(byDate);
-  h+=sec('t-all','Every charge (detailed)',`${mine.length} charges`,`<div class="toolbar" style="margin:0"><div class="seg" role="group" aria-label="Paid">${['unpaid','paid','all'].map(v=>`<button data-act="tpaid" data-v="${v}" aria-pressed="${S.tPaid===v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div><span class="spacer"></span>
-    ${S.tPaid!=='paid'&&flat.some(t=>!t.paid)?(S.confirm==='payall'?`<button class="btn primary sm" data-act="payall-yes">Mark ${flat.filter(t=>!t.paid).length} as paid</button><button class="btn ghost sm" data-act="cancel">Cancel</button>`:`<button class="btn sm" data-act="payall">Mark all shown as paid</button>`):''}</div>`+chargeTable(flat,false,[['Type',t=>esc(BUCKETS[bucketOf(t.type)]||'')],catCol,['Sub category',t=>esc(t.sub||'—')],['Property',t=>esc(propName(t.propertyId)||'—')]]));
+    <div class="tile"><div class="label">Total · ${esc(period)}</div><div class="big">${money(sum(rows))}</div><div class="foot">${rows.length} charges</div></div>
+    ${[['overhead','Overhead'],['property','Property'],['marketing','Marketing'],['uncat','Not categorized']].map(([bk,n])=>`<div class="tile"><div class="label">${n}</div><div class="big" style="font-size:20px">${money(sum(by(bk)))}</div></div>`).join('')}
+    <div class="tile"><div class="label">Unpaid</div><div class="big bad" style="font-size:20px">${money(sum(rows.filter(r=>!r.paid)))}</div></div>
+  </div><div class="stack">`;
+  h+=sec('t-ov','Overhead',money(sum(by('overhead'))),`<span class="faint" style="font-size:12.5px">Grouped by category: legal, insurance, meals, travel, hotel…</span>`+groupRows(by('overhead'),r=>r.src==='sheet'?(r.cat||r.sub):(r.sub||r.cat),'ov',{}));
+  h+=sec('t-pr','Property',money(sum(by('property'))),`<span class="faint" style="font-size:12.5px">One line per property. Open one to see its charges.</span>`+groupRows(by('property'),propKey,'pr',{}));
+  h+=sec('t-mk','Marketing',money(sum(by('marketing'))),`<span class="faint" style="font-size:12.5px">From the THB marketing file, grouped by marketing type: direct mail, digital / PPC, Facebook, property leads…</span>`+groupRows(by('marketing'),r=>r.cat,'mk',{}));
+  if(by('uncat').length) h+=sec('t-un','Not categorized yet',money(sum(by('uncat'))),`<span class="faint" style="font-size:12.5px">Charges on this card that still need a type in Daily Expenses.</span>`+rowTable(by('uncat').sort(byDate),{}));
+  const flat=rows.filter(r=>S.tPaid==='all'||(S.tPaid==='paid')===!!r.paid).sort(byDate);
+  h+=sec('t-all','Every charge (detailed)',`${rows.length} charges`,`<div class="seg" role="group" aria-label="Paid">${['unpaid','paid','all'].map(v=>`<button data-act="tpaid" data-v="${v}" aria-pressed="${S.tPaid===v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div>`+(S.open['t-all']?rowTable(flat,{prop:true}):''));
   return h+'</div>';
 }
+
+/* ----- Marketing ----- */
+const isPPC=r=>/digital marketing|ppc/i.test(r.cat||'')||/google\s*\*?\s*ads|googleads|google ads|microsoft\s*\*?\s*ads|bing ads|msft\s*\*?\s*ads/i.test((r.vendor||'')+' '+(r.desc||''));
+function marketingRows(){ const out=[]; for(const c of cards()) out.push(...mergedRows(c.k).filter(r=>r.bucket==='marketing'||(r.src==='ledger'&&isPPC(r)))); return out; }
+function ppcByDay(rows,from){ const d={}; for(const r of rows) if(isPPC(r)&&(!from||r.date>=from)) d[r.date]=r2((d[r.date]||0)+r.amount); return Object.entries(d).sort((a,b)=>b[0].localeCompare(a[0])); }
+function viewMarketing(){
+  const all=marketingRows(); const months=[...new Set(all.map(r=>(r.date||'').slice(0,7)))].filter(Boolean);
+  const inM=r=>S.mMonth==='all'||(r.date||'').startsWith(S.mMonth); const rows=all.filter(inM), period=S.mMonth==='all'?'all months':monthLabel(S.mMonth);
+  const limit=Number(S.L.ppcDailyLimit)||750, start=S.L.ppcStart||'';
+  const days=ppcByDay(all,start), over=days.filter(([,v])=>v>limit);
+  let h=`<div class="toolbar"><span class="lbl">Period</span>${monthSelect(S.mMonth,'mmonth',months)}<span class="spacer"></span>${csFreshness()}</div>`;
+  if(over.length) h+=`<div class="note" style="background:var(--bad-soft);border-color:var(--bad);color:var(--bad)"><b>PPC over the ${money0(limit)} a day limit on ${over.length} day${over.length===1?'':'s'}:</b> ${over.slice(0,5).map(([d,v])=>`${shortDate(d)} ${money0(v)}`).join(' · ')}</div>`;
+  const byType={}, byCard={}, byMonth={};
+  for(const r of rows){ byType[r.cat||'Uncategorized']=(byType[r.cat||'Uncategorized']||[]).concat(r); byCard[r.card]=(byCard[r.card]||0)+r.amount; }
+  for(const r of all) byMonth[(r.date||'').slice(0,7)]=(byMonth[(r.date||'').slice(0,7)]||0)+r.amount;
+  const mlist=Object.entries(byMonth).filter(([m])=>m).sort().slice(-12), mmax=Math.max(1,...mlist.map(x=>x[1]));
+  h+=`<div class="summary"><div class="tile"><div class="label">Marketing · ${esc(period)}</div><div class="big">${money(sum(rows))}</div><div class="foot">${rows.length} charges</div></div>
+    <div class="tile"><div class="label">Unpaid</div><div class="big bad">${money(sum(rows.filter(r=>!r.paid)))}</div></div>
+    <div class="tile"><div class="label">PPC · ${esc(period)}</div><div class="big">${money(sum(rows.filter(isPPC)))}</div><div class="foot">limit ${money0(limit)} a day</div></div>
+    <div class="tile"><div class="label">PPC days over limit</div><div class="big ${over.length?'bad':'good'}">${over.length}</div><div class="foot">${start?'since '+shortDate(start):'set the launch date in Settings'}</div></div></div>
+  <div class="stack">
+  ${sec('m-ppc','PPC daily spend',`limit ${money0(limit)}/day`,`<span class="faint" style="font-size:12.5px">Google Ads and Bing charges per day from every card, as they come in from your imports. Card charges arrive when the ad account bills, so one day can hold more than one day of spend.</span>
+    ${days.length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:480px"><thead><tr><th>Day</th><th class="amt">PPC charged</th><th style="width:45%"></th><th>Check</th></tr></thead><tbody>${days.slice(0,45).map(([d,v])=>`<tr><td class="d">${shortDate(d)}</td><td class="amt">${money(v)}</td><td><div class="track"><div class="fill${v>limit?' over':''}" style="width:${Math.min(100,v/(limit*2)*100)}%"></div></div></td><td>${v>limit?`<span class="pill bad">Over by ${money0(v-limit)}</span>`:'<span class="pill good">Within limit</span>'}</td></tr>`).join('')}</tbody></table></div>`:'<span class="faint">No PPC charges yet.</span>'}`)}
+  ${sec('m-type','By marketing type',money(sum(rows)),groupRows(rows,r=>r.cat,'mt',{card:true}))}
+  ${sec('m-card','By card','',`<div class="bd">${Object.entries(byCard).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="bd-row"><span>${esc(cardName(k))}</span><b>${money0(v)}</b><div class="track"><div class="fill" style="width:${Math.max(1.5,v/Math.max(1,...Object.values(byCard))*100)}%"></div></div></div>`).join('')||'<span class="faint">Nothing yet.</span>'}</div>`)}
+  ${sec('m-month','By month (last 12)','',`<div class="bd">${mlist.map(([m,v])=>`<div class="bd-row"><span>${monthLabel(m)}</span><b>${money0(v)}</b><div class="track"><div class="fill" style="width:${Math.max(1.5,v/mmax*100)}%"></div></div></div>`).join('')}</div>`)}
+  </div>`;
+  return h;
+}
+
 /* ----- Twin Calc (from "Profit Calc Updated") ----- */
 const TTAX={"ALAMEDA":["ALAMEDA",12.0,1.1],"ALBANY":["ALAMEDA",15.0,1.1],"BERKELEY":["ALAMEDA",15.0,1.1],"DUBLIN":["ALAMEDA",0.55,0.55],"EMERYVILLE":["ALAMEDA",12.0,1.1],"FREMONT":["ALAMEDA",0.55,0.55],"HAYWARD":["ALAMEDA",8.5,1.1],"LIVERMORE":["ALAMEDA",0.55,0.55],"NEWARK":["ALAMEDA",0.55,0.55],"OAKLAND":["ALAMEDA",15.0,1.1],"PIEDMONT":["ALAMEDA",13.0,1.1],"PLEASANTON":["ALAMEDA",0.55,0.55],"SAN LEANDRO":["ALAMEDA",11.0,1.1],"UNION CITY":["ALAMEDA",0.55,0.55],"ALPINE COUNTY":["ALPINE",0.0,1.1],"AMADOR":["AMADOR",0.55,0.55],"IONE":["AMADOR",0.55,0.55],"JACKSON":["AMADOR",0.55,0.55],"PLYMOUTH":["AMADOR",0.55,0.55],"SUTTER CREEK":["AMADOR",0.55,0.55],"BIGGS":["BUTTE",0.55,0.55],"CHICO":["BUTTE",0.55,0.55],"GRIDLEY":["BUTTE",0.55,0.55],"OROVILLE":["BUTTE",0.55,0.55],"PARADISE":["BUTTE",0.55,0.55],"ANGELS CAMP":["CALAVERAS",0.55,0.55],"COLUSA":["COLUSA",0.55,0.55],"WILLIAMS":["COLUSA",0.55,0.55],"ANTIOCH":["CONTRA COSTA",0.55,0.55],"BRENTWOOD":["CONTRA COSTA",0.55,0.55],"CLAYTON":["CONTRA COSTA",0.55,0.55],"CONCORD":["CONTRA COSTA",0.55,0.55],"DANVILLE":["CONTRA COSTA",0.55,0.55],"EL CERRITO":["CONTRA COSTA",12.0,1.1],"HERCULES":["CONTRA COSTA",0.55,0.55],"LAFAYETTE":["CONTRA COSTA",0.55,0.55],"MARTINEZ":["CONTRA COSTA",0.55,0.55],"MORAGA":["CONTRA COSTA",0.55,0.55],"OAKLEY":["CONTRA COSTA",0.55,0.55],"ORINDA":["CONTRA COSTA",0.55,0.55],"PINOLE":["CONTRA COSTA",0.55,0.55],"PITTSBURG":["CONTRA COSTA",0.55,0.55],"PLEASANT HILL":["CONTRA COSTA",0.55,0.55],"RICHMOND":["CONTRA COSTA",12.5,1.1],"SAN PABLO":["CONTRA COSTA",0.55,0.55],"SAN RAMON":["CONTRA COSTA",0.55,0.55],"WALNUT CREEK":["CONTRA COSTA",0.55,0.55],"CRESCENT CITY":["DEL NORTE",0.55,0.55],"PLACERVILLE":["EL DORADO",0.55,0.55],"SOUTH LAKE TAHOE":["EL DORADO",0.55,0.55],"CLOVIS":["FRESNO",0.55,0.55],"COALINGA":["FRESNO",0.55,0.55],"FIREBAUGH":["FRESNO",0.55,0.55],"FOWLER":["FRESNO",0.55,0.55],"FRESNO":["FRESNO",0.55,0.55],"HURON":["FRESNO",0.55,0.55],"KERMAN":["FRESNO",0.55,0.55],"KINGSBURG":["FRESNO",0.55,0.55],"MENDOTA":["FRESNO",0.55,0.55],"ORANGE COVE":["FRESNO",0.55,0.55],"PARLIER":["FRESNO",0.55,0.55],"REEDLEY":["FRESNO",0.55,0.55],"SANGER":["FRESNO",0.55,0.55],"SAN JOAQUIN":["FRESNO",0.55,0.55],"SELMA":["FRESNO",0.55,0.55],"ORLAND":["GLENN",0.55,0.55],"WILLOWS":["GLENN",0.55,0.55],"ARCATA":["HUMBOLDT",0.55,0.55],"BLUE LAKE":["HUMBOLDT",0.55,0.55],"EUREKA":["HUMBOLDT",0.55,0.55],"FERNDALE":["HUMBOLDT",0.55,0.55],"FORTUNA":["HUMBOLDT",0.55,0.55],"RIO DELL":["HUMBOLDT",0.55,0.55],"TRINIDAD":["HUMBOLDT",0.55,0.55],"BRAWLEY":["IMPERIAL",0.55,0.55],"CALEXICO":["IMPERIAL",0.55,0.55],"CALIPATRIA":["IMPERIAL",0.55,0.55],"EL CENTRO":["IMPERIAL",0.55,0.55],"HOLTVILLE":["IMPERIAL",0.55,0.55],"IMPERIAL":["IMPERIAL",0.55,0.55],"WESTMORLAND":["IMPERIAL",0.55,0.55],"BISHOP":["INYO",0.55,0.55],"ARVIN":["KERN",0.55,0.55],"BAKERSFIELD":["KERN",0.55,0.55],"CALIFORNIA CITY":["KERN",0.55,0.55],"DELANO":["KERN",0.55,0.55],"MARICOPA":["KERN",0.55,0.55],"MCFARLAND":["KERN",0.55,0.55],"RIDGECREST":["KERN",0.55,0.55],"SHAFTER":["KERN",0.55,0.55],"TAFT":["KERN",0.55,0.55],"TEHACHAPI":["KERN",0.55,0.55],"WASCO":["KERN",0.55,0.55],"AVENAL":["KINGS",0.55,0.55],"CORCORAN":["KINGS",0.55,0.55],"HANFORD":["KINGS",0.55,0.55],"LEMOORE":["KINGS",0.55,0.55],"CLEARLAKE":["LAKE",0.55,0.55],"LAKEPORT":["LAKE",0.55,0.55],"SUSANVILLE":["LASSEN",0.55,0.55],"AGOURA HILLS":["LOS ANGELES",0.55,0.55],"ALHAMBRA":["LOS ANGELES",0.55,0.55],"ARCADIA":["LOS ANGELES",0.55,0.55],"ARTESIA":["LOS ANGELES",0.55,0.55],"AVALON":["LOS ANGELES",0.55,0.55],"AZUSA":["LOS ANGELES",0.55,0.55],"BALDWIN PARK":["LOS ANGELES",0.55,0.55],"BELL":["LOS ANGELES",0.55,0.55],"BELLFLOWER":["LOS ANGELES",0.55,0.55],"BELL GARDENS":["LOS ANGELES",0.55,0.55],"BEVERLY HILLS":["LOS ANGELES",0.55,0.55],"BRADBURY":["LOS ANGELES",0.55,0.55],"BURBANK":["LOS ANGELES",0.55,0.55],"CALABASAS":["LOS ANGELES",0.55,0.55],"CARSON":["LOS ANGELES",0.55,0.55],"CERRITOS":["LOS ANGELES",0.55,0.55],"CLAREMONT":["LOS ANGELES",0.55,0.55],"COMMERCE":["LOS ANGELES",0.55,0.55],"COMPTON":["LOS ANGELES",0.55,0.55],"COVINA":["LOS ANGELES",0.55,0.55],"CUDAHY":["LOS ANGELES",0.55,0.55],"CULVER":["LOS ANGELES",19.5,1.1],"DIAMOND BAR":["LOS ANGELES",0.55,0.55],"DOWNEY":["LOS ANGELES",0.55,0.55],"DUARTE":["LOS ANGELES",0.55,0.55],"EL MONTE":["LOS ANGELES",0.55,0.55],"EL SEGUNDO":["LOS ANGELES",0.55,0.55],"GARDENA":["LOS ANGELES",0.55,0.55],"GLENDALE":["LOS ANGELES",0.55,0.55],"GLENDORA":["LOS ANGELES",0.55,0.55],"HAWAIIAN GARDENS":["LOS ANGELES",0.55,0.55],"HAWTHORNE":["LOS ANGELES",0.55,0.55],"HERMOSA BEACH":["LOS ANGELES",0.55,0.55],"HIDDEN HILLS":["LOS ANGELES",0.55,0.55],"HUNT INGTON PARK":["LOS ANGELES",0.55,0.55],"INDUST RY":["LOS ANGELES",0.55,0.55],"INGLEWOOD":["LOS ANGELES",0.55,0.55],"IRWINDALE":["LOS ANGELES",0.55,0.55],"LA CANADA FLINTRIDGE":["LOS ANGELES",0.55,0.55],"LA HABRA HEIGHTS":["LOS ANGELES",0.55,0.55],"LAKEWOOD":["LOS ANGELES",0.55,0.55],"LA MIRADA":["LOS ANGELES",0.55,0.55],"LANCASTER":["LOS ANGELES",0.55,0.55],"LA PUENTE":["LOS ANGELES",0.55,0.55],"LA VERNE":["LOS ANGELES",0.55,0.55],"LAWNDALE":["LOS ANGELES",0.55,0.55],"LOMITA":["LOS ANGELES",0.55,0.55],"LONG BEACH":["LOS ANGELES",0.55,0.55],"LOS ANGELES":["LOS ANGELES",4.5,1.1],"LYNWOOD":["LOS ANGELES",0.55,0.55],"MALIBU":["LOS ANGELES",0.55,0.55],"MANHATTAN BEACH":["LOS ANGELES",0.55,0.55],"MAYWOOD":["LOS ANGELES",0.55,0.55],"MONROVIA":["LOS ANGELES",0.55,0.55],"MONTEBELLO":["LOS ANGELES",0.55,0.55],"MONTEREY PARK":["LOS ANGELES",0.55,0.55],"NORWALK":["LOS ANGELES",0.55,0.55],"PALMDALE":["LOS ANGELES",0.55,0.55],"PALOS VERDES ESTATES":["LOS ANGELES",0.55,0.55],"PARAMOUNT":["LOS ANGELES",0.55,0.55],"PASADENA":["LOS ANGELES",0.55,0.55],"PICO RIVERA":["LOS ANGELES",0.55,0.55],"POMONA":["LOS ANGELES",2.2,1.1],"RANCHO PALOS VERDES":["LOS ANGELES",0.55,0.55],"REDONDO BEACH":["LOS ANGELES",2.2,1.1],"ROLLING HILLS":["LOS ANGELES",0.55,0.55],"ROLLING HILLS ESTATES":["LOS ANGELES",0.55,0.55],"ROSEMEAD":["LOS ANGELES",0.55,0.55],"SAN DIMAS":["LOS ANGELES",0.55,0.55],"SAN FERNANDO":["LOS ANGELES",0.55,0.55],"SAN GABRIEL":["LOS ANGELES",0.55,0.55],"SAN MARINO":["LOS ANGELES",0.55,0.55],"SANTA CLARITA":["LOS ANGELES",0.55,0.55],"SANTA FE SPRINGS":["LOS ANGELES",0.55,0.55],"SANTA MONICA":["LOS ANGELES",3.0,1.1],"SIERRA MADRE":["LOS ANGELES",0.55,0.55],"SIGNAL HILL":["LOS ANGELES",0.55,0.55],"SOUTH EL MONTE":["LOS ANGELES",0.55,0.55],"SOUTH GATE":["LOS ANGELES",0.55,0.55],"SOUTH PASADENA":["LOS ANGELES",0.55,0.55],"TEMPLE CITY":["LOS ANGELES",0.55,0.55],"TORRANCE":["LOS ANGELES",0.55,0.55],"VERNON":["LOS ANGELES",0.55,0.55],"WALNUT":["LOS ANGELES",0.55,0.55],"WEST COVINA":["LOS ANGELES",0.55,0.55],"WEST HOLLYWOOD":["LOS ANGELES",0.55,0.55],"WESTLAKE VILLAGE":["LOS ANGELES",0.55,0.55],"WHITTIER":["LOS ANGELES",0.55,0.55],"CHOWCHILLA":["MADERA",0.55,0.55],"MADERA":["MADERA",0.55,0.55],"BELVEDERE":["MARIN",0.55,0.55],"CORTE MADERA":["MARIN",0.55,0.55],"FAIRFAX":["MARIN",0.55,0.55],"LARKSPUR":["MARIN",0.55,0.55],"MILL VALLEY":["MARIN",0.55,0.55],"NOVATO":["MARIN",0.55,0.55],"ROSS":["MARIN",0.55,0.55],"SAN ANSELMO":["MARIN",0.55,0.55],"SAN RAFAEL":["MARIN",2.0,1.1],"SAUSALITO":["MARIN",0.55,0.55],"TIBURON":["MARIN",0.55,0.55],"MARIPOSA COUNTY":["MARIPOSA",0.0,1.1],"FORT BRAGG":["MENDOCINO",0.55,0.55],"POINT ARENA":["MENDOCINO",0.55,0.55],"UKIAH":["MENDOCINO",0.55,0.55],"WILLITS":["MENDOCINO",0.55,0.55],"ATWATER":["MERCED",0.55,0.55],"DOS PALOS":["MERCED",0.55,0.55],"GUSTINE":["MERCED",0.55,0.55],"LIVINGSTON":["MERCED",0.55,0.55],"LOS BANOS":["MERCED",0.55,0.55],"MERCED":["MERCED",0.55,0.55],"ALTURAS":["MODOC",0.55,0.55],"MAMMOTH LAKE":["MONO",0.55,0.55],"CARMEL-BY-THE-SEA":["MONTEREY",0.55,0.55],"DEL REY OAKS":["MONTEREY",0.55,0.55],"GONZALES":["MONTEREY",0.55,0.55],"GREENFIELD":["MONTEREY",0.55,0.55],"KING CITY":["MONTEREY",0.55,0.55],"MARINA":["MONTEREY",0.55,0.55],"MONTEREY":["MONTEREY",0.55,0.55],"PACIFIC GROVE":["MONTEREY",0.55,0.55],"SALINAS":["MONTEREY",0.55,0.55],"SAND CITY":["MONTEREY",0.55,0.55],"SEASIDE":["MONTEREY",0.55,0.55],"SOLEDAD":["MONTEREY",0.55,0.55],"AMERICAN CANYON":["NAPA",0.55,0.55],"CALISTOGA":["NAPA",0.55,0.55],"NAPA":["NAPA",0.55,0.55],"SAINT HELENA":["NAPA",0.55,0.55],"YOUNTVILLE":["NAPA",0.55,0.55],"GRASS VALLEY":["NEVADA",0.55,0.55],"NEVADA CITY":["NEVADA",0.55,0.55],"TRUCKEE":["NEVADA",0.55,0.55],"ALISO VIEJO":["ORANGE",0.55,0.55],"ANAHEIM":["ORANGE",0.55,0.55],"BREA":["ORANGE",0.55,0.55],"BUENA PARK":["ORANGE",0.55,0.55],"COSTA MESA":["ORANGE",0.55,0.55],"CYPRESS":["ORANGE",0.55,0.55],"DANA POINT":["ORANGE",0.55,0.55],"FOUNTAIN VALLEY":["ORANGE",0.55,0.55],"FULLERTON":["ORANGE",0.55,0.55],"GARDEN GROVE":["ORANGE",0.55,0.55],"HUNT INGTON BEACH":["ORANGE",0.55,0.55],"IRVINE":["ORANGE",0.55,0.55],"LAGUNA BEACH":["ORANGE",0.55,0.55],"LAGUNA HILLS":["ORANGE",0.55,0.55],"LAGUNA NIGUEL":["ORANGE",0.55,0.55],"LA HABRA":["ORANGE",0.55,0.55],"LAKE FOREST":["ORANGE",0.55,0.55],"LA PALMA":["ORANGE",0.55,0.55],"LOS ALAMITOS":["ORANGE",0.55,0.55],"MISSION VIEJO":["ORANGE",0.55,0.55],"NEWPORT BEACH":["ORANGE",0.55,0.55],"ORANGE":["ORANGE",0.55,0.55],"PLACENTIA":["ORANGE",0.55,0.55],"RANCHO SANTA MARGARIT A":["ORANGE",0.55,0.55],"SAN CLEMENTE":["ORANGE",0.55,0.55],"SAN JUAN CAPISTRANO":["ORANGE",0.55,0.55],"SANTA ANA":["ORANGE",0.55,0.55],"SEAL BEACH":["ORANGE",0.55,0.55],"STANTON":["ORANGE",0.55,0.55],"TUSTIN":["ORANGE",0.55,0.55],"VILLA PARK":["ORANGE",0.55,0.55],"WESTMINSTER":["ORANGE",0.55,0.55],"YORBA LINDA":["ORANGE",0.55,0.55],"AUBURN":["PLACER",0.55,0.55],"COLFAX":["PLACER",0.55,0.55],"LINCOLN":["PLACER",0.55,0.55],"LOOMIS":["PLACER",0.55,0.55],"ROCKLIN":["PLACER",0.55,0.55],"ROSEVILLE":["PLACER",0.55,0.55],"PORTOLA":["PLUMAS",0.55,0.55],"BANNING":["RIVERSIDE",0.55,0.55],"BEAUMONT":["RIVERSIDE",0.55,0.55],"BLYTHE":["RIVERSIDE",0.55,0.55],"CALIMESA":["RIVERSIDE",0.55,0.55],"CANYON LAKE":["RIVERSIDE",0.55,0.55],"CATHEDRAL CITY":["RIVERSIDE",0.55,0.55],"COACHELLA":["RIVERSIDE",0.55,0.55],"CORONA":["RIVERSIDE",0.55,0.55],"DESERT HOT SPRINGS":["RIVERSIDE",0.55,0.55],"EASTVALE":["RIVERSIDE",0.55,0.55],"HEMET":["RIVERSIDE",0.55,0.55],"INDIAN WELLS":["RIVERSIDE",0.55,0.55],"INDIO":["RIVERSIDE",0.55,0.55],"JURUPA VALLEY":["RIVERSIDE",0.55,0.55],"LAKE ELSINORE":["RIVERSIDE",0.55,0.55],"LA QUINTA":["RIVERSIDE",0.55,0.55],"MENIFEE":["RIVERSIDE",0.55,0.55],"MORENO VALLEY":["RIVERSIDE",0.55,0.55],"MURRIET A":["RIVERSIDE",0.55,0.55],"NORCO":["RIVERSIDE",0.55,0.55],"PALM DESERT":["RIVERSIDE",0.55,0.55],"PALM SPRINGS":["RIVERSIDE",0.55,0.55],"PERRIS":["RIVERSIDE",0.55,0.55],"RANCHO MIRAGE":["RIVERSIDE",0.55,0.55],"RIVERSIDE":["RIVERSIDE",1.1,1.1],"SAN JACINTO":["RIVERSIDE",0.55,0.55],"TEMECULA":["RIVERSIDE",0.55,0.55],"WILDOMAR":["RIVERSIDE",0.55,0.55],"CITRUS HEIGHTS":["SACRAMENTO",0.55,0.55],"ELK GROVE":["SACRAMENTO",0.55,0.55],"FOLSOM":["SACRAMENTO",0.55,0.55],"GALT":["SACRAMENTO",0.55,0.55],"ISLETON":["SACRAMENTO",0.55,0.55],"RANCHO CORDOVA":["SACRAMENTO",0.55,0.55],"SACRAMENTO":["SACRAMENTO",2.75,1.1],"HOLLISTER":["SAN BENITO",0.55,0.55],"SAN JUAN BAUTISTA":["SAN BENITO",0.55,0.55],"ADELANTO":["SAN BERNARDINO",0.55,0.55],"APPLE VALLEY":["SAN BERNARDINO",0.55,0.55],"BARSTOW":["SAN BERNARDINO",0.55,0.55],"BIG BEAR LAKE":["SAN BERNARDINO",0.55,0.55],"CHINO":["SAN BERNARDINO",0.55,0.55],"CHINO HILLS":["SAN BERNARDINO",0.55,0.55],"COLTON":["SAN BERNARDINO",0.55,0.55],"FONTANA":["SAN BERNARDINO",0.55,0.55],"GRAND TERRACE":["SAN BERNARDINO",0.55,0.55],"HESPERIA":["SAN BERNARDINO",0.55,0.55],"HIGHLAND":["SAN BERNARDINO",0.55,0.55],"LOMA LINDA":["SAN BERNARDINO",0.55,0.55],"MONTCLAIR":["SAN BERNARDINO",0.55,0.55],"NEEDLES":["SAN BERNARDINO",0.55,0.55],"ONTARIO":["SAN BERNARDINO",0.55,0.55],"RANCHO CUCAMONGA":["SAN BERNARDINO",0.55,0.55],"REDLANDS":["SAN BERNARDINO",0.55,0.55],"RIALTO":["SAN BERNARDINO",0.55,0.55],"SAN BERNARDINO":["SAN BERNARDINO",0.55,0.55],"TWENTYNINE PALMS":["SAN BERNARDINO",0.55,0.55],"LAGUNA WOODS":["SAN BERNARDINO",0.55,0.55],"UPLAND":["SAN BERNARDINO",0.55,0.55],"VICTORVILLE":["SAN BERNARDINO",0.55,0.55],"YUCAIPA":["SAN BERNARDINO",0.55,0.55],"YUCCA VALLEY":["SAN BERNARDINO",0.55,0.55],"CARLSBAD":["SAN DIEGO",0.55,0.55],"CHULA VISTA":["SAN DIEGO",0.55,0.55],"CORONADO":["SAN DIEGO",0.55,0.55],"DEL MAR":["SAN DIEGO",0.55,0.55],"EL CAJON":["SAN DIEGO",0.55,0.55],"ENCINITAS":["SAN DIEGO",0.55,0.55],"ESCONDIDO":["SAN DIEGO",0.55,0.55],"IMPERIAL BEACH":["SAN DIEGO",0.55,0.55],"LA MESA":["SAN DIEGO",0.55,0.55],"LEMON GROVE":["SAN DIEGO",0.55,0.55],"NATIONAL CITY":["SAN DIEGO",0.55,0.55],"OCEANSIDE":["SAN DIEGO",0.55,0.55],"POWAY":["SAN DIEGO",0.55,0.55],"SAN DIEGO":["SAN DIEGO",0.55,0.55],"SAN MARCOS":["SAN DIEGO",0.55,0.55],"SANTEE":["SAN DIEGO",0.55,0.55],"SOLANA BEACH":["SAN DIEGO",0.55,0.55],"VISTA":["SAN DIEGO",0.55,0.55],"SAN FRANCISCO":["SAN FRANCISCO",7.5,0.0],"ESCALON":["SAN JOAQUIN",0.55,0.55],"LATHROP":["SAN JOAQUIN",0.55,0.55],"LODI":["SAN JOAQUIN",0.55,0.55],"MANTECA":["SAN JOAQUIN",0.55,0.55],"RIPON":["SAN JOAQUIN",0.55,0.55],"STOCKTON":["SAN JOAQUIN",0.55,0.55],"TRACY":["SAN JOAQUIN",0.55,0.55],"ARROYO GRANDE":["SAN LUIS OBISPO",0.55,0.55],"ATASCADERO":["SAN LUIS OBISPO",0.55,0.55],"EL PASO DE ROBLES":["SAN LUIS OBISPO",0.55,0.55],"GROVER BEACH":["SAN LUIS OBISPO",0.55,0.55],"MORRO BAY":["SAN LUIS OBISPO",0.55,0.55],"PISMO BEACH":["SAN LUIS OBISPO",0.55,0.55],"SAN LUIS OBISPO":["SAN LUIS OBISPO",0.55,0.55],"ATHERTON":["SAN MATEO",0.55,0.55],"BELMONT":["SAN MATEO",0.55,0.55],"BRISBANE":["SAN MATEO",0.55,0.55],"BURLINGAME":["SAN MATEO",0.55,0.55],"COLMA":["SAN MATEO",0.55,0.55],"DALY CITY":["SAN MATEO",0.55,0.55],"EAST PALO ALTO":["SAN MATEO",0.55,0.55],"FOSTER CITY":["SAN MATEO",0.55,0.55],"HALF MOON BAY":["SAN MATEO",0.55,0.55],"HILLSBOROUGH":["SAN MATEO",0.55,0.55],"MENLO PARK":["SAN MATEO",0.55,0.55],"MILLBRAE":["SAN MATEO",0.55,0.55],"PACIFICA":["SAN MATEO",0.55,0.55],"PORTOLA VALLEY":["SAN MATEO",0.55,0.55],"REDWOOD CITY":["SAN MATEO",0.55,0.55],"SAN BRUNO":["SAN MATEO",0.55,0.55],"SAN CARLOS":["SAN MATEO",0.55,0.55],"SAN MATEO":["SAN MATEO",0.55,0.55],"SOUTH SAN FRANCISCO":["SAN MATEO",0.55,0.55],"WOODSIDE":["SAN MATEO",0.55,0.55],"BUELLTON":["SANTA BARBARA",0.55,0.55],"CARPINTERIA":["SANTA BARBARA",0.55,0.55],"GOLETA":["SANTA BARBARA",0.55,0.55],"GUADALUPE":["SANTA BARBARA",0.55,0.55],"LOMPOC":["SANTA BARBARA",0.55,0.55],"SANTA BARBARA":["SANTA BARBARA",0.55,0.55],"SANTA MARIA":["SANTA BARBARA",0.55,0.55],"SOLVANG":["SANTA BARBARA",0.55,0.55],"CAMPBELL":["SANTA CLARA",0.55,0.55],"CUPERTINO":["SANTA CLARA",0.55,0.55],"GILROY":["SANTA CLARA",0.55,0.55],"LOS ALTOS":["SANTA CLARA",0.55,0.55],"LOS ALTOS HILLS":["SANTA CLARA",0.55,0.55],"LOS GATOS":["SANTA CLARA",0.55,0.55],"MILPITAS":["SANTA CLARA",0.55,0.55],"MONTE SERENO":["SANTA CLARA",0.55,0.55],"MORGAN HILL":["SANTA CLARA",0.55,0.55],"MOUNTAIN VIEW":["SANTA CLARA",3.3,1.1],"PALO ALTO":["SANTA CLARA",3.3,1.1],"SAN JOSE":["SANTA CLARA",3.3,1.1],"SANTA CLARA":["SANTA CLARA",0.55,0.55],"SARATOGA":["SANTA CLARA",0.55,0.55],"SUNNYVALE":["SANTA CLARA",0.55,0.55],"CAPITOLA":["SANTA CRUZ",0.55,0.55],"SANTA CRUZ":["SANTA CRUZ",0.55,0.55],"SCOTTS VALLEY":["SANTA CRUZ",0.55,0.55],"WATSONVILLE":["SANTA CRUZ",0.55,0.55],"ANDERSON":["SHASTA",0.55,0.55],"REDDING":["SHASTA",0.55,0.55],"SHASTA LAKE":["SHASTA",0.55,0.55],"LOYALTON":["SIERRA",0.55,0.55],"DORRIS":["SISKIYOU",0.55,0.55],"DUNSMUIR":["SISKIYOU",0.55,0.55],"ETNA":["SISKIYOU",0.55,0.55],"FORT JONES":["SISKIYOU",0.55,0.55],"MONTAGUE":["SISKIYOU",0.55,0.55],"MOUNT SHASTA":["SISKIYOU",0.55,0.55],"TULELAKE":["SISKIYOU",0.55,0.55],"WEED":["SISKIYOU",0.55,0.55],"YREKA":["SISKIYOU",0.55,0.55],"BENICIA":["SOLANO",0.55,0.55],"DIXON":["SOLANO",0.55,0.55],"FAIRFIELD":["SOLANO",0.55,0.55],"RIO VISTA":["SOLANO",0.55,0.55],"SUISUN CITY":["SOLANO",0.55,0.55],"VACAVILLE":["SOLANO",0.55,0.55],"VALLEJO":["SOLANO",3.3,1.1],"CLOVERDALE":["SONOMA",0.55,0.55],"COTATI":["SONOMA",0.55,0.55],"HEALDSBURG":["SONOMA",0.55,0.55],"PETALUMA":["SONOMA",2.0,1.1],"ROHNERT PARK":["SONOMA",0.55,0.55],"SANTA ROSA":["SONOMA",2.0,1.1],"SEBASTOPOL":["SONOMA",0.55,0.55],"SONOMA":["SONOMA",0.55,0.55],"WINDSOR":["SONOMA",0.55,0.55],"CERES":["STANISLAUS",0.55,0.55],"HUGHSON":["STANISLAUS",0.55,0.55],"MODESTO":["STANISLAUS",0.55,0.55],"NEWMAN":["STANISLAUS",0.55,0.55],"OAKDALE":["STANISLAUS",0.55,0.55],"PATTERSON":["STANISLAUS",0.55,0.55],"RIVERBANK":["STANISLAUS",0.55,0.55],"TURLOCK":["STANISLAUS",0.55,0.55],"WATERFORD":["STANISLAUS",0.55,0.55],"LIVE OAK":["SUTTER",0.55,0.55],"YUBA":["SUTTER",0.55,0.55],"CORNING":["TEHAMA",0.55,0.55],"RED BLUFF":["TEHAMA",0.55,0.55],"TEHAMA":["TEHAMA",0.55,0.55],"TRINITY COUNTY":["TRINITY",0.0,1.1],"DINUBA":["TULARE",0.55,0.55],"EXETER":["TULARE",0.55,0.55],"FARMERSVILLE":["TULARE",0.55,0.55],"LINDSAY":["TULARE",0.55,0.55],"PORTERVILLE":["TULARE",0.55,0.55],"TULARE":["TULARE",0.55,0.55],"VISALIA":["TULARE",0.55,0.55],"WOODLAKE":["TULARE",0.55,0.55],"SONORA":["TUOLUMNE",0.55,0.55],"CAMARILLO":["VENTURA",0.55,0.55],"FILLMORE":["VENTURA",0.55,0.55],"MOORPARK":["VENTURA",0.55,0.55],"OJAI":["VENTURA",0.55,0.55],"OXNARD":["VENTURA",0.55,0.55],"PORT HUENEME":["VENTURA",0.55,0.55],"SAN BUENAVENTURA":["VENTURA",0.55,0.55],"SANTA PAULA":["VENTURA",0.55,0.55],"SIMI VALLEY":["VENTURA",0.55,0.55],"THOUSAND OAKS":["VENTURA",0.55,0.55],"DAVIS":["YOLO",0.55,0.55],"WEST SACRAMENTO":["YOLO",0.55,0.55],"WINTERS":["YOLO",0.55,0.55],"WOODLAND":["YOLO",0.55,0.55],"MARYSVILLE":["YUBA",0.55,0.55],"WHEATLAND":["YUBA",0.55,0.55]};
 function ttaxRates(city,price){
@@ -892,6 +999,9 @@ function viewSettings(){
     <div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:640px"><thead><tr><th>Card name</th><th>Receipts folder in Company Receipts (Drive link)</th></tr></thead><tbody>${cards().map(c=>`<tr><td><input type="text" id="cn-${esc(c.k)}" data-draft="cn-${esc(c.k)}" value="${esc(D('cn-'+c.k,c.n))}" aria-label="Card name"></td><td><input type="text" style="width:100%" id="cf-${esc(c.k)}" data-draft="cf-${esc(c.k)}" value="${esc(D('cf-'+c.k,(L.cardFolders||{})[c.k]||''))}" placeholder="Blank = the receipts folder below" aria-label="${esc(c.n)} receipts folder"></td></tr>`).join('')}</tbody></table></div>
     <span class="faint" style="font-size:12.5px">A receipt uploaded on a card’s row goes into that card’s folder, so AmEx receipts land in the AmEx folder and Capital One Business receipts in Capital One Business.</span>
     <div class="form-grid"><label class="field">Add a card<input type="text" id="cn-new" data-draft="cn-new" value="${esc(D('cn-new'))}" placeholder="e.g. Home Depot 8087"></label></div></div>
+  <div class="panel panel-pad stack"><h3 style="font-size:16px">PPC daily limit</h3>
+    <div class="form-grid"><label class="field">Limit per day<input type="text" inputmode="decimal" id="ls-ppcDailyLimit" data-draft="ls-ppcDailyLimit" value="${esc(D('ls-ppcDailyLimit',String(L.ppcDailyLimit??750)))}"></label><label class="field">Campaign launch date<input type="date" id="ls-ppcStart" data-draft="ls-ppcStart" value="${esc(D('ls-ppcStart',L.ppcStart||''))}"></label></div>
+    <span class="faint" style="font-size:12.5px">The Marketing tab flags any day the Google Ads and Bing charges go over this amount. A daily email check is set up separately.</span></div>
   <div class="panel panel-pad stack"><h3 style="font-size:16px">Import a month from the Daily Expense Tracker</h3>
     <span class="muted" style="font-size:13px">Paste the link to a month’s Daily Expense Tracker sheet. Each card tab (AmEx, Capital One, Discover, Citi, Home Depot, BOA) goes onto its card here with its category, sub category, property, receipt link and status. Rows already here are skipped, so you can import the same month again after adding to the sheet.</span>
     <div class="row"><input type="text" style="flex:1;min-width:260px" id="dt-link" data-draft="dtLink" value="${esc(D('dtLink'))}" placeholder="https://docs.google.com/spreadsheets/d/…"><button class="btn primary" data-act="dt-read"${S.dtBusy?' disabled':''}>Read sheet</button></div>
@@ -975,6 +1085,7 @@ document.addEventListener('change',async e=>{
   if(act==='imp-gone'){S.preview.removeGone=t.checked;render();return;}
   if(act==='dmonth'){S.dMonth=t.value;render();return;}
   if(act==='tmonth'){S.tMonth=t.value;S.confirm=null;render();return;}
+  if(act==='mmonth'){S.mMonth=t.value;render();return;}
   if(act==='ci'){const k=t.closest('tr')?.dataset.ck||S.tCard;const f=t.dataset.f;const v=t.dataset.num?(t.value.trim()===''?null:num(t.value)):t.value;const cur=S.cinfo.get(k)||{};const {id:_,...rest}=cur;const patch={...rest,[f]:v};
     if(f==='siteBalance'||f==='siteAsOf'){patch.siteBy=S.uid||'';patch.siteAt=new Date().toISOString();if(f==='siteBalance'&&!patch.siteAsOf)patch.siteAsOf=today();}
     await write(()=>db.doc('cardinfo/'+k).set(patch));return;}
@@ -1070,11 +1181,13 @@ document.addEventListener('click',async e=>{
       const cs=cards().map(c=>({k:c.k,n:(S.draft['cn-'+c.k]??c.n).trim()||c.n}));
       const nw=(S.draft['cn-new']||'').trim(); if(nw) cs.push({k:(nw.toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,20)||'card')+Date.now().toString(36).slice(-3),n:nw});
       const data={cards:cs,types:lines('types'),categories:lines('categories'),subcategories:lines('subcategories'),methods:lines('methods'),statuses:lines('statuses'),
+        ppcDailyLimit:num(S.draft['ls-ppcDailyLimit']??S.L.ppcDailyLimit??750)||750, ppcStart:(S.draft['ls-ppcStart']??S.L.ppcStart??''),
         cardFolders:Object.fromEntries(cs.map(c=>[c.k,(S.draft['cf-'+c.k]??(S.L.cardFolders||{})[c.k]??'').trim()]).filter(x=>x[1])),
         receiptFolder:(S.draft['ls-receiptFolder']??S.L.receiptFolder??'').trim(),propertyFolder:(S.draft['ls-propertyFolder']??S.L.propertyFolder??'').trim(),requireReceipt:S.draft['ls-req']??S.L.requireReceipt};
       if(await write(()=>db.doc('settings/lists').set(data))){for(const k of Object.keys(S.draft))if(/^(ls-|cn-|cf-)/.test(k))delete S.draft[k];toast('Settings saved');}
       break;
     }
+    case 'cs-sync': await syncCardSheets(); return;
     case 'dt-read': await importDailyFromDrive(); return;
     case 'dt-commit': await commitDailyImport(); return;
     case 'dt-cancel': S.dtPreview=null; break;
@@ -1091,6 +1204,7 @@ document.addEventListener('drop',async e=>{const d=e.target.closest?.('#drop');i
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.modal)closeModal();});
 window.addEventListener('hashchange',()=>{const t=location.hash.slice(1);if(SECTIONS.some(x=>x.k===t)){S.tab=t;render();}});
 
+function maybeAutoSync(){ if(!mcp||!S.csLoaded||S.csSync||S.csAuto) return; const at=[...S.csMeta.values()].map(m=>m.fetchedAt).sort()[0]; if(at&&Date.now()-Date.parse(at)<6*3600e3) return; S.csAuto=true; syncCardSheets(); }
 /* ---------- boot ---------- */
 render();
 (async()=>{
@@ -1107,9 +1221,12 @@ render();
   db.collection('payments').onSnapshot(s=>{S.pays=toMap(s);scheduleRender();},onErr);
   db.collection('cardpays').onSnapshot(s=>{S.cpays=toMap(s);scheduleRender();},onErr);
   db.collection('cardinfo').onSnapshot(s=>{S.cinfo=toMap(s);scheduleRender();},onErr);
+  db.collection('cardsheetmeta').onSnapshot(s=>{S.csMeta=toMap(s);rebuildSheetRows();scheduleRender();S.csLoaded=true;maybeAutoSync();},onErr);
+  db.collection('cardsheet').onSnapshot(s=>{S.csChunks=toMap(s);rebuildSheetRows();scheduleRender();},onErr);
   db.doc('settings/lists').onSnapshot(d=>{S.L=d.exists?{...DEFAULTS,...d.data()}:{...DEFAULTS};scheduleRender();},onErr);
   render();
   try{ mcp=await c.use('mcp'); if(mcp){ const lt=await mcp.listTools().catch(()=>null); fileArgs=!!lt?.fileArgs; } }catch{ mcp=null; }
+  maybeAutoSync();
   render();
 })();
 </script>
