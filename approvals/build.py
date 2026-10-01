@@ -19,6 +19,8 @@ import os
 import re
 from collections import Counter
 
+from overhead_categories import categorize
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
 
@@ -155,6 +157,8 @@ def load_overhead(path):
     r = rows(path)
     i, h = find_header(r, ["who will pay", "company", "amount"])
     c = {k: col(h, k) for k in ["who will pay", "date", "vendor", "description", "amount", "company"]}
+    # Overhead lines are grouped by what the money was for (Travel, Insurance, ...);
+    # the company is kept as a breakdown on each line.
     for k in ["bucket", "expense type"]:
         c[k] = h.index(k) if k in h else None
     c["paid"] = flag_col(h, r[i + 1:], "paid")
@@ -164,11 +168,11 @@ def load_overhead(path):
         amt = money(x[c["amount"]])
         if amt is None:
             continue
-        g = tidy(x[c["company"]]) or "No company listed"
+        g = categorize(x[c["vendor"]], x[c["description"]], opt(x, c, "bucket"), opt(x, c, "expense type"))
         bal[g] = bal.get(g, 0) + amt
         if x[c["paid"]].strip().upper() == "TRUE":
             continue
-        tags = [t for t in (tidy(opt(x, c, "bucket")), tidy(opt(x, c, "expense type"))) if t]
+        tags = []
         out.append({
             "group": g,
             "date": norm_date(x[c["date"]]),
@@ -176,6 +180,7 @@ def load_overhead(path):
             "desc": tidy(x[c["description"]]),
             "amount": amt,
             "payer": tidy(x[c["who will pay"]]),
+            "company": tidy(x[c["company"]]) or "No company listed",
             "tag": " · ".join(tags),
         })
     return out, bal
@@ -273,6 +278,12 @@ def summarize(card, skey, items, bal):
                 for i in its if i.get("due")]
         if dues:
             line["dues"] = dues
+        comp = {}
+        for i in its:
+            if i.get("company"):
+                comp[i["company"]] = comp.get(i["company"], 0) + i["amount"]
+        if comp:
+            line["companies"] = [{"name": k, "owed": round(v, 2)} for k, v in sorted(comp.items(), key=lambda kv: -abs(kv[1]))]
         if g == UNMATCHED:
             line["pos"] = sorted({re.sub(r"^PO ", "", i["tag"].split(" · ")[0]) for i in its})
         lines.append(line)

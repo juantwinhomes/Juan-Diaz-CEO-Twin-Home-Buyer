@@ -172,7 +172,7 @@ details[open] > summary .chev { transform: rotate(90deg); }
 
 <script>
 const DATA = /*__DATA__*/null;
-const LABEL = { overhead: ["company", "companies"], property: ["property", "properties"], marketing: ["marketing type", "marketing types"] };
+const LABEL = { overhead: ["category", "categories"], property: ["property", "properties"], marketing: ["marketing type", "marketing types"] };
 const UNMATCHED = "Location to confirm";
 const st = { card: DATA.cards[0].key, open: new Set(), notesOpen: new Set() };
 const dec = new Map();
@@ -254,7 +254,8 @@ function lineHtml(l) {
   const meta = [`${l.count} charge${l.count === 1 ? "" : "s"}`];
   if (l.from) meta.push(l.from === l.to ? fmtDate(l.from) : `${fmtDate(l.from)} – ${fmtDate(l.to)}`);
   if (l.balance != null && Math.abs(l.balance - l.owed) > 0.005) meta.push(`Balance ${fmt(l.balance)}`);
-  if (l.payers?.length) meta.push(esc(l.payers.join(", ")));
+  if (l.companies?.length) meta.push(l.companies.length === 1 ? esc(l.companies[0].name) : l.companies.map((x) => `${esc(x.name)} ${fmt(x.owed)}`).join(" · "));
+  else if (l.payers?.length) meta.push(esc(l.payers.join(", ")));
   if (l.credits) meta.push(`${l.credits} credit${l.credits === 1 ? "" : "s"} included`);
   let metaHtml = meta.map((m) => `<span>${m}</span>`).join("");
   if (di) {
