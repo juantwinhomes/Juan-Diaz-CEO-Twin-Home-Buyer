@@ -55,8 +55,13 @@ PO_RULES = [
     (r"^52PAR|PARAMO|PARMOU", "52 Paramount Ter"),
     (r"UMLAND", "492 Umland Dr, Santa Rosa"),
     (r"^4605TH", "460 5th Ave, Redwood City"),
-    (r"^751TH27|^75127TH", "751 27th Ave"),
+    (r"^751TH27|^75127TH|^775127TH", "751 27th Ave"),
     (r"170GLENN", "170 Glenn Way"),
+    # Confirmed by accounting, Oct 1 2026
+    (r"^PETALUMA", "1464 Sunrise Pkwy"),
+    (r"^REDWOODCITY", "460 5th Ave, Redwood City"),
+    (r"^SANMATEO", "27 Prague St"),
+    (r"^336917THST", "3375 17th St, San Francisco"),
 ]
 UNMATCHED = "Location to confirm"
 
