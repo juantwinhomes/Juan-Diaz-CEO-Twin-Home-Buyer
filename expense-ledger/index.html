@@ -244,7 +244,7 @@ const S={
   ready:{txns:false,props:false}, dbState:'connecting', readOnly:false,
   tab:(location.hash||'').slice(1)||'daily',
   dCard:null, dView:'todo', dMonth:'all',
-  tCard:'all', tBucket:'overhead', tPaid:'unpaid', tMonth:today().slice(0,7), mMonth:'all', mPaid:'all', drawsMap:new Map(), sheets:{}, sheetRows:[], csMeta:new Map(), csChunks:new Map(), csSync:'', csErr:'',
+  tCard:'all', drawProp:'all', tBucket:'overhead', tPaid:'unpaid', tMonth:today().slice(0,7), mMonth:'all', mPaid:'all', drawsMap:new Map(), sheets:{}, sheetRows:[], csMeta:new Map(), csChunks:new Map(), csSync:'', csErr:'',
   propId:'all', propFilter:'active', sel:new Set(), open:{calc:true,fin:false,budget:false,pays:false,files:false,'dr-set':true,'dr-list':true,'dr-where':true},
   preview:null, importing:false, confirm:null, draft:{}, modal:null
 };
@@ -856,8 +856,28 @@ const drawProps=()=>[...S.props.values()].filter(p=>Number(p.holdback)>0||(p.len
 function viewDraws(){
   const ps=drawProps();
   if(!ps.length) return `<div class="panel"><div class="empty"><b>No properties with a holdback yet</b>Open a property in Properties and add its holdback.</div></div>`;
-  if(!ps.some(p=>p.id===S.drawProp)) S.drawProp=ps[0].id;
-  let h=`<div class="cardtabs" role="group" aria-label="Property">${ps.map(p=>{const s=drawStats(p);return `<button data-act="dprop" data-k="${esc(p.id)}" aria-pressed="${S.drawProp===p.id}">${esc(shortAddr(p.address))}${s.pending>0?`<span class="count">${money0(s.pending)}</span>`:''}</button>`;}).join('')}</div>`;
+  if(S.drawProp!=='all'&&!ps.some(p=>p.id===S.drawProp)) S.drawProp='all';
+  let h=`<div class="cardtabs" role="group" aria-label="Property"><button data-act="dprop" data-k="all" aria-pressed="${S.drawProp==='all'}">All properties</button>${ps.map(p=>{const s=drawStats(p);return `<button data-act="dprop" data-k="${esc(p.id)}" aria-pressed="${S.drawProp===p.id}">${esc(shortAddr(p.address))}${s.pending>0?`<span class="count">${money0(s.pending)}</span>`:''}</button>`;}).join('')}</div>`;
+  if(S.drawProp==='all'){
+    const st=ps.map(p=>({p,s:drawStats(p)})), T=k=>sum(st,x=>x.s[k]);
+    const hb=x=>x.s.holdback||x.s.impliedHoldback||0, totalHb=sum(st,hb);
+    const pcT=v=>totalHb?Math.max(0,Math.min(100,v/totalHb*100)):0;
+    h+=`<div class="summary">
+      <div class="tile"><div class="label">Total holdback</div><div class="big">${money0(totalHb)}</div><div class="foot">${ps.length} properties</div></div>
+      <div class="tile"><div class="label">Disbursed to us</div><div class="big good">${money0(T('disbursed'))}</div></div>
+      <div class="tile"><div class="label">Pending</div><div class="big warn">${money0(T('pending'))}</div><div class="foot">drawn, not received yet</div></div>
+      <div class="tile"><div class="label">Inspection fees</div><div class="big">${money0(T('fees'))}</div></div>
+      <div class="tile"><div class="label">Left to fund</div><div class="big">${money0(T('remaining'))}</div><div class="foot">still at the lenders</div></div>
+      <div class="tile"><div class="label">Disbursed, not assigned</div><div class="big ${T('unassigned')>0?'warn':''}">${money0(T('unassigned'))}</div><div class="foot">no “where it went” yet</div></div>
+    </div>
+    <div class="panel panel-pad stack" style="margin-bottom:14px"><div class="track" style="height:14px;display:flex"><div class="fill" style="width:${pcT(T('disbursed'))}%"></div><div class="fill warn" style="width:${pcT(T('pending'))}%"></div><div class="fill over" style="width:${pcT(T('fees'))}%"></div></div><span class="faint" style="font-size:12px">Green: disbursed · Amber: pending · Red: inspection fees · Grey: left to fund</span></div>
+    <div class="panel tbl"><table style="min-width:900px"><thead><tr><th>Property</th><th>Lender</th><th class="amt">Holdback</th><th class="amt">Disbursed</th><th class="amt">Pending</th><th class="amt">Fees</th><th class="amt">Left to fund</th><th class="amt">Not assigned</th><th style="width:16%"></th></tr></thead><tbody>
+    ${st.map(({p,s})=>{const H=hb({s});return `<tr style="cursor:pointer" data-act="dprop" data-k="${esc(p.id)}"><td><a href="#draws">${esc(p.address)}</a><div class="faint" style="font-size:12px">${esc(p.status||'')} · ${s.list.length} draw${s.list.length===1?'':'s'}</div></td><td>${esc(p.lender||'—')}</td>
+      <td class="amt">${H?money0(H):'—'}${!s.holdback&&s.impliedHoldback!=null?'<div class="faint" style="font-size:11px">from lender figure</div>':''}</td><td class="amt" style="color:var(--good)">${money0(s.disbursed)}</td><td class="amt" style="color:${s.pending?'var(--warn)':'inherit'}">${money0(s.pending)}</td><td class="amt">${money0(s.fees)}</td><td class="amt" style="font-weight:600">${money0(s.remaining)}</td><td class="amt" style="color:${s.unassigned>0?'var(--warn)':'inherit'}">${money0(s.unassigned)}</td>
+      <td><div class="track" style="display:flex"><div class="fill" style="width:${H?Math.min(100,s.disbursed/H*100):0}%"></div><div class="fill warn" style="width:${H?Math.min(100,s.pending/H*100):0}%"></div></div></td></tr>`;}).join('')}
+    </tbody><tfoot><tr><td colspan="2">Total</td><td class="amt">${money0(totalHb)}</td><td class="amt">${money0(T('disbursed'))}</td><td class="amt">${money0(T('pending'))}</td><td class="amt">${money0(T('fees'))}</td><td class="amt">${money0(T('remaining'))}</td><td class="amt">${money0(T('unassigned'))}</td><td></td></tr></tfoot></table></div>`;
+    return h;
+  }
   const p=S.props.get(S.drawProp), s=drawStats(p);
   const pc=x=>s.holdback?Math.max(0,Math.min(100,x/s.holdback*100)):0;
   h+=`<div class="row" style="margin-bottom:12px"><h2 style="font-size:20px">${esc(p.address)}</h2><span class="pill acc">${esc(p.status||'—')}</span>${p.lender?`<span class="muted">Lender: ${esc(p.lender)}</span>`:''}${p.pageUrl?`<a href="${esc(p.pageUrl)}" target="_blank" rel="noopener">Property page</a>`:''}</div>
