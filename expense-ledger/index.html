@@ -846,12 +846,16 @@ function drawStats(p){
   const list=[...S.drawsMap.values()].filter(d=>d.propertyId===p.id).sort(byDate);
   const holdback=Number(p.holdback)||0, drawn=sum(list,dAmt), fees=sum(list,dFee), disbursed=sum(list,dRecv);
   const pending=r2(drawn-disbursed), used=r2(list.reduce((a,d)=>a+sum(d.uses||[]),0));
-  return {list,holdback,drawn,fees,disbursed,pending,remaining:r2(holdback-drawn-fees),used,unassigned:r2(drawn-used)};
+  const lender=p.lenderRemaining==null||p.lenderRemaining===''?null:Number(p.lenderRemaining);
+  const calc=holdback?r2(holdback-drawn-fees):null;
+  // what is left: the lender's own "remaining to fund" when entered, else holdback − draws − fees
+  const remaining=lender!=null?lender:(calc??0);
+  return {list,holdback,drawn,fees,disbursed,pending,remaining,calc,lender,diff:lender!=null&&calc!=null?r2(calc-lender):null,impliedHoldback:lender!=null?r2(lender+drawn+fees):null,used,unassigned:r2(drawn-used)};
 }
-const drawProps=()=>[...S.props.values()].filter(p=>groupOf(p)==='active'||Number(p.holdback)>0||[...S.drawsMap.values()].some(d=>d.propertyId===p.id)).sort((a,b)=>(a.address||'').localeCompare(b.address||''));
+const drawProps=()=>[...S.props.values()].filter(p=>Number(p.holdback)>0||(p.lenderRemaining!=null&&p.lenderRemaining!=='')||[...S.drawsMap.values()].some(d=>d.propertyId===p.id)).sort((a,b)=>(a.address||'').localeCompare(b.address||''));
 function viewDraws(){
   const ps=drawProps();
-  if(!ps.length) return `<div class="panel"><div class="empty"><b>No properties with a holdback yet</b>Set a property to Under construction or Pending to list it here.</div></div>`;
+  if(!ps.length) return `<div class="panel"><div class="empty"><b>No properties with a holdback yet</b>Open a property in Properties and add its holdback.</div></div>`;
   if(!ps.some(p=>p.id===S.drawProp)) S.drawProp=ps[0].id;
   let h=`<div class="cardtabs" role="group" aria-label="Property">${ps.map(p=>{const s=drawStats(p);return `<button data-act="dprop" data-k="${esc(p.id)}" aria-pressed="${S.drawProp===p.id}">${esc(shortAddr(p.address))}${s.pending>0?`<span class="count">${money0(s.pending)}</span>`:''}</button>`;}).join('')}</div>`;
   const p=S.props.get(S.drawProp), s=drawStats(p);
@@ -862,11 +866,15 @@ function viewDraws(){
     <div class="tile"><div class="label">Disbursed to us</div><div class="big good">${money0(s.disbursed)}</div></div>
     <div class="tile"><div class="label">Pending</div><div class="big warn">${money0(s.pending)}</div><div class="foot">drawn, not received yet</div></div>
     <div class="tile"><div class="label">Inspection fees</div><div class="big">${money0(s.fees)}</div><div class="foot">taken from the holdback</div></div>
-    <div class="tile"><div class="label">Left in holdback</div><div class="big">${s.holdback?money0(s.remaining):'—'}</div><div class="foot">holdback − draws − fees</div></div>
+    <div class="tile"><div class="label">Left to fund</div><div class="big">${s.lender!=null||s.holdback?money0(s.remaining):'—'}</div><div class="foot">${s.lender!=null?`lender’s figure${p.lenderRemainingAsOf?' as of '+shortDate(p.lenderRemainingAsOf):''}`:'holdback − draws − fees'}</div></div>
   </div>
+  ${s.diff!=null&&Math.abs(s.diff)>=0.01?`<div class="note">The holdback math gives ${money(s.calc)} left (${money0(s.holdback)} − ${money0(s.drawn)} drawn − ${money0(s.fees)} fees), but the lender says ${money(s.lender)}. Difference ${money(s.diff)}${s.diff>0?', usually inspection fees not entered yet':''}. With the lender’s figure, the holdback works out to ${money(s.impliedHoldback)}.</div>`:''}
+  ${!s.holdback&&s.impliedHoldback!=null?`<div class="note info">No holdback entered. From the lender’s remaining to fund, the draws and fees, it works out to ${money(s.impliedHoldback)}.</div>`:''}
   ${s.holdback?`<div class="panel panel-pad stack" style="margin-bottom:14px"><div class="track" style="height:14px;display:flex"><div class="fill" style="width:${pc(s.disbursed)}%"></div><div class="fill warn" style="width:${pc(s.pending)}%"></div><div class="fill over" style="width:${pc(s.fees)}%"></div></div><span class="faint" style="font-size:12px">Green: disbursed ${money0(s.disbursed)} · Amber: pending ${money0(s.pending)} · Red: inspection fees ${money0(s.fees)} · Grey: left in holdback ${money0(s.remaining)}</span></div>`:''}
   <div class="stack">`;
-  h+=sec('dr-set','Holdback & new draw',s.holdback?money0(s.holdback):'set the holdback',`<div class="form-grid"><label class="field">Holdback amount at lender<input type="text" inputmode="decimal" id="hb-${esc(p.id)}" data-act="hb" data-pid="${esc(p.id)}" value="${s.holdback?s.holdback.toLocaleString('en-US'):''}" placeholder="0"></label></div>
+  h+=sec('dr-set','Holdback & new draw',s.holdback?money0(s.holdback):'set the holdback',`<div class="form-grid"><label class="field">Holdback amount at lender<input type="text" inputmode="decimal" id="hb-${esc(p.id)}" data-act="hb" data-f="holdback" data-pid="${esc(p.id)}" value="${s.holdback?s.holdback.toLocaleString('en-US'):''}" placeholder="0"></label>
+      <label class="field">Remaining to fund <span class="faint" style="font-weight:400">from the lender’s statement</span><input type="text" inputmode="decimal" id="lr-${esc(p.id)}" data-act="hb" data-f="lenderRemaining" data-pid="${esc(p.id)}" value="${s.lender!=null?s.lender.toLocaleString('en-US'):''}" placeholder="optional"></label>
+      <label class="field">As of<input type="date" id="la-${esc(p.id)}" data-act="hb" data-f="lenderRemainingAsOf" data-text="1" data-pid="${esc(p.id)}" value="${esc(p.lenderRemainingAsOf||'')}"></label></div>
     <div class="form-grid">
       <label class="field">Date<input type="date" id="dd-${esc(p.id)}" data-draft="dd-${esc(p.id)}" value="${esc(D('dd-'+p.id,today()))}"></label>
       <label class="field">Draw amount<input type="text" inputmode="decimal" id="da-${esc(p.id)}" data-draft="da-${esc(p.id)}" value="${esc(D('da-'+p.id))}" placeholder="e.g. 27,000"></label>
@@ -1171,7 +1179,7 @@ document.addEventListener('change',async e=>{
   if(act==='dmonth'){S.dMonth=t.value;render();return;}
   if(act==='tmonth'){S.tMonth=t.value;S.confirm=null;render();return;}
   if(act==='mmonth'){S.mMonth=t.value;render();return;}
-  if(act==='hb'){const pid=t.dataset.pid;await write(()=>db.doc('properties/'+pid).update({holdback:t.value.trim()===''?null:num(t.value)}));return;}
+  if(act==='hb'){const pid=t.dataset.pid,f=t.dataset.f||'holdback';const v=t.dataset.text?t.value:(t.value.trim()===''?null:num(t.value));await write(()=>db.doc('properties/'+pid).update({[f]:v}));return;}
   if(act==='draw-f'){const v=t.dataset.text?t.value.trim():(t.value.trim()===''?0:num(t.value));await write(()=>db.doc('draws/'+t.dataset.did).update({[t.dataset.f]:v}));return;}
   if(act==='ci'){const k=t.closest('tr')?.dataset.ck||S.tCard;const f=t.dataset.f;const v=t.dataset.num?(t.value.trim()===''?null:num(t.value)):t.value;const cur=S.cinfo.get(k)||{};const {id:_,...rest}=cur;const patch={...rest,[f]:v};
     if(f==='siteBalance'||f==='siteAsOf'){patch.siteBy=S.uid||'';patch.siteAt=new Date().toISOString();if(f==='siteBalance'&&!patch.siteAsOf)patch.siteAsOf=today();}
