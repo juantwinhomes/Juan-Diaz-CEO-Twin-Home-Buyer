@@ -6,7 +6,7 @@ const CARD_SHEETS=[
   {file:'1oBnBWVC7gFYA_UIUkDdZfxGXp953GJNe',name:'Citi Expense Tracker',xlsx:true,tabs:[['Copy of Overhead Expenses','citi2149','overhead'],['Property Expenses','citi2149','property']]},
   {file:'1oRyqyx6g8VlnTvYkrM0_w45b12058QLl',name:'Bank of America Expense Tracker',xlsx:true,tabs:[['Overhead Expenses','boa0475','overhead'],['Property Expenses','boa0475','property'],['PPS Expenses','boa0475','overhead']]},
   {file:'1sIBMZbtKUcbdgGRX5D_WLzKSECPVSQb8',name:'Home Depot Expense Tracker',xlsx:true,tabs:[['5253','hd5253','property'],['1511','hd1511','property'],['8087','hd8087','property']]},
-  {file:'1dmvRz8Zly1MVYMZ9yeJaVFfByKrMHoan',name:'THB Real Estate Marketing Expenses 2026',xlsx:true,marketing:true,tabs:[['5004 American Express','amex','marketing'],['Capital One - Business','cap1b','marketing'],['Capital One Personal','cap1p','marketing'],['Discover','disc2645','marketing'],['Bank of America','boa0475','marketing']]},
+  {file:'1dmvRz8Zly1MVYMZ9yeJaVFfByKrMHoan',name:'THB Real Estate Marketing Expenses 2026',xlsx:true,marketing:true,tabs:[['5004 American Express','amex','marketing'],['Capital One - Business','cap1b','marketing'],['Capital One Personal','cap1p','marketing'],['Discover','disc2645','marketing'],['Bank of America','boa0475','marketing'],['Wells Fargo 6215','wf6215','marketing']]},
 ];
 function sheetDate(v){ if(v instanceof Date&&!isNaN(v)) return v.toISOString().slice(0,10); const s=String(v??'').trim(); let m;
   if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return m[0];
