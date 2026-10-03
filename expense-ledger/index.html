@@ -1547,6 +1547,13 @@ const AP_STATUS=['Draft','Waiting on Juan','Approved','On hold','Note','Paid'];
 const apList=()=>[...S.ap.values()].sort((a,b)=>(a.dueDate||'9').localeCompare(b.dueDate||'9'));
 const apOpen=x=>x.status!=='Paid';
 function apPill(x){ const c={Draft:'plain','Waiting on Juan':'warn',Approved:'good','On hold':'bad',Note:'acc',Paid:'good'}[x.status]||'plain'; return `<span class="pill ${c}">${esc(x.status||'Draft')}</span>`; }
+const apFolder=()=>folderId(S.L.apFolder||S.L.propertyFolder||S.L.receiptFolder);
+async function apUpload(file,x){ // x: {vendor,amount,invoiceNo}
+  const ext=extOf(file), base=amtStr(x.amount)+' - '+String(x.vendor||'Vendor').replace(/[\/\\:*?"<>|]/g,' ').trim()+(x.invoiceNo?' - Inv '+String(x.invoiceNo).replace(/[\/\\]/g,'-'):'');
+  const parent=apFolder(), name=await uniqueName(base,ext,parent);
+  const r=await uploadToDrive(file,name,parent); return {name,url:r.url,date:today()};
+}
+const apFiles=x=>[...(x.files||[]),...(x.docUrl&&!(x.files||[]).some(f=>f.url===x.docUrl)?[{name:x.invoiceNo||'Invoice',url:x.docUrl}]:[])];
 function viewPayables(){
   const all=apList(), open=all.filter(apOpen), wait=open.filter(x=>x.status==='Waiting on Juan'), appr=open.filter(x=>x.status==='Approved');
   const late=open.filter(x=>x.dueDate&&x.dueDate<today()), week=open.filter(x=>x.dueDate&&x.dueDate>=today()&&dayNum(x.dueDate)-dayNum(today())<=7);
@@ -1568,15 +1575,16 @@ function viewPayables(){
     <label class="field">Invoice #<input type="text" id="ap-i" data-draft="ap-i" value="${esc(D('ap-i'))}"></label>
     <label class="field">Amount<input type="text" inputmode="decimal" id="ap-a" data-draft="ap-a" value="${esc(D('ap-a'))}" placeholder="0.00"></label>
     <label class="field">Due date<input type="date" id="ap-d" data-draft="ap-d" value="${esc(D('ap-d',today()))}"></label>
-    <label class="field" style="grid-column:span 2">Invoice link (Drive)<input type="text" id="ap-l" data-draft="ap-l" value="${esc(D('ap-l'))}" placeholder="https://drive.google.com/…"></label>
+    <label class="field" style="grid-column:span 2">Invoice file<span class="row" style="gap:8px"><span class="btn file-btn">${S.apFile?'Change file':'Upload file'}<input type="file" id="ap-f" data-act="ap-file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv" aria-label="Upload invoice file"></span><span class="${S.apFile?'':'faint'}" style="font-size:12.5px;font-weight:400">${S.apFile?esc(S.apFile.name)+' <button class="btn sm ghost" data-act="ap-file-clear" aria-label="Remove file">✕</button>':mcp?'Saved to Google Drive as “$Amount - Vendor”':'Upload needs Google Drive connected'}</span></span></label>
+    <label class="field" style="grid-column:span 2">or paste a Drive link<input type="text" id="ap-l" data-draft="ap-l" value="${esc(D('ap-l'))}" placeholder="https://drive.google.com/…"></label>
     <label class="field" style="grid-column:span 2">Note for Juan<input type="text" id="ap-n" data-draft="ap-n" value="${esc(D('ap-n'))}" placeholder="What it is for, draw it comes from…"></label>
-    <div class="row" style="align-self:end"><button class="btn primary" data-act="ap-add" data-v="Waiting on Juan">Send to Juan</button><button class="btn" data-act="ap-add" data-v="Draft">Save as draft</button></div></div>`);
+    <div class="row" style="align-self:end"><button class="btn primary" data-act="ap-add" data-v="Waiting on Juan"${S.apBusy?' disabled':''}>${S.apBusy?'Uploading…':'Send to Juan'}</button><button class="btn" data-act="ap-add" data-v="Draft"${S.apBusy?' disabled':''}>Save as draft</button></div></div>`);
   h+=`<div class="toolbar"><div class="seg" role="group" aria-label="Show">${[['juan',`For Juan (${wait.length})`],['open',`Open (${open.length})`],['paid','Paid'],['all','All']].map(([k,n])=>`<button data-act="ap-view" data-v="${k}" aria-pressed="${view===k}">${n}</button>`).join('')}</div>
     ${view==='juan'&&wait.length?(S.confirm==='ap-all'?`<button class="btn primary sm" data-act="ap-all-yes">Approve all ${wait.length} (${money0(sum(wait))})</button><button class="btn ghost sm" data-act="cancel">Cancel</button>`:`<button class="btn sm" data-act="ap-all">Approve all waiting</button>`):''}</div>`;
   h+= rows.length?`<div class="panel tbl"><table style="min-width:1050px"><thead><tr><th>Due</th><th>Vendor</th><th>Property</th><th>Category</th><th>Invoice</th><th class="amt">Amount</th><th>Status</th><th>Juan’s decision</th><th></th></tr></thead><tbody>
   ${rows.map(x=>{const lateX=apOpen(x)&&x.dueDate&&x.dueDate<today();return `<tr data-ap="${esc(x.id)}"><td class="d" style="color:${lateX?'var(--bad)':''}">${shortDate(x.dueDate)}${lateX?'<div style="font-size:11px">past due</div>':''}</td>
     <td class="payee">${esc(x.vendor)}${x.notes?`<div class="muted" style="font-size:12px;font-weight:400">${esc(x.notes)}</div>`:''}</td><td>${esc(propName(x.propertyId)||'Overhead')}</td><td>${esc(x.category||'')}</td>
-    <td>${x.docUrl?`<a href="${esc(x.docUrl)}" target="_blank" rel="noopener">${esc(x.invoiceNo||'Invoice')}</a>`:esc(x.invoiceNo||'—')}</td><td class="amt">${money(x.amount)}</td><td>${apPill(x)}</td>
+    <td>${x.invoiceNo?`<div>${esc(x.invoiceNo)}</div>`:''}${apFiles(x).map(f=>`<div><a href="${esc(f.url)}" target="_blank" rel="noopener" title="${esc(f.name)}" style="font-size:12.5px">${esc(String(f.name).length>28?String(f.name).slice(0,26)+'…':f.name)}</a></div>`).join('')}<span class="btn sm file-btn" style="margin-top:2px">${S.apRowBusy===x.id?'Uploading…':'＋ File'}<input type="file" data-act="ap-row-file" data-ap="${esc(x.id)}" aria-label="Upload a file for this bill"></span></td><td class="amt">${money(x.amount)}</td><td>${apPill(x)}</td>
     <td>${x.status==='Paid'?`<span class="muted" style="font-size:12px">Paid ${shortDate(x.paidDate)}${x.paidMethod?' · '+esc(x.paidMethod):''}</span>`:`<div class="seg" role="group" aria-label="Decision">${['Approve','Hold','Note'].map(v=>{const st={Approve:'Approved',Hold:'On hold',Note:'Note'}[v];return `<button data-act="ap-dec" data-v="${st}" aria-pressed="${x.status===st}">${v}</button>`;}).join('')}</div>
       ${x.decision?.by?`<div class="faint" style="font-size:11px">${esc(personName(x.decision.by))} · ${esc(new Date(x.decision.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}${x.decision.note?' · “'+esc(x.decision.note)+'”':''}</div>`:''}
       ${S.apNote===x.id?`<div class="row" style="margin-top:4px"><input type="text" id="apn-${esc(x.id)}" data-draft="apn-${esc(x.id)}" value="${esc(D('apn-'+x.id))}" placeholder="Juan’s note"><button class="btn sm" data-act="ap-note-save">Save note</button></div>`:''}`}</td>
@@ -1888,7 +1896,8 @@ function viewSettings(){
   <div class="panel panel-pad stack"><h3 style="font-size:16px">Google Drive</h3>
     <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
     <label class="field">Receipts folder (link)<input type="text" id="ls-receiptFolder" data-draft="ls-receiptFolder" value="${esc(D('ls-receiptFolder',L.receiptFolder||''))}" placeholder="https://drive.google.com/drive/folders/…"></label>
-    <label class="field">Property files folder (link)<input type="text" id="ls-propertyFolder" data-draft="ls-propertyFolder" value="${esc(D('ls-propertyFolder',L.propertyFolder||''))}" placeholder="Leave blank to use the receipts folder"></label></div>
+    <label class="field">Property files folder (link)<input type="text" id="ls-propertyFolder" data-draft="ls-propertyFolder" value="${esc(D('ls-propertyFolder',L.propertyFolder||''))}" placeholder="Leave blank to use the receipts folder"></label>
+    <label class="field">Payables / invoices folder (link)<input type="text" id="ls-apFolder" data-draft="ls-apFolder" value="${esc(D('ls-apFolder',L.apFolder||''))}" placeholder="Blank = property files folder"></label></div>
     <span class="faint" style="font-size:12.5px">Receipts are named “$Amount - Vendor”, the way the Company Receipts folders already are (for example $722.96 - Amazon.pdf), and go into the card’s folder, then the month folder (SEPTEMBER 2026). A missing month folder is created. A repeat gets .2, .3 and so on, as in the receipt SOP.</span>
     <label class="check"><input type="checkbox" id="ls-req" data-draft="ls-req"${D('ls-req',L.requireReceipt)?' checked':''}> Require a receipt before a row transfers</label></div>
   <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">${ta('types','Expense types')}${ta('categories','Categories',10)}${ta('subcategories','Sub categories',10)}${ta('methods','Payment methods (non-card)')}${ta('statuses','Property statuses')}</div>
@@ -1973,6 +1982,14 @@ document.addEventListener('change',async e=>{
   if(act==='pb'&&S.propId!=='all'){await write(()=>db.doc('properties/'+S.propId).update({budgets:{[t.dataset.cat]:num(t.value)}}));return;}
   if(act==='payf'){const pid=tr?.dataset.pid;if(!pid)return;if(tr.dataset.kind==='card')await setTxn(pid,{paid:t.checked});else await write(()=>db.doc('payments/'+pid).update({paid:t.checked}));return;}
   if(act==='mr-file'&&S.modal){S.modal.file=t.files[0]||null;S.modal.err='';renderModal();return;}
+  if(act==='ap-file'){S.apFile=t.files[0]||null;render();return;}
+  if(act==='ap-row-file'&&t.files[0]){
+    const x=S.ap.get(t.dataset.ap); if(!x) return; if(!mcp){toast('Uploading needs Google Drive connected to this page.');return;}
+    const f=t.files[0]; S.apRowBusy=x.id; render();
+    try{ const up=await apUpload(f,x); await write(()=>db.doc('ap/'+x.id).update({files:[...(x.files||[]),up],...(x.docUrl?{}:{docUrl:up.url})})); toast('Saved to Drive as '+up.name); }
+    catch(err){ toast(err?.code==='too_big'?'That file is too large for this viewer. Upload it in Drive and paste the link in the note.':driveErr(err)); }
+    S.apRowBusy=null; render(); return;
+  }
   if(act==='pfile'&&t.files[0]){
     const p=S.props.get(S.propId); if(!p||!mcp){toast('Drive upload needs Google Drive connected.');return;}
     const f=t.files[0]; toast('Uploading to Drive…');
@@ -2061,7 +2078,7 @@ document.addEventListener('click',async e=>{
       const data={cards:cs,types:lines('types'),categories:lines('categories'),subcategories:lines('subcategories'),methods:lines('methods'),statuses:lines('statuses'),
         ppcDailyLimit:num(S.draft['ls-ppcDailyLimit']??S.L.ppcDailyLimit??750)||750, ppcStart:(S.draft['ls-ppcStart']??S.L.ppcStart??''),
         cardFolders:Object.fromEntries(cs.map(c=>[c.k,(S.draft['cf-'+c.k]??(S.L.cardFolders||{})[c.k]??'').trim()]).filter(x=>x[1])),
-        receiptFolder:(S.draft['ls-receiptFolder']??S.L.receiptFolder??'').trim(),propertyFolder:(S.draft['ls-propertyFolder']??S.L.propertyFolder??'').trim(),requireReceipt:S.draft['ls-req']??S.L.requireReceipt,...Object.fromEntries(['cashOnHand','cashAsOf','cashBuffer'].filter(k=>S.L[k]!=null).map(k=>[k,S.L[k]]))};
+        receiptFolder:(S.draft['ls-receiptFolder']??S.L.receiptFolder??'').trim(),propertyFolder:(S.draft['ls-propertyFolder']??S.L.propertyFolder??'').trim(),apFolder:(S.draft['ls-apFolder']??S.L.apFolder??'').trim(),requireReceipt:S.draft['ls-req']??S.L.requireReceipt,...Object.fromEntries(['cashOnHand','cashAsOf','cashBuffer'].filter(k=>S.L[k]!=null).map(k=>[k,S.L[k]]))};
       if(await write(()=>db.doc('settings/lists').set(data))){for(const k of Object.keys(S.draft))if(/^(ls-|cn-|cf-)/.test(k))delete S.draft[k];toast('Settings saved');}
       break;
     }
@@ -2072,7 +2089,12 @@ document.addEventListener('click',async e=>{
     case 'ap-add': {const vendor=(S.draft['ap-v']||'').trim(),amount=r2(num(S.draft['ap-a']));if(!vendor||!amount){toast('Fill in the vendor and amount.');return;}
       const link=(S.draft['ap-l']||'').trim(), note=(S.draft['ap-n']||'').trim(); if(bankBlocked(vendor,note,S.draft['ap-i'])) return;
       if(link&&!/^https:\/\/(drive|docs)\.google\.com\//.test(link)){toast('Use a Google Drive link for the invoice.');return;}
-      if(await write(()=>db.collection('ap').add({vendor,propertyId:S.draft['ap-p']||'',category:S.draft['ap-c']||'Contractor Service',invoiceNo:(S.draft['ap-i']||'').trim(),amount,dueDate:S.draft['ap-d']||today(),docUrl:link,notes:note,status:b.dataset.v,createdBy:S.uid||'',createdAt:new Date().toISOString()}))){for(const k of ['ap-v','ap-a','ap-i','ap-l','ap-n'])S.draft[k]='';toast(b.dataset.v==='Draft'?'Saved as draft':'Sent to Juan');}break;}
+      const invoiceNo=(S.draft['ap-i']||'').trim(); let files=[];
+      if(S.apFile){ if(!mcp){toast('Uploading needs Google Drive connected to this page.');return;} S.apBusy=true; render();
+        try{ files=[await apUpload(S.apFile,{vendor,amount,invoiceNo})]; }catch(err){ S.apBusy=false; render(); toast(err?.code==='too_big'?'That file is too large for this viewer. Upload it in Drive and paste the link.':driveErr(err)); return; }
+        S.apBusy=false; }
+      if(await write(()=>db.collection('ap').add({vendor,propertyId:S.draft['ap-p']||'',category:S.draft['ap-c']||'Contractor Service',invoiceNo,amount,dueDate:S.draft['ap-d']||today(),docUrl:files[0]?.url||link,files,notes:note,status:b.dataset.v,createdBy:S.uid||'',createdAt:new Date().toISOString()}))){for(const k of ['ap-v','ap-a','ap-i','ap-l','ap-n'])S.draft[k]='';S.apFile=null;toast(b.dataset.v==='Draft'?'Saved as draft':'Sent to Juan');}break;}
+    case 'ap-file-clear': S.apFile=null; break;
     case 'ap-send': await write(()=>db.doc('ap/'+tr.dataset.ap).update({status:'Waiting on Juan'})); break;
     case 'ap-dec': {const id=tr.dataset.ap,v=b.dataset.v; if(v==='Note'){S.apNote=id;await write(()=>db.doc('ap/'+id).update({status:'Note',decision:{by:S.uid||'',at:new Date().toISOString(),note:''}}));break;}
       S.apNote=null; await write(()=>db.doc('ap/'+id).update({status:v,decision:{by:S.uid||'',at:new Date().toISOString(),note:''}})); break;}
