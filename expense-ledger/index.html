@@ -216,6 +216,610 @@ fieldset.ro{border:0;margin:0;padding:0;min-width:0}
 </div>
 <div id="toast" hidden></div>
 <div id="modal" hidden></div>
+<style>
+.fx-vd{display:grid;grid-template-columns:10px 1fr;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.fx-vd>i{background:var(--faint)}.fx-vd.go>i{background:var(--good)}.fx-vd.wait>i{background:var(--warn)}.fx-vd.stop>i{background:var(--bad)}
+.fx-vd .b{padding:16px 20px;min-width:0}
+.fx-vd .q{font-size:13px;color:var(--muted)}
+.fx-vd .a{font-size:24px;font-weight:700;line-height:1.2;margin:2px 0 6px}
+.fx-vd.go .a{color:var(--good)}.fx-vd.wait .a{color:var(--warn)}.fx-vd.stop .a{color:var(--bad)}
+.fx-vd .why{color:var(--ink);max-width:72ch;margin:0}
+.fx-how{margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}
+.fx-how>summary{cursor:pointer;font-weight:700;font-size:13.5px}
+.fx-how ol{margin:10px 0 0;padding-left:20px}.fx-how li{margin:0 0 10px}
+.fx-math{display:block;background:var(--surface-2);border-radius:7px;padding:5px 9px;margin:4px 0;font-size:12.5px;overflow-x:auto;font-family:var(--f-mono)}
+.fx-src{font-size:12px;color:var(--faint)}
+.fx-say{background:var(--surface-2);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 12px;margin-top:10px;font-size:13.5px}
+.fx-say b{display:block;font-size:12px;color:var(--muted)}
+.fx-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.fx-chips button{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:6px 12px;font-weight:600;font-size:13px;cursor:pointer;color:var(--ink)}
+.fx-chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.fx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.fx-chart{width:100%;height:auto;display:block}
+.fx-chart text{fill:var(--muted);font-size:11px}
+.fx-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.fx-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.fx-in{width:100%;min-width:90px}
+.fx-tbl input,.fx-tbl select{width:100%;min-width:80px}
+.fx-h{font-size:17px;font-weight:700;margin:22px 0 8px}
+.fx-p{max-width:76ch;color:var(--muted);font-size:13.5px;margin:0 0 10px}
+
+.fx-sub{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 10px;border-bottom:1px solid var(--line)}
+.fx-sub button{border:0;background:none;padding:8px 12px;font-weight:600;font-size:13.5px;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer}
+.fx-sub button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.fx-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 14px}
+.fx-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0 4px}
+.fx-nums>div{background:var(--surface-2);border-radius:9px;padding:8px 10px}
+.fx-nums span{display:block;font-size:12px;color:var(--muted)}
+.fx-nums b{font-size:17px}.fx-nums b.good{color:var(--good)}.fx-nums b.bad{color:var(--bad)}.fx-nums b.warn{color:var(--warn)}
+.fx-minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:18px}
+.fx-mini{text-align:left;border:1px solid var(--line);border-left:6px solid var(--faint);background:var(--surface);border-radius:12px;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:3px;color:var(--ink);font:inherit}
+.fx-mini.go{border-left-color:var(--good)}.fx-mini.wait{border-left-color:var(--warn)}.fx-mini.stop{border-left-color:var(--bad)}
+.fx-mini .q{font-size:12.5px;color:var(--muted)}.fx-mini .a{font-size:17px;font-weight:700}.fx-mini .why{font-size:13px;color:var(--muted)}
+.fx-mini.go .a{color:var(--good)}.fx-mini.wait .a{color:var(--warn)}.fx-mini.stop .a{color:var(--bad)}
+.fx-flag{padding:6px 0;border-bottom:1px solid var(--line)}.fx-flag:last-child{border-bottom:0}
+.fx-rline{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.fx-rline .dot{width:12px;height:12px;border-radius:50%;margin-top:4px;flex:0 0 auto;background:var(--faint)}
+.fx-rline .dot.go{background:var(--good)}.fx-rline .dot.wait{background:var(--warn)}.fx-rline .dot.stop{background:var(--bad)}
+</style>
+<script>
+/* ===== Controller section: one tab with sub-pages. Reads this ledger + the QuickBooks snapshot. ===== */
+const FX={sub:'overview',q:'afford',obl:null,flip:null,pdf:'',pdfBusy:false,stress:{price:0,delay:0}};
+const fxN=v=>{if(v==null||v==='')return null;const n=num(v);return isFinite(n)?n:null;};
+const fxISO=()=>today();
+const fxMonths=(a,b)=>{if(!a||!b)return null;const [y1,m1,d1]=a.split('-').map(Number),[y2,m2,d2]=b.split('-').map(Number);return Math.max(0,(y2-y1)*12+(m2-m1)+(d2>=d1?0:-1));};
+const fxDays=(a,b)=>Math.round((Date.parse(b+'T12:00')-Date.parse(a+'T12:00'))/864e5);
+const fxAddM=(ym,k)=>{let [y,m]=ym.split('-').map(Number);m+=k;while(m>12){m-=12;y++;}while(m<1){m+=12;y--;}return y+'-'+String(m).padStart(2,'0');};
+const fxML=ym=>new Date(ym+'-01T12:00').toLocaleDateString('en-US',{month:'short',year:'numeric'});
+const fxD=d=>d?new Date(d+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+const fxPct=n=>n==null||!isFinite(n)?'—':Math.round(n*100)+'%';
+const fxSet=()=>S.fxs||{};
+const QB=()=>(S.fxQB&&S.fxQB.get('snapshot'))||null;
+const fxWorst=c=>c.some(x=>x.s==='stop')?'stop':c.some(x=>x.s==='wait')?'wait':'go';
+const pillOf=s=>s==='go'?'good':s==='stop'?'bad':s==='wait'?'warn':'plain';
+
+/* ---------- ledger spending ---------- */
+function fxAllRows(){
+  const out=[];
+  for(const c of cards()) for(const r of mergedRows(c.k)) out.push(r);
+  for(const r of S.sheetRows) if(!cards().some(c=>c.k===r.card)) out.push(r);
+  for(const p of S.pays.values()) out.push({amount:Number(p.amount)||0,date:p.date||'',bucket:'property',paid:!!p.paid,src:'payment'});
+  return out;
+}
+function fxSpendByMonth(n){
+  const rows=fxAllRows(), cur=fxISO().slice(0,7), months=[...Array(n)].map((_,i)=>fxAddM(cur,-(n-i)));
+  const by=Object.fromEntries(months.map(m=>[m,{overhead:0,property:0,marketing:0,ppc:0}]));
+  for(const r of rows){const m=(r.date||'').slice(0,7); if(!by[m]) continue; const b=r.bucket==='uncat'?'overhead':r.bucket; if(by[m][b]!=null) by[m][b]+=r.amount; if(b==='marketing'&&isPPC(r)) by[m].ppc+=r.amount;}
+  return months.map(m=>({m,...by[m]}));
+}
+function fxRunRate(){const l=fxSpendByMonth(3),a=k=>r2(sum(l,x=>x[k])/3);return {months:l.map(x=>x.m),overhead:a('overhead'),property:a('property'),marketing:a('marketing'),ppc:a('ppc')};}
+
+/* ---------- people & accounts ---------- */
+const fxOpen=()=>[...(S.fxObls||new Map()).values()].filter(o=>!['Paid off','Returned','Sold'].includes(o.status));
+const fxActive=p=>p&&['active'].includes(groupOf(p));
+const fxBanksList=()=>[...(S.fxBanks||new Map()).values()].sort((a,b)=>(a.order||99)-(b.order||99)||(a.name||'').localeCompare(b.name||''));
+function fxCash(){
+  const q=QB(), banks=fxBanksList().filter(b=>b.company!==false);
+  const cash=banks.length?r2(sum(banks,b=>fxN(b.balance)||0)):null;
+  const tracker=r2(sum(cards(),c=>cardBalance(c.k).balance));
+  const qbCards=q?.bs?.cardsTotal??null;
+  const cardDebt=Math.max(tracker,qbCards||0), cl=fxCardList(), cardsOwed=r2(sum(cl,c=>c.min)), cardsEst=cl.filter(c=>c.est).length;
+  const ap=q?.bs?.ap||0;
+  const fixed=r2(sum(fxOpen().filter(o=>o.paysMonthly!==false),o=>fxN(o.monthly)||0));
+  const cushion=fxN(fxSet().cushion)||0;
+  const free=cash==null?null:r2(cash-cardsOwed-ap-fixed-cushion);
+  return {banks,cash,tracker,qbCards,cardDebt,cardsOwed,cardsEst,ap,fixed,cushion,free,asOf:banks.map(b=>b.asOf).filter(Boolean).sort()[0]||null};
+}
+
+/* ---------- decision card ---------- */
+function fxCard(v,open){
+  return `<section class="fx-vd ${v.level}"><i aria-hidden="true"></i><div class="b">
+    <div class="q">${esc(v.q)}</div><div class="a">${esc(v.a)}</div><p class="why">${esc(v.why)}</p>
+    ${v.nums&&v.nums.length?`<div class="fx-nums">${v.nums.map(([k,val,s])=>`<div><span>${esc(k)}</span><b class="${s?pillOf(s):''}">${esc(val)}</b></div>`).join('')}</div>`:''}
+    ${v.steps&&v.steps.length?`<details class="fx-how"${open?' open':''}><summary>Show me how we got this</summary><ol>${v.steps.map(c=>`<li><b>${esc(c.t)}</b> <span class="pill ${pillOf(c.s)}">${{go:'OK',wait:'Check',stop:'Problem',info:'Step'}[c.s]}</span><div>${esc(c.d)}</div>${c.m?`<code class="fx-math">${esc(c.m)}</code>`:''}<div class="fx-src">From: ${esc(c.src||'This ledger')}</div></li>`).join('')}</ol></details>`:''}
+    ${v.say?`<div class="fx-say"><b>If Juan asks, say</b>${esc(v.say)}</div>`:''}</div></section>`;
+}
+
+/* ---------- 1. can we afford it ---------- */
+function fxAfford(amtRaw){
+  const C=fxCash(), amt=fxN(amtRaw), q=QB();
+  if(C.cash==null) return {level:'wait',q:'Can we afford this?',a:'Can’t answer yet',why:'No bank balances yet.',nums:[],steps:[]};
+  const st=[
+    {s:'info',t:'Cash in company bank accounts',d:`${C.banks.length} company accounts. Juan’s personal accounts are left out.`,m:C.banks.map(b=>`${b.name} ${money0(fxN(b.balance))}`).join(' + ')+` = ${money0(C.cash)}`,src:q?`QuickBooks Balance Sheet, ${fxD(q.asOf)}`:'Banks'},
+    {s:C.cardsEst?'wait':'info',t:'Minus this month’s card payments',d:`We pay the minimum (or what’s needed), not the full balance.${C.cardsEst?` ${C.cardsEst} card${C.cardsEst>1?'s don’t':' doesn’t'} have a minimum entered yet, so I estimate 2% of the balance. Type the real minimum in Banks.`:''}`,m:money0(C.cardsOwed),src:'Banks → card minimums'},
+    {s:'wait',t:'Card debt we keep carrying',d:`The full card balance (${money0(C.cardDebt)}) is still debt and costs interest. It isn’t taken out here, but it isn’t free money either.${C.qbCards!=null&&Math.abs(C.qbCards-C.tracker)>1000?` QuickBooks says ${money0(C.qbCards)}; the card tracker says ${money0(C.tracker)}; they should match.`:''}`,m:`Card debt ${money0(C.cardDebt)} (not subtracted)`,src:'QuickBooks + Card Tracker'},
+    {s:'info',t:'Minus bills entered in QuickBooks',d:'Vendor bills waiting to be paid (Accounts Payable).',m:money0(C.ap),src:'QuickBooks A/P'},
+    {s:'info',t:'Minus this month’s loan and lease payments',d:'Mortgages on active flips, vehicles, equipment.',m:money0(C.fixed),src:'Loans & Vehicles'},
+    {s:C.cushion?'info':'wait',t:'Minus the safety cushion',d:C.cushion?'Money we never spend.':'Not set yet. Ask Juan for the minimum to always keep.',m:money0(C.cushion),src:'Banks'},
+    ...C.banks.filter(b=>/investor|reserved/i.test(b.note||'')).map(b=>({s:'wait',t:`${b.name} may be set aside`,d:`${b.note}. If that money is only for that project, free cash is up to ${money0(fxN(b.balance))} lower.`,m:'Counted for now',src:'Banks'})),
+    {s:C.free>=0?'go':'stop',t:'Free cash',d:'What’s left to decide on.',m:`${money0(C.cash)} − ${money0(C.cardsOwed)} − ${money0(C.ap)} − ${money0(C.fixed)} − ${money0(C.cushion)} = ${money0(C.free)}`}];
+  let level=C.free>=0?'go':'stop',a=C.free>=0?`${money0(C.free)} is free to spend`:`We’re ${money0(-C.free)} short`,why='Everything we already owe comes out first.';
+  if(amt){const left=r2(C.free-amt);
+    if(left>=0){level='go';a='Yes, we can afford it';why=`After paying ${money0(amt)} we still have ${money0(left)} free.`;}
+    else if(C.cushion&&left+C.cushion>=0){level='wait';a='Only by using the cushion';why=`It’s ${money0(-left)} more than free cash. That’s Juan’s call.`;}
+    else{level='stop';a='No, not right now';why=`We’d be ${money0(-left)} short after paying what we owe.`;}
+    st.push({s:level,t:'Compare to the payment',d:why,m:`${money0(C.free)} − ${money0(amt)} = ${money0(left)}`});}
+  return {level,q:amt?`Can we afford ${money0(amt)}?`:'How much can we spend right now?',a,why,
+    nums:[['Cash in the bank',money0(C.cash)],['Due this month',money0(C.cardsOwed+C.ap+C.fixed)],['Free to spend',money0(C.free),C.free>=0?'go':'stop'],['Card debt carried',money0(C.cardDebt),'wait']],
+    steps:st,say:`${a}. We have ${money0(C.cash)} in company accounts; after this month’s card minimums, bills and loan payments, ${money0(C.free)} is free. We still carry ${money0(C.cardDebt)} of card debt.`};
+}
+
+/* ---------- 2. making money (QuickBooks) ---------- */
+function fxProfit(){
+  const q=QB(); if(!q?.pl) return {level:'wait',q:'Are we making money this year?',a:'Waiting for QuickBooks',why:'Ask Claude to refresh QuickBooks.',nums:[],steps:[]};
+  const p=q.pl, mk=p.marketingTotal, oh=r2(p.netOperating!=null?p.grossProfit-p.netOperating:0);
+  const level=p.netOperating>=0?'go':'stop';
+  return {level,q:`Are we making money in ${p.year}?`,a:p.netOperating>=0?`Yes, ${money0(p.netOperating)} so far`:`Not yet: down ${money0(-p.netOperating)} so far`,
+    why:`The flips themselves made ${money0(p.grossProfit)}. Running the company (marketing, legal, payroll, office) cost ${money0(oh)}, which is more than the flips made.${mk?` Marketing alone was ${money0(mk)}.`:''}`,
+    nums:[['Sold (property sales)',money0(p.propertySales)],['Profit from flips',money0(p.grossProfit),'go'],['Company running costs',money0(oh),'stop'],['Left over',money0(p.netOperating),level]],
+    steps:[{s:'info',t:'Money in',d:'Property sales, wholesale fees and rent.',m:`${money0(p.propertySales)} sales + ${money0(p.wholesale)} wholesale fees + ${money0(p.rental)} rent = ${money0(p.income)}`,src:`QuickBooks Profit & Loss, ${p.period}`},
+      {s:'info',t:'Minus the cost of the houses',d:'Buying price, rehab, closing costs, commissions and loan interest on each flip.',m:`${money0(p.income)} − ${money0(p.income-p.grossProfit)} = ${money0(p.grossProfit)} profit from flips (${fxPct(p.grossProfit/p.income)} of sales)`,src:'QuickBooks P&L, Cost of Goods Sold'},
+      {s:'stop',t:'Minus the cost of running the company',d:'Biggest items below.',m:(p.topCosts||[]).map(([k,v])=>`${k} ${money0(v)}`).join(' · '),src:'QuickBooks P&L, Expenses'},
+      {s:level,t:'Left over',d:'This is the company’s profit or loss.',m:`${money0(p.grossProfit)} − ${money0(oh)} = ${money0(p.netOperating)}`,src:'QuickBooks P&L'}],
+    say:`So far in ${p.year} we sold ${money0(p.propertySales)} of property. The flips made ${money0(p.grossProfit)}, but running the company cost ${money0(oh)}, so we are ${p.netOperating>=0?'up':'down'} ${money0(Math.abs(p.netOperating))}. Marketing is the biggest cost at ${money0(mk)}.`};
+}
+
+/* ---------- 3. marketing (QuickBooks + deals + KPI sheet) ---------- */
+const FX_CH=[
+  {id:'ppc',n:'PPC (Google ads)',qb:['AM - PPC'],test:r=>isPPC(r)||/digital marketing/i.test(r.cat||'')},
+  {id:'dm',n:'Direct mail',qb:['AM- Direct Mail'],test:r=>/direct mail|postcard/i.test(r.cat||'')},
+  {id:'leads',n:'Bought leads',qb:['AM - Property Leads','AM - Motivated Leads'],test:r=>/property leads|motivated leads|leadgeeks|investorbase/i.test(r.cat||'')},
+  {id:'tv',n:'TV (Bullseye)',qb:['AM - Bullseye'],test:r=>/^tv$|commercial/i.test(r.cat||'')},
+  {id:'social',n:'Facebook & social',qb:['AM - Facebook','AM - Reddit'],test:r=>/facebook|reddit|meta/i.test(r.cat||'')},
+  {id:'tools',n:'Tools & other',qb:['AM - Tech','AM - Other','AM - Smarter Contact'],test:r=>/sales acquisition|marketing tools|technology/i.test(r.cat||'')}
+];
+function fxChannels(){
+  const q=QB(), yr=fxISO().slice(0,4), rows=marketingRows().filter(r=>(r.date||'').startsWith(yr)), left=new Set(rows);
+  return FX_CH.map(c=>{const mine=rows.filter(r=>left.has(r)&&c.test(r)); mine.forEach(r=>left.delete(r));
+    const d=(S.fxCh||new Map()).get(c.id)||{}, qbSpend=q?.pl?.marketing?r2(sum(c.qb,k=>q.pl.marketing[k]||0)):null, ledger=r2(sum(mine));
+    const spend=qbSpend??ledger, deals=fxN(d.deals)||0, fees=fxN(d.fees)||0;
+    return {...c,d,spend,ledger,qbSpend,deals,fees,pending:d.pending||'',ratio:spend?fees/spend:null,cpd:deals?spend/deals:null};});
+}
+function fxChVerdict(c){
+  const target=fxN(fxSet().targetCPD)||15000, rule=fxN(fxSet().juanRule)||20000;
+  if(c.id==='tools') return {s:'info',a:'Shared cost',why:'Supports every channel.'};
+  if(!c.deals) return c.spend>=rule?{s:'stop',a:'Stop or pause',why:`${money0(c.spend)} spent and no signed deal this year.`}:{s:'info',a:'Too small to judge',why:`${money0(c.spend)} spent, no deal yet.`};
+  return c.cpd<=target?{s:'go',a:'Keep',why:`${money0(c.cpd)} per deal, at or under the ${money0(target)} target.`}:c.cpd<=target*2?{s:'wait',a:'Keep, but cut cost',why:`${money0(c.cpd)} per deal. Target is ${money0(target)}.`}:{s:'stop',a:'Cut back',why:`${money0(c.cpd)} per deal, more than double the ${money0(target)} target.`};
+}
+function fxMarketing(){
+  const ch=fxChannels(), q=QB(), tot=r2(sum(ch,c=>c.spend)), deals=sum(ch,c=>c.deals), target=fxN(fxSet().targetCPD)||15000, cpd=deals?tot/deals:null;
+  const level=cpd==null?'stop':cpd<=target?'go':cpd<=target*2?'wait':'stop';
+  return {level,q:`Is marketing working in ${fxISO().slice(0,4)}?`,a:level==='go'?'Yes':level==='wait'?'Partly':'No, it costs too much per deal',
+    why:`We spent ${money0(tot)} on marketing and got ${deals} signed deals. That’s ${money0(cpd)} for each deal. Our target is ${money0(target)} a deal.`,
+    nums:[['Spent on marketing',money0(tot)],['Signed deals',String(deals)],['Cost per deal',money0(cpd),level],['Target per deal',money0(target)]],
+    steps:ch.filter(c=>c.spend||c.deals).map(c=>{const v=fxChVerdict(c);return {s:v.s,t:`${c.n}: ${v.a}`,d:v.why,m:`spent ${money0(c.spend)}${c.qbSpend!=null&&Math.abs(c.qbSpend-c.ledger)>500?` (QuickBooks; ledger shows ${money0(c.ledger)})`:''} · ${c.deals} deal${c.deals===1?'':'s'}${c.cpd?` · ${money0(c.cpd)} each`:''}${c.pending?` · pending: ${c.pending}`:''}`,src:'QuickBooks P&L (Acquisition Marketing) + Acquired Properties sheet for deals'};}),
+    say:`This year marketing cost ${money0(tot)} for ${deals} signed deals, about ${money0(cpd)} per deal against a ${money0(target)} target. ${ch.filter(c=>fxChVerdict(c).s==='stop').map(c=>c.n).join(' and ')||'No channel'} should be cut or paused.`};
+}
+function fxPPC(){
+  const s=fxSet(), C=fxCash(), daily=Number(S.L.ppcDailyLimit)||750, need=daily*30, start=S.L.ppcStart||'';
+  const ch=fxChannels().find(c=>c.id==='ppc'), d=ch.d, target=fxN(s.targetCPD)||15000, pause=fxN(s.ppcPause)||40000, alert=fxN(s.ppcAlert)||25000;
+  const ppcRows=marketingRows().filter(isPPC), last=d.lastContract||'', since=last?r2(sum(ppcRows.filter(r=>r.date>last))):null;
+  const el=fxN(d.leads), nr=fxN(d.neverReached);
+  const st=[
+    {s:ch.cpd<=target?'go':'stop',t:'Cost per signed deal',d:`${ch.deals} PPC deals this year.`,m:`${money0(ch.spend)} ÷ ${ch.deals} = ${money0(ch.cpd)} per deal · target ${money0(target)}`,src:'QuickBooks P&L (AM - PPC) + Acquired Properties sheet'},
+    since!=null?{s:since>=pause?'stop':since>=alert?'wait':'go',t:'Spent since the last signed PPC deal',d:since>=pause?`Past the ${money0(pause)} pause line.`:'Below the pause line.',m:`Since ${fxD(last)}: ${money0(since)}${ch.pending?` · pending: ${ch.pending}`:''}`,src:'Marketing tab (Google/Bing charges)'}:null,
+    el?{s:nr/el<=.2?'go':nr/el<=.3?'wait':'stop',t:'Leads we paid for but never reached',d:'Every unreached lead is wasted ad money.',m:`${nr} of ${el} = ${fxPct(nr/el)} · healthy is 20% or less`,src:d.leadSource||'Bateman PPC Lead KPI Dashboard'}:null,
+    C.free==null?null:{s:C.free>=need?'go':'stop',t:'Cash for one month of ads',d:'',m:`${money0(daily)} × 30 = ${money0(need)} · free cash ${money0(C.free)}`,src:'Free cash'},
+    ch.qbSpend!=null&&Math.abs(ch.qbSpend-ch.ledger)>500?{s:'wait',t:'QuickBooks and the ledger don’t match',d:'Some Google charges are in one and not the other. Reconcile before reporting.',m:`QuickBooks ${money0(ch.qbSpend)} vs ledger ${money0(ch.ledger)}`,src:'QuickBooks + Marketing tab'}:null].filter(Boolean);
+  const level=fxWorst(st), live=start&&fxISO()>=start;
+  const a=level==='go'?'Go':level==='wait'?'Go, with conditions':'Not yet';
+  const fixes=st.filter(x=>x.s==='stop').map(x=>x.t.toLowerCase());
+  return {level,q:live?'Is PPC making progress?':`Should PPC relaunch${start?` on ${fxD(start)}`:''}?`,a,
+    why:level==='go'?'The numbers support it.':`Fix first: ${fixes.join('; ')}.`,
+    nums:[['PPC spend this year',money0(ch.spend)],['Signed PPC deals',String(ch.deals)],['Cost per deal',money0(ch.cpd),ch.cpd<=target?'go':'stop'],el?['Leads never reached',fxPct(nr/el),nr/el<=.2?'go':'stop']:null].filter(Boolean),
+    steps:st,say:`PPC: ${a}. This year it cost ${money0(ch.spend)} for ${ch.deals} signed deals, ${money0(ch.cpd)} per deal against a ${money0(target)} target.${el?` ${fxPct(nr/el)} of leads were never reached.`:''} Relaunch only with the $750/day cap, the $40K pause line, and every lead called the same day.`};
+}
+
+/* ---------- 4. loans, vehicles, equipment ---------- */
+const FX_KINDS=['Mortgage','Vehicle loan','Vehicle lease','Equipment loan','Private loan','Owned (no payment)','Not confirmed'];
+const FX_GROUPS=[['Mortgage','Mortgages on active flips'],['Vehicle loan','Vehicles'],['Vehicle lease','Vehicles'],['Owned (no payment)','Vehicles'],['Not confirmed','Vehicles'],['Equipment loan','Equipment'],['Private loan','Private & investor loans']];
+const fxGroupOf=o=>(FX_GROUPS.find(g=>g[0]===o.kind)||[0,'Vehicles'])[1];
+function fxObl(o){
+  const m=fxN(o.monthly)||0, owed=fxN(o.balance), worth=fxN(o.value), eq=owed!=null&&worth!=null?r2(worth-owed):null, st=[];
+  const personal=/personal|family/i.test(o.assigned||'');
+  const left=o.endDate?fxMonths(fxISO(),o.endDate):null;
+  if(owed!=null) st.push({s:'info',t:'What we still owe',d:'',m:money0(owed),src:o.balSrc||'QuickBooks Balance Sheet'});
+  if(worth!=null) st.push({s:'info',t:'What it’s worth',d:o.valueSrc||'',m:money0(worth),src:o.valueSrc||'Entered'});
+  if(eq!=null) st.push({s:eq>=0?'go':'wait',t:eq>=0?'Worth more than we owe':'We owe more than it’s worth',d:'',m:`${money0(worth)} − ${money0(owed)} = ${money0(eq)}`});
+  if(personal) st.push({s:'wait',t:'Personal use, paid by the company',d:`Used by ${o.assigned}. Personal vehicle payments should be booked as owner draws, not business costs. Confirm with the CPA.`});
+  let level='go',a='Keep paying',why='';
+  if(o.kind==='Mortgage'){
+    const p=o.propertyId?S.props.get(o.propertyId):null;
+    if(p&&!fxActive(p)){level='stop';a='Check: property no longer active';why='This loan should be paid off or moved. Confirm with the lender.';}
+    else{a='Keep paying until it sells';why=`Each month this flip doesn’t sell costs about ${m?money0(m):'its interest'}. Selling on time is what protects the profit.`;}
+  } else if(o.kind==='Vehicle lease'){
+    if(left!=null&&left<=1){level='stop';a=`Act now: lease ends ${fxD(o.endDate)}`;why='Ask for an extension first, then compare return, buy out, or exchange.';}
+    else{const buy=fxN(o.buyout);
+      if(buy!=null&&worth!=null){const g=r2(worth-buy);level='go';a=g>0?'Buy it out or trade it in':'Return it at the end';why=g>0?`It’s worth ${money0(g)} more than the buyout.`:`The buyout is ${money0(-g)} more than it’s worth.`;st.push({s:'info',t:'Worth vs buyout',m:`${money0(worth)} − ${money0(buy)} = ${money0(g)}`});}
+      else{level='wait';a='Get the buyout quote';why=`Ask the lender for the buyout price and a dealer for a trade-in offer. Then this says return, buy, or exchange.${left!=null?` ${left} payments left (${money0(m*left)}).`:''}`;}}
+  } else if(o.kind==='Vehicle loan'||o.kind==='Equipment loan'){
+    if(owed!=null&&owed<=0){level='wait';a='Looks paid off: confirm';why=`QuickBooks shows ${money0(owed)} owed. If it’s paid off, stop the monthly payment and mark it Paid off.`;}
+    else if(o.needed==='No'){level=eq!=null&&eq>=0?'go':'wait';a='Sell it';why=eq==null?'We don’t need it. Get a value to see what selling brings.':eq>=0?`Selling frees ${money0(eq)} plus ${money0(m)} a month.`:`Selling means paying ${money0(-eq)} to clear the loan but saves ${money0(m)} a month.`;}
+    else if(eq!=null&&eq<0){level='wait';a='Keep paying (we owe more than it’s worth)';why=`Selling now would cost ${money0(-eq)} out of pocket. Keep it while we use it.`;}
+    else{a='Keep paying';why=owed!=null?`We owe ${money0(owed)}.`:'Add the payoff balance.';}
+  } else if(o.kind==='Private loan'){level='wait';a='Get the repayment date';why=`We owe ${money0(owed)}. Write down when it must be repaid and the interest, so it’s in the forecast.`;}
+  else if(o.kind==='Owned (no payment)'){a=o.needed==='No'?'Sell it':'Keep it';why=o.needed==='No'?`No payment, but we don’t use it.${worth?` Worth about ${money0(worth)}.`:''}`:'No monthly payment.';}
+  else {level='wait';a='Confirm: loan or lease?';why='Check the contract.';}
+  if(personal&&level==='go') level='wait';
+  return {level,q:`${o.name}: what should we do?`,a,why,nums:[['Monthly',m?money0(m):'—'],['Owed',owed!=null?money0(owed):'—'],['Worth',worth!=null?money0(worth):'—'],['Worth − owed',eq!=null?money0(eq):'—',eq==null?null:eq>=0?'go':'wait']],steps:st,say:`${o.name}: ${a}. ${why}`};
+}
+
+/* ---------- 5. flips: equity + calculator ---------- */
+const FX_SELL=()=>{const q=QB()?.pl;return {comm:fxN(fxSet().commissionRate)??(q?.commissionRate??5),close:fxN(fxSet().sellCloseRate)??(q?.sellCloseRate??1.5)};};
+function fxFlip(p){
+  const f=p.fx||{}, g=k=>fxN(p[k]), st=propStats(p), sell=FX_SELL();
+  const buy=g('purchasePrice'), sale=fxN(f.salePrice)??g('salePrice'), loan=fxN(f.loan)??g('loanAmount'), hold=fxN(f.holdback)??g('holdback')??0;
+  const buyCosts=fxN(f.buyCosts)||0, spent=st.total, left=fxN(f.rehabLeft)??Math.max(0,(hold||0)-spent), daily=fxN(f.dailyInterest)||0;
+  const start=f.interestFrom||f.purchaseDate||'', end=f.saleDate||'', days=start&&end?Math.max(0,fxDays(start,end)):0;
+  const stress=FX.stress, sale2=sale!=null?sale*(1-stress.price/100):null, days2=days+stress.delay*30;
+  const interest=r2(daily*days2), comm=sale2!=null?r2(sale2*sell.comm/100):0, close=sale2!=null?r2(sale2*sell.close/100):0;
+  const costs=buy!=null?r2(buy+buyCosts+spent+left+interest+comm+close):null;
+  const profit=sale2!=null&&costs!=null?r2(sale2-costs):null;
+  const payoff=loan!=null?r2(loan):null; // full loan, including holdback once drawn
+  const cashBack=sale2!=null&&payoff!=null?r2(sale2-comm-close-payoff):null;
+  const cashIn=r2((g('emd')||0)+(g('fundsToClose')||0)+Math.max(0,spent+left-(hold||0))+interest);
+  const qb=QB()?.bs?.props?.[p.id]||null;
+  return {p,f,buy,sale:sale2,loan,hold,buyCosts,spent,left,daily,days:days2,interest,comm,close,costs,profit,cashBack,cashIn,sell,qb,ready:buy!=null&&sale!=null};
+}
+function fxFlipCard(F){
+  if(!F.ready) return {level:'wait',q:`${shortAddr(F.p.address)}: how much will we make?`,a:'Add the buy price and expected sale price',why:'Fill in the numbers below.',nums:[],steps:[]};
+  const level=F.profit>=F.sale*0.08?'go':F.profit>0?'wait':'stop';
+  const months=F.days/30;
+  return {level,q:`${shortAddr(F.p.address)}: how much will we make?`,a:F.profit>=0?`About ${money0(F.profit)} profit`:`A loss of about ${money0(-F.profit)}`,
+    why:`${level==='go'?'Healthy margin.':level==='wait'?'Thin margin: a small price drop or a delay wipes it out.':'This flip loses money at these numbers.'} Every extra month costs about ${money0(F.daily*30)} in interest.`,
+    nums:[['Expected sale',money0(F.sale)],['Total costs',money0(F.costs)],['Profit',money0(F.profit),level],['Check at closing',money0(F.cashBack)]],
+    steps:[{s:'info',t:'Bought for',m:money0(F.buy),src:F.f.src||'Settlement statement'},
+      {s:'info',t:'Buying costs',d:'Title, escrow, lender fees, insurance (from the settlement statement).',m:money0(F.buyCosts),src:F.f.src||'Settlement statement'},
+      {s:'info',t:'Rehab',d:`${money0(F.spent)} spent so far + ${money0(F.left)} still to spend${F.f.rehabLeft==null?' (assumed: the rest of the lender holdback)':''}.`,m:money0(F.spent+F.left),src:'Properties tab + lender holdback'},
+      {s:'info',t:'Loan interest while we hold it',d:`${money(F.daily)} a day for about ${Math.round(months*10)/10} months.`,m:`${money(F.daily)} × ${F.days} days = ${money0(F.interest)}`,src:F.f.src||'Settlement statement (prepaid interest)'},
+      {s:'info',t:'Selling costs',d:`Agent commission ${F.sell.comm}% and closing ${F.sell.close}% (our 2026 average in QuickBooks).`,m:`${money0(F.comm)} + ${money0(F.close)}`,src:'QuickBooks P&L 2026'},
+      {s:level,t:'Profit',m:`${money0(F.sale)} − ${money0(F.costs)} = ${money0(F.profit)}`},
+      {s:'info',t:'Check we get at closing',d:'Sale price minus selling costs minus paying off the full loan.',m:`${money0(F.sale)} − ${money0(F.comm+F.close)} − ${money0(F.loan)} = ${money0(F.cashBack)}`},
+      {s:'info',t:'Our own cash in the deal',d:'Deposit + cash at closing + rehab the loan didn’t cover + interest.',m:money0(F.cashIn)}],
+    say:`${shortAddr(F.p.address)}: at ${money0(F.sale)} we make about ${money0(F.profit)} and get a ${money0(F.cashBack)} check at closing. Each month of delay costs about ${money0(F.daily*30)}.`};
+}
+function fxEquity(){
+  const q=QB(), rows=[];
+  for(const p of [...S.props.values()].filter(fxActive).sort((a,b)=>(a.address||'').localeCompare(b.address||''))){
+    const b=q?.bs?.props?.[p.id]||{}, cost=b.cost??null, loan=b.loan??null, hb=b.holdbackLeft||0;
+    const cashIn=cost!=null&&loan!=null?r2(cost-(loan-hb)):null, F=fxFlip(p);
+    rows.push({p,cost,loan,hb,cashIn,sale:F.ready?F.sale:null,equity:F.ready&&loan!=null?r2(F.sale-F.comm-F.close-loan):null,note:b.note||''});
+  }
+  return rows;
+}
+
+/* ---------- 6. cash forecast + what we might be missing ---------- */
+function fxForecast(){
+  const s=fxSet(), C=fxCash(), R=fxRunRate(), cur=fxISO().slice(0,7), ppcOn=(s.ppcPlan||'on')==='on', daily=Number(S.L.ppcDailyLimit)||750;
+  const mkt=r2(R.marketing-R.ppc+(ppcOn?daily*30:0)), out=r2(R.overhead+R.property+mkt+C.fixed);
+  const inc=[...(S.fxInc||new Map()).values()];
+  const drawLeft=r2(sum(drawProps().map(p=>drawStats(p)),s=>Math.max(0,s.remaining)));
+  const drawMo=r2(Math.min(R.property,drawLeft/6));
+  const sales=[...S.props.values()].filter(fxActive).map(p=>fxFlip(p)).filter(F=>F.ready&&F.f.saleDate&&F.cashBack!=null);
+  let base=C.cash, up=C.cash; const rows=[];
+  for(let i=0;i<6;i++){const m=fxAddM(cur,i), sure=r2(drawMo+sum(inc.filter(x=>(x.date||'').startsWith(m)&&x.sure==='Confirmed'),x=>fxN(x.amount)||0)), likely=r2(sum(sales.filter(F=>F.f.saleDate.startsWith(m)),F=>F.cashBack)+sum(inc.filter(x=>(x.date||'').startsWith(m)&&x.sure==='Likely'),x=>fxN(x.amount)||0)), catchUp=i===0?r2(C.ap):0;
+    if(base!=null){base=r2(base+sure-out-catchUp);up=r2(up+sure+likely-out-catchUp);} rows.push({m,sure,likely,out,base,up});}
+  const low=C.cash!=null?Math.min(...rows.map(r=>r.base)):null, lowR=rows.find(r=>r.base===low), runOut=rows.find(r=>r.base<0);
+  const level=low==null?'wait':low>=C.cushion?'go':low>=0?'wait':'stop';
+  return {rows,R,C,out,mkt,ppcOn,inc,level,
+    card:{level,q:'Will we have enough cash for the next 6 months?',a:low==null?'Can’t forecast yet':low>=C.cushion?'Yes':runOut?`No: cash runs out in ${fxML(runOut.m)}`:`Tight in ${fxML(lowR.m)}`,
+      why:low==null?'Needs bank balances.':`About ${money0(out)} goes out each month and about ${money0(drawMo)} comes back from lender draws. Sale checks only count once a closing is Confirmed${sales.length?'':', and none are entered yet'}.`,
+      nums:[['Cash today',money0(C.cash)],['Going out a month',money0(out)],['Lowest point',low==null?'—':money0(low),level]],
+      steps:[{s:'info',t:'Start: cash in company accounts',m:money0(C.cash),src:'QuickBooks Balance Sheet'},
+        {s:'info',t:'Each month going out (average of the last 3 months)',d:R.months.map(fxML).join(', '),m:`Overhead ${money0(R.overhead)} + property ${money0(R.property)} + marketing ${money0(mkt)}${ppcOn?' (PPC at $750/day)':' (PPC paused)'} + loan payments ${money0(C.fixed)} = ${money0(out)}`,src:'This ledger + Loans & Vehicles'},
+        {s:'info',t:'First month also pays bills already entered',d:`Card spending is counted as it happens (the safe way to plan). The ${money0(C.cardDebt)} already on the cards stays as debt, paid down by minimums.`,m:`Bills ${money0(C.ap)}`,src:'QuickBooks A/P'},
+        {s:'info',t:'Plus construction money from lenders',d:`${money0(drawLeft)} is still held by lenders for our rehabs. It comes back as we spend on construction, so I add ${money0(drawMo)} a month.`,m:`${money0(drawLeft)} ÷ 6 months`,src:'Draws tab'},
+        {s:sales.length?'info':'wait',t:'Plus sale checks from flips (hopeful line only)',d:sales.length?sales.map(F=>`${shortAddr(F.p.address)} ${money0(F.cashBack)} in ${fxML(F.f.saleDate.slice(0,7))}`).join(' · '):'Add expected sale dates in the flip calculator.',m:`Confirmed money in ${money0(sum(rows,r=>r.sure))} · hopeful ${money0(sum(rows,r=>r.likely))}`,src:'Flip calculator + Money coming in'}],
+      say:low==null?null:`Cash: we start at ${money0(C.cash)} and spend about ${money0(out)} a month. ${runOut?`Without new sale money, we run out in ${fxML(runOut.m)}.`:`Lowest point is ${money0(low)}.`}`}};
+}
+function fxBlindSpots(){
+  const q=QB(), bs=q?.bs||{}, list=[...((S.fxCh&&S.fxCh.get('_blind'))?.items||[])];
+  return list;
+}
+
+/* ---------- editable field helper ---------- */
+function fxF(col,o,f,label,type='text',opts){
+  const v=o[f]??'';
+  if(type==='select') return `<label class="field">${esc(label)}<select data-fx-col="${col}" data-fx-id="${esc(o.id)}" data-fx-f="${f}">${opts.map(x=>`<option${String(x)===String(v)?' selected':''}>${esc(x)}</option>`).join('')}</select></label>`;
+  if(type==='prop') return `<label class="field">${esc(label)}<select data-fx-col="${col}" data-fx-id="${esc(o.id)}" data-fx-f="${f}"><option value="">—</option>${propOptgroups(v)}</select></label>`;
+  return `<label class="field">${esc(label)}<input class="fx-in" type="${type==='date'?'date':'text'}" ${type==='num'?'inputmode="decimal" data-fx-num="1"':''} data-fx-col="${col}" data-fx-id="${esc(o.id)}" data-fx-f="${f}" value="${esc(type==='num'&&v!==''&&v!=null?Number(v).toLocaleString('en-US',{maximumFractionDigits:2}):v)}"></label>`;
+}
+
+
+/* ---------- charts (screen) ---------- */
+function fxBars(data,keys,colors,labels){
+  const W=640,H=220,P=36,max=Math.max(1,...data.map(d=>keys.reduce((t,k)=>t+Math.max(0,d[k]||0),0)));
+  const bw=(W-P-10)/data.length*.62, gap=(W-P-10)/data.length;
+  let g='';data.forEach((d,i)=>{let y=H-24;const x=P+i*gap+(gap-bw)/2;keys.forEach((k,j)=>{const h=Math.max(0,d[k]||0)/max*(H-50);y-=h;g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${colors[j]}" rx="2"><title>${esc(labels[j])}: ${money0(d[k])}</title></rect>`;});g+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle">${esc(d.label)}</text>`;});
+  return `<svg class="fx-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Bar chart"><line x1="${P}" x2="${W-10}" y1="${H-24}" y2="${H-24}" stroke="var(--line-strong)"/><text x="${P-4}" y="20" text-anchor="end">${money0(max)}</text>${g}</svg><div class="fx-legend">${labels.map((l,j)=>`<span><i style="background:${colors[j]}"></i>${esc(l)}</span>`).join('')}</div>`;
+}
+function fxLine(rows,cushion){
+  const W=640,H=220,P=56,vals=rows.flatMap(r=>[r.base,r.up]).concat([cushion,0]),mx=Math.max(...vals),mn=Math.min(...vals),sp=mx-mn||1;
+  const X=i=>P+i*(W-P-16)/Math.max(1,rows.length-1), Y=v=>14+(mx-v)/sp*(H-44);
+  const path=k=>rows.map((r,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(r[k]).toFixed(1)}`).join('');
+  return `<svg class="fx-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Cash forecast"><line x1="${P}" x2="${W-16}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line-strong)"/>${cushion?`<line x1="${P}" x2="${W-16}" y1="${Y(cushion)}" y2="${Y(cushion)}" stroke="var(--warn)" stroke-dasharray="5 4"/>`:''}<path d="${path('up')}" fill="none" stroke="var(--k1)" stroke-width="2" stroke-dasharray="6 4"/><path d="${path('base')}" fill="none" stroke="var(--accent)" stroke-width="3"/>${rows.map((r,i)=>`<circle cx="${X(i)}" cy="${Y(r.base)}" r="3.5" fill="${r.base<0?'var(--bad)':'var(--accent)'}"><title>${fxML(r.m)}: ${money0(r.base)}</title></circle><text x="${X(i)}" y="${H-6}" text-anchor="middle">${fxML(r.m)}</text>`).join('')}<text x="${P-6}" y="${Y(mx)+4}" text-anchor="end">${money0(mx)}</text><text x="${P-6}" y="${Y(mn)+4}" text-anchor="end">${money0(mn)}</text></svg><div class="fx-legend"><span><i style="background:var(--accent)"></i>Cash, confirmed money in only</span><span><i style="background:var(--k1)"></i>If likely money also arrives</span>${cushion?'<span><i style="background:var(--warn)"></i>Safety cushion</span>':''}</div>`;
+}
+
+
+
+
+/* ---------- cards: we pay minimums / as needed, not the full balance ---------- */
+function fxCardList(){
+  const q=QB(), m=S.fxCardMin||new Map();
+  return cards().map(c=>{const bal=cardBalance(c.k).balance, d=m.get(c.k)||{}, min=fxN(d.minDue), est=min==null;
+    return {k:c.k,n:c.n,bal,min:est?r2(Math.max(0,bal)*0.02):min,est,due:d.dueDate||'',d};}).filter(c=>Math.abs(c.bal)>=1||c.d.minDue!=null);
+}
+function fxDueIn(dateStr,from,to){return dateStr&&dateStr>=from&&dateStr<=to;}
+function fxNextDue(day,from){ // next calendar date for a day-of-month on/after `from`
+  if(!day) return null; const [y,m]=from.split('-').map(Number); const pad=n=>String(n).padStart(2,'0');
+  let d=`${y}-${pad(m)}-${pad(Math.min(28,day))}`; if(d<from){const nm=m===12?1:m+1, ny=m===12?y+1:y; d=`${ny}-${pad(nm)}-${pad(Math.min(28,day))}`;} return d;
+}
+const fxAddDays=(d,n)=>{const t=new Date(d+'T12:00');t.setDate(t.getDate()+n);return t.toISOString().slice(0,10);};
+
+/* ---------- escrow closings: estimated check ---------- */
+function fxEscrowCheck(x){
+  const p=x.propertyId?S.props.get(x.propertyId):null; if(!p) return {amount:fxN(x.amount),how:'Typed in'};
+  const sale=fxN(x.salePrice); if(sale==null) return {amount:fxN(x.amount),how:'Add the sale price'};
+  const sell=FX_SELL(), F=fxFlip(p), qb=QB()?.bs?.props?.[p.id]||{};
+  const payoff=fxN(x.payoff)??fxN((p.fx||{}).loan)??qb.loan??fxN(p.loanAmount);
+  const comm=r2(sale*sell.comm/100), close=r2(sale*sell.close/100);
+  if(payoff==null) return {amount:null,how:'Add the loan payoff'};
+  return {amount:r2(sale-comm-close-payoff),how:`${money0(sale)} sale − ${money0(comm)} commission (${sell.comm}%) − ${money0(close)} closing (${sell.close}%) − ${money0(payoff)} loan payoff`,sale,comm,close,payoff,p};
+}
+
+/* ---------- last week + next 7 days ---------- */
+function fxWeek(){
+  const t=fxISO(), lwFrom=fxAddDays(t,-7), lwTo=fxAddDays(t,-1), nwTo=fxAddDays(t,6);
+  // last week: ledger charges
+  const rows=fxAllRows().filter(r=>r.date>=lwFrom&&r.date<=lwTo&&r.amount>0);
+  const bySub={},byBucket={overhead:0,property:0,marketing:0},byPayee={};
+  for(const r of rows){const b=r.bucket==='uncat'?'overhead':r.bucket; byBucket[b]=(byBucket[b]||0)+r.amount; const k=r.bucket==='property'?(r.prop||propName(r.propertyId)||'Property (no address)'):(r.cat||r.sub||'Uncategorized'); bySub[k]=(bySub[k]||0)+r.amount; const pk=(r.vendor||r.desc||'').slice(0,40)||'Unknown'; byPayee[pk]=(byPayee[pk]||0)+r.amount;}
+  const last={from:lwFrom,to:lwTo,total:r2(sum(rows)),count:rows.length,byBucket,top:Object.entries(bySub).sort((a,b)=>b[1]-a[1]).slice(0,8),payees:Object.entries(byPayee).sort((a,b)=>b[1]-a[1]).slice(0,8),qb:QB()?.lastWeek||null};
+  // next 7 days: in
+  const inc=[...(S.fxInc||new Map()).values()];
+  const ins=[];
+  for(const x of inc){ if(!fxDueIn(x.date,t,nwTo)) continue; const c=x.kind==='Escrow closing'?fxEscrowCheck(x):{amount:fxN(x.amount),how:'Typed in'}; ins.push({what:x.kind==='Escrow closing'?`Close of escrow: ${shortAddr(propName(x.propertyId)||x.label)}`:(x.label||x.kind||'Money in'),date:x.date,amount:c.amount,how:c.how,sure:x.sure||'Likely'}); }
+  // out
+  const outs=[];
+  for(const b of (QB()?.bills||[])) if(fxDueIn(b.due,t,nwTo)||(b.due&&b.due<t&&!b.paid)) outs.push({what:b.name,date:b.due,amount:b.amount,src:'Scanned mail',late:b.due<t});
+  for(const o of fxOpen()){ if(o.paysMonthly===false) continue; const d=fxNextDue(fxN(o.dueDay),t); if(d&&d<=nwTo&&fxN(o.monthly)) outs.push({what:`${o.name} payment`,date:d,amount:fxN(o.monthly),src:o.paidFrom||'Loans & vehicles'}); }
+  for(const c of fxCardList()) if(c.due&&fxDueIn(c.due,t,nwTo)) outs.push({what:`${c.n} card ${c.est?'(est. minimum)':'minimum'}`,date:c.due,amount:c.min,src:'Cards'});
+  const pay=fxN(fxSet().weeklyPayroll); if(pay) outs.push({what:'Weekly payroll',date:fxAddDays(t,(5-new Date(t+'T12:00').getDay()+7)%7),amount:pay,src:'Banks → weekly payroll'});
+  outs.sort((a,b)=>(a.date||'').localeCompare(b.date||''));ins.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const inTot=r2(sum(ins.filter(x=>x.sure==='Confirmed'),x=>x.amount||0)), inLikely=r2(sum(ins.filter(x=>x.sure!=='Confirmed'),x=>x.amount||0)), outTot=r2(sum(outs,x=>x.amount||0));
+  const C=fxCash(), after=C.cash==null?null:r2(C.cash+inTot-outTot);
+  return {t,nwTo,last,ins,outs,inTot,inLikely,outTot,after,C,missingPayroll:!pay};
+}
+function fxWeekCard(W){
+  const level=W.after==null?'wait':W.after>=W.C.cushion?(W.missingPayroll?'wait':'go'):'stop';
+  return {level,q:`Next 7 days (${fxD(W.t)} – ${fxD(W.nwTo)})`,a:W.inTot||W.inLikely?`${money0(W.inTot)} coming in, ${money0(W.outTot)} going out`:`${money0(W.outTot)} going out, nothing confirmed coming in`,
+    why:`${W.inLikely?`Another ${money0(W.inLikely)} is likely but not confirmed. `:''}Cash after the week: about ${money0(W.after)}.${W.missingPayroll?' Payroll isn’t included yet: enter the weekly payroll in Banks.':''}`,
+    nums:[['Confirmed in',money0(W.inTot),'go'],['Going out',money0(W.outTot),'stop'],['Cash after the week',money0(W.after),level]],steps:[]};
+}
+function fxVWeek(){
+  const W=fxWeek(), L=W.last;
+  const acts=[...S.props.values()].filter(fxActive).sort((a,b)=>(a.address||'').localeCompare(b.address||''));
+  let h=fxCard(fxWeekCard(W),false);
+  h+=`<div class="fx-h">Money coming in, next 7 days</div><div class="panel tbl"><table style="min-width:720px"><thead><tr><th>Date</th><th>What</th><th class="amt">Estimated amount</th><th>How we got it</th><th>Status</th></tr></thead><tbody>${W.ins.map(x=>`<tr><td>${fxD(x.date)}</td><td><b>${esc(x.what)}</b></td><td class="amt">${x.amount!=null?money0(x.amount):'—'}</td><td class="muted" style="font-size:12.5px">${esc(x.how)}</td><td><span class="pill ${x.sure==='Confirmed'?'good':'warn'}">${esc(x.sure)}</span></td></tr>`).join('')||'<tr><td colspan="5" class="faint">Nothing scheduled. Add a closing below when a buyer is in escrow.</td></tr>'}</tbody></table></div>`;
+  h+=`<div class="panel panel-pad" style="margin:10px 0 18px"><h3 style="font-size:15px;margin-bottom:8px">Add an escrow closing</h3><p class="fx-p">Pick the property, the close of escrow date and the sale price. The check is worked out for you: sale price − agent commission − closing costs − paying off the loan.</p><div class="form-grid">
+    <label class="field">Property<select data-draft="fx-esc-p"><option value="">Choose…</option>${acts.map(p=>`<option value="${esc(p.id)}"${D('fx-esc-p')===p.id?' selected':''}>${esc(shortAddr(p.address))}</option>`).join('')}</select></label>
+    <label class="field">Close of escrow<input type="date" data-draft="fx-esc-d" value="${esc(D('fx-esc-d'))}"></label>
+    <label class="field">Sale price<input type="text" inputmode="decimal" data-draft="fx-esc-s" value="${esc(D('fx-esc-s'))}" placeholder="e.g. 2,850,000"></label>
+    <label class="field">Loan payoff (optional)<input type="text" inputmode="decimal" data-draft="fx-esc-o" value="${esc(D('fx-esc-o'))}" placeholder="from the payoff letter"></label>
+    <label class="field">Status<select data-draft="fx-esc-c"><option${D('fx-esc-c','Likely')==='Likely'?' selected':''}>Likely</option><option${D('fx-esc-c')==='Confirmed'?' selected':''}>Confirmed</option></select></label>
+    <div style="align-self:end"><button class="btn primary" data-fx-act="add-esc">Add closing</button></div></div>
+    ${[...(S.fxInc||new Map()).values()].filter(x=>x.kind==='Escrow closing').length?`<div class="tbl" style="margin-top:12px"><table style="min-width:640px"><thead><tr><th>Property</th><th>Close date</th><th class="amt">Sale price</th><th class="amt">Est. check to us</th><th>Status</th><th></th></tr></thead><tbody>${[...S.fxInc.values()].filter(x=>x.kind==='Escrow closing').sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(x=>{const c=fxEscrowCheck(x);return `<tr><td>${esc(shortAddr(propName(x.propertyId)))}</td><td>${fxF('fxinc',x,'date','','date')}</td><td>${fxF('fxinc',x,'salePrice','','num')}</td><td class="amt" title="${esc(c.how)}"><b>${c.amount!=null?money0(c.amount):'—'}</b></td><td>${fxF('fxinc',x,'sure','','select',['Likely','Confirmed'])}</td><td><button class="btn sm ghost" data-fx-act="del" data-col="fxinc" data-id="${esc(x.id)}">Remove</button></td></tr>`;}).join('')}</tbody></table></div>`:''}</div>`;
+  h+=`<div class="fx-h">Money going out, next 7 days</div><div class="panel tbl"><table style="min-width:640px"><thead><tr><th>Date</th><th>What</th><th class="amt">Amount</th><th>Paid from / source</th></tr></thead><tbody>${W.outs.map(x=>`<tr><td>${x.late?'<span class="pill bad">Past due</span> ':''}${fxD(x.date)}</td><td>${esc(x.what)}</td><td class="amt">${money(x.amount)}</td><td class="muted" style="font-size:12.5px">${esc(x.src)}</td></tr>`).join('')||'<tr><td colspan="4" class="faint">Nothing due.</td></tr>'}</tbody><tfoot><tr><td></td><td>Total</td><td class="amt">${money(W.outTot)}</td><td></td></tr></tfoot></table></div>`;
+  const mx=Math.max(1,...L.top.map(x=>x[1]));
+  h+=`<div class="fx-h">Where the money went last week (${fxD(L.from)} – ${fxD(L.to)})</div>
+  <div class="summary"><div class="tile"><div class="label">Spent on cards & payments</div><div class="big">${money0(L.total)}</div><div class="foot">${L.count} charges in this ledger</div></div>${['property','overhead','marketing'].map(k=>`<div class="tile"><div class="label">${k[0].toUpperCase()+k.slice(1)}</div><div class="big" style="font-size:20px">${money0(L.byBucket[k]||0)}</div></div>`).join('')}</div>
+  <div class="panel panel-pad" style="margin-bottom:12px"><h3 style="font-size:15px;margin-bottom:6px">Biggest areas</h3><div class="bd">${L.top.map(([k,v])=>`<div class="bd-row"><span>${esc(k)}</span><b>${money0(v)}</b><div class="track"><div class="fill" style="width:${(v/mx*100).toFixed(1)}%"></div></div></div>`).join('')||'<span class="faint">No charges imported for last week yet.</span>'}</div></div>
+  <div class="panel tbl" style="margin-bottom:12px"><table><thead><tr><th>Top payees</th><th class="amt">Amount</th></tr></thead><tbody>${L.payees.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="amt">${money(v)}</td></tr>`).join('')}</tbody></table></div>
+  ${L.qb?`<p class="fx-p">QuickBooks has only ${money0(L.qb.booked)} booked for the same week (${esc(L.qb.note)}). That means QuickBooks isn’t caught up for last week yet; the ledger above is the more complete picture.</p>`:''}`;
+  return h;
+}
+
+/* ---------- views ---------- */
+const FX_SUBS=[['overview','Overview'],['week','This week'],['equity','Equity'],['loans','Loans & vehicles'],['banks','Banks'],['flip','Flip calculator'],['forecast','Forecast'],['decide','Decisions'],['report','Report for Juan']];
+function fxQBBadge(){const q=QB();return q?`<span class="pill good">QuickBooks ${fxD(q.asOf)}</span>`:'<span class="pill warn">QuickBooks not loaded</span>';}
+function viewController(){
+  const nav=`<div class="fx-sub" role="tablist" aria-label="Controller pages">${FX_SUBS.map(([k,n])=>`<button role="tab" data-fx-act="sub" data-v="${k}" aria-selected="${FX.sub===k}">${n}</button>`).join('')}</div><div class="fx-top">${fxQBBadge()}<span class="muted" style="font-size:12.5px">Ask Claude “refresh QuickBooks” to update these numbers.</span></div>`;
+  const v=FX.sub;
+  return nav+(v==='overview'?fxVOverview():v==='week'?fxVWeek():v==='equity'?fxVEquity():v==='loans'?fxVLoans():v==='banks'?fxVBanks():v==='flip'?fxVFlip():v==='forecast'?fxVForecast():v==='decide'?fxVDecide():fxVReport());
+}
+function fxMini(v,go){return `<button class="fx-mini ${v.level}" data-fx-act="go" data-v="${go}"><span class="q">${esc(v.q)}</span><span class="a">${esc(v.a)}</span><span class="why">${esc(v.why)}</span></button>`;}
+function fxVOverview(){
+  const A=fxAfford(''),P=fxProfit(),F=fxForecast().card,M=fxMarketing(),PP=fxPPC();
+  const flags=fxOpen().map(o=>({o,v:fxObl(o)})).filter(x=>x.v.level==='stop');
+  let h=`<p class="fx-p">Five questions Juan asks most, answered from QuickBooks and this ledger. Tap one for the details and the math.</p><div class="fx-minis">${fxMini(fxWeekCard(fxWeek()),'week')}${fxMini(P,'forecast')}${fxMini(A,'decide:afford')}${fxMini(F,'forecast')}${fxMini(M,'decide:mkt')}${fxMini(PP,'decide:ppc')}</div>`;
+  if(flags.length) h+=`<div class="fx-h">Needs action now</div><div class="panel panel-pad">${flags.map(x=>`<div class="fx-flag"><span class="pill bad">Now</span> <b>${esc(x.o.name)}</b>: ${esc(x.v.a)}. <span class="muted">${esc(x.v.why)}</span></div>`).join('')}</div>`;
+  const bl=(QB()?.blind||[]).filter(b=>b.sev==='High');
+  if(bl.length) h+=`<div class="fx-h">Things that could hurt us (see Forecast for all)</div><div class="panel panel-pad">${bl.map(b=>`<div class="fx-flag"><span class="pill bad">High</span> <b>${esc(b.title)}</b>${b.money?` · ${esc(b.money)}`:''}<div class="muted" style="font-size:13px">${esc(b.todo)}</div></div>`).join('')}</div>`;
+  return h;
+}
+function fxVEquity(){
+  const rows=fxEquity(), q=QB(), bs=q?.bs||{};
+  let h=`<p class="fx-p">Equity = what we own minus what we owe. Only company properties that are active or under construction are shown. Juan’s personal properties (100 Palm, 816 22nd, 8715 D St, 8125 Cottonmill) and sold properties are left out.</p>`;
+  const W=640,rowH=46,H=rows.length*rowH+30,mx=Math.max(1,...rows.flatMap(r=>[r.cost||0,r.loan||0,r.sale||0]));const X=v=>140+(v/mx)*(W-160);
+  h+=`<div class="panel panel-pad" style="margin-bottom:16px"><h3 style="font-size:15px;margin-bottom:6px">What each flip cost us vs what we owe on it</h3><svg class="fx-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Equity by property">${rows.map((r,i)=>{const y=i*rowH+8;return `<text x="0" y="${y+18}" style="font-size:12px;fill:var(--ink)">${esc(shortAddr(r.p.address))}</text>${r.cost!=null?`<rect x="140" y="${y}" width="${(X(r.cost)-140).toFixed(1)}" height="12" rx="2" fill="var(--k0)"><title>Cost in books ${money0(r.cost)}</title></rect>`:''}${r.loan!=null?`<rect x="140" y="${y+15}" width="${(X(r.loan)-140).toFixed(1)}" height="12" rx="2" fill="var(--k2)"><title>Loan ${money0(r.loan)}</title></rect>`:''}${r.sale!=null?`<line x1="${X(r.sale)}" x2="${X(r.sale)}" y1="${y-2}" y2="${y+30}" stroke="var(--good)" stroke-width="3"><title>Expected sale ${money0(r.sale)}</title></line>`:''}${r.cost==null?`<text x="140" y="${y+18}" style="font-size:12px">Not in Equity Track’s QuickBooks</text>`:''}`;}).join('')}</svg><div class="fx-legend"><span><i style="background:var(--k0)"></i>What it cost us so far (QuickBooks)</span><span><i style="background:var(--k2)"></i>Loan (QuickBooks)</span><span><i style="background:var(--good)"></i>Expected sale price</span></div></div>`;
+  h+=`<div class="panel tbl"><table style="min-width:820px"><thead><tr><th>Property</th><th class="amt">Cost so far</th><th class="amt">Loan</th><th class="amt">Our own cash in it</th><th class="amt">Expected sale</th><th class="amt">Check at closing</th><th>Note</th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${esc(shortAddr(r.p.address))}</b><div class="muted" style="font-size:12px">${esc(r.p.status||'')}</div></td><td class="amt">${r.cost!=null?money0(r.cost):'—'}</td><td class="amt">${r.loan!=null?money0(r.loan):'—'}</td><td class="amt">${r.cashIn!=null?money0(r.cashIn):'—'}</td><td class="amt">${r.sale!=null?money0(r.sale):'<button class="btn sm ghost" data-fx-act="flip" data-v="'+esc(r.p.id)+'">Add</button>'}</td><td class="amt" style="color:${r.equity==null?'var(--faint)':r.equity>=0?'var(--good)':'var(--bad)'}">${r.equity!=null?money0(r.equity):'—'}</td><td class="muted" style="font-size:12.5px">${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>
+  <p class="fx-src" style="margin-top:8px">“Our own cash in it” = cost so far − (loan − construction money the lender still holds). “Check at closing” = expected sale − selling costs − loan payoff.</p>`;
+  if(bs.totalAssets) h+=`<div class="fx-h">Whole company (QuickBooks)</div><div class="summary"><div class="tile"><div class="label">Everything we own</div><div class="big">${money0(bs.totalAssets)}</div></div><div class="tile"><div class="label">Everything we owe</div><div class="big">${money0(bs.totalLiab)}</div></div><div class="tile"><div class="label">Equity (own − owe)</div><div class="big">${money0(bs.equity)}</div><div class="foot">includes Juan’s personal property entries; see note</div></div></div><p class="fx-p">${esc(bs.equityNote||'')}</p>`;
+  return h;
+}
+function fxVLoans(){
+  const all=fxOpen(), groups={}; for(const o of all){(groups[fxGroupOf(o)]=groups[fxGroupOf(o)]||[]).push(o);}
+  const order=['Mortgages on active flips','Vehicles','Equipment','Private & investor loans'];
+  const tot=order.map(g=>({g,m:r2(sum(groups[g]||[],o=>fxN(o.monthly)||0)),owed:r2(sum(groups[g]||[],o=>Math.max(0,fxN(o.balance)||0))),missing:(groups[g]||[]).filter(o=>fxN(o.monthly)==null&&o.kind!=='Owned (no payment)').length}));
+  let h=`<p class="fx-p">Everything we pay on every month, split by type. “Owed” comes from the QuickBooks Balance Sheet. Tap Decide for return / buy / keep / sell.</p>
+  <div class="summary">${tot.map(t=>`<div class="tile"><div class="label">${esc(t.g)}</div><div class="big" style="font-size:20px">${money0(t.m)}<span class="muted" style="font-size:13px"> / month</span></div><div class="foot">${money0(t.owed)} owed${t.missing?` · ${t.missing} monthly payment${t.missing>1?'s':''} not entered`:''}</div></div>`).join('')}</div>`;
+  for(const g of order){const list=(groups[g]||[]).sort((a,b)=>(a.name||'').localeCompare(b.name||''));if(!list.length)continue;
+    h+=`<div class="fx-h">${esc(g)}</div><div class="panel tbl fx-tbl"><table style="min-width:980px"><thead><tr><th>What</th><th>Type</th><th>Lender</th><th class="amt">Monthly</th><th>Due day</th><th class="amt">Owed</th><th class="amt">Worth</th><th>Paid from</th><th>Who uses it</th><th>Answer</th><th></th></tr></thead><tbody>${list.map(o=>{const v=fxObl(o);return `<tr><td><b>${esc(o.name)}</b>${o.note?`<div class="muted" style="font-size:12px">${esc(o.note)}</div>`:''}</td><td>${fxF('fxobls',o,'kind','','select',FX_KINDS)}</td><td>${esc(o.lender||'—')}</td><td>${fxF('fxobls',o,'monthly','','num')}</td><td style="max-width:70px">${fxF('fxobls',o,'dueDay','','num')}</td><td class="amt">${fxN(o.balance)!=null?money0(fxN(o.balance)):'—'}</td><td>${fxF('fxobls',o,'value','','num')}</td><td>${esc(o.paidFrom||'—')}</td><td>${fxF('fxobls',o,'assigned','')}</td><td><span class="pill ${pillOf(v.level)}">${esc(v.a)}</span></td><td><button class="btn sm" data-fx-act="open-obl" data-id="${esc(o.id)}">Decide</button></td></tr>`;}).join('')}</tbody></table></div>`;}
+  h+=`<div class="row" style="margin-top:12px"><button class="btn" data-fx-act="add-obl">Add a loan, lease or equipment</button></div>`;
+  return h;
+}
+function fxVBanks(){
+  const list=fxBanksList(), C=fxCash();
+  return `<p class="fx-p">Balances come from QuickBooks. Only company accounts count toward cash. You can type over a balance if the bank shows something different today.</p>
+  <div class="summary"><div class="tile"><div class="label">Company cash</div><div class="big">${money0(C.cash)}</div><div class="foot">as of ${fxD(C.asOf)}</div></div><div class="tile"><div class="label">Free to spend</div><div class="big ${C.free>=0?'good':'bad'}">${money0(C.free)}</div><div class="foot">after cards, bills, loan payments, cushion</div></div><div class="tile"><div class="label">Safety cushion</div>${fxF('settings',{id:'forecast',...fxSet()},'cushion','','num')}<div class="foot">ask Juan for this number</div></div></div>
+  <div class="fx-h">Bank accounts</div><div class="panel tbl fx-tbl"><table style="min-width:720px"><thead><tr><th>Account</th><th class="amt">Balance</th><th>As of</th><th>Counts as company cash?</th><th>Note</th></tr></thead><tbody>${list.map(b=>`<tr><td><b>${esc(b.name)}</b></td><td>${fxF('fxbanks',b,'balance','','num')}</td><td>${esc(fxD(b.asOf))}</td><td>${b.company===false?'<span class="pill plain">No, personal</span>':'<span class="pill good">Yes</span>'}</td><td class="muted" style="font-size:12.5px">${esc(b.note||'')}</td></tr>`).join('')}</tbody></table></div>
+  <div class="fx-h">Credit cards: what we actually pay</div><p class="fx-p">We pay the minimum, or what’s needed, not the full balance. Type each card’s minimum and due date from the statement. Until then I estimate 2% of the balance.</p>
+  <div class="panel tbl fx-tbl"><table style="min-width:640px"><thead><tr><th>Card</th><th class="amt">Balance (tracker)</th><th class="amt">Minimum due</th><th>Due date</th></tr></thead><tbody>${fxCardList().map(c=>`<tr><td><b>${esc(c.n)}</b></td><td class="amt">${money0(c.bal)}</td><td><input class="fx-in" type="text" inputmode="decimal" data-fx-card="${esc(c.k)}" data-fx-f="minDue" value="${c.est?'':esc(Number(c.min).toLocaleString('en-US',{maximumFractionDigits:2}))}" placeholder="est. ${esc(money0(c.min))}"></td><td><input type="date" data-fx-card="${esc(c.k)}" data-fx-f="dueDate" value="${esc(c.due)}"></td></tr>`).join('')}</tbody><tfoot><tr><td>Total</td><td class="amt">${money0(C.cardDebt)}</td><td class="amt">${money0(C.cardsOwed)}</td><td></td></tr></tfoot></table></div>
+  <div class="fx-h">Weekly payroll</div><div class="panel panel-pad" style="max-width:360px">${fxF('settings',{id:'forecast',...fxSet()},'weeklyPayroll','Usual weekly payroll (Matrix + Equity Track + Iriga share)','num')}</div>`;
+}
+function fxVFlip(){
+  const act=[...S.props.values()].filter(fxActive).sort((a,b)=>(a.address||'').localeCompare(b.address||''));
+  if(!FX.flip||!act.some(p=>p.id===FX.flip)) FX.flip=(act.find(p=>p.id==='p-492-umland-dr')||act[0])?.id;
+  const p=S.props.get(FX.flip); if(!p) return '<p class="faint">No active properties.</p>';
+  const F=fxFlip(p), v=fxFlipCard(F), f={id:p.id,...(p.fx||{})}, P={id:p.id,...p};
+  const fi=(k,l,t='num')=>{const o={id:p.id,[k]:f[k]};return `<label class="field">${esc(l)}<input class="fx-in" type="${t==='date'?'date':'text'}" ${t==='num'?'inputmode="decimal"':''} data-fx-flip="${k}" data-fx-num="${t==='num'?1:''}" value="${esc(t==='num'&&f[k]!=null&&f[k]!==''?Number(f[k]).toLocaleString('en-US',{maximumFractionDigits:2}):f[k]??'')}"></label>`;};
+  return `<div class="toolbar"><span class="lbl">Property</span><select data-fx-pickflip="1" aria-label="Property">${act.map(x=>`<option value="${esc(x.id)}"${x.id===FX.flip?' selected':''}>${esc(shortAddr(x.address))} · ${esc(x.status)}</option>`).join('')}</select></div>
+  ${F.f.src?`<p class="fx-src" style="margin:-4px 0 10px">Numbers filled from: ${esc(F.f.src)}</p>`:''}
+  ${fxCard(v,true)}
+  <div class="panel panel-pad" style="margin-bottom:14px"><h3 style="font-size:15px;margin-bottom:6px">What if?</h3><div class="row" style="gap:18px;flex-wrap:wrap"><label class="field" style="min-width:220px">Sale price drops by ${FX.stress.price}%<input type="range" min="0" max="15" step="1" value="${FX.stress.price}" data-fx-stress="price"></label><label class="field" style="min-width:220px">Sale takes ${FX.stress.delay} month${FX.stress.delay===1?'':'s'} longer<input type="range" min="0" max="6" step="1" value="${FX.stress.delay}" data-fx-stress="delay"></label></div></div>
+  <div class="panel panel-pad"><h3 style="font-size:15px;margin-bottom:8px">The numbers</h3><div class="form-grid">
+    <label class="field">Bought for<input class="fx-in" type="text" inputmode="decimal" data-fx-col="properties" data-fx-id="${esc(p.id)}" data-fx-f="purchasePrice" data-fx-num="1" value="${esc(P.purchasePrice!=null?Number(P.purchasePrice).toLocaleString('en-US'):'')}"></label>
+    ${fi('salePrice','Expected sale price')}${fi('buyCosts','Buying costs (closing)')}${fi('loan','Loan amount (incl. holdback)')}${fi('holdback','Lender holdback (rehab money)')}${fi('rehabLeft','Rehab still to spend')}${fi('dailyInterest','Loan interest per day')}${fi('interestFrom','Interest counted from','date')}${fi('saleDate','Expected sale date','date')}
+  </div><p class="fx-src" style="margin-top:8px">Rehab spent so far (${money0(F.spent)}) comes from this property in the Properties tab. Selling costs use our 2026 averages from QuickBooks: ${F.sell.comm}% commission + ${F.sell.close}% closing.</p></div>`;
+}
+function fxVForecast(){
+  const P=fxProfit(), F=fxForecast(), q=QB(), sp=fxSpendByMonth(6);
+  let h=fxCard(P,false);
+  if(q?.pl?.topCosts) {const t=q.pl.topCosts.slice(0,7), mx=Math.max(...t.map(x=>x[1]));h+=`<div class="panel panel-pad" style="margin-bottom:16px"><h3 style="font-size:15px;margin-bottom:6px">Where the flip profit went (${esc(q.pl.period)})</h3><div class="bd">${t.map(([k,v])=>`<div class="bd-row"><span>${esc(k)}</span><b>${money0(v)}</b><div class="track"><div class="fill" style="width:${(v/mx*100).toFixed(1)}%"></div></div></div>`).join('')}</div></div>`;}
+  h+=fxCard(F.card,false);
+  h+=`<div class="panel panel-pad" style="margin-bottom:16px"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h3 style="font-size:15px">Cash, next 6 months</h3><div class="fx-chips" style="margin:0"><button data-fx-act="ppcplan" data-v="on" aria-pressed="${F.ppcOn}">PPC running</button><button data-fx-act="ppcplan" data-v="off" aria-pressed="${!F.ppcOn}">PPC paused</button></div></div>${F.C.cash==null?'':fxLine(F.rows,F.C.cushion)}</div>`;
+  const bl=q?.blind||[];
+  h+=`<div class="fx-h">What we might not be thinking about</div><p class="fx-p">Things that don’t show up in a normal month but can change the answer.</p><div class="panel tbl"><table style="min-width:760px"><thead><tr><th>How serious</th><th>What</th><th>Money</th><th>What to do</th></tr></thead><tbody>${bl.map(b=>`<tr><td><span class="pill ${b.sev==='High'?'bad':b.sev==='Medium'?'warn':'plain'}">${esc(b.sev)}</span></td><td><b>${esc(b.title)}</b><div class="muted" style="font-size:12.5px">${esc(b.what)}</div></td><td class="amt">${esc(b.money||'')}</td><td style="font-size:13px">${esc(b.todo)}<div class="fx-src">From: ${esc(b.src)}</div></td></tr>`).join('')}</tbody></table></div>`;
+  const inc=[...(S.fxInc||new Map()).values()].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  h+=`<div class="fx-h">Money coming in</div><p class="fx-p">Sale checks (from the flip calculator), lender draws, rent. Only “Confirmed” counts in the main forecast line.</p><div class="panel tbl fx-tbl"><table style="min-width:720px"><thead><tr><th>Date</th><th>What</th><th class="amt">Amount</th><th>How sure</th><th></th></tr></thead><tbody>${inc.map(x=>`<tr><td>${fxF('fxinc',x,'date','','date')}</td><td>${fxF('fxinc',x,'label','')}</td><td>${fxF('fxinc',x,'amount','','num')}</td><td>${fxF('fxinc',x,'sure','','select',['Confirmed','Likely','Maybe'])}</td><td><button class="btn sm ghost" data-fx-act="del" data-col="fxinc" data-id="${esc(x.id)}">Remove</button></td></tr>`).join('')||'<tr><td colspan="5" class="faint">Nothing yet.</td></tr>'}</tbody></table><div class="panel-pad"><button class="btn" data-fx-act="add-inc">Add expected money</button></div></div>`;
+  h+=`<div class="panel panel-pad" style="margin-top:16px"><h3 style="font-size:15px;margin-bottom:8px">Spending by month (this ledger)</h3>${fxBars(sp.map(x=>({...x,label:fxML(x.m)})),['property','overhead','marketing'],['var(--k0)','var(--k8)','var(--k4)'],['Property','Overhead','Marketing'])}</div>`;
+  return h;
+}
+function fxVDecide(){
+  const ob=fxOpen().sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  let h=`<p class="fx-p">Pick a question. Each answer starts with the answer, then the 3–4 numbers behind it. Open “Show me how” only if someone asks why.</p><div class="fx-chips" role="group">${[['afford','Can we afford it?'],['ppc','PPC: go or not?'],['mkt','Is marketing working?'],['obl','A vehicle, loan or equipment']].map(([k,n])=>`<button data-fx-act="dq" data-v="${k}" aria-pressed="${FX.q===k}">${n}</button>`).join('')}</div>`;
+  if(FX.q==='afford') h+=`<div class="panel panel-pad" style="margin-bottom:14px;max-width:460px"><div class="row"><label class="field" style="flex:1">Payment amount<input type="text" inputmode="decimal" data-draft="fx-amt" value="${esc(D('fx-amt'))}" placeholder="e.g. 12,500"></label><button class="btn primary" data-fx-act="re" style="align-self:end">Check</button></div></div>`+fxCard(fxAfford(D('fx-amt')),false);
+  else if(FX.q==='ppc') h+=fxCard(fxPPC(),false);
+  else if(FX.q==='mkt'){const ch=fxChannels();h+=fxCard(fxMarketing(),false)+`<div class="panel tbl"><table style="min-width:640px"><thead><tr><th>Channel</th><th class="amt">Spent this year</th><th>Signed deals</th><th class="amt">Cost per deal</th><th>Answer</th></tr></thead><tbody>${ch.filter(c=>c.spend||c.deals).map(c=>{const v=fxChVerdict(c);return `<tr><td><b>${esc(c.n)}</b></td><td class="amt">${money0(c.spend)}</td><td>${c.deals}</td><td class="amt">${c.cpd?money0(c.cpd):'—'}</td><td><span class="pill ${pillOf(v.s)}">${esc(v.a)}</span></td></tr>`;}).join('')}</tbody></table><div class="panel-pad fx-src">Spend from QuickBooks (Acquisition Marketing). Deals from the Acquired Properties marketing fee sheet.</div></div>`;}
+  else{ if(!FX.obl||!S.fxObls?.get(FX.obl)) FX.obl=ob[0]?.id;
+    h+=`<div class="toolbar"><span class="lbl">Item</span><select data-fx-pick="1" aria-label="Item">${ob.map(o=>`<option value="${esc(o.id)}"${o.id===FX.obl?' selected':''}>${esc(o.name)}</option>`).join('')}</select></div>`;
+    const o=FX.obl&&S.fxObls.get(FX.obl); if(o){const lease=o.kind==='Vehicle lease';h+=fxCard(fxObl(o),false)+`<div class="panel panel-pad"><h3 style="font-size:15px;margin-bottom:8px">Fill in to sharpen the answer</h3><div class="form-grid">${fxF('fxobls',o,'needed','Do we still need it?','select',['Not sure','Yes','No'])}${fxF('fxobls',o,'value','What it’s worth today','num')}${lease?fxF('fxobls',o,'buyout','Buyout quote','num')+fxF('fxobls',o,'endDate','Lease end date','date'):''}${fxF('fxobls',o,'monthly','Monthly payment','num')}${fxF('fxobls',o,'assigned','Who uses it')}</div><div class="row" style="margin-top:12px"><button class="btn primary" data-fx-act="pdf-obl" ${FX.pdfBusy?'disabled':''}>Save this decision as PDF</button>${FX.pdf?`<a href="${esc(FX.pdf)}" target="_blank" rel="noopener">Open the PDF</a>`:''}</div></div>`;}}
+  return h;
+}
+function fxVReport(){
+  const items=fxReportItems();
+  return `<div class="note info"><span>One page for Juan: five answers, one line each, then what we need from him. Saves to your Google Drive.</span><button class="btn primary" data-fx-act="pdf-report" ${FX.pdfBusy?'disabled':''}>${FX.pdfBusy?'Making the PDF…':'Save report as PDF'}</button></div>${FX.pdf?`<p><a href="${esc(FX.pdf)}" target="_blank" rel="noopener">Open the last PDF in Drive</a></p>`:''}
+  <div class="panel panel-pad fx-report"><h2 style="font-size:20px;margin-bottom:2px">Controller update for Juan</h2><div class="muted" style="font-size:13px;margin-bottom:14px">${fxD(fxISO())} · QuickBooks ${QB()?fxD(QB().asOf):'—'}</div>
+  ${items.answers.map(a=>`<div class="fx-rline"><span class="dot ${a.level}"></span><div><div class="muted" style="font-size:12.5px">${esc(a.q)}</div><b>${esc(a.a)}</b><div style="font-size:13.5px">${esc(a.one)}</div></div></div>`).join('')}
+  <h3 style="font-size:15px;margin:16px 0 6px">What I need from you</h3><ol style="margin:0;padding-left:20px">${items.asks.map(x=>`<li style="margin-bottom:4px">${esc(x)}</li>`).join('')}</ol></div>`;
+}
+function fxReportItems(){
+  const P=fxProfit(),A=fxAfford(''),F=fxForecast().card,M=fxMarketing(),PP=fxPPC();
+  const one=v=>v.say||v.why;
+  const Wk=fxWeekCard(fxWeek());
+  const answers=[{...Wk,one:Wk.why},{...P,one:P.why},{...A,one:A.why},{...F,one:F.why},{...M,one:M.why},{...PP,one:PP.why}];
+  const asks=[];
+  if(!fxN(fxSet().cushion)) asks.push('Tell me the minimum cash to always keep in the bank.');
+  if(PP.level!=='go') asks.push('Approve PPC relaunch only with the $750/day cap and the $40K pause line, after sales confirms every lead gets called the same day.');
+  for(const o of fxOpen()){const v=fxObl(o); if(v.level==='stop') asks.push(`${o.name}: ${v.a}.`);}
+  for(const b of (QB()?.blind||[]).filter(b=>b.sev==='High').slice(0,3)) asks.push(`${b.title}: ${b.todo}`);
+  return {answers,asks};
+}
+function fxReportBlocks(){
+  const it=fxReportItems(), q=QB(), b=[];
+  b.push({t:'p',x:`QuickBooks as of ${q?fxD(q.asOf):'—'}. Green = good, amber = needs attention, red = problem.`});
+  for(const a of it.answers) b.push({t:'v',v:{level:a.level,q:a.q,a:a.a,why:a.one}});
+  b.push({t:'h',x:'What I need from you'});b.push({t:'p',x:it.asks.map((x,i)=>`${i+1}. ${x}`).join('\n')});
+  if(q?.pl?.topCosts){b.push({t:'h',x:'Where this year’s flip profit went'});b.push({t:'bars',d:[{label:'Flip profit',a:q.pl.grossProfit,b:0},...q.pl.topCosts.slice(0,5).map(([k,v])=>({label:k.split(' ')[0],a:0,b:v}))],k:['a','b'],c:[[31,122,68],[194,65,46]],l:['Profit from flips','Company running costs']});}
+  return b;
+}
+
+/* ---------- events ---------- */
+document.addEventListener('input',e=>{const t=e.target; if(t.dataset?.fxStress){FX.stress[t.dataset.fxStress]=Number(t.value);render();const el=document.querySelector(`[data-fx-stress="${t.dataset.fxStress}"]`);el&&el.focus();}});
+document.addEventListener('change',async e=>{
+  const t=e.target;
+  if(t.dataset?.fxPick){FX.obl=t.value;FX.pdf='';render();return;}
+  if(t.dataset?.fxPickflip){FX.flip=t.value;render();return;}
+  if(t.dataset?.fxCard){const k=t.dataset.fxCard,f=t.dataset.fxF,v=f==='minDue'?(t.value.trim()===''?null:num(t.value)):t.value;const cur=(S.fxCardMin||new Map()).get(k)||{};const {id:_,...rest}=cur;await write(()=>db.doc('fxcardmin/'+k).set({...rest,[f]:v}));return;}
+  if(t.dataset?.fxFlip){const p=S.props.get(FX.flip);if(!p)return;const k=t.dataset.fxFlip,v=t.dataset.fxNum?(t.value.trim()===''?null:num(t.value)):t.value;await write(()=>db.doc('properties/'+p.id).update({fx:{...(p.fx||{}),[k]:v}}));return;}
+  const col=t.dataset?.fxCol; if(!col) return;
+  const id=t.dataset.fxId,f=t.dataset.fxF; const v=t.type==='checkbox'?t.checked:t.dataset.fxNum?(t.value.trim()===''?null:num(t.value)):t.value;
+  if(col==='fxbanks'&&f==='balance'){await write(()=>db.doc(`fxbanks/${id}`).update({balance:v,asOf:today(),by:S.uid||'',src:'Typed in'}));return;}
+  await write(()=>db.doc(`${col}/${id}`).update({[f]:v}));
+});
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-fx-act]'); if(!b) return; const a=b.dataset.fxAct, nid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  if(a==='sub'){FX.sub=b.dataset.v;FX.pdf='';render();return;}
+  if(a==='go'){const [s,qq]=b.dataset.v.split(':');FX.sub=s;if(qq)FX.q=qq;render();window.scrollTo(0,0);return;}
+  if(a==='dq'){FX.q=b.dataset.v;FX.pdf='';render();return;}
+  if(a==='flip'){FX.sub='flip';FX.flip=b.dataset.v;render();return;}
+  if(a==='re'){render();return;}
+  if(a==='open-obl'){FX.sub='decide';FX.q='obl';FX.obl=b.dataset.id;FX.pdf='';render();window.scrollTo(0,0);return;}
+  if(a==='ppcplan'){await write(()=>db.doc('settings/forecast').update({ppcPlan:b.dataset.v}));return;}
+  if(a==='add-obl'){await write(()=>db.doc('fxobls/'+nid('o-')).set({name:'New item',kind:'Not confirmed',lender:'',monthly:null,paidFrom:'',assigned:'',status:'Active',needed:'Not sure'}));return;}
+  if(a==='add-esc'){const pid=D('fx-esc-p'),d=D('fx-esc-d'),s=num(D('fx-esc-s')||'');if(!pid||!d||!s){toast('Pick the property, the close date and the sale price.');return;}const po=D('fx-esc-o');await write(()=>db.doc('fxinc/'+nid('e-')).set({kind:'Escrow closing',propertyId:pid,date:d,salePrice:s,payoff:po?num(po):null,sure:D('fx-esc-c','Likely'),label:''}));['fx-esc-p','fx-esc-d','fx-esc-s','fx-esc-o'].forEach(k=>delete S.draft[k]);render();return;}
+  if(a==='add-inc'){await write(()=>db.doc('fxinc/'+nid('i-')).set({date:today(),label:'',amount:null,sure:'Likely'}));return;}
+  if(a==='del'){if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Confirm';setTimeout(()=>{b.dataset.armed='';b.textContent='Remove';},4000);return;}await write(()=>db.doc(`${b.dataset.col}/${b.dataset.id}`).delete());return;}
+  if(a==='pdf-report'){await fxSavePDF('Controller update for Juan',fxReportBlocks(),'Controller Update');return;}
+  if(a==='pdf-obl'){const o=S.fxObls.get(FX.obl);if(!o)return;const v=fxObl(o);await fxSavePDF(`Decision: ${o.name}`,[{t:'v',v,steps:true},{t:'tbl',head:['Detail','Value'],rows:v.nums.map(([k,x])=>[k,x])}],`Decision - ${o.name}`);return;}
+});
+function fxSubscribe(){
+  const onErr=()=>{};const toMap=s=>new Map(s.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
+  db.collection('fxbanks').onSnapshot(s=>{S.fxBanks=toMap(s);scheduleRender();},onErr);
+  db.collection('fxobls').onSnapshot(s=>{S.fxObls=toMap(s);scheduleRender();},onErr);
+  db.collection('fxinc').onSnapshot(s=>{S.fxInc=toMap(s);scheduleRender();},onErr);
+  db.collection('fxqb').onSnapshot(s=>{S.fxQB=toMap(s);scheduleRender();},onErr);
+  db.collection('fxch').onSnapshot(s=>{S.fxCh=toMap(s);scheduleRender();},onErr);
+  db.collection('fxcardmin').onSnapshot(s=>{S.fxCardMin=toMap(s);scheduleRender();},onErr);
+  db.doc('settings/forecast').onSnapshot(d=>{S.fxs=d.exists?d.data():{};scheduleRender();},onErr);
+}
+
+/* ---------- PDF ---------- */
+const fxT=s=>String(s??'').replace(/[−–—]/g,'-').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/·/g,'|').replace(/…/g,'...').replace(/→/g,'->').replace(/×/g,'x').replace(/÷/g,'/').replace(/[^\x20-\x7E\n]/g,'');
+function fxLoadPDF(){return window.jspdf?Promise.resolve():new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';s.onload=res;s.onerror=()=>rej(new Error('pdf'));document.head.appendChild(s);});}
+async function fxPDF(title,blocks){
+  await fxLoadPDF(); const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'pt',format:'letter'});
+  const W=612,L=48,R=W-48,CW=R-L; let y=0;
+  const COL={go:[31,122,68],wait:[154,91,10],stop:[180,35,24],info:[90,107,120],ink:[24,36,47],mut:[90,107,120],line:[220,226,232],acc:[12,110,107]};
+  const page=()=>{doc.addPage();y=56;};
+  const need=h=>{if(y+h>740)page();};
+  const text=(t,size,style,color,indent=0,lh=1.35)=>{doc.setFont('helvetica',style||'normal');doc.setFontSize(size);doc.setTextColor(...(color||COL.ink));const lines=doc.splitTextToSize(fxT(t),CW-indent);for(const ln of lines){need(size*lh);doc.text(ln,L+indent,y+size);y+=size*lh;}};
+  // header
+  doc.setFillColor(...COL.acc);doc.rect(0,0,W,6,'F');y=40;
+  text(title,20,'bold');text(`Equity Track Inc. / Twin Home Buyer  |  Prepared by Kristine, Accounting  |  ${fxD(fxISO())}`,9,'normal',COL.mut);y+=8;
+  for(const b of blocks){
+    if(b.t==='h'){y+=10;need(30);text(b.x,13,'bold');doc.setDrawColor(...COL.line);doc.line(L,y+1,R,y+1);y+=8;}
+    else if(b.t==='p'){text(b.x,10,'normal',COL.ink);y+=4;}
+    else if(b.t==='v'){const v=b.v;need(90);const top=y,pg=doc.getNumberOfPages();doc.setFillColor(...COL[v.level]||COL.info);
+      y+=6;text(v.q,9,'normal',COL.mut,14);text(v.a,15,'bold',COL[v.level]||COL.ink,14);text(v.why,10,'normal',COL.ink,14);
+      if(b.steps&&v.steps?.length){y+=2;text('How we got this:',9,'bold',COL.mut,14);v.steps.forEach((s,i)=>{text(`${i+1}. ${s.t}: ${s.d}`,9,'normal',COL.ink,24);if(s.m)text(s.m,8.5,'normal',COL.mut,34);});}
+      if(v.say){y+=2;text('If you ask me: '+v.say,9,'italic',COL.ink,14);}
+      doc.setFillColor(...(COL[v.level]||COL.info));if(doc.getNumberOfPages()===pg)doc.rect(L,top,4,y-top,'F');y+=12;}
+    else if(b.t==='tbl'){const n=b.head.length,cw=CW/n;need(20);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...COL.mut);b.head.forEach((c,i)=>doc.text(fxT(c),b.right?.includes(i)?L+cw*(i+1)-4:L+cw*i,y+9,{align:b.right?.includes(i)?'right':'left'}));y+=14;doc.setDrawColor(...COL.line);doc.line(L,y,R,y);y+=4;
+      doc.setFont('helvetica','normal');doc.setTextColor(...COL.ink);for(const r of b.rows){const cells=r.map((c,i)=>doc.splitTextToSize(fxT(c),cw-8));const h=Math.max(...cells.map(c=>c.length))*11+4;need(h);cells.forEach((c,i)=>doc.text(c,b.right?.includes(i)?L+cw*(i+1)-4:L+cw*i,y+9,{align:b.right?.includes(i)?'right':'left'}));y+=h;doc.line(L,y,R,y);y+=2;}y+=8;}
+    else if(b.t==='bars'){const H=150;need(H+30);const max=Math.max(1,...b.d.map(d=>b.k.reduce((t,k)=>t+Math.max(0,d[k]||0),0))),gap=CW/b.d.length,bw=gap*.6,base=y+H;doc.setFontSize(8);
+      b.d.forEach((d,i)=>{let yy=base;const x=L+i*gap+(gap-bw)/2;b.k.forEach((k,j)=>{const h=Math.max(0,d[k]||0)/max*(H-20);yy-=h;doc.setFillColor(...b.c[j]);doc.rect(x,yy,bw,h,'F');});doc.setTextColor(...COL.mut);doc.text(fxT(d.label),x+bw/2,base+11,{align:'center'});});
+      doc.setDrawColor(...COL.line);doc.line(L,base,R,base);doc.text(fxT(money0(max)),L,y+6);y=base+22;let lx=L;b.l.forEach((l,j)=>{doc.setFillColor(...b.c[j]);doc.rect(lx,y-7,8,8,'F');doc.setTextColor(...COL.mut);doc.text(fxT(l),lx+12,y);lx+=doc.getTextWidth(fxT(l))+28;});y+=14;}
+    else if(b.t==='line'){const H=150;need(H+34);const rows=b.rows,vals=rows.flatMap(r=>[r.base,r.up]).concat([b.cushion||0,0]),mx=Math.max(...vals),mn=Math.min(...vals),sp=mx-mn||1;
+      const X=i=>L+40+i*(CW-50)/Math.max(1,rows.length-1),Y=v=>y+8+(mx-v)/sp*(H-20);doc.setFontSize(8);doc.setTextColor(...COL.mut);doc.text(fxT(money0(mx)),L,Y(mx)+3);doc.text(fxT(money0(mn)),L,Y(mn)+3);
+      doc.setDrawColor(...COL.line);doc.line(L+40,Y(0),R,Y(0));if(b.cushion){doc.setDrawColor(...COL.wait);doc.setLineDashPattern([4,3],0);doc.line(L+40,Y(b.cushion),R,Y(b.cushion));doc.setLineDashPattern([],0);}
+      doc.setLineWidth(2);doc.setDrawColor(...COL.acc);rows.forEach((r,i)=>{if(i)doc.line(X(i-1),Y(rows[i-1].base),X(i),Y(r.base));});doc.setLineWidth(1);
+      rows.forEach((r,i)=>{doc.setFillColor(...(r.base<0?COL.stop:COL.acc));doc.circle(X(i),Y(r.base),2.5,'F');doc.setTextColor(...COL.mut);doc.text(fxT(fxML(r.m)),X(i),y+H+4,{align:'center'});doc.text(fxT(money0(r.base)),X(i),Y(r.base)-6,{align:'center'});});
+      y+=H+16;doc.setFontSize(8);doc.text(fxT('Line: cash by month, counting only confirmed money in.'+(b.cushion?' Dashed: safety cushion.':'')),L,y);y+=14;}
+  }
+  const n=doc.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(...COL.mut);doc.text(fxT(`Numbers from QuickBooks${QB()?' ('+fxD(QB().asOf)+')':''} and the Twin Home Expense Ledger. Page ${i} of ${n}`),L,770);}
+  return doc.output('blob');
+}
+async function fxSavePDF(title,blocks,fname){
+  if(!mcp){toast('Saving the PDF needs Google Drive connected to this page.');return;}
+  FX.pdfBusy=true;render();
+  try{const blob=await fxPDF(title,blocks);const name=`${fname} - ${fxISO()}.pdf`;const r=await uploadToDrive(new File([blob],name,{type:'application/pdf'}),name,folderId(fxSet().reportsFolder||''));FX.pdf=r.url;toast('PDF saved to Google Drive');}
+  catch(e){toast(e?.message==='pdf'?'Could not load the PDF maker. Check your connection.':e?.code==='too_big'?'The PDF is too large for this viewer.':driveErr(e));}
+  FX.pdfBusy=false;render();
+}
+
+</script>
+
 
 <script>
 /* ---------- defaults (from the Daily Expense Tracker SETTINGS tab) ---------- */
@@ -233,7 +837,7 @@ const DEFAULTS = {
   receiptFolder:'https://drive.google.com/drive/folders/1Ps4suRRPe33QgBj35QEZt6smAj0sScoe',
   propertyFolder:''
 };
-const SECTIONS = [{k:'daily',n:'Daily Expenses'},{k:'tracker',n:'Card Tracker'},{k:'marketing',n:'Marketing'},{k:'properties',n:'Properties'},{k:'draws',n:'Draws'},{k:'settings',n:'Settings'}];
+const SECTIONS = [{k:'daily',n:'Daily Expenses'},{k:'tracker',n:'Card Tracker'},{k:'marketing',n:'Marketing'},{k:'properties',n:'Properties'},{k:'draws',n:'Draws'},{k:'payables',n:'Payables'},{k:'cash',n:'Cash & Maturities'},{k:'controller',n:'Controller'},{k:'settings',n:'Settings'}];
 const BUCKETS = {overhead:'Overhead',property:'Property',marketing:'Marketing'};
 const DRIVE='Google Drive';
 
@@ -244,7 +848,7 @@ const S={
   ready:{txns:false,props:false}, dbState:'connecting', readOnly:false,
   tab:(location.hash||'').slice(1)||'daily',
   dCard:null, dView:'todo', dMonth:'all',
-  tCard:'all', drawProp:'all', tBucket:'overhead', tPaid:'unpaid', tMonth:today().slice(0,7), mMonth:'all', mPaid:'all', drawsMap:new Map(), sheets:{}, sheetRows:[], csMeta:new Map(), csChunks:new Map(), csSync:'', csErr:'',
+  tCard:'all', drawProp:'all', tBucket:'overhead', tPaid:'unpaid', tMonth:today().slice(0,7), mMonth:'all', mPaid:'all', drawsMap:new Map(), ap:new Map(), cashItems:new Map(), apView:'juan', apNote:null, sheets:{}, sheetRows:[], csMeta:new Map(), csChunks:new Map(), csSync:'', csErr:'',
   propId:'all', propFilter:'active', sel:new Set(), open:{calc:true,fin:false,budget:false,pays:false,files:false,'dr-set':true,'dr-list':true,'dr-where':true},
   preview:null, importing:false, confirm:null, draft:{}, modal:null
 };
@@ -543,7 +1147,7 @@ document.addEventListener('focusout',()=>{if(pending)setTimeout(()=>{if(pending)
 
 function renderTabs(){
   const n=todo().length;
-  $('#tabs').innerHTML=SECTIONS.map(s=>`<a href="#${s.k}" data-tab="${s.k}"${S.tab===s.k?' aria-current="page"':''}>${s.n}${s.k==='daily'&&n?`<span class="count">${n}</span>`:''}</a>`).join('');
+  $('#tabs').innerHTML=SECTIONS.map(s=>`<a href="#${s.k}" data-tab="${s.k}"${S.tab===s.k?' aria-current="page"':''}>${s.n}${s.k==='daily'&&n?`<span class="count">${n}</span>`:''}${s.k==='payables'&&[...S.ap.values()].filter(x=>x.status==='Waiting on Juan').length?`<span class="count">${[...S.ap.values()].filter(x=>x.status==='Waiting on Juan').length}</span>`:''}</a>`).join('');
   const el=$('#sync'); const live=S.dbState==='live';
   el.className='badge-live'+(live&&!S.readOnly?'':' off');
   el.innerHTML=`<span class="dot"></span>${live?(S.readOnly?'View only':'Live · shared with your team'):S.dbState==='off'?'Offline':'Connecting…'}`;
@@ -554,7 +1158,8 @@ function render(){
   if(S.dbState==='off') h+=`<div class="note">The ledger could not connect. Open this page on claude.ai while signed in.</div>`;
   const ex=[...S.txns.values(),...S.pays.values()].filter(x=>x.example).length;
   if(ex&&!S.readOnly) h+=`<div class="note info"><span>Rows marked <span class="tag">example</span> show how the ledger works. They are not real expenses.</span>${S.confirm==='clear-ex'?`<span class="row"><button class="btn sm danger" data-act="clear-ex-yes">Remove ${ex} example rows</button><button class="btn sm ghost" data-act="cancel">Keep</button></span>`:`<button class="btn sm" data-act="clear-ex">Remove examples</button>`}</div>`;
-  h+=S.tab==='daily'?viewDaily():S.tab==='tracker'?viewTracker():S.tab==='marketing'?viewMarketing():S.tab==='draws'?viewDraws():S.tab==='properties'?viewProperties():viewSettings();
+  h+=riskBanner();
+  h+=S.tab==='daily'?viewDaily():S.tab==='tracker'?viewTracker():S.tab==='marketing'?viewMarketing():S.tab==='draws'?viewDraws():S.tab==='properties'?viewProperties():S.tab==='controller'?viewController():S.tab==='payables'?viewPayables():S.tab==='cash'?viewCash():viewSettings();
   $('#app').innerHTML=`<fieldset class="ro"${S.readOnly?' disabled':''}>${h}</fieldset>`;
 }
 function cardTabs(cur,counts,act){
@@ -918,6 +1523,7 @@ function drawRow(d){
     <span class="amt" style="font-weight:600">${money(dAmt(d))}</span></summary>
     <div class="gbody stack">
       <div class="form-grid">${nf('amount','Draw amount',d.amount)}${nf('fee','Inspection fee',d.fee)}${nf('received','Disbursed to us so far',d.received)}
+        <label class="field">Expected by <span class="faint" style="font-weight:400">for the forecast</span><input type="date" id="de-exp-${esc(d.id)}" data-act="draw-f" data-f="expectedDate" data-text="1" data-did="${esc(d.id)}" value="${esc(d.expectedDate||'')}"></label>
         <label class="field">Note<input type="text" id="de-note-${esc(d.id)}" data-act="draw-f" data-f="note" data-text="1" data-did="${esc(d.id)}" value="${esc(d.note||'')}"></label>
         <div style="align-self:end">${S.confirm==='dw-'+d.id?`<button class="btn sm danger" data-act="del-draw-yes" data-did="${esc(d.id)}">Delete draw</button> <button class="btn sm ghost" data-act="cancel">Keep</button>`:`<button class="btn sm ghost" data-act="del-draw" data-did="${esc(d.id)}">Delete draw</button>`}</div></div>
       <b style="font-size:13px">Where the ${money0(dAmt(d))} went</b>
@@ -931,6 +1537,161 @@ function drawRow(d){
         <div style="align-self:end"><button class="btn" data-act="add-use" data-did="${esc(d.id)}">Add</button></div></div>
     </div></details>`;
 }
+/* ----- guardrail: no bank or wire details on this page ----- */
+// Wire/escrow instructions, routing and account numbers go to the attorney and CPA, never into this tracker.
+const BANKY=/\b(routing|aba\s*#?|account\s*(no|number|#)|acct\s*#?|swift|iban|wire\s+instructions?|beneficiary\s+bank)\b|\b\d{9}\b|\b\d{10,17}\b/i;
+function bankBlocked(...vals){ if(vals.some(v=>BANKY.test(String(v||'')))){ toast('Bank, account and wire details stay out of this tracker. Send them to the attorney or CPA.'); return true; } return false; }
+
+/* ----- Accounts payable (Juan approves) ----- */
+const AP_STATUS=['Draft','Waiting on Juan','Approved','On hold','Note','Paid'];
+const apList=()=>[...S.ap.values()].sort((a,b)=>(a.dueDate||'9').localeCompare(b.dueDate||'9'));
+const apOpen=x=>x.status!=='Paid';
+function apPill(x){ const c={Draft:'plain','Waiting on Juan':'warn',Approved:'good','On hold':'bad',Note:'acc',Paid:'good'}[x.status]||'plain'; return `<span class="pill ${c}">${esc(x.status||'Draft')}</span>`; }
+function viewPayables(){
+  const all=apList(), open=all.filter(apOpen), wait=open.filter(x=>x.status==='Waiting on Juan'), appr=open.filter(x=>x.status==='Approved');
+  const late=open.filter(x=>x.dueDate&&x.dueDate<today()), week=open.filter(x=>x.dueDate&&x.dueDate>=today()&&dayNum(x.dueDate)-dayNum(today())<=7);
+  const view=S.apView||'juan';
+  const rows=view==='juan'?wait:view==='open'?open:view==='paid'?all.filter(x=>x.status==='Paid'):all;
+  let h=`<div class="summary">
+    <div class="tile"><div class="label">Waiting on Juan</div><div class="big warn">${money0(sum(wait))}</div><div class="foot">${wait.length} bill${wait.length===1?'':'s'}</div></div>
+    <div class="tile"><div class="label">Approved, not paid</div><div class="big good">${money0(sum(appr))}</div><div class="foot">${appr.length} bills · go into the cash forecast</div></div>
+    <div class="tile"><div class="label">Past due</div><div class="big ${late.length?'bad':''}">${money0(sum(late))}</div><div class="foot">${late.length} bills</div></div>
+    <div class="tile"><div class="label">Due in 7 days</div><div class="big">${money0(sum(week))}</div><div class="foot">${week.length} bills</div></div>
+    <div class="tile"><div class="label">Open payables</div><div class="big">${money0(sum(open))}</div><div class="foot">everything not paid</div></div>
+  </div>
+  <div class="note info"><span>Card balances go through <a href="https://claude.ai/artifact/987gv2Gy7howGRiAwvSD2T" target="_blank" rel="noopener">THB Card Approvals</a>. Use this page for vendor bills, contractor invoices, payroll and anything paid by check or ACH. Payment is made by a person outside this page; no bank or wire details are kept here.</span></div>
+  <div class="stack">`;
+  h+=sec('ap-new','Add a bill','',`<div class="form-grid">
+    <label class="field">Vendor / payee<input type="text" id="ap-v" data-draft="ap-v" value="${esc(D('ap-v'))}" placeholder="Contractor, supplier…"></label>
+    <label class="field">Property<select id="ap-p" data-draft="ap-p">${propOpts(D('ap-p'),'Overhead / none').replace('<option value="__new">＋ New property…</option>','')}</select></label>
+    <label class="field">Category<select id="ap-c" data-draft="ap-c">${opts(['Contractor Service','Materials','Local Team Labor','Matrix Payroll','Virtual Team Payroll','Permits & Fees','Utilities','Insurance','Legal & Professional Fees','Marketing','Card payment','Other'],D('ap-c','Contractor Service'))}</select></label>
+    <label class="field">Invoice #<input type="text" id="ap-i" data-draft="ap-i" value="${esc(D('ap-i'))}"></label>
+    <label class="field">Amount<input type="text" inputmode="decimal" id="ap-a" data-draft="ap-a" value="${esc(D('ap-a'))}" placeholder="0.00"></label>
+    <label class="field">Due date<input type="date" id="ap-d" data-draft="ap-d" value="${esc(D('ap-d',today()))}"></label>
+    <label class="field" style="grid-column:span 2">Invoice link (Drive)<input type="text" id="ap-l" data-draft="ap-l" value="${esc(D('ap-l'))}" placeholder="https://drive.google.com/…"></label>
+    <label class="field" style="grid-column:span 2">Note for Juan<input type="text" id="ap-n" data-draft="ap-n" value="${esc(D('ap-n'))}" placeholder="What it is for, draw it comes from…"></label>
+    <div class="row" style="align-self:end"><button class="btn primary" data-act="ap-add" data-v="Waiting on Juan">Send to Juan</button><button class="btn" data-act="ap-add" data-v="Draft">Save as draft</button></div></div>`);
+  h+=`<div class="toolbar"><div class="seg" role="group" aria-label="Show">${[['juan',`For Juan (${wait.length})`],['open',`Open (${open.length})`],['paid','Paid'],['all','All']].map(([k,n])=>`<button data-act="ap-view" data-v="${k}" aria-pressed="${view===k}">${n}</button>`).join('')}</div>
+    ${view==='juan'&&wait.length?(S.confirm==='ap-all'?`<button class="btn primary sm" data-act="ap-all-yes">Approve all ${wait.length} (${money0(sum(wait))})</button><button class="btn ghost sm" data-act="cancel">Cancel</button>`:`<button class="btn sm" data-act="ap-all">Approve all waiting</button>`):''}</div>`;
+  h+= rows.length?`<div class="panel tbl"><table style="min-width:1050px"><thead><tr><th>Due</th><th>Vendor</th><th>Property</th><th>Category</th><th>Invoice</th><th class="amt">Amount</th><th>Status</th><th>Juan’s decision</th><th></th></tr></thead><tbody>
+  ${rows.map(x=>{const lateX=apOpen(x)&&x.dueDate&&x.dueDate<today();return `<tr data-ap="${esc(x.id)}"><td class="d" style="color:${lateX?'var(--bad)':''}">${shortDate(x.dueDate)}${lateX?'<div style="font-size:11px">past due</div>':''}</td>
+    <td class="payee">${esc(x.vendor)}${x.notes?`<div class="muted" style="font-size:12px;font-weight:400">${esc(x.notes)}</div>`:''}</td><td>${esc(propName(x.propertyId)||'Overhead')}</td><td>${esc(x.category||'')}</td>
+    <td>${x.docUrl?`<a href="${esc(x.docUrl)}" target="_blank" rel="noopener">${esc(x.invoiceNo||'Invoice')}</a>`:esc(x.invoiceNo||'—')}</td><td class="amt">${money(x.amount)}</td><td>${apPill(x)}</td>
+    <td>${x.status==='Paid'?`<span class="muted" style="font-size:12px">Paid ${shortDate(x.paidDate)}${x.paidMethod?' · '+esc(x.paidMethod):''}</span>`:`<div class="seg" role="group" aria-label="Decision">${['Approve','Hold','Note'].map(v=>{const st={Approve:'Approved',Hold:'On hold',Note:'Note'}[v];return `<button data-act="ap-dec" data-v="${st}" aria-pressed="${x.status===st}">${v}</button>`;}).join('')}</div>
+      ${x.decision?.by?`<div class="faint" style="font-size:11px">${esc(personName(x.decision.by))} · ${esc(new Date(x.decision.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}${x.decision.note?' · “'+esc(x.decision.note)+'”':''}</div>`:''}
+      ${S.apNote===x.id?`<div class="row" style="margin-top:4px"><input type="text" id="apn-${esc(x.id)}" data-draft="apn-${esc(x.id)}" value="${esc(D('apn-'+x.id))}" placeholder="Juan’s note"><button class="btn sm" data-act="ap-note-save">Save note</button></div>`:''}`}</td>
+    <td>${x.status==='Approved'?`<button class="btn sm" data-act="ap-paid">Mark paid</button>`:x.status==='Draft'?`<button class="btn sm" data-act="ap-send">Send to Juan</button>`:''}${S.confirm==='apd-'+x.id?`<button class="btn sm danger" data-act="ap-del-yes">Delete</button>`:`<button class="btn sm ghost" data-act="ap-del" aria-label="Delete">✕</button>`}</td></tr>`;}).join('')}
+  </tbody><tfoot><tr><td colspan="5">${rows.length} bills</td><td class="amt">${money(sum(rows))}</td><td colspan="3"></td></tr></tfoot></table></div>`
+  :`<div class="panel"><div class="empty"><b>${view==='juan'?'Nothing waiting on Juan':'No bills here'}</b>Add a bill above and press Send to Juan.</div></div>`;
+  return h+'</div>';
+}
+
+/* ----- Cash & maturities: 13-week forecast + maturity/payoff risk register ----- */
+const mondayOf=d=>{const t=new Date(d+'T12:00:00Z');const k=(t.getUTCDay()+6)%7;t.setUTCDate(t.getUTCDate()-k);return t.toISOString().slice(0,10);};
+const addDays=(d,n)=>{const t=new Date(d+'T12:00:00Z');t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10);};
+const regProps=()=>[...S.props.values()].filter(p=>p.status!=='Sold'&&(p.inRegister||groupOf(p)==='active')).filter(p=>p.inRegister||p.status==='Under construction'||p.loanMaturity||fxOpen().some(o=>o.propertyId===p.id&&o.kind==='Mortgage'&&o.endDate)||Number(p.holdback)>0||(p.lenderRemaining!=null&&p.lenderRemaining!=='')).sort((a,b)=>(a.loanMaturity||'9').localeCompare(b.loanMaturity||'9'));
+const cNum=v=>{const n=fxN(v);return n==null||!isFinite(n)?null:n;};
+// Typed register values win; otherwise fall back to what the Controller section already knows.
+function pTerms(p){
+  const e=[...(S.fxInc||new Map()).values()].filter(x=>x.kind==='Escrow closing'&&x.propertyId===p.id&&x.sure!=='Maybe').sort((a,b)=>(a.date||'').localeCompare(b.date||''))[0]||null;
+  const ec=e?fxEscrowCheck(e):null, F=fxFlip(p), mo=fxOpen().find(o=>o.propertyId===p.id&&o.kind==='Mortgage')||null;
+  const close=p.expCloseDate||e?.date||p.fx?.saleDate||'';
+  const proceeds=cNum(p.expNetProceeds)??ec?.amount??(F.ready&&close?F.cashBack:null);
+  const payoff=cNum(p.payoffEstimate)??ec?.payoff??F.loan??null;
+  const mat=p.loanMaturity||mo?.endDate||'';
+  return {close,proceeds,payoff,mat,from:{close:p.expCloseDate?'':e?'Controller escrow':close?'Flip calculator':'',proceeds:cNum(p.expNetProceeds)!=null?'':ec?.amount!=null?'Controller escrow':proceeds!=null?'Flip calculator':'',payoff:cNum(p.payoffEstimate)!=null?'':payoff!=null?'Loan amount':'',mat:p.loanMaturity?'':mat?'Loans & vehicles':''}};
+}
+const cashStart=()=>S.L.cashOnHand!=null&&S.L.cashOnHand!==''?{v:Number(S.L.cashOnHand)||0,src:'typed below'}:(()=>{const c=fxCash().cash;return c!=null?{v:c,src:'company bank balances in Controller → Banks'}:{v:0,src:'nothing entered yet'};})();
+const cashBuf=()=>S.L.cashBuffer!=null&&S.L.cashBuffer!==''?Number(S.L.cashBuffer)||0:(fxN(fxSet().cushion)||0);
+function riskOf(p,fc){
+  const T=pTerms(p), t=today(), m=T.mat, c=T.close;
+  const days=m?dayNum(m)-dayNum(t):null, closeBefore=!!(c&&m&&c<=m), margin=c&&m?dayNum(m)-dayNum(c):null;
+  const payoff=T.payoff||0, proceeds=T.proceeds;
+  const reasons=[]; let level='green';
+  const up=l=>{const o={green:0,amber:1,red:2};if(o[l]>o[level])level=l;};
+  if(!m){ up('amber'); reasons.push('Maturity date missing'); }
+  else if(days<0){ up('red'); reasons.push(`Matured ${-days} days ago`); }
+  else if(!closeBefore){ if(days<=60){up('red');reasons.push(`Matures in ${days} days with no closing before it`);} else if(days<=120){up('amber');reasons.push(`Matures in ${days} days with no closing before it`);} }
+  else if(margin<=14){ up('amber'); reasons.push(`Closing only ${margin} days before maturity`); }
+  if(c&&m&&c>m){ up(days!=null&&days<=60?'red':'amber'); reasons.push(`Expected closing ${shortDate(c)} is after maturity ${shortDate(m)}`); }
+  if(m&&!payoff){ up('amber'); reasons.push('Payoff amount missing'); }
+  if(closeBefore&&payoff&&proceeds!=null&&proceeds<0){ up('red'); reasons.push('Sale does not cover the payoff'); }
+  if(m&&!closeBefore&&payoff&&fc){ const w=fc.weekOf(m), buf=cashBuf(); if(w!=null&&fc.ending[w]<buf){ up(days!=null&&days<=90?'red':'amber'); reasons.push(`Paying off ${money0(payoff)} at maturity leaves ${money0(fc.ending[w])} cash that week`);} }
+  return {level,reasons,days,closeBefore,payoff,proceeds};
+}
+function forecast(){
+  const w0=mondayOf(today()), weeks=[...Array(13)].map((_,i)=>addDays(w0,i*7));
+  const weekOf=d=>{ if(!d) return null; if(d<w0) return 0; const i=Math.floor((dayNum(d)-dayNum(w0))/7); return i<13?i:null; };
+  const rows={sale:[],draw:[],otherIn:[],payoff:[],apAppr:[],apWait:[],qbBills:[],loans:[],cardMin:[],payroll:[],otherOut:[]}; const add=(k,d,amt,label,late)=>{const i=weekOf(d); if(i==null) return; rows[k].push({i,amt:r2(amt),label,date:d,late:late||(d<w0)});};
+  const unsched=[];
+  for(const p of S.props.values()){
+    if(p.status==='Sold') continue;
+    const T=pTerms(p), close=T.close, m=T.mat;
+    if(close&&T.proceeds) add('sale',close,T.proceeds,`${shortAddr(p.address)} closing${T.from.proceeds?' ('+T.from.proceeds+')':''}`);
+    if(m&&T.payoff&&!(close&&close<=m)) add('payoff',m,-T.payoff,`${shortAddr(p.address)} loan matures`);
+  }
+  for(const d of S.drawsMap.values()){ const left=r2(dAmt(d)-dRecv(d)); if(left<=0) continue; const p=S.props.get(d.propertyId); if(d.expectedDate) add('draw',d.expectedDate,left,`${shortAddr(p?.address)} ${d.note||'draw'}`); else unsched.push({what:`${shortAddr(p?.address)} · ${d.note||'draw'}`,amt:left}); }
+  for(const x of S.ap.values()){ if(!apOpen(x)) continue; const k=x.status==='Approved'?'apAppr':(x.status==='Waiting on Juan'||x.status==='Note')?'apWait':null; if(!k) continue; if(x.dueDate) add(k,x.dueDate,-(Number(x.amount)||0),`${x.vendor}`); else unsched.push({what:`${x.vendor} (no due date)`,amt:-(Number(x.amount)||0)}); }
+  for(const x of (S.fxInc||new Map()).values()){ if(x.kind==='Escrow closing'||x.sure==='Maybe'||!x.date) continue; const a=fxN(x.amount); if(a) add('otherIn',x.date,a,`${x.label||x.kind||'Money in'} (${x.sure||'Likely'})`); }
+  const end=addDays(w0,13*7-1);
+  for(const b of (QB()?.bills||[])){ if(b.paid||!fxN(b.amount)) continue; add('qbBills',b.due||today(),-fxN(b.amount),`${b.name} (QuickBooks)`); }
+  for(const o of fxOpen()){ if(o.paysMonthly===false||!fxN(o.monthly)||!fxN(o.dueDay)) continue; let d=fxNextDue(fxN(o.dueDay),w0); while(d&&d<=end){ if(!o.endDate||d<=o.endDate) add('loans',d,-fxN(o.monthly),`${o.name} payment`); d=fxNextDue(fxN(o.dueDay),addDays(d,1)); } }
+  for(const c of fxCardList()){ if(!c.min) continue; if(c.due){ let d=c.due; while(d<=end){ add('cardMin',d,-c.min,`${c.n} ${c.est?'est. minimum':'minimum'}`); const [y,mm,dd]=d.split('-').map(Number); d=new Date(Date.UTC(y,mm,Math.min(dd,28),12)).toISOString().slice(0,10);} } else unsched.push({what:`${c.n} card minimum (no due date)`,amt:-c.min}); }
+  const pay=fxN(fxSet().weeklyPayroll); if(pay) for(let i=0;i<13;i++) add('payroll',addDays(w0,i*7+4),-pay,'Weekly payroll');
+  for(const c of S.cashItems.values()) add(c.kind==='in'?'otherIn':'otherOut',c.date,c.kind==='in'?Math.abs(Number(c.amount)||0):-Math.abs(Number(c.amount)||0),c.label||'');
+  const tot=k=>weeks.map((_,i)=>r2(rows[k].filter(x=>x.i===i).reduce((a,x)=>a+x.amt,0)));
+  const lines=Object.fromEntries(Object.keys(rows).map(k=>[k,tot(k)]));
+  const net=weeks.map((_,i)=>r2(Object.values(lines).reduce((a,l)=>a+l[i],0)));
+  const st=cashStart(), start=st.v; const ending=[]; net.reduce((a,v,i)=>(ending[i]=r2(a+v)),start);
+  return {weeks,rows,lines,net,ending,start,startSrc:st.src,weekOf,unsched,payrollMissing:!pay};
+}
+function rfield(p,f,type,ph){ const v=p[f]; return `<input type="${type==='date'?'date':'text'}" ${type==='money'?'inputmode="decimal" class="mono" style="width:120px;text-align:right"':type==='text'?'style="min-width:150px"':''} id="rk-${f}-${esc(p.id)}" data-act="rk" data-f="${f}" data-t="${type}" data-pid="${esc(p.id)}" value="${esc(type==='money'?(v||v===0?Number(v).toLocaleString('en-US'):''):(v||''))}" placeholder="${ph||''}">`; }
+function fb(p,k){ const T=pTerms(p); if(!T.from[k]) return ''; const v=T[k==='mat'?'mat':k]; return `<div class="faint" style="font-size:11px">${k==='mat'||k==='close'?esc(shortDate(v)):money0(v)} · ${esc(T.from[k])}</div>`; }
+function viewCash(){
+  const fc=forecast(), buf=cashBuf(), regs=regProps(), risks=regs.map(p=>({p,r:riskOf(p,fc)}));
+  const reds=risks.filter(x=>x.r.level==='red'), lowWeeks=fc.weeks.map((w,i)=>({w,i,e:fc.ending[i]})).filter(x=>x.e<buf);
+  let h='';
+  if(reds.length||lowWeeks.length) h+=`<div class="note" style="background:var(--bad-soft);border-color:var(--bad);color:var(--bad)"><span><b>Tell Juan now:</b> ${[...reds.map(x=>`${esc(shortAddr(x.p.address))}: ${esc(x.r.reasons[0])}`),...(lowWeeks.length?[`cash falls below ${money0(buf)} in the week of ${shortDate(lowWeeks[0].w)} (${money0(lowWeeks[0].e)})`]:[])].join(' · ')}</span></div>`;
+  h+=`<div class="note info"><span><b>What this page does:</b> lines up closings, draws, maturities and approved bills so timing gaps show early. <b>What it does not do:</b> extensions or refinances with the lender, payoff letters and loan documents, and escrow or wire instructions go to the attorney and CPA. Nothing here moves money, and no bank or wire details are stored.</span></div>`;
+  h+=`<div class="panel panel-pad stack" style="margin-bottom:14px"><div class="row" style="justify-content:space-between"><h3 style="font-size:16px">13-week cash forecast</h3><span class="muted" style="font-size:12.5px">Weeks start Monday ${shortDate(fc.weeks[0])}</span></div>
+    <div class="form-grid"><label class="field">Cash on hand today<input type="text" inputmode="decimal" id="cs-oh" data-act="cs" data-f="cashOnHand" value="${S.L.cashOnHand!=null?Number(S.L.cashOnHand).toLocaleString('en-US'):''}" placeholder="${fxCash().cash!=null?'Banks: '+money0(fxCash().cash):'0'}"></label>
+      <label class="field">As of<input type="date" id="cs-as" data-act="cs" data-f="cashAsOf" data-text="1" value="${esc(S.L.cashAsOf||'')}"></label>
+      <label class="field">Minimum cash to keep<input type="text" inputmode="decimal" id="cs-bf" data-act="cs" data-f="cashBuffer" value="${S.L.cashBuffer!=null?Number(S.L.cashBuffer).toLocaleString('en-US'):''}" placeholder="${fxN(fxSet().cushion)?'Controller cushion: '+money0(fxN(fxSet().cushion)):'0'}"></label></div>
+    <div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:1400px"><thead><tr><th></th>${fc.weeks.map((w,i)=>`<th class="amt">Wk ${i+1}<div style="font-weight:400;text-transform:none;letter-spacing:0">${shortDate(w).slice(0,5)}</div></th>`).join('')}</tr></thead><tbody>
+      ${[['sale','Sale closings (net)'],['draw','Lender draws expected'],['otherIn','Other cash in'],['payoff','Loan payoffs at maturity'],['apAppr','Approved bills (Payables)'],['apWait','Bills waiting on Juan'],['qbBills','QuickBooks / mail bills'],['loans','Mortgage & loan payments'],['cardMin','Card minimums'],['payroll','Payroll'],['otherOut','Other cash out']].map(([k,n])=>`<tr><td style="white-space:nowrap">${n}</td>${fc.lines[k].map((v,i)=>{const items=fc.rows[k].filter(x=>x.i===i);return `<td class="amt" title="${esc(items.map(x=>x.label+' '+money0(x.amt)+(x.late?' (past date)':'')).join('\n'))}" style="color:${v<0?'var(--bad)':v>0?'var(--good)':'var(--faint)'}">${v?money0(v):'·'}${items.some(x=>x.late)?'<div style="font-size:10px">incl. past</div>':''}</td>`;}).join('')}</tr>`).join('')}
+    </tbody><tfoot><tr><td>Net</td>${fc.net.map(v=>`<td class="amt">${money0(v)}</td>`).join('')}</tr><tr><td>Ending cash</td>${fc.ending.map(v=>`<td class="amt" style="color:${v<buf?'var(--bad)':'inherit'};background:${v<buf?'var(--bad-soft)':''}">${money0(v)}</td>`).join('')}</tr></tfoot></table></div>
+    <span class="faint" style="font-size:12.5px">Starts from ${money0(fc.start)} (${esc(fc.startSrc)}).${fc.payrollMissing?' Payroll is not included: enter weekly payroll in Controller → Banks.':''} Sales, payoffs and maturities use what you type in the register; blanks fall back to Controller escrow, the flip calculator and Loans &amp; vehicles. Hover a cell to see what is in it. A loan payoff counts at maturity only when no closing is expected on or before that date; otherwise the payoff comes out of the sale (enter net proceeds after payoff).${fc.unsched.length?` Not dated yet, so not in the weeks: ${fc.unsched.map(u=>esc(u.what)+' '+money0(u.amt)).join(' · ')}.`:''}</span>
+    <details><summary class="muted" style="cursor:pointer;font-weight:600">Add other cash in or out</summary><div class="form-grid" style="margin-top:10px">
+      <label class="field">Date<input type="date" id="ci2-d" data-draft="ci2-d" value="${esc(D('ci2-d',today()))}"></label>
+      <label class="field">What<input type="text" id="ci2-l" data-draft="ci2-l" value="${esc(D('ci2-l'))}" placeholder="Payroll, rent, investor capital…"></label>
+      <label class="field">In or out<select id="ci2-k" data-draft="ci2-k">${['out','in'].map(x=>`<option value="${x}"${D('ci2-k','out')===x?' selected':''}>${x==='in'?'Cash in':'Cash out'}</option>`).join('')}</select></label>
+      <label class="field">Amount<input type="text" inputmode="decimal" id="ci2-a" data-draft="ci2-a" value="${esc(D('ci2-a'))}" placeholder="0.00"></label>
+      <div style="align-self:end"><button class="btn" data-act="ci2-add">Add</button></div></div>
+      ${S.cashItems.size?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px;margin-top:10px"><table style="min-width:480px"><tbody>${[...S.cashItems.values()].sort(byDate).map(c=>`<tr data-cid="${esc(c.id)}"><td class="d">${shortDate(c.date)}</td><td>${esc(c.label)}</td><td class="amt" style="color:${c.kind==='in'?'var(--good)':'var(--bad)'}">${c.kind==='in'?'':'− '}${money(Math.abs(c.amount))}</td><td><button class="btn sm ghost" data-act="ci2-del" aria-label="Delete">✕</button></td></tr>`).join('')}</tbody></table></div>`:''}</details>
+  </div>`;
+  h+=`<div class="panel panel-pad stack"><div class="row" style="justify-content:space-between"><h3 style="font-size:16px">Maturity / payoff risk register</h3><span class="muted" style="font-size:12.5px">Red: act now · Amber: watch · Green: on track</span></div>
+    <div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:1500px"><thead><tr><th>Risk</th><th>Property</th><th>Lender</th><th>Loan matures</th><th class="amt">Days left</th><th class="amt">Payoff (est.)</th><th>Expected closing</th><th class="amt">Net proceeds</th><th>Extension option</th><th>Owner</th><th>Status</th><th>Next step</th><th>Flagged to Juan</th></tr></thead><tbody>
+    ${risks.map(({p,r})=>`<tr><td><span class="pill ${r.level==='red'?'bad':r.level==='amber'?'warn':'good'}">${r.level==='red'?'Red':r.level==='amber'?'Amber':'Green'}</span>${r.reasons.length?`<div class="faint" style="font-size:11px;max-width:220px;white-space:normal">${r.reasons.map(esc).join('; ')}</div>`:''}</td>
+      <td class="payee">${esc(p.address)}<div class="faint" style="font-size:11px">${esc(p.status||'')}</div></td><td>${esc(p.lender||'—')}</td>
+      <td>${rfield(p,'loanMaturity','date')}${fb(p,'mat')}</td><td class="amt" style="color:${r.days!=null&&r.days<=60?'var(--bad)':''}">${r.days==null?'—':r.days}</td>
+      <td class="amt">${rfield(p,'payoffEstimate','money','0')}${fb(p,'payoff')}</td><td>${rfield(p,'expCloseDate','date')}${fb(p,'close')}</td><td class="amt">${rfield(p,'expNetProceeds','money','after payoff')}${fb(p,'proceeds')}</td>
+      <td>${rfield(p,'extOption','text','e.g. 3 mo, 0.5 pt')}</td>
+      <td><select data-act="rk" data-f="riskOwner" data-t="sel" data-pid="${esc(p.id)}" aria-label="Owner">${opts(['Controller','Juan','Attorney','CPA'],p.riskOwner||'Controller')}</select></td>
+      <td><select data-act="rk" data-f="riskStatus" data-t="sel" data-pid="${esc(p.id)}" aria-label="Status">${opts(['Watching','Raised with Juan','With attorney','With CPA','Extension requested','Refinance in progress','Resolved'],p.riskStatus||'Watching')}</select></td>
+      <td>${rfield(p,'nextStep','text','What happens next')}</td>
+      <td>${p.flaggedAt?`<span class="muted" style="font-size:12px">${esc(shortDate(p.flaggedAt.slice(0,10)))} by ${esc(personName(p.flaggedBy))}</span><br>`:''}<button class="btn sm${r.level==='red'&&!p.flaggedAt?' primary':''}" data-act="rk-flag" data-pid="${esc(p.id)}">${p.flaggedAt?'Flag again':'Mark flagged'}</button></td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="row"><select id="rk-add" data-draft="rk-add"><option value="">Add a property to the register…</option>${[...S.props.values()].filter(p=>!regs.includes(p)&&p.status!=='Sold').map(p=>`<option value="${esc(p.id)}">${esc(p.address)}</option>`).join('')}</select><button class="btn sm" data-act="rk-add">Add</button></div>
+    <span class="faint" style="font-size:12.5px">“Mark flagged” records that Juan was told and when. Extension, refinance, payoff letters and loan documents are handled by Juan with the attorney and CPA; record only the status and next step here.</span></div>`;
+  return h;
+}
+function riskBanner(){
+  if(S.tab==='cash') return '';
+  const fc=forecast(); const reds=regProps().map(p=>({p,r:riskOf(p,fc)})).filter(x=>x.r.level==='red');
+  if(!reds.length) return '';
+  return `<div class="note" style="background:var(--bad-soft);border-color:var(--bad);color:var(--bad)"><span><b>Maturity risk:</b> ${reds.map(x=>esc(shortAddr(x.p.address))+' — '+esc(x.r.reasons[0])).join(' · ')}</span><a href="#cash" data-tab="cash">Open Cash &amp; Maturities</a></div>`;
+}
+
 /* ----- Twin Calc (from "Profit Calc Updated") ----- */
 const TTAX={"ALAMEDA":["ALAMEDA",12.0,1.1],"ALBANY":["ALAMEDA",15.0,1.1],"BERKELEY":["ALAMEDA",15.0,1.1],"DUBLIN":["ALAMEDA",0.55,0.55],"EMERYVILLE":["ALAMEDA",12.0,1.1],"FREMONT":["ALAMEDA",0.55,0.55],"HAYWARD":["ALAMEDA",8.5,1.1],"LIVERMORE":["ALAMEDA",0.55,0.55],"NEWARK":["ALAMEDA",0.55,0.55],"OAKLAND":["ALAMEDA",15.0,1.1],"PIEDMONT":["ALAMEDA",13.0,1.1],"PLEASANTON":["ALAMEDA",0.55,0.55],"SAN LEANDRO":["ALAMEDA",11.0,1.1],"UNION CITY":["ALAMEDA",0.55,0.55],"ALPINE COUNTY":["ALPINE",0.0,1.1],"AMADOR":["AMADOR",0.55,0.55],"IONE":["AMADOR",0.55,0.55],"JACKSON":["AMADOR",0.55,0.55],"PLYMOUTH":["AMADOR",0.55,0.55],"SUTTER CREEK":["AMADOR",0.55,0.55],"BIGGS":["BUTTE",0.55,0.55],"CHICO":["BUTTE",0.55,0.55],"GRIDLEY":["BUTTE",0.55,0.55],"OROVILLE":["BUTTE",0.55,0.55],"PARADISE":["BUTTE",0.55,0.55],"ANGELS CAMP":["CALAVERAS",0.55,0.55],"COLUSA":["COLUSA",0.55,0.55],"WILLIAMS":["COLUSA",0.55,0.55],"ANTIOCH":["CONTRA COSTA",0.55,0.55],"BRENTWOOD":["CONTRA COSTA",0.55,0.55],"CLAYTON":["CONTRA COSTA",0.55,0.55],"CONCORD":["CONTRA COSTA",0.55,0.55],"DANVILLE":["CONTRA COSTA",0.55,0.55],"EL CERRITO":["CONTRA COSTA",12.0,1.1],"HERCULES":["CONTRA COSTA",0.55,0.55],"LAFAYETTE":["CONTRA COSTA",0.55,0.55],"MARTINEZ":["CONTRA COSTA",0.55,0.55],"MORAGA":["CONTRA COSTA",0.55,0.55],"OAKLEY":["CONTRA COSTA",0.55,0.55],"ORINDA":["CONTRA COSTA",0.55,0.55],"PINOLE":["CONTRA COSTA",0.55,0.55],"PITTSBURG":["CONTRA COSTA",0.55,0.55],"PLEASANT HILL":["CONTRA COSTA",0.55,0.55],"RICHMOND":["CONTRA COSTA",12.5,1.1],"SAN PABLO":["CONTRA COSTA",0.55,0.55],"SAN RAMON":["CONTRA COSTA",0.55,0.55],"WALNUT CREEK":["CONTRA COSTA",0.55,0.55],"CRESCENT CITY":["DEL NORTE",0.55,0.55],"PLACERVILLE":["EL DORADO",0.55,0.55],"SOUTH LAKE TAHOE":["EL DORADO",0.55,0.55],"CLOVIS":["FRESNO",0.55,0.55],"COALINGA":["FRESNO",0.55,0.55],"FIREBAUGH":["FRESNO",0.55,0.55],"FOWLER":["FRESNO",0.55,0.55],"FRESNO":["FRESNO",0.55,0.55],"HURON":["FRESNO",0.55,0.55],"KERMAN":["FRESNO",0.55,0.55],"KINGSBURG":["FRESNO",0.55,0.55],"MENDOTA":["FRESNO",0.55,0.55],"ORANGE COVE":["FRESNO",0.55,0.55],"PARLIER":["FRESNO",0.55,0.55],"REEDLEY":["FRESNO",0.55,0.55],"SANGER":["FRESNO",0.55,0.55],"SAN JOAQUIN":["FRESNO",0.55,0.55],"SELMA":["FRESNO",0.55,0.55],"ORLAND":["GLENN",0.55,0.55],"WILLOWS":["GLENN",0.55,0.55],"ARCATA":["HUMBOLDT",0.55,0.55],"BLUE LAKE":["HUMBOLDT",0.55,0.55],"EUREKA":["HUMBOLDT",0.55,0.55],"FERNDALE":["HUMBOLDT",0.55,0.55],"FORTUNA":["HUMBOLDT",0.55,0.55],"RIO DELL":["HUMBOLDT",0.55,0.55],"TRINIDAD":["HUMBOLDT",0.55,0.55],"BRAWLEY":["IMPERIAL",0.55,0.55],"CALEXICO":["IMPERIAL",0.55,0.55],"CALIPATRIA":["IMPERIAL",0.55,0.55],"EL CENTRO":["IMPERIAL",0.55,0.55],"HOLTVILLE":["IMPERIAL",0.55,0.55],"IMPERIAL":["IMPERIAL",0.55,0.55],"WESTMORLAND":["IMPERIAL",0.55,0.55],"BISHOP":["INYO",0.55,0.55],"ARVIN":["KERN",0.55,0.55],"BAKERSFIELD":["KERN",0.55,0.55],"CALIFORNIA CITY":["KERN",0.55,0.55],"DELANO":["KERN",0.55,0.55],"MARICOPA":["KERN",0.55,0.55],"MCFARLAND":["KERN",0.55,0.55],"RIDGECREST":["KERN",0.55,0.55],"SHAFTER":["KERN",0.55,0.55],"TAFT":["KERN",0.55,0.55],"TEHACHAPI":["KERN",0.55,0.55],"WASCO":["KERN",0.55,0.55],"AVENAL":["KINGS",0.55,0.55],"CORCORAN":["KINGS",0.55,0.55],"HANFORD":["KINGS",0.55,0.55],"LEMOORE":["KINGS",0.55,0.55],"CLEARLAKE":["LAKE",0.55,0.55],"LAKEPORT":["LAKE",0.55,0.55],"SUSANVILLE":["LASSEN",0.55,0.55],"AGOURA HILLS":["LOS ANGELES",0.55,0.55],"ALHAMBRA":["LOS ANGELES",0.55,0.55],"ARCADIA":["LOS ANGELES",0.55,0.55],"ARTESIA":["LOS ANGELES",0.55,0.55],"AVALON":["LOS ANGELES",0.55,0.55],"AZUSA":["LOS ANGELES",0.55,0.55],"BALDWIN PARK":["LOS ANGELES",0.55,0.55],"BELL":["LOS ANGELES",0.55,0.55],"BELLFLOWER":["LOS ANGELES",0.55,0.55],"BELL GARDENS":["LOS ANGELES",0.55,0.55],"BEVERLY HILLS":["LOS ANGELES",0.55,0.55],"BRADBURY":["LOS ANGELES",0.55,0.55],"BURBANK":["LOS ANGELES",0.55,0.55],"CALABASAS":["LOS ANGELES",0.55,0.55],"CARSON":["LOS ANGELES",0.55,0.55],"CERRITOS":["LOS ANGELES",0.55,0.55],"CLAREMONT":["LOS ANGELES",0.55,0.55],"COMMERCE":["LOS ANGELES",0.55,0.55],"COMPTON":["LOS ANGELES",0.55,0.55],"COVINA":["LOS ANGELES",0.55,0.55],"CUDAHY":["LOS ANGELES",0.55,0.55],"CULVER":["LOS ANGELES",19.5,1.1],"DIAMOND BAR":["LOS ANGELES",0.55,0.55],"DOWNEY":["LOS ANGELES",0.55,0.55],"DUARTE":["LOS ANGELES",0.55,0.55],"EL MONTE":["LOS ANGELES",0.55,0.55],"EL SEGUNDO":["LOS ANGELES",0.55,0.55],"GARDENA":["LOS ANGELES",0.55,0.55],"GLENDALE":["LOS ANGELES",0.55,0.55],"GLENDORA":["LOS ANGELES",0.55,0.55],"HAWAIIAN GARDENS":["LOS ANGELES",0.55,0.55],"HAWTHORNE":["LOS ANGELES",0.55,0.55],"HERMOSA BEACH":["LOS ANGELES",0.55,0.55],"HIDDEN HILLS":["LOS ANGELES",0.55,0.55],"HUNT INGTON PARK":["LOS ANGELES",0.55,0.55],"INDUST RY":["LOS ANGELES",0.55,0.55],"INGLEWOOD":["LOS ANGELES",0.55,0.55],"IRWINDALE":["LOS ANGELES",0.55,0.55],"LA CANADA FLINTRIDGE":["LOS ANGELES",0.55,0.55],"LA HABRA HEIGHTS":["LOS ANGELES",0.55,0.55],"LAKEWOOD":["LOS ANGELES",0.55,0.55],"LA MIRADA":["LOS ANGELES",0.55,0.55],"LANCASTER":["LOS ANGELES",0.55,0.55],"LA PUENTE":["LOS ANGELES",0.55,0.55],"LA VERNE":["LOS ANGELES",0.55,0.55],"LAWNDALE":["LOS ANGELES",0.55,0.55],"LOMITA":["LOS ANGELES",0.55,0.55],"LONG BEACH":["LOS ANGELES",0.55,0.55],"LOS ANGELES":["LOS ANGELES",4.5,1.1],"LYNWOOD":["LOS ANGELES",0.55,0.55],"MALIBU":["LOS ANGELES",0.55,0.55],"MANHATTAN BEACH":["LOS ANGELES",0.55,0.55],"MAYWOOD":["LOS ANGELES",0.55,0.55],"MONROVIA":["LOS ANGELES",0.55,0.55],"MONTEBELLO":["LOS ANGELES",0.55,0.55],"MONTEREY PARK":["LOS ANGELES",0.55,0.55],"NORWALK":["LOS ANGELES",0.55,0.55],"PALMDALE":["LOS ANGELES",0.55,0.55],"PALOS VERDES ESTATES":["LOS ANGELES",0.55,0.55],"PARAMOUNT":["LOS ANGELES",0.55,0.55],"PASADENA":["LOS ANGELES",0.55,0.55],"PICO RIVERA":["LOS ANGELES",0.55,0.55],"POMONA":["LOS ANGELES",2.2,1.1],"RANCHO PALOS VERDES":["LOS ANGELES",0.55,0.55],"REDONDO BEACH":["LOS ANGELES",2.2,1.1],"ROLLING HILLS":["LOS ANGELES",0.55,0.55],"ROLLING HILLS ESTATES":["LOS ANGELES",0.55,0.55],"ROSEMEAD":["LOS ANGELES",0.55,0.55],"SAN DIMAS":["LOS ANGELES",0.55,0.55],"SAN FERNANDO":["LOS ANGELES",0.55,0.55],"SAN GABRIEL":["LOS ANGELES",0.55,0.55],"SAN MARINO":["LOS ANGELES",0.55,0.55],"SANTA CLARITA":["LOS ANGELES",0.55,0.55],"SANTA FE SPRINGS":["LOS ANGELES",0.55,0.55],"SANTA MONICA":["LOS ANGELES",3.0,1.1],"SIERRA MADRE":["LOS ANGELES",0.55,0.55],"SIGNAL HILL":["LOS ANGELES",0.55,0.55],"SOUTH EL MONTE":["LOS ANGELES",0.55,0.55],"SOUTH GATE":["LOS ANGELES",0.55,0.55],"SOUTH PASADENA":["LOS ANGELES",0.55,0.55],"TEMPLE CITY":["LOS ANGELES",0.55,0.55],"TORRANCE":["LOS ANGELES",0.55,0.55],"VERNON":["LOS ANGELES",0.55,0.55],"WALNUT":["LOS ANGELES",0.55,0.55],"WEST COVINA":["LOS ANGELES",0.55,0.55],"WEST HOLLYWOOD":["LOS ANGELES",0.55,0.55],"WESTLAKE VILLAGE":["LOS ANGELES",0.55,0.55],"WHITTIER":["LOS ANGELES",0.55,0.55],"CHOWCHILLA":["MADERA",0.55,0.55],"MADERA":["MADERA",0.55,0.55],"BELVEDERE":["MARIN",0.55,0.55],"CORTE MADERA":["MARIN",0.55,0.55],"FAIRFAX":["MARIN",0.55,0.55],"LARKSPUR":["MARIN",0.55,0.55],"MILL VALLEY":["MARIN",0.55,0.55],"NOVATO":["MARIN",0.55,0.55],"ROSS":["MARIN",0.55,0.55],"SAN ANSELMO":["MARIN",0.55,0.55],"SAN RAFAEL":["MARIN",2.0,1.1],"SAUSALITO":["MARIN",0.55,0.55],"TIBURON":["MARIN",0.55,0.55],"MARIPOSA COUNTY":["MARIPOSA",0.0,1.1],"FORT BRAGG":["MENDOCINO",0.55,0.55],"POINT ARENA":["MENDOCINO",0.55,0.55],"UKIAH":["MENDOCINO",0.55,0.55],"WILLITS":["MENDOCINO",0.55,0.55],"ATWATER":["MERCED",0.55,0.55],"DOS PALOS":["MERCED",0.55,0.55],"GUSTINE":["MERCED",0.55,0.55],"LIVINGSTON":["MERCED",0.55,0.55],"LOS BANOS":["MERCED",0.55,0.55],"MERCED":["MERCED",0.55,0.55],"ALTURAS":["MODOC",0.55,0.55],"MAMMOTH LAKE":["MONO",0.55,0.55],"CARMEL-BY-THE-SEA":["MONTEREY",0.55,0.55],"DEL REY OAKS":["MONTEREY",0.55,0.55],"GONZALES":["MONTEREY",0.55,0.55],"GREENFIELD":["MONTEREY",0.55,0.55],"KING CITY":["MONTEREY",0.55,0.55],"MARINA":["MONTEREY",0.55,0.55],"MONTEREY":["MONTEREY",0.55,0.55],"PACIFIC GROVE":["MONTEREY",0.55,0.55],"SALINAS":["MONTEREY",0.55,0.55],"SAND CITY":["MONTEREY",0.55,0.55],"SEASIDE":["MONTEREY",0.55,0.55],"SOLEDAD":["MONTEREY",0.55,0.55],"AMERICAN CANYON":["NAPA",0.55,0.55],"CALISTOGA":["NAPA",0.55,0.55],"NAPA":["NAPA",0.55,0.55],"SAINT HELENA":["NAPA",0.55,0.55],"YOUNTVILLE":["NAPA",0.55,0.55],"GRASS VALLEY":["NEVADA",0.55,0.55],"NEVADA CITY":["NEVADA",0.55,0.55],"TRUCKEE":["NEVADA",0.55,0.55],"ALISO VIEJO":["ORANGE",0.55,0.55],"ANAHEIM":["ORANGE",0.55,0.55],"BREA":["ORANGE",0.55,0.55],"BUENA PARK":["ORANGE",0.55,0.55],"COSTA MESA":["ORANGE",0.55,0.55],"CYPRESS":["ORANGE",0.55,0.55],"DANA POINT":["ORANGE",0.55,0.55],"FOUNTAIN VALLEY":["ORANGE",0.55,0.55],"FULLERTON":["ORANGE",0.55,0.55],"GARDEN GROVE":["ORANGE",0.55,0.55],"HUNT INGTON BEACH":["ORANGE",0.55,0.55],"IRVINE":["ORANGE",0.55,0.55],"LAGUNA BEACH":["ORANGE",0.55,0.55],"LAGUNA HILLS":["ORANGE",0.55,0.55],"LAGUNA NIGUEL":["ORANGE",0.55,0.55],"LA HABRA":["ORANGE",0.55,0.55],"LAKE FOREST":["ORANGE",0.55,0.55],"LA PALMA":["ORANGE",0.55,0.55],"LOS ALAMITOS":["ORANGE",0.55,0.55],"MISSION VIEJO":["ORANGE",0.55,0.55],"NEWPORT BEACH":["ORANGE",0.55,0.55],"ORANGE":["ORANGE",0.55,0.55],"PLACENTIA":["ORANGE",0.55,0.55],"RANCHO SANTA MARGARIT A":["ORANGE",0.55,0.55],"SAN CLEMENTE":["ORANGE",0.55,0.55],"SAN JUAN CAPISTRANO":["ORANGE",0.55,0.55],"SANTA ANA":["ORANGE",0.55,0.55],"SEAL BEACH":["ORANGE",0.55,0.55],"STANTON":["ORANGE",0.55,0.55],"TUSTIN":["ORANGE",0.55,0.55],"VILLA PARK":["ORANGE",0.55,0.55],"WESTMINSTER":["ORANGE",0.55,0.55],"YORBA LINDA":["ORANGE",0.55,0.55],"AUBURN":["PLACER",0.55,0.55],"COLFAX":["PLACER",0.55,0.55],"LINCOLN":["PLACER",0.55,0.55],"LOOMIS":["PLACER",0.55,0.55],"ROCKLIN":["PLACER",0.55,0.55],"ROSEVILLE":["PLACER",0.55,0.55],"PORTOLA":["PLUMAS",0.55,0.55],"BANNING":["RIVERSIDE",0.55,0.55],"BEAUMONT":["RIVERSIDE",0.55,0.55],"BLYTHE":["RIVERSIDE",0.55,0.55],"CALIMESA":["RIVERSIDE",0.55,0.55],"CANYON LAKE":["RIVERSIDE",0.55,0.55],"CATHEDRAL CITY":["RIVERSIDE",0.55,0.55],"COACHELLA":["RIVERSIDE",0.55,0.55],"CORONA":["RIVERSIDE",0.55,0.55],"DESERT HOT SPRINGS":["RIVERSIDE",0.55,0.55],"EASTVALE":["RIVERSIDE",0.55,0.55],"HEMET":["RIVERSIDE",0.55,0.55],"INDIAN WELLS":["RIVERSIDE",0.55,0.55],"INDIO":["RIVERSIDE",0.55,0.55],"JURUPA VALLEY":["RIVERSIDE",0.55,0.55],"LAKE ELSINORE":["RIVERSIDE",0.55,0.55],"LA QUINTA":["RIVERSIDE",0.55,0.55],"MENIFEE":["RIVERSIDE",0.55,0.55],"MORENO VALLEY":["RIVERSIDE",0.55,0.55],"MURRIET A":["RIVERSIDE",0.55,0.55],"NORCO":["RIVERSIDE",0.55,0.55],"PALM DESERT":["RIVERSIDE",0.55,0.55],"PALM SPRINGS":["RIVERSIDE",0.55,0.55],"PERRIS":["RIVERSIDE",0.55,0.55],"RANCHO MIRAGE":["RIVERSIDE",0.55,0.55],"RIVERSIDE":["RIVERSIDE",1.1,1.1],"SAN JACINTO":["RIVERSIDE",0.55,0.55],"TEMECULA":["RIVERSIDE",0.55,0.55],"WILDOMAR":["RIVERSIDE",0.55,0.55],"CITRUS HEIGHTS":["SACRAMENTO",0.55,0.55],"ELK GROVE":["SACRAMENTO",0.55,0.55],"FOLSOM":["SACRAMENTO",0.55,0.55],"GALT":["SACRAMENTO",0.55,0.55],"ISLETON":["SACRAMENTO",0.55,0.55],"RANCHO CORDOVA":["SACRAMENTO",0.55,0.55],"SACRAMENTO":["SACRAMENTO",2.75,1.1],"HOLLISTER":["SAN BENITO",0.55,0.55],"SAN JUAN BAUTISTA":["SAN BENITO",0.55,0.55],"ADELANTO":["SAN BERNARDINO",0.55,0.55],"APPLE VALLEY":["SAN BERNARDINO",0.55,0.55],"BARSTOW":["SAN BERNARDINO",0.55,0.55],"BIG BEAR LAKE":["SAN BERNARDINO",0.55,0.55],"CHINO":["SAN BERNARDINO",0.55,0.55],"CHINO HILLS":["SAN BERNARDINO",0.55,0.55],"COLTON":["SAN BERNARDINO",0.55,0.55],"FONTANA":["SAN BERNARDINO",0.55,0.55],"GRAND TERRACE":["SAN BERNARDINO",0.55,0.55],"HESPERIA":["SAN BERNARDINO",0.55,0.55],"HIGHLAND":["SAN BERNARDINO",0.55,0.55],"LOMA LINDA":["SAN BERNARDINO",0.55,0.55],"MONTCLAIR":["SAN BERNARDINO",0.55,0.55],"NEEDLES":["SAN BERNARDINO",0.55,0.55],"ONTARIO":["SAN BERNARDINO",0.55,0.55],"RANCHO CUCAMONGA":["SAN BERNARDINO",0.55,0.55],"REDLANDS":["SAN BERNARDINO",0.55,0.55],"RIALTO":["SAN BERNARDINO",0.55,0.55],"SAN BERNARDINO":["SAN BERNARDINO",0.55,0.55],"TWENTYNINE PALMS":["SAN BERNARDINO",0.55,0.55],"LAGUNA WOODS":["SAN BERNARDINO",0.55,0.55],"UPLAND":["SAN BERNARDINO",0.55,0.55],"VICTORVILLE":["SAN BERNARDINO",0.55,0.55],"YUCAIPA":["SAN BERNARDINO",0.55,0.55],"YUCCA VALLEY":["SAN BERNARDINO",0.55,0.55],"CARLSBAD":["SAN DIEGO",0.55,0.55],"CHULA VISTA":["SAN DIEGO",0.55,0.55],"CORONADO":["SAN DIEGO",0.55,0.55],"DEL MAR":["SAN DIEGO",0.55,0.55],"EL CAJON":["SAN DIEGO",0.55,0.55],"ENCINITAS":["SAN DIEGO",0.55,0.55],"ESCONDIDO":["SAN DIEGO",0.55,0.55],"IMPERIAL BEACH":["SAN DIEGO",0.55,0.55],"LA MESA":["SAN DIEGO",0.55,0.55],"LEMON GROVE":["SAN DIEGO",0.55,0.55],"NATIONAL CITY":["SAN DIEGO",0.55,0.55],"OCEANSIDE":["SAN DIEGO",0.55,0.55],"POWAY":["SAN DIEGO",0.55,0.55],"SAN DIEGO":["SAN DIEGO",0.55,0.55],"SAN MARCOS":["SAN DIEGO",0.55,0.55],"SANTEE":["SAN DIEGO",0.55,0.55],"SOLANA BEACH":["SAN DIEGO",0.55,0.55],"VISTA":["SAN DIEGO",0.55,0.55],"SAN FRANCISCO":["SAN FRANCISCO",7.5,0.0],"ESCALON":["SAN JOAQUIN",0.55,0.55],"LATHROP":["SAN JOAQUIN",0.55,0.55],"LODI":["SAN JOAQUIN",0.55,0.55],"MANTECA":["SAN JOAQUIN",0.55,0.55],"RIPON":["SAN JOAQUIN",0.55,0.55],"STOCKTON":["SAN JOAQUIN",0.55,0.55],"TRACY":["SAN JOAQUIN",0.55,0.55],"ARROYO GRANDE":["SAN LUIS OBISPO",0.55,0.55],"ATASCADERO":["SAN LUIS OBISPO",0.55,0.55],"EL PASO DE ROBLES":["SAN LUIS OBISPO",0.55,0.55],"GROVER BEACH":["SAN LUIS OBISPO",0.55,0.55],"MORRO BAY":["SAN LUIS OBISPO",0.55,0.55],"PISMO BEACH":["SAN LUIS OBISPO",0.55,0.55],"SAN LUIS OBISPO":["SAN LUIS OBISPO",0.55,0.55],"ATHERTON":["SAN MATEO",0.55,0.55],"BELMONT":["SAN MATEO",0.55,0.55],"BRISBANE":["SAN MATEO",0.55,0.55],"BURLINGAME":["SAN MATEO",0.55,0.55],"COLMA":["SAN MATEO",0.55,0.55],"DALY CITY":["SAN MATEO",0.55,0.55],"EAST PALO ALTO":["SAN MATEO",0.55,0.55],"FOSTER CITY":["SAN MATEO",0.55,0.55],"HALF MOON BAY":["SAN MATEO",0.55,0.55],"HILLSBOROUGH":["SAN MATEO",0.55,0.55],"MENLO PARK":["SAN MATEO",0.55,0.55],"MILLBRAE":["SAN MATEO",0.55,0.55],"PACIFICA":["SAN MATEO",0.55,0.55],"PORTOLA VALLEY":["SAN MATEO",0.55,0.55],"REDWOOD CITY":["SAN MATEO",0.55,0.55],"SAN BRUNO":["SAN MATEO",0.55,0.55],"SAN CARLOS":["SAN MATEO",0.55,0.55],"SAN MATEO":["SAN MATEO",0.55,0.55],"SOUTH SAN FRANCISCO":["SAN MATEO",0.55,0.55],"WOODSIDE":["SAN MATEO",0.55,0.55],"BUELLTON":["SANTA BARBARA",0.55,0.55],"CARPINTERIA":["SANTA BARBARA",0.55,0.55],"GOLETA":["SANTA BARBARA",0.55,0.55],"GUADALUPE":["SANTA BARBARA",0.55,0.55],"LOMPOC":["SANTA BARBARA",0.55,0.55],"SANTA BARBARA":["SANTA BARBARA",0.55,0.55],"SANTA MARIA":["SANTA BARBARA",0.55,0.55],"SOLVANG":["SANTA BARBARA",0.55,0.55],"CAMPBELL":["SANTA CLARA",0.55,0.55],"CUPERTINO":["SANTA CLARA",0.55,0.55],"GILROY":["SANTA CLARA",0.55,0.55],"LOS ALTOS":["SANTA CLARA",0.55,0.55],"LOS ALTOS HILLS":["SANTA CLARA",0.55,0.55],"LOS GATOS":["SANTA CLARA",0.55,0.55],"MILPITAS":["SANTA CLARA",0.55,0.55],"MONTE SERENO":["SANTA CLARA",0.55,0.55],"MORGAN HILL":["SANTA CLARA",0.55,0.55],"MOUNTAIN VIEW":["SANTA CLARA",3.3,1.1],"PALO ALTO":["SANTA CLARA",3.3,1.1],"SAN JOSE":["SANTA CLARA",3.3,1.1],"SANTA CLARA":["SANTA CLARA",0.55,0.55],"SARATOGA":["SANTA CLARA",0.55,0.55],"SUNNYVALE":["SANTA CLARA",0.55,0.55],"CAPITOLA":["SANTA CRUZ",0.55,0.55],"SANTA CRUZ":["SANTA CRUZ",0.55,0.55],"SCOTTS VALLEY":["SANTA CRUZ",0.55,0.55],"WATSONVILLE":["SANTA CRUZ",0.55,0.55],"ANDERSON":["SHASTA",0.55,0.55],"REDDING":["SHASTA",0.55,0.55],"SHASTA LAKE":["SHASTA",0.55,0.55],"LOYALTON":["SIERRA",0.55,0.55],"DORRIS":["SISKIYOU",0.55,0.55],"DUNSMUIR":["SISKIYOU",0.55,0.55],"ETNA":["SISKIYOU",0.55,0.55],"FORT JONES":["SISKIYOU",0.55,0.55],"MONTAGUE":["SISKIYOU",0.55,0.55],"MOUNT SHASTA":["SISKIYOU",0.55,0.55],"TULELAKE":["SISKIYOU",0.55,0.55],"WEED":["SISKIYOU",0.55,0.55],"YREKA":["SISKIYOU",0.55,0.55],"BENICIA":["SOLANO",0.55,0.55],"DIXON":["SOLANO",0.55,0.55],"FAIRFIELD":["SOLANO",0.55,0.55],"RIO VISTA":["SOLANO",0.55,0.55],"SUISUN CITY":["SOLANO",0.55,0.55],"VACAVILLE":["SOLANO",0.55,0.55],"VALLEJO":["SOLANO",3.3,1.1],"CLOVERDALE":["SONOMA",0.55,0.55],"COTATI":["SONOMA",0.55,0.55],"HEALDSBURG":["SONOMA",0.55,0.55],"PETALUMA":["SONOMA",2.0,1.1],"ROHNERT PARK":["SONOMA",0.55,0.55],"SANTA ROSA":["SONOMA",2.0,1.1],"SEBASTOPOL":["SONOMA",0.55,0.55],"SONOMA":["SONOMA",0.55,0.55],"WINDSOR":["SONOMA",0.55,0.55],"CERES":["STANISLAUS",0.55,0.55],"HUGHSON":["STANISLAUS",0.55,0.55],"MODESTO":["STANISLAUS",0.55,0.55],"NEWMAN":["STANISLAUS",0.55,0.55],"OAKDALE":["STANISLAUS",0.55,0.55],"PATTERSON":["STANISLAUS",0.55,0.55],"RIVERBANK":["STANISLAUS",0.55,0.55],"TURLOCK":["STANISLAUS",0.55,0.55],"WATERFORD":["STANISLAUS",0.55,0.55],"LIVE OAK":["SUTTER",0.55,0.55],"YUBA":["SUTTER",0.55,0.55],"CORNING":["TEHAMA",0.55,0.55],"RED BLUFF":["TEHAMA",0.55,0.55],"TEHAMA":["TEHAMA",0.55,0.55],"TRINITY COUNTY":["TRINITY",0.0,1.1],"DINUBA":["TULARE",0.55,0.55],"EXETER":["TULARE",0.55,0.55],"FARMERSVILLE":["TULARE",0.55,0.55],"LINDSAY":["TULARE",0.55,0.55],"PORTERVILLE":["TULARE",0.55,0.55],"TULARE":["TULARE",0.55,0.55],"VISALIA":["TULARE",0.55,0.55],"WOODLAKE":["TULARE",0.55,0.55],"SONORA":["TUOLUMNE",0.55,0.55],"CAMARILLO":["VENTURA",0.55,0.55],"FILLMORE":["VENTURA",0.55,0.55],"MOORPARK":["VENTURA",0.55,0.55],"OJAI":["VENTURA",0.55,0.55],"OXNARD":["VENTURA",0.55,0.55],"PORT HUENEME":["VENTURA",0.55,0.55],"SAN BUENAVENTURA":["VENTURA",0.55,0.55],"SANTA PAULA":["VENTURA",0.55,0.55],"SIMI VALLEY":["VENTURA",0.55,0.55],"THOUSAND OAKS":["VENTURA",0.55,0.55],"DAVIS":["YOLO",0.55,0.55],"WEST SACRAMENTO":["YOLO",0.55,0.55],"WINTERS":["YOLO",0.55,0.55],"WOODLAND":["YOLO",0.55,0.55],"MARYSVILLE":["YUBA",0.55,0.55],"WHEATLAND":["YUBA",0.55,0.55]};
 function ttaxRates(city,price){
@@ -1199,6 +1960,8 @@ document.addEventListener('change',async e=>{
   if(act==='dmonth'){S.dMonth=t.value;render();return;}
   if(act==='tmonth'){S.tMonth=t.value;S.confirm=null;render();return;}
   if(act==='mmonth'){S.mMonth=t.value;render();return;}
+  if(act==='rk'){const pid=t.dataset.pid,f=t.dataset.f,ty=t.dataset.t;if(ty==='text'&&bankBlocked(t.value)){render();return;}const v=ty==='money'?(t.value.trim()===''?null:num(t.value)):t.value;await write(()=>db.doc('properties/'+pid).update({[f]:v}));return;}
+  if(act==='cs'){const f=t.dataset.f;const v=t.dataset.text?t.value:(t.value.trim()===''?null:num(t.value));await write(()=>db.doc('settings/lists').set({...S.L,[f]:v}));return;}
   if(act==='hb'){const pid=t.dataset.pid,f=t.dataset.f||'holdback';const v=t.dataset.text?t.value:(t.value.trim()===''?null:num(t.value));await write(()=>db.doc('properties/'+pid).update({[f]:v}));return;}
   if(act==='draw-f'){const v=t.dataset.text?t.value.trim():(t.value.trim()===''?0:num(t.value));await write(()=>db.doc('draws/'+t.dataset.did).update({[t.dataset.f]:v}));return;}
   if(act==='ci'){const k=t.closest('tr')?.dataset.ck||S.tCard;const f=t.dataset.f;const v=t.dataset.num?(t.value.trim()===''?null:num(t.value)):t.value;const cur=S.cinfo.get(k)||{};const {id:_,...rest}=cur;const patch={...rest,[f]:v};
@@ -1225,7 +1988,7 @@ document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]'); if(!b||b.tagName==='SELECT'||b.tagName==='INPUT') return;
   if(e.target.closest('a[href^="#"]')) e.preventDefault();
   const act=b.dataset.act, tr=b.closest('tr'), id=tr?.dataset.id;
-  if(!/-yes$|^(del|clear-ex|payall|del-prop|del-pay|del-cpay|del-draw)$/.test(act)) S.confirm=null;
+  if(!/-yes$|^(del|clear-ex|payall|del-prop|del-pay|del-cpay|del-draw|ap-del|ap-all)$/.test(act)) S.confirm=null;
   switch(act){
     case 'dcard': S.dCard=b.dataset.k; S.dMonth='all'; S.sel.clear(); break;
     case 'dview': S.dView=b.dataset.v; break;
@@ -1298,13 +2061,32 @@ document.addEventListener('click',async e=>{
       const data={cards:cs,types:lines('types'),categories:lines('categories'),subcategories:lines('subcategories'),methods:lines('methods'),statuses:lines('statuses'),
         ppcDailyLimit:num(S.draft['ls-ppcDailyLimit']??S.L.ppcDailyLimit??750)||750, ppcStart:(S.draft['ls-ppcStart']??S.L.ppcStart??''),
         cardFolders:Object.fromEntries(cs.map(c=>[c.k,(S.draft['cf-'+c.k]??(S.L.cardFolders||{})[c.k]??'').trim()]).filter(x=>x[1])),
-        receiptFolder:(S.draft['ls-receiptFolder']??S.L.receiptFolder??'').trim(),propertyFolder:(S.draft['ls-propertyFolder']??S.L.propertyFolder??'').trim(),requireReceipt:S.draft['ls-req']??S.L.requireReceipt};
+        receiptFolder:(S.draft['ls-receiptFolder']??S.L.receiptFolder??'').trim(),propertyFolder:(S.draft['ls-propertyFolder']??S.L.propertyFolder??'').trim(),requireReceipt:S.draft['ls-req']??S.L.requireReceipt,...Object.fromEntries(['cashOnHand','cashAsOf','cashBuffer'].filter(k=>S.L[k]!=null).map(k=>[k,S.L[k]]))};
       if(await write(()=>db.doc('settings/lists').set(data))){for(const k of Object.keys(S.draft))if(/^(ls-|cn-|cf-)/.test(k))delete S.draft[k];toast('Settings saved');}
       break;
     }
     case 'cs-sync': await syncCardSheets(); return;
     case 'mpaid': S.mPaid=b.dataset.v; break;
     case 'dprop': S.drawProp=b.dataset.k; break;
+    case 'ap-view': S.apView=b.dataset.v; break;
+    case 'ap-add': {const vendor=(S.draft['ap-v']||'').trim(),amount=r2(num(S.draft['ap-a']));if(!vendor||!amount){toast('Fill in the vendor and amount.');return;}
+      const link=(S.draft['ap-l']||'').trim(), note=(S.draft['ap-n']||'').trim(); if(bankBlocked(vendor,note,S.draft['ap-i'])) return;
+      if(link&&!/^https:\/\/(drive|docs)\.google\.com\//.test(link)){toast('Use a Google Drive link for the invoice.');return;}
+      if(await write(()=>db.collection('ap').add({vendor,propertyId:S.draft['ap-p']||'',category:S.draft['ap-c']||'Contractor Service',invoiceNo:(S.draft['ap-i']||'').trim(),amount,dueDate:S.draft['ap-d']||today(),docUrl:link,notes:note,status:b.dataset.v,createdBy:S.uid||'',createdAt:new Date().toISOString()}))){for(const k of ['ap-v','ap-a','ap-i','ap-l','ap-n'])S.draft[k]='';toast(b.dataset.v==='Draft'?'Saved as draft':'Sent to Juan');}break;}
+    case 'ap-send': await write(()=>db.doc('ap/'+tr.dataset.ap).update({status:'Waiting on Juan'})); break;
+    case 'ap-dec': {const id=tr.dataset.ap,v=b.dataset.v; if(v==='Note'){S.apNote=id;await write(()=>db.doc('ap/'+id).update({status:'Note',decision:{by:S.uid||'',at:new Date().toISOString(),note:''}}));break;}
+      S.apNote=null; await write(()=>db.doc('ap/'+id).update({status:v,decision:{by:S.uid||'',at:new Date().toISOString(),note:''}})); break;}
+    case 'ap-note-save': {const id=tr.dataset.ap,n=(S.draft['apn-'+id]||'').trim(); if(bankBlocked(n)) return; await write(()=>db.doc('ap/'+id).update({decision:{by:S.uid||'',at:new Date().toISOString(),note:n}})); S.apNote=null; break;}
+    case 'ap-all': S.confirm='ap-all'; break;
+    case 'ap-all-yes': {S.confirm=null; const at=new Date().toISOString(); for(const x of [...S.ap.values()].filter(x=>x.status==='Waiting on Juan')) await write(()=>db.doc('ap/'+x.id).update({status:'Approved',decision:{by:S.uid||'',at,note:''}})); toast('All waiting bills approved'); break;}
+    case 'ap-paid': await write(()=>db.doc('ap/'+tr.dataset.ap).update({status:'Paid',paidDate:today()})); toast('Marked paid'); break;
+    case 'ap-del': S.confirm='apd-'+tr.dataset.ap; break;
+    case 'ap-del-yes': {const id=S.confirm.slice(4);S.confirm=null;await write(()=>db.doc('ap/'+id).delete());break;}
+    case 'ci2-add': {const amount=r2(num(S.draft['ci2-a'])),label=(S.draft['ci2-l']||'').trim();if(!amount||!label){toast('Fill in what it is and the amount.');return;} if(bankBlocked(label)) return;
+      if(await write(()=>db.collection('cashitems').add({date:S.draft['ci2-d']||today(),label,kind:S.draft['ci2-k']||'out',amount:Math.abs(amount),createdAt:new Date().toISOString()}))){S.draft['ci2-a']='';S.draft['ci2-l']='';}break;}
+    case 'ci2-del': await write(()=>db.doc('cashitems/'+tr.dataset.cid).delete()); break;
+    case 'rk-flag': await write(()=>db.doc('properties/'+b.dataset.pid).update({flaggedAt:new Date().toISOString(),flaggedBy:S.uid||'',riskStatus:'Raised with Juan'})); toast('Recorded: flagged to Juan'); break;
+    case 'rk-add': {const pid=S.draft['rk-add'];if(!pid)return;await write(()=>db.doc('properties/'+pid).update({inRegister:true}));S.draft['rk-add']='';break;}
     case 'add-draw': {const pid=b.dataset.pid;const amount=r2(num(S.draft['da-'+pid]));if(!amount){toast('Type the draw amount.');return;}
       if(await write(()=>db.collection('draws').add({propertyId:pid,date:S.draft['dd-'+pid]||today(),amount,fee:r2(num(S.draft['df-'+pid])),received:r2(num(S.draft['dr-'+pid])),note:(S.draft['dn-'+pid]||'').trim(),uses:[],createdAt:new Date().toISOString()}))){for(const k of ['da-','df-','dr-','dn-'])S.draft[k+pid]='';toast('Draw added');}break;}
     case 'del-draw': S.confirm='dw-'+b.dataset.did; break;
@@ -1347,8 +2129,11 @@ render();
   db.collection('cardpays').onSnapshot(s=>{S.cpays=toMap(s);scheduleRender();},onErr);
   db.collection('cardinfo').onSnapshot(s=>{S.cinfo=toMap(s);scheduleRender();},onErr);
   db.collection('draws').onSnapshot(s=>{S.drawsMap=toMap(s);scheduleRender();},onErr);
+  db.collection('ap').onSnapshot(s=>{S.ap=toMap(s);scheduleRender();},onErr);
+  db.collection('cashitems').onSnapshot(s=>{S.cashItems=toMap(s);scheduleRender();},onErr);
   db.collection('cardsheetmeta').onSnapshot(s=>{S.csMeta=toMap(s);rebuildSheetRows();scheduleRender();S.csLoaded=true;maybeAutoSync();},onErr);
   db.collection('cardsheet').onSnapshot(s=>{S.csChunks=toMap(s);rebuildSheetRows();scheduleRender();},onErr);
+  fxSubscribe();
   db.doc('settings/lists').onSnapshot(d=>{S.L=d.exists?{...DEFAULTS,...d.data()}:{...DEFAULTS};scheduleRender();},onErr);
   render();
   try{ mcp=await c.use('mcp'); if(mcp){ const lt=await mcp.listTools().catch(()=>null); fileArgs=!!lt?.fileArgs; } }catch{ mcp=null; }
@@ -1356,3 +2141,4 @@ render();
   render();
 })();
 </script>
+
