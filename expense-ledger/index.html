@@ -837,7 +837,7 @@ const DEFAULTS = {
   receiptFolder:'https://drive.google.com/drive/folders/1Ps4suRRPe33QgBj35QEZt6smAj0sScoe',
   propertyFolder:''
 };
-const SECTIONS = [{k:'daily',n:'Daily Expenses'},{k:'tracker',n:'Card Tracker'},{k:'marketing',n:'Marketing'},{k:'properties',n:'Properties'},{k:'draws',n:'Draws'},{k:'payables',n:'Payables'},{k:'cash',n:'Cash & Maturities'},{k:'controller',n:'Controller'},{k:'settings',n:'Settings'}];
+const SECTIONS = [{k:'daily',n:'Daily Expenses'},{k:'tracker',n:'Card Tracker'},{k:'marketing',n:'Marketing'},{k:'properties',n:'Properties'},{k:'draws',n:'Draws'},{k:'payables',n:'Payables'},{k:'cash',n:'Cash & Maturities'},{k:'close',n:'Month-End Close'},{k:'snapshot',n:'Juan Snapshot'},{k:'controller',n:'Controller'},{k:'settings',n:'Settings'}];
 const BUCKETS = {overhead:'Overhead',property:'Property',marketing:'Marketing'};
 const DRIVE='Google Drive';
 
@@ -848,7 +848,7 @@ const S={
   ready:{txns:false,props:false}, dbState:'connecting', readOnly:false,
   tab:(location.hash||'').slice(1)||'daily',
   dCard:null, dView:'todo', dMonth:'all',
-  tCard:'all', drawProp:'all', tBucket:'overhead', tPaid:'unpaid', tMonth:today().slice(0,7), mMonth:'all', mPaid:'all', drawsMap:new Map(), ap:new Map(), cashItems:new Map(), apView:'juan', apNote:null, sheets:{}, sheetRows:[], csMeta:new Map(), csChunks:new Map(), csSync:'', csErr:'',
+  tCard:'all', drawProp:'all', tBucket:'overhead', tPaid:'unpaid', tMonth:today().slice(0,7), mMonth:'all', mPaid:'all', drawsMap:new Map(), ap:new Map(), cashItems:new Map(), closes:new Map(), exceptions:new Map(), weekly:new Map(), isOwner:null, apView:'juan', apNote:null, sheets:{}, sheetRows:[], csMeta:new Map(), csChunks:new Map(), csSync:'', csErr:'',
   propId:'all', propFilter:'active', sel:new Set(), open:{calc:true,fin:false,budget:false,pays:false,files:false,'dr-set':true,'dr-list':true,'dr-where':true,brief:true},
   preview:null, importing:false, confirm:null, draft:{}, modal:null
 };
@@ -1147,19 +1147,20 @@ document.addEventListener('focusout',()=>{if(pending)setTimeout(()=>{if(pending)
 
 function renderTabs(){
   const n=todo().length;
-  $('#tabs').innerHTML=SECTIONS.map(s=>`<a href="#${s.k}" data-tab="${s.k}"${S.tab===s.k?' aria-current="page"':''}>${s.n}${s.k==='daily'&&n?`<span class="count">${n}</span>`:''}${s.k==='payables'&&[...S.ap.values()].filter(x=>x.status==='Waiting on Juan').length?`<span class="count">${[...S.ap.values()].filter(x=>x.status==='Waiting on Juan').length}</span>`:''}</a>`).join('');
+  $('#tabs').innerHTML=SECTIONS.filter(s=>allowedTabs().includes(s.k)).map(s=>`<a href="#${s.k}" data-tab="${s.k}"${S.tab===s.k?' aria-current="page"':''}>${s.n}${s.k==='daily'&&n?`<span class="count">${n}</span>`:''}${s.k==='payables'&&[...S.ap.values()].filter(x=>x.status==='Waiting on Juan').length?`<span class="count">${[...S.ap.values()].filter(x=>x.status==='Waiting on Juan').length}</span>`:''}</a>`).join('');
   const el=$('#sync'); const live=S.dbState==='live';
   el.className='badge-live'+(live&&!S.readOnly?'':' off');
   el.innerHTML=`<span class="dot"></span>${live?(S.readOnly?'View only':'Live · shared with your team'):S.dbState==='off'?'Offline':'Connecting…'}`;
 }
 function render(){
+  {const al=allowedTabs(); if(!al.includes(S.tab)) S.tab=al[0];}
   renderTabs();
   let h='';
   if(S.dbState==='off') h+=`<div class="note">The ledger could not connect. Open this page on claude.ai while signed in.</div>`;
   const ex=[...S.txns.values(),...S.pays.values()].filter(x=>x.example).length;
-  if(ex&&!S.readOnly) h+=`<div class="note info"><span>Rows marked <span class="tag">example</span> show how the ledger works. They are not real expenses.</span>${S.confirm==='clear-ex'?`<span class="row"><button class="btn sm danger" data-act="clear-ex-yes">Remove ${ex} example rows</button><button class="btn sm ghost" data-act="cancel">Keep</button></span>`:`<button class="btn sm" data-act="clear-ex">Remove examples</button>`}</div>`;
-  h+=riskBanner();
-  h+=S.tab==='daily'?viewDaily():S.tab==='tracker'?viewTracker():S.tab==='marketing'?viewMarketing():S.tab==='draws'?viewDraws():S.tab==='properties'?viewProperties():S.tab==='controller'?viewController():S.tab==='payables'?viewPayables():S.tab==='cash'?viewCash():viewSettings();
+  if(ex&&!S.readOnly&&S.isOwner) h+=`<div class="note info"><span>Rows marked <span class="tag">example</span> show how the ledger works. They are not real expenses.</span>${S.confirm==='clear-ex'?`<span class="row"><button class="btn sm danger" data-act="clear-ex-yes">Remove ${ex} example rows</button><button class="btn sm ghost" data-act="cancel">Keep</button></span>`:`<button class="btn sm" data-act="clear-ex">Remove examples</button>`}</div>`;
+  if(S.isOwner) h+=riskBanner();
+  h+=S.tab==='daily'?viewDaily():S.tab==='tracker'?viewTracker():S.tab==='marketing'?viewMarketing():S.tab==='draws'?viewDraws():S.tab==='properties'?viewProperties():S.tab==='controller'?viewController():S.tab==='payables'?viewPayables():S.tab==='close'?viewClose():S.tab==='snapshot'?viewSnapshot():S.tab==='cash'?viewCash():viewSettings();
   $('#app').innerHTML=`<fieldset class="ro"${S.readOnly?' disabled':''}>${h}</fieldset>`;
 }
 function cardTabs(cur,counts,act){
@@ -1571,6 +1572,7 @@ function viewPayables(){
   h+=sec('ap-new','Add a bill','',`<div class="form-grid">
     <label class="field">Vendor / payee<input type="text" id="ap-v" data-draft="ap-v" value="${esc(D('ap-v'))}" placeholder="Contractor, supplier…"></label>
     <label class="field">Property<select id="ap-p" data-draft="ap-p">${propOpts(D('ap-p'),'Overhead / none').replace('<option value="__new">＋ New property…</option>','')}</select></label>
+    <label class="field">Entity<select id="ap-e" data-draft="ap-e">${opts(ENTITIES,D('ap-e','Equity Track Inc'))}</select></label>
     <label class="field">Category<select id="ap-c" data-draft="ap-c">${opts(['Contractor Service','Materials','Local Team Labor','Matrix Payroll','Virtual Team Payroll','Permits & Fees','Utilities','Insurance','Legal & Professional Fees','Marketing','Card payment','Other'],D('ap-c','Contractor Service'))}</select></label>
     <label class="field">Invoice #<input type="text" id="ap-i" data-draft="ap-i" value="${esc(D('ap-i'))}"></label>
     <label class="field">Amount<input type="text" inputmode="decimal" id="ap-a" data-draft="ap-a" value="${esc(D('ap-a'))}" placeholder="0.00"></label>
@@ -1584,7 +1586,7 @@ function viewPayables(){
   h+= rows.length?`<div class="panel tbl"><table style="min-width:1050px"><thead><tr><th>Due</th><th>Vendor</th><th>Property</th><th>Category</th><th>Invoice</th><th class="amt">Amount</th><th>Status</th><th>Juan’s decision</th><th></th></tr></thead><tbody>
   ${rows.map(x=>{const lateX=apOpen(x)&&x.dueDate&&x.dueDate<today();return `<tr data-ap="${esc(x.id)}"><td class="d" style="color:${lateX?'var(--bad)':''}">${shortDate(x.dueDate)}${lateX?'<div style="font-size:11px">past due</div>':''}</td>
     <td class="payee">${esc(x.vendor)}${x.notes?`<div class="muted" style="font-size:12px;font-weight:400">${esc(x.notes)}</div>`:''}</td><td>${esc(propName(x.propertyId)||'Overhead')}</td><td>${esc(x.category||'')}</td>
-    <td>${x.invoiceNo?`<div>${esc(x.invoiceNo)}</div>`:''}${apFiles(x).map(f=>`<div><a href="${esc(f.url)}" target="_blank" rel="noopener" title="${esc(f.name)}" style="font-size:12.5px">${esc(String(f.name).length>28?String(f.name).slice(0,26)+'…':f.name)}</a></div>`).join('')}<span class="btn sm file-btn" style="margin-top:2px">${S.apRowBusy===x.id?'Uploading…':'＋ File'}<input type="file" data-act="ap-row-file" data-ap="${esc(x.id)}" aria-label="Upload a file for this bill"></span></td><td class="amt">${money(x.amount)}</td><td>${apPill(x)}</td>
+    <td>${x.invoiceNo?`<div>${esc(x.invoiceNo)}</div>`:''}${apFiles(x).map(f=>`<div><a href="${esc(f.url)}" target="_blank" rel="noopener" title="${esc(f.name)}" style="font-size:12.5px">${esc(String(f.name).length>28?String(f.name).slice(0,26)+'…':f.name)}</a></div>`).join('')}<span class="btn sm file-btn" style="margin-top:2px">${S.apRowBusy===x.id?'Uploading…':'＋ File'}<input type="file" data-act="ap-row-file" data-ap="${esc(x.id)}" aria-label="Upload a file for this bill"></span></td><td class="amt">${money(x.amount)}</td><td>${apPill(x)}${x.status!=='Paid'?apReviewCell(x):''}</td>
     <td>${x.status==='Paid'?`<span class="muted" style="font-size:12px">Paid ${shortDate(x.paidDate)}${x.paidMethod?' · '+esc(x.paidMethod):''}</span>`:`<div class="seg" role="group" aria-label="Decision">${['Approve','Hold','Note'].map(v=>{const st={Approve:'Approved',Hold:'On hold',Note:'Note'}[v];return `<button data-act="ap-dec" data-v="${st}" aria-pressed="${x.status===st}">${v}</button>`;}).join('')}</div>
       ${x.decision?.by?`<div class="faint" style="font-size:11px">${esc(personName(x.decision.by))} · ${esc(new Date(x.decision.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}${x.decision.note?' · “'+esc(x.decision.note)+'”':''}</div>`:''}
       ${S.apNote===x.id?`<div class="row" style="margin-top:4px"><input type="text" id="apn-${esc(x.id)}" data-draft="apn-${esc(x.id)}" value="${esc(D('apn-'+x.id))}" placeholder="Juan’s note"><button class="btn sm" data-act="ap-note-save">Save note</button></div>`:''}`}</td>
@@ -1697,7 +1699,7 @@ function viewCash(){
 /* ----- Controller brief for Juan: numbers, risk, decisions needed. Controller lane only. ----- */
 const FC_LINES=[['sale','Sale closings (net)'],['draw','Lender draws expected'],['otherIn','Other cash in'],['payoff','Other loan payoffs'],['apAppr','Approved bills'],['apWait','Bills waiting on Juan'],['qbBills','QuickBooks / mail bills'],['loans','Mortgage & loan payments'],['cardMin','Card minimums'],['payroll','Payroll'],['otherOut','Other cash out']];
 const SSN=/\b\d{3}-\d{2}-\d{4}\b/;
-const materiality=()=>Number(S.L.materiality)||25000;
+const materiality=()=>POL().materiality;
 function restrictedScan(){
   const hits=[]; let n=0;
   const chk=(where,v)=>{ if(v==null||v==='') return; n++; const s=String(v); if(BANKY.test(s)||SSN.test(s)) hits.push(where); };
@@ -1759,7 +1761,7 @@ function briefData(){
   // 1. maturities
   const covs=[];
   for(const p of regs){ const T=pTerms(p); if(!T.mat){gaps.push(`${shortAddr(p.address)}: maturity date`);continue;} if(!T.payoff){gaps.push(`${shortAddr(p.address)}: payoff amount`);continue;}
-    const c=coverage(p,fc); if(!c||c.days>120) continue; covs.push({p,c});
+    const c=coverage(p,fc); if(!c||c.days>POL().window) continue; covs.push({p,c});
     const r=riskOf(p,fc);
     const L=c.saleFirst?[`Sale expected ${shortDate(c.T.close)}, ${dayNum(c.m)-dayNum(c.T.close)} days before maturity; net to us after payoff ${c.T.proceeds!=null?money0(c.T.proceeds):'not entered'}`,'If the sale slips past maturity, cash would need to cover the payoff:',...coverageLines(c,fc)]:coverageLines(c,fc);
     items.push({sev:r.level==='green'?'amber':r.level,amt:c.payoff,title:`${shortAddr(p.address)}: ${money0(c.payoff)} loan matures ${shortDate(c.m)} (${c.days<0?Math.abs(c.days)+' days ago':c.days+' days'})`,
@@ -1814,6 +1816,245 @@ function viewBrief(){
   b+=`<span class="faint" style="font-size:12.5px">Controller lane: what the numbers say, the risk, and what needs a decision. Not in this brief: whether to raise debt, refinance, extend or buy (Juan); tax treatment and attest conclusions (CPA); payroll filings (payroll provider); payoff letters, loan documents, escrow and wire instructions (attorney and CPA).</span>`;
   return sec('brief','Controller brief for Juan',`${B.material.length} material item${B.material.length===1?'':'s'}`,b);
 }
+/* ===== Controller: month-end close, weekly check, exceptions, policy, and Juan's snapshot (from the Controller Charter v1 and Close Checklist v1) ===== */
+const POL=()=>({materiality:Number(S.L.materiality)||5000,limit:Number(S.L.approvalLimit)||2000,window:Number(S.L.maturityWindow)||90,alwaysJuan:!!S.L.alwaysJuan});
+const ENTITIES=['Equity Track Inc','Matrix Group One','Peninsula Plumbing','Other'];
+const CLOSE_STEPS=[
+  {n:1,t:'Daily coding & support cleanup',o:'Bookkeeper',d:1,std:'Transactions categorized, receipts/invoices attached, property and entity coding not guessed.'},
+  {n:2,t:'Bank reconciliations',o:'Bookkeeper',d:2,std:'All bank accounts reconciled to statements; unexplained differences listed for Controller review.'},
+  {n:3,t:'Credit card reconciliations',o:'Bookkeeper',d:2,std:'Card balances reconciled; payments, refunds, duplicates and unmatched charges reviewed.'},
+  {n:4,t:'Uncategorized / suspense cleanup',o:'Bookkeeper',d:2,std:'Uncategorized and suspense at zero or near zero; every remaining item has an owner and explanation.'},
+  {n:5,t:'Missing bills, AP & accruals',o:'Bookkeeper',d:2,std:'Bills that belong to the month recorded even if unpaid; Accounts Payable complete.'},
+  {n:6,t:'Payroll & payroll liabilities',o:'Bookkeeper + Controller',d:3,std:'Payroll recorded, taxes/liabilities make sense, allocated to the right property/entity/department.'},
+  {n:7,t:'Property coding & budget review',o:'Controller',d:3,std:'Property classes, rehab/holding costs, % complete, budget vs actual, unusual spending.'},
+  {n:8,t:'Intercompany Due To / Due From',o:'Controller',d:3,std:'Each related-entity balance identifiable, supported, and moving toward settlement.'},
+  {n:9,t:'Loans, mortgages & accrued interest',o:'Controller',d:3,std:'Balances, payments, accrued interest, upcoming maturities, near-term cash risk.'},
+  {n:10,t:'Property purchases / sales & closing statements',o:'Controller',d:4,std:'Buyer/seller statements recorded, sold-property inventory cleared, costs moved to COGS.'},
+  {n:11,t:'Financial statement & materiality review',o:'Controller',d:4,std:'Balance Sheet, P&L, cash, AP, profitability, variances, and all differences against the materiality threshold.'},
+  {n:12,t:'CEO snapshot, decisions & sign-off',o:'Controller / Juan',d:5,std:'Deliver the snapshot, risks and decisions; document open exceptions; record sign-off.'}];
+const prevMonth=()=>{const d=new Date(today()+'T12:00:00Z');d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()-1);return d.toISOString().slice(0,7);};
+const monthEnd=m=>{const [y,mo]=m.split('-').map(Number);return new Date(Date.UTC(y,mo,0,12)).toISOString().slice(0,10);};
+function closeDay(m,n){let d=monthEnd(m),k=0;while(k<n){d=addDays(d,1);const w=new Date(d+'T12:00:00Z').getUTCDay();if(w&&w!==6)k++;}return d;}
+const closeDoc=m=>S.closes.get(m)||{id:m,steps:{},interco:{}};
+const exOf=m=>[...S.exceptions.values()].filter(x=>x.month===m).sort((a,b)=>(b.amount||0)-(a.amount||0));
+const exOpen=x=>!['Resolved','Disclosed'].includes(x.status);
+function exClass(x,all){ const P=POL(); if(x.type==='Suspicious'||x.type==='Duplicate') return {k:'bad',t:'Investigate at any amount'};
+  if(Math.abs(Number(x.amount)||0)>=P.materiality) return {k:'bad',t:'Material'};
+  const same=all.filter(y=>y.cause&&y.cause===x.cause), tot=sum(same,y=>Math.abs(Number(y.amount)||0));
+  if(x.cause&&same.length>1&&tot>=P.materiality) return {k:'warn',t:`Together material (${money0(tot)} same cause)`};
+  return {k:'plain',t:'Below threshold'}; }
+const blocksClose=(x,all)=>exOpen(x)&&exClass(x,all).k!=='plain';
+// QuickBooks unpaid bills that are not in Payables yet (vendor + amount within $1)
+function qbMissing(){ const ap=[...S.ap.values()]; return (QB()?.bills||[]).filter(b=>!b.paid&&fxN(b.amount)).filter(b=>!ap.some(x=>Math.abs((Number(x.amount)||0)-fxN(b.amount))<1&&String(x.vendor||'').toLowerCase().slice(0,5)===String(b.name||'').toLowerCase().slice(0,5))); }
+function spendVsComplete(p){ const s=propStats(p), pc=fxN(p.pctComplete); if(!s.budget) return null; const sp=s.total/s.budget; return {s,sp,pc,ahead:pc!=null&&sp*100-pc>15}; }
+const carryMo=p=>fxN(p.mortgageMonthly)||(fxN((p.fx||{}).dailyInterest)?r2(fxN(p.fx.dailyInterest)*30):null);
+const projGP=p=>{const s=propStats(p);if(s.profit!=null)return s.profit;try{const F=fxFlip(p);return F.ready?F.profit:null;}catch{return null;}};
+const activeProps=()=>[...S.props.values()].filter(p=>groupOf(p)==='active').sort((a,b)=>(a.address||'').localeCompare(b.address||''));
+const R=(ok,detail,manual)=>({s:manual?'manual':ok?'ok':'check',d:detail});
+function stepCheck(n,m){
+  const inM=d=>(d||'').startsWith(m), me=monthEnd(m), P=POL();
+  if(n===1){ const t=[...S.txns.values()].filter(x=>inM(x.date)), open=t.filter(x=>x.status!=='Transferred'), noR=t.filter(x=>!x.receiptUrl), noP=t.filter(x=>bucketOf(x.type)==='property'&&!x.propertyId);
+    return R(!open.length&&!noR.length&&!noP.length,`${open.length} not transferred (${money0(sum(open))}) · ${noR.length} without receipt · ${noP.length} property charges without a property`); }
+  if(n===2){ const b=fxBanksList().filter(x=>x.company!==false); if(!b.length) return R(false,'No bank balances in Controller → Banks. Reconcile in QuickBooks and mark done.',true);
+    const stale=b.filter(x=>!x.asOf||x.asOf<me); return R(!stale.length,stale.length?`Not updated through ${shortDate(me)}: ${stale.map(x=>x.name).join(', ')}`:`${b.length} accounts updated through month end`); }
+  if(n===3){ const bad=cards().map(c=>({c,b:cardBalance(c.k)})).filter(x=>Math.abs(x.b.balance)>=1||x.b.site!=null).filter(x=>x.b.diff==null||Math.abs(x.b.diff)>=0.01||(x.b.info.siteAsOf||'')<me);
+    return R(!bad.length,bad.length?bad.map(x=>`${x.c.n}: ${x.b.diff==null?'website balance not entered':Math.abs(x.b.diff)>=0.01?'off by '+money(x.b.diff):'not checked since month end'}`).join(' · '):'Every card matches its website balance as of month end'); }
+  if(n===4){ const u=cards().flatMap(c=>mergedRows(c.k)).filter(r=>r.bucket==='uncat'&&inM(r.date)); return R(!u.length,`${u.length} uncategorized charges (${money0(sum(u))}) in ${monthLabel(m)}`); }
+  if(n===5){ const miss=qbMissing(), nodue=[...S.ap.values()].filter(x=>apOpen(x)&&!x.dueDate);
+    return R(!miss.length&&!nodue.length,`${miss.length} unpaid QuickBooks/mail bill${miss.length===1?'':'s'} not in Payables${miss.length?': '+miss.slice(0,3).map(b=>`${b.name} ${money0(b.amount)}`).join(', '):''} · ${nodue.length} bill${nodue.length===1?'':'s'} without a due date. Accrual rule: record the cost in the month the work was done, even if paid later.`); }
+  if(n===6){ const pay=fxN(fxSet().weeklyPayroll); return R(!!pay,pay?`Weekly payroll on file ${money0(pay)}. Confirm the month's runs, liabilities and allocation in QuickBooks.`:'Weekly payroll not entered (Controller → Banks). Confirm runs, liabilities and allocation in QuickBooks.',true); }
+  if(n===7){ const a=activeProps(), nob=a.filter(p=>!propStats(p).budget), over=a.filter(p=>{const s=propStats(p);return s.budget&&s.total>s.budget;}), ahead=a.map(p=>({p,v:spendVsComplete(p)})).filter(x=>x.v?.ahead), nopc=a.filter(p=>propStats(p).budget&&fxN(p.pctComplete)==null), hold=a.filter(p=>p.onHold);
+    return R(!nob.length&&!over.length&&!ahead.length&&!nopc.length,[nob.length?`No budget: ${nob.map(p=>shortAddr(p.address)).join(', ')}`:'',over.length?`Over budget: ${over.map(p=>shortAddr(p.address)).join(', ')}`:'',ahead.length?`Spend ahead of % complete: ${ahead.map(x=>`${shortAddr(x.p.address)} ${Math.round(x.v.sp*100)}% spent vs ${x.v.pc}% done`).join(', ')}`:'',nopc.length?`% complete not entered: ${nopc.map(p=>shortAddr(p.address)).join(', ')}`:'',hold.length?`On standby: ${hold.map(p=>`${shortAddr(p.address)} ${carryMo(p)?money0(carryMo(p))+'/mo carrying':''}`).join(', ')}`:''].filter(Boolean).join(' · ')||'Every active property has a budget, is within it, and spend matches % complete'); }
+  if(n===8){ const c=closeDoc(m).interco||{}, prev=closeDoc(prevMonthOf(m)).interco||{}, ent=Object.keys(c).filter(k=>c[k].dueFrom!=null||c[k].dueTo!=null);
+    const grew=ent.filter(k=>((fxN(c[k].dueFrom)||0)+(fxN(c[k].dueTo)||0))>((fxN(prev[k]?.dueFrom)||0)+(fxN(prev[k]?.dueTo)||0))+1);
+    return R(ent.length&&!grew.length,ent.length?(grew.length?`Growing instead of settling: ${grew.join(', ')}`:`${ent.length} entities entered; none growing`):'Enter each entity’s Due To / Due From balance below'); }
+  if(n===9){ const fc=forecast(), near=regProps().map(p=>({p,T:pTerms(p),r:riskOf(p,fc)})).filter(x=>x.T.mat&&dayNum(x.T.mat)-dayNum(today())<=P.window), miss=regProps().filter(p=>{const T=pTerms(p);return !T.mat||!T.payoff;});
+    return R(!near.some(x=>x.r.level==='red')&&!miss.length,[near.length?`Within ${P.window} days: ${near.map(x=>`${shortAddr(x.p.address)} ${shortDate(x.T.mat)} (${x.r.level})`).join(', ')}`:`No maturities within ${P.window} days`,miss.length?`Missing maturity or payoff: ${miss.map(p=>shortAddr(p.address)).join(', ')}`:''].filter(Boolean).join(' · ')); }
+  if(n===10){ const sold=[...S.props.values()].filter(p=>inM(p.expCloseDate)||inM(p.soldDate)), esc_=[...(S.fxInc||new Map()).values()].filter(x=>x.kind==='Escrow closing'&&inM(x.date));
+    const list=[...new Set([...sold.map(p=>shortAddr(p.address)),...esc_.map(x=>shortAddr(propName(x.propertyId)))])].filter(Boolean);
+    return R(!list.length,list.length?`Closings this month: ${list.join(', ')}. Confirm the settlement statement is recorded, inventory cleared and costs moved to COGS.`:'No purchases or sales recorded this month. Confirm in QuickBooks.',!list.length); }
+  if(n===11){ const ex=exOf(m), bl=ex.filter(x=>blocksClose(x,ex)), small=ex.filter(x=>exOpen(x)&&!blocksClose(x,ex));
+    return R(!bl.length,`${bl.length} open material or suspicious item${bl.length===1?'':'s'} · ${small.length} open below threshold (documented, do not hold the close)`); }
+  if(n===12){ const c=closeDoc(m); return R(!!c.signoff,c.signoff?`Signed off by ${personName(c.signoff.by)} on ${shortDate(c.signoff.at.slice(0,10))}`:'Not signed off yet'); }
+}
+const prevMonthOf=m=>{const [y,mo]=m.split('-').map(Number);return new Date(Date.UTC(y,mo-2,1,12)).toISOString().slice(0,7);};
+function weeklyChecks(){
+  const P=POL(), t=today(), fc=forecast();
+  const open=todo(), noR=[...S.txns.values()].filter(x=>x.status!=='Transferred'&&!x.receiptUrl), miss=qbMissing();
+  const late=[...S.ap.values()].filter(x=>apOpen(x)&&x.dueDate&&x.dueDate<t), waiting=[...S.ap.values()].filter(x=>x.status==='Waiting on Juan'&&x.createdAt&&dayNum(t)-dayNum(x.createdAt.slice(0,10))>3);
+  const stale=cards().filter(c=>{const b=cardBalance(c.k);return Math.abs(b.balance)>=1&&(!b.info.siteAsOf||dayNum(t)-dayNum(b.info.siteAsOf)>7);});
+  const undated=[...S.drawsMap.values()].filter(d=>dAmt(d)-dRecv(d)>0&&!d.expectedDate);
+  const mats=regProps().filter(p=>{const T=pTerms(p);return T.mat&&dayNum(T.mat)-dayNum(t)<=P.window;});
+  const over=activeProps().filter(p=>{const s=propStats(p);return s.budget&&s.total>s.budget;});
+  const exo=[...S.exceptions.values()].filter(exOpen), low=fc.ending.some(e=>e<cashBuf());
+  return [
+    {k:'cat',t:'Charges to categorize',n:open.length,d:open.length?`${open.length} charges (${money0(sum(open))}) in Daily Expenses`:'All categorized',tab:'daily'},
+    {k:'rcpt',t:'Charges without a receipt',n:noR.length,d:noR.length?`${noR.length} charges still need a receipt`:'Every charge has a receipt',tab:'daily'},
+    {k:'qb',t:'Unpaid invoices missing from Payables',n:miss.length,d:miss.length?miss.slice(0,4).map(b=>`${b.name} ${money0(b.amount)}${b.due?' due '+shortDate(b.due):''}`).join(' · '):QB()?'Every unpaid QuickBooks/mail bill is in Payables':'QuickBooks not loaded; check unpaid bills by hand',tab:'payables'},
+    {k:'late',t:'Bills past due',n:late.length,d:late.length?`${money0(sum(late))}: ${late.slice(0,3).map(x=>x.vendor).join(', ')}`:'None',tab:'payables'},
+    {k:'wait',t:'Bills waiting on Juan more than 3 days',n:waiting.length,d:waiting.length?waiting.map(x=>x.vendor).slice(0,4).join(', '):'None',tab:'payables'},
+    {k:'card',t:'Card website balances older than 7 days',n:stale.length,d:stale.length?stale.map(c=>c.n).join(', '):'All checked this week',tab:'tracker'},
+    {k:'draw',t:'Pending draws without an expected date',n:undated.length,d:undated.length?undated.map(d=>`${shortAddr(propName(d.propertyId))} ${money0(dAmt(d)-dRecv(d))}`).join(', '):'None',tab:'draws'},
+    {k:'mat',t:`Loans maturing within ${P.window} days`,n:mats.length,d:mats.length?mats.map(p=>`${shortAddr(p.address)} ${shortDate(pTerms(p).mat)}`).join(', '):'None',tab:'cash'},
+    {k:'cash',t:'Cash below the reserve in the next 13 weeks',n:low?1:0,d:low?'See Cash & Maturities':'No',tab:'cash'},
+    {k:'over',t:'Properties over budget',n:over.length,d:over.length?over.map(p=>shortAddr(p.address)).join(', '):'None',tab:'properties'},
+    {k:'ex',t:'Open exceptions',n:exo.length,d:exo.length?`${exo.length} open, oldest ${shortDate(exo.map(x=>x.date).sort()[0])}`:'None',tab:'close'}];
+}
+function healthOf(){
+  const B=briefData(), P=POL(), ex=[...S.exceptions.values()], red=[], amber=[];
+  for(const x of B.material) (x.sev==='red'?red:amber).push(x.title);
+  for(const p of activeProps()){ const g=projGP(p); if(g!=null&&g<0) red.push(`${shortAddr(p.address)} projected loss ${money0(g)}`); }
+  for(const x of ex.filter(x=>blocksClose(x,ex))) red.push(`Open ${exClass(x,ex).k==='bad'&&Math.abs(Number(x.amount)||0)>=POL().materiality?'material':x.type.toLowerCase()} item: ${x.desc} (${money0(x.amount)})`);
+  const pm=prevMonth(); if(!closeDoc(pm).signoff&&today()>closeDay(pm,5)) amber.push(`${monthLabel(pm)} close not signed off (due ${shortDate(closeDay(pm,5))})`);
+  return {level:red.length?'action':amber.length?'watch':'healthy',red,amber,B};
+}
+/* ----- Month-End Close tab ----- */
+function viewClose(){
+  const m=S.closeMonth||(S.closeMonth=prevMonth()), c=closeDoc(m), P=POL();
+  const months=[...new Set([prevMonth(),today().slice(0,7),...[...S.closes.keys()]])].sort().reverse();
+  const checks=CLOSE_STEPS.map(s=>({...s,chk:stepCheck(s.n,m),st:(c.steps||{})[s.n]||{}}));
+  const done=checks.filter(x=>['Done','N/A'].includes(x.st.status)).length;
+  const W=weeklyChecks(), wk=mondayOf(today()), wdoc=S.weekly.get(wk), wIssues=W.filter(x=>x.n);
+  let h=`<div class="toolbar"><span class="lbl">Closing</span><select data-act="close-month" aria-label="Month">${months.map(x=>`<option value="${x}"${x===m?' selected':''}>${monthLabel(x)}</option>`).join('')}</select>
+    <span class="muted" style="font-size:13px">Day 1 ${shortDate(closeDay(m,1))} · Day 2 ${shortDate(closeDay(m,2))} · Day 4 ${shortDate(closeDay(m,4))} · Day 5 ${shortDate(closeDay(m,5))}</span><span class="spacer"></span>
+    <span class="pill ${c.signoff?'good':done===12?'acc':'warn'}">${c.signoff?'Signed off':`${done} of 12 steps done`}</span></div>`;
+  // what am I missing
+  const missing=[...wIssues.map(x=>`${x.t}: ${x.n}`),...checks.filter(x=>x.chk.s==='check'&&!['Done','N/A'].includes(x.st.status)).map(x=>`Step ${x.n} ${x.t}`),...['materiality','approvalLimit','maturityWindow'].filter(k=>!(S.L.policyOk||{})[k]).map(k=>({materiality:`Juan has not confirmed the ${money0(P.materiality)} materiality threshold`,approvalLimit:`Juan has not confirmed your ${money0(P.limit)} approval limit`,maturityWindow:`Juan has not confirmed the ${P.window}-day maturity warning`}[k]))];
+  h+=`<div class="summary"><div class="tile"><div class="label">What I’m missing</div><div class="big ${missing.length?'warn':'good'}">${missing.length}</div><div class="foot">${missing.length?'open items below':'nothing open'}</div></div>
+    <div class="tile"><div class="label">This week’s check</div><div class="big ${wdoc?'good':'warn'}" style="font-size:20px">${wdoc?'Reviewed':'Not yet'}</div><div class="foot">${wdoc?`by ${esc(personName(wdoc.by))} ${shortDate(wdoc.at.slice(0,10))}`:'week of '+shortDate(wk)}</div></div>
+    <div class="tile"><div class="label">Close steps</div><div class="big">${done}/12</div><div class="foot">${monthLabel(m)}</div></div>
+    <div class="tile"><div class="label">Open exceptions</div><div class="big ${exOf(m).some(x=>blocksClose(x,exOf(m)))?'bad':''}">${exOf(m).filter(exOpen).length}</div><div class="foot">${exOf(m).filter(x=>blocksClose(x,exOf(m))).length} material/suspicious</div></div></div><div class="stack">`;
+  if(missing.length) h+=sec('cl-miss','What I’m missing',`${missing.length} items`,`<ul style="margin:0;padding-left:18px">${missing.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`);
+  h+=sec('cl-week',`Weekly check · week of ${shortDate(wk)}`,wdoc?'reviewed':`${wIssues.length} to look at`,`<span class="faint" style="font-size:12.5px">So month-end is not a last-minute fix: run this every week.</span>
+    <div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:640px"><tbody>${W.map(x=>`<tr><td><span class="pill ${x.n?'warn':'good'}">${x.n?x.n:'OK'}</span></td><td><b>${esc(x.t)}</b><div class="muted" style="font-size:12.5px">${esc(x.d)}</div></td><td>${x.n?`<a href="#${x.tab}" data-tab="${x.tab}">Open</a>`:''}</td></tr>`).join('')}</tbody></table></div>
+    <div class="row"><input type="text" style="flex:1;min-width:220px" id="wk-note" data-draft="wk-note" value="${esc(D('wk-note',wdoc?.note||''))}" placeholder="Note on this week’s check (optional)"><button class="btn primary" data-act="wk-done">${wdoc?'Update weekly review':'Mark week reviewed'}</button></div>
+    ${[...S.weekly.values()].sort((a,b)=>b.id.localeCompare(a.id)).slice(0,4).map(w=>`<div class="faint" style="font-size:12px">Week of ${shortDate(w.id)}: reviewed by ${esc(personName(w.by))}, ${w.issues??0} open items${w.note?' · '+esc(w.note):''}</div>`).join('')}`);
+  // 12 steps
+  h+=sec('cl-steps',`12-step close · ${monthLabel(m)}`,`${done}/12 done`,`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:1100px"><thead><tr><th>#</th><th>Close task</th><th>Owner</th><th>Due</th><th>What the ledger shows</th><th>Status</th><th>Note</th></tr></thead><tbody>
+    ${checks.map(x=>`<tr data-step="${x.n}"><td>${x.n}</td><td style="min-width:200px"><b>${esc(x.t)}</b><div class="faint" style="font-size:11.5px;max-width:280px;white-space:normal">${esc(x.std)}</div></td><td>${esc(x.o)}</td><td class="d" style="color:${!['Done','N/A'].includes(x.st.status)&&today()>closeDay(m,x.d)?'var(--bad)':''}">Day ${x.d}<div>${shortDate(closeDay(m,x.d)).slice(0,5)}</div></td>
+      <td style="max-width:360px;white-space:normal;font-size:12.5px"><span class="pill ${x.chk.s==='ok'?'good':x.chk.s==='check'?'warn':'plain'}">${x.chk.s==='ok'?'Looks right':x.chk.s==='check'?'Check':'Manual'}</span> ${esc(x.chk.d)}</td>
+      <td><select data-act="cl-st" aria-label="Status">${opts(['Not started','In progress','Done','N/A'],x.st.status||'Not started')}</select>${x.st.by?`<div class="faint" style="font-size:11px">${esc(personName(x.st.by))} · ${shortDate((x.st.at||'').slice(0,10))}</div>`:''}</td>
+      <td><input type="text" class="notes" id="cln-${x.n}" data-act="cl-note" value="${esc(x.st.note||'')}" placeholder="What I checked / what is open"></td></tr>`).join('')}</tbody></table></div>`);
+  // step 7 detail: % complete, standby
+  const act=activeProps();
+  h+=sec('cl-prop','Step 7 · budget vs actual vs % complete',`${act.length} active`,`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:900px"><thead><tr><th>Property</th><th class="amt">Budget</th><th class="amt">Spent</th><th class="amt">% spent</th><th>% complete</th><th>On standby</th><th class="amt">Carrying / month</th><th class="amt">Projected gross profit</th><th>Flag</th></tr></thead><tbody>
+    ${act.map(p=>{const s=propStats(p),v=spendVsComplete(p),g=projGP(p);return `<tr><td class="payee">${esc(p.address)}<div class="faint" style="font-size:11px">${esc(p.status)}</div></td><td class="amt">${s.budget?money0(s.budget):'—'}</td><td class="amt">${money0(s.total)}</td><td class="amt">${v?Math.round(v.sp*100)+'%':'—'}</td>
+      <td><input type="text" inputmode="decimal" class="mono" style="width:64px;text-align:right" id="pc-${esc(p.id)}" data-act="rk" data-f="pctComplete" data-t="money" data-pid="${esc(p.id)}" value="${p.pctComplete??''}" placeholder="%"></td>
+      <td><input type="checkbox" data-act="rk-hold" data-pid="${esc(p.id)}"${p.onHold?' checked':''} aria-label="On standby"></td><td class="amt">${carryMo(p)?money0(carryMo(p)):'—'}</td><td class="amt" style="color:${g!=null&&g<0?'var(--bad)':''}">${g==null?'—':money0(g)}</td>
+      <td style="font-size:12px">${[!s.budget?'No budget':'',s.budget&&s.total>s.budget?`Over by ${money0(s.total-s.budget)}`:'',v?.ahead?'Spend ahead of progress':'',p.onHold&&carryMo(p)?`Standby costs ${money0(carryMo(p))}/mo`:''].filter(Boolean).map(t=>`<span class="pill warn">${esc(t)}</span>`).join(' ')||'<span class="pill good">OK</span>'}</td></tr>`;}).join('')}</tbody></table></div>
+    <span class="faint" style="font-size:12.5px">Spend is flagged as ahead of progress when % spent is more than 15 points above % complete. Carrying cost uses the mortgage payment, or the flip calculator’s daily interest × 30.</span>`);
+  // step 8 interco
+  const ic=c.interco||{}, pv=closeDoc(prevMonthOf(m)).interco||{};
+  h+=sec('cl-ic','Step 8 · intercompany Due To / Due From',`${Object.keys(ic).length} entered`,`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:640px"><thead><tr><th>Related entity</th><th class="amt">Due From (they owe us)</th><th class="amt">Due To (we owe them)</th><th class="amt">Last month</th><th>Note</th></tr></thead><tbody>
+    ${ENTITIES.filter(e=>e!=='Equity Track Inc').map(e=>{const x=ic[e]||{},y=pv[e]||{},now=(fxN(x.dueFrom)||0)+(fxN(x.dueTo)||0),was=(fxN(y.dueFrom)||0)+(fxN(y.dueTo)||0);return `<tr data-ent="${esc(e)}"><td><b>${esc(e)}</b></td><td class="amt"><input type="text" inputmode="decimal" class="mono" style="width:110px;text-align:right" id="icf-${hash(e)}" data-act="ic" data-f="dueFrom" value="${x.dueFrom??''}"></td><td class="amt"><input type="text" inputmode="decimal" class="mono" style="width:110px;text-align:right" id="ict-${hash(e)}" data-act="ic" data-f="dueTo" value="${x.dueTo??''}"></td>
+      <td class="amt">${y.dueFrom!=null||y.dueTo!=null?money0(was):'—'}${(x.dueFrom!=null||x.dueTo!=null)&&now>was+1&&(y.dueFrom!=null||y.dueTo!=null)?' <span class="pill warn">growing</span>':''}</td><td><input type="text" class="notes" id="icn-${hash(e)}" data-act="ic" data-f="note" data-text="1" value="${esc(x.note||'')}" placeholder="Support / settlement plan"></td></tr>`;}).join('')}</tbody></table></div>
+    <span class="faint" style="font-size:12.5px">From the Chart of Accounts proposal: one Due To and one Due From per company, so each balance can be traced and settled. Enter the QuickBooks balances at month end.</span>`);
+  // exceptions
+  const ex=exOf(m);
+  h+=sec('cl-ex','Exceptions log',`${ex.filter(exOpen).length} open`,`<div class="form-grid">
+    <label class="field">Found on<input type="date" id="ex-d" data-draft="ex-d" value="${esc(D('ex-d',today()))}"></label>
+    <label class="field" style="grid-column:span 2">What I found<input type="text" id="ex-w" data-draft="ex-w" value="${esc(D('ex-w'))}" placeholder="e.g. $612 bank rec difference, BOA 0475"></label>
+    <label class="field">Amount<input type="text" inputmode="decimal" id="ex-a" data-draft="ex-a" value="${esc(D('ex-a'))}" placeholder="0.00"></label>
+    <label class="field">Type<select id="ex-t" data-draft="ex-t">${opts(['Difference','Missing','Miscoded','Duplicate','Suspicious','Cutoff / accrual','Other'],D('ex-t','Difference'))}</select></label>
+    <label class="field">Cause (to group repeats)<input type="text" id="ex-c" data-draft="ex-c" value="${esc(D('ex-c'))}" placeholder="e.g. HD receipts not matched"></label>
+    <label class="field">Property<select id="ex-p" data-draft="ex-p">${propOpts(D('ex-p'),'None').replace('<option value="__new">＋ New property…</option>','')}</select></label>
+    <div style="align-self:end"><button class="btn primary" data-act="ex-add">Log it</button></div></div>
+    ${ex.length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:980px"><thead><tr><th>Found</th><th>What</th><th class="amt">Amount</th><th>Type</th><th>Materiality</th><th>Status</th><th>What I verified / resolution</th><th></th></tr></thead><tbody>
+    ${ex.map(x=>{const k=exClass(x,ex);return `<tr data-ex="${esc(x.id)}"><td class="d">${shortDate(x.date)}</td><td class="payee">${esc(x.desc)}<div class="faint" style="font-size:11px">${esc([propName(x.propertyId),x.cause].filter(Boolean).join(' · '))}</div></td><td class="amt">${money(x.amount)}</td><td>${esc(x.type)}</td><td><span class="pill ${k.k}">${esc(k.t)}</span></td>
+      <td><select data-act="ex-f" data-f="status" aria-label="Status">${opts(['Open','Investigating','Resolved','Disclosed'],x.status||'Open')}</select></td><td><input type="text" class="notes" id="exr-${esc(x.id)}" data-act="ex-f" data-f="resolution" value="${esc(x.resolution||'')}" placeholder="What I verified, what is still open"></td>
+      <td>${S.confirm==='exd-'+x.id?`<button class="btn sm danger" data-act="ex-del-yes">Delete</button>`:`<button class="btn sm ghost" data-act="ex-del" aria-label="Delete">✕</button>`}</td></tr>`;}).join('')}</tbody></table></div>`:'<span class="faint">No exceptions logged for this month.</span>'}
+    <span class="faint" style="font-size:12.5px">${money0(P.materiality)} or more: material, do not rely on the report until understood. Below: still investigate and document; it does not hold the close. Suspicious or duplicate: investigate at any amount. Small items with the same cause are added together. “Disclosed” means it stays open but Juan is told in the snapshot.</span>`);
+  // sign-off
+  const blockers=[...checks.filter(x=>x.n<12&&!['Done','N/A'].includes(x.st.status)).map(x=>`Step ${x.n} not done`),...ex.filter(x=>blocksClose(x,ex)).map(x=>`Open: ${x.desc}`)];
+  h+=sec('cl-sign','Controller sign-off',c.signoff?'signed':'not signed',c.signoff?`<div class="note info" style="margin:0"><span><b>Signed off</b> by ${esc(personName(c.signoff.by))} on ${esc(new Date(c.signoff.at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}))}${c.signoff.open?` · ${c.signoff.open} open item(s) disclosed`:''}.</span><button class="btn sm ghost" data-act="cl-unsign">Reopen the month</button></div><p style="font-size:13.5px;margin:0">${esc(SIGN_TEXT)}</p>`
+    :`<p style="font-size:13.5px;margin:0">${esc(SIGN_TEXT)}</p>${blockers.length?`<div class="note" style="margin:0"><span><b>Before signing:</b> ${blockers.map(esc).join(' · ')}</span></div>`:''}<div class="row"><button class="btn primary" data-act="cl-sign"${blockers.length?' disabled':''}>Sign off ${monthLabel(m)}</button><span class="faint" style="font-size:12.5px">Saves today’s snapshot numbers with the sign-off, so Juan sees what you signed.</span></div>`);
+  // policy
+  const pk=S.L.policyOk||{};
+  h+=sec('cl-pol','Policy (Controller Charter v1)','to confirm with Juan',`<div class="form-grid">
+    <label class="field">Materiality threshold<input type="text" inputmode="decimal" id="pol-m" data-act="cs" data-f="materiality" value="${P.materiality.toLocaleString('en-US')}"><span class="check" style="font-weight:400"><input type="checkbox" data-act="pol-ok" data-k="materiality"${pk.materiality?' checked':''}> Confirmed by Juan</span></label>
+    <label class="field">My approval limit (below)<input type="text" inputmode="decimal" id="pol-l" data-act="cs" data-f="approvalLimit" value="${P.limit.toLocaleString('en-US')}"><span class="check" style="font-weight:400"><input type="checkbox" data-act="pol-ok" data-k="approvalLimit"${pk.approvalLimit?' checked':''}> Confirmed by Juan</span></label>
+    <label class="field">Maturity warning (days ahead)<input type="text" inputmode="decimal" id="pol-w" data-act="cs" data-f="maturityWindow" value="${P.window}"><span class="check" style="font-weight:400"><input type="checkbox" data-act="pol-ok" data-k="maturityWindow"${pk.maturityWindow?' checked':''}> Confirmed by Juan</span></label>
+    <label class="field">Vendor payments<span class="check" style="font-weight:400;padding-top:6px"><input type="checkbox" data-act="pol-juan"${P.alwaysJuan?' checked':''}> Always need Juan, whatever the amount</span></label></div>
+    <details><summary class="muted" style="cursor:pointer;font-weight:600">Who does, reviews, decides</summary><div class="tbl" style="margin-top:8px"><table style="min-width:640px"><thead><tr><th>Task</th><th>Bookkeeper</th><th>Controller</th><th>CPA</th><th>Juan</th></tr></thead><tbody>${[['Categorize, match receipts, enter bills','Does','Reviews','',''],['Bank & card reconciliations','Does','Reviews','',''],['Payroll','Does','Reviews allocation & liabilities','','Approves'],['Closing statements','Does','Reviews inventory → COGS','','Informed'],[`Vendor payment below ${money0(P.limit)}`,'Prepares',P.alwaysJuan?'Reviews checklist':'Approves within policy','',P.alwaysJuan?'Approves':'Informed'],[`Vendor payment ${money0(P.limit)}+`,'Prepares','Reviews checklist','','Approves'],['Budget vs actual vs % complete','','Does','','Informed / approves overruns'],['Intercompany Due To / From','Records','Reviews','','Approves settlements'],['Cash, debt & maturities','','Does','','Funding decisions'],['Month-end sign-off','Days 1–2','Reviews + signs Day 4','','Snapshot Day 5'],['Tax returns & strategy','Provides records','Books tax-ready','Does + signs','Approves']].map(r=>`<tr>${r.map((c,i)=>i?`<td>${esc(c)}</td>`:`<td><b>${esc(c)}</b></td>`).join('')}</tr>`).join('')}</tbody></table></div></details>`);
+  return h+'</div>';
+}
+async function saveClose(m,patch){const {id:_,...cur}=closeDoc(m);return write(()=>db.doc('closes/'+m).set({...cur,...patch}));}
+const SIGN_TEXT='I reviewed the reconciliations, major balances, property allocations, obligations, intercompany accounts, debt, and financial statements. Material exceptions are resolved or clearly disclosed. Based on the work completed, the monthly reports are reliable enough for management use, subject to any documented open items.';
+/* ----- Payment review checklist (Controller Academy: $9,400 scenario) ----- */
+const AP_CHECKS=[['vendor','Vendor is legitimate'],['w9','W-9 on file (contractors) or not needed'],['work','Work, service or product was actually provided'],['docs','Invoice and agreement exist'],['amount','Amount makes sense for the work'],['coding','Coded to the right property and entity']];
+function apReview(x){ const r=x.review||{}, done=AP_CHECKS.filter(([k])=>r[k]).length, P=POL(), fc=forecast(), wi=fc.weekOf(x.dueDate||today())??0, low=fc.ending[wi]-(['Approved','Waiting on Juan','Note'].includes(x.status)&&x.dueDate?0:Number(x.amount)||0);
+  const cashOk=low>=cashBuf(), mine=!P.alwaysJuan&&(Number(x.amount)||0)<P.limit;
+  return {r,done,total:AP_CHECKS.length,missing:AP_CHECKS.filter(([k])=>!r[k]).map(([,n])=>n),cashOk,low,mine}; }
+function apReviewCell(x){ const v=apReview(x), key='apr-'+x.id;
+  return `<details class="grp" data-sec="${key}"${S.open[key]?' open':''} style="border:0"><summary style="grid-template-columns:auto;padding:2px 0"><span class="pill ${v.done===v.total?'good':'warn'}">Checks ${v.done}/${v.total}</span>${v.cashOk?'':' <span class="pill bad">Cash tight</span>'}</summary>
+    <div style="padding:4px 0">${AP_CHECKS.map(([k,n])=>`<label class="check" style="display:flex;font-size:12.5px"><input type="checkbox" data-act="ap-chk" data-k="${k}"${v.r[k]?' checked':''}${S.isOwner?'':' disabled'}> ${esc(n)}</label>`).join('')}
+    <div class="faint" style="font-size:11.5px">Cash the week it is due, after paying it: ${money0(v.low)} vs reserve ${money0(cashBuf())}. ${v.mine?`Within your ${money0(POL().limit)} limit.`:'Needs Juan’s approval.'}</div></div></details>`; }
+/* ----- Juan's snapshot ----- */
+function snapData(){
+  const fc=forecast(), P=POL(), cash=fc.start, res=cashBuf();
+  const loans=r2(sum(regProps(),p=>pTerms(p).payoff||0)), other=r2(sum(fxOpen().filter(o=>o.kind!=='Mortgage'),o=>Math.max(0,fxN(o.balance)||0))), cardsOwed=r2(sum(cards(),c=>Math.max(0,cardBalance(c.k).balance)));
+  const ap=[...S.ap.values()].filter(apOpen), apT=sum(ap), wait=ap.filter(x=>x.status==='Waiting on Juan'||x.status==='Note');
+  const inc={sale:sum(fc.lines.sale.map(v=>({amount:v}))),draw:sum(fc.lines.draw.map(v=>({amount:v}))),other:sum(fc.lines.otherIn.map(v=>({amount:v})))};
+  const d30=addDays(today(),30), out30=Object.entries(fc.rows).flatMap(([k,l])=>l.filter(x=>x.amt<0&&x.date<=d30).map(x=>({...x,k}))), o30={};
+  for(const x of out30){const n=(FC_LINES.find(([k])=>k===x.k)||[0,x.k])[1];o30[n]=r2((o30[n]||0)-x.amt);}
+  const props=activeProps().map(p=>({p,s:propStats(p),g:projGP(p),v:spendVsComplete(p),c:carryMo(p)}));
+  const gp=sum(props.filter(x=>x.g!=null),x=>x.g), noGP=props.filter(x=>x.g==null).length;
+  const cm=today().slice(0,7), mk=marketingRows().filter(r=>(r.date||'').startsWith(cm)), mkT=sum(mk), ppc=sum(mk.filter(isPPC));
+  let cpd=null,deals=null; try{const ch=fxChannels(),sp=sum(ch,c=>c.spend);deals=sum(ch,c=>c.deals);cpd=deals?sp/deals:null;}catch{}
+  return {fc,P,cash,res,loans,other,cardsOwed,owe:r2(loans+other+cardsOwed+apT),ap,apT,wait,inc,o30,out30T:r2(Object.values(o30).reduce((a,b)=>a+b,0)),props,gp,noGP,mkT,ppc,cpd,deals,H:healthOf()};
+}
+function snapDecisions(D_){
+  const out=[];
+  for(const x of D_.wait) out.push({kind:'ap',x,t:`Approve ${x.vendor} ${money0(x.amount)}${x.dueDate?' · due '+shortDate(x.dueDate):''}`});
+  for(const it of D_.H.B.material){ if(/waiting on Juan/.test(it.title)) continue; out.push({kind:'text',t:it.title,d:it.decision.replace(/^Decision for Juan: /,'').replace(/\s*Controller:.*$/,'')}); }
+  const pk=S.L.policyOk||{}, P=D_.P;
+  if(!pk.materiality) out.push({kind:'text',t:`Confirm the ${money0(P.materiality)} materiality threshold`,d:'Errors this size or larger are investigated before the report is used.'});
+  if(!pk.approvalLimit) out.push({kind:'text',t:`Confirm Kristine’s approval limit: below ${money0(P.limit)}`,d:'Anything above comes to you.'});
+  if(!pk.maturityWindow) out.push({kind:'text',t:`Confirm the maturity warning: ${P.window} days ahead`,d:'How early you want to hear about a loan coming due.'});
+  return out;
+}
+function viewSnapshot(){
+  const X=snapData(), H=X.H, lv={healthy:['good','Healthy'],watch:['warn','Watch'],action:['bad','Action needed']}[H.level];
+  const pm=prevMonth(), pc=closeDoc(pm), dec=snapDecisions(X);
+  const tile=(l,v,f,c)=>`<div class="tile"><div class="label">${l}</div><div class="big ${c||''}" style="font-size:22px">${v}</div><div class="foot">${f||''}</div></div>`;
+  let h=`<div class="row" style="justify-content:space-between;margin-bottom:10px"><div><h2 style="font-size:22px">Financial snapshot</h2><div class="muted" style="font-size:13px">${shortDate(today())} · prepared by the Controller · ${pc.signoff?`${monthLabel(pm)} books closed and signed off ${shortDate(pc.signoff.at.slice(0,10))}`:`${monthLabel(pm)} close not signed off yet: numbers are live, not final`}</div></div>
+    <div class="row"><span class="pill ${lv[0]}" style="font-size:14px;padding:4px 14px">${lv[1]}</span>${S.isOwner?`<button class="btn sm" data-act="snap-copy">Copy as text</button>${mcp?`<button class="btn sm primary" data-act="snap-pdf"${FX.pdfBusy?' disabled':''}>${FX.pdfBusy?'Saving…':'Save PDF to Drive'}</button>`:''}`:''}</div></div>`;
+  h+=`<div class="note ${H.level==='healthy'?'info':''}" style="${H.level==='action'?'background:var(--bad-soft);border-color:var(--bad);color:var(--bad)':''}"><span><b>${lv[1]}:</b> ${[...H.red,...H.amber].slice(0,3).map(esc).join(' · ')||'cash covers what is coming due, no material open items, no loans in the warning window.'}</span></div>`;
+  h+=`<div class="summary">
+    ${tile('Cash',money0(X.cash),`${money0(X.cash-X.res)} above the ${money0(X.res)} reserve`,X.cash<X.res?'bad':'')}
+    ${tile('We owe',money0(X.owe),`loans ${money0(X.loans)} · cards ${money0(X.cardsOwed)} · bills ${money0(X.apT)}${X.other?' · other '+money0(X.other):''}`)}
+    ${tile('Coming in · 13 weeks',money0(X.inc.sale+X.inc.draw+X.inc.other),`sales ${money0(X.inc.sale)} · draws ${money0(X.inc.draw)}`,'good')}
+    ${tile('Due next 30 days',money0(X.out30T),Object.entries(X.o30).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k.toLowerCase()} ${money0(v)}`).join(' · '))}
+    ${tile('Bills to pay',money0(X.apT),`${X.wait.length} waiting on you (${money0(sum(X.wait))})`,X.wait.length?'warn':'')}
+    ${tile('Projected gross profit',money0(X.gp),`${X.props.length-X.noGP} active properties${X.noGP?` · ${X.noGP} not estimated yet`:''}`,X.gp<0?'bad':'good')}
+    ${tile('Marketing · '+monthLabel(today().slice(0,7)).split(' ')[0],money0(X.mkT),`PPC ${money0(X.ppc)}${X.cpd?` · ${money0(X.cpd)} per deal this year`:''}`)}
+  </div>`;
+  h+=`<div class="panel panel-pad stack" style="margin-bottom:14px"><h3 style="font-size:16px">Decisions I need from you</h3>${dec.length?dec.map(d=>d.kind==='ap'?`<div class="fx-flag" data-ap="${esc(d.x.id)}"><div class="row" style="justify-content:space-between"><span><b>${esc(d.t)}</b><div class="muted" style="font-size:12.5px">${esc([d.x.notes,propName(d.x.propertyId),(()=>{const v=apReview(d.x);return v.done===v.total?'All payment checks done':'Open checks: '+v.missing.join(', ');})()].filter(Boolean).join(' · '))}${apFiles(d.x).length?' · '+apFiles(d.x).map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a>`).join(', '):''}</div></span>
+      <span class="seg" role="group" aria-label="Decision">${['Approve','Hold'].map(v=>{const st={Approve:'Approved',Hold:'On hold'}[v];return `<button data-act="snap-dec" data-v="${st}">${v}</button>`;}).join('')}</span></div></div>`:`<div class="fx-flag"><b>${esc(d.t)}</b>${d.d?`<div class="muted" style="font-size:12.5px">${esc(d.d)}</div>`:''}</div>`).join(''):'<span class="faint">Nothing needs a decision right now.</span>'}</div>`;
+  h+=`<div class="panel tbl" style="margin-bottom:14px"><table style="min-width:760px"><thead><tr><th>Property</th><th>Status</th><th class="amt">Budget used</th><th>% complete</th><th class="amt">Carrying / mo</th><th class="amt">Projected gross profit</th></tr></thead><tbody>
+    ${X.props.map(x=>`<tr><td><b>${esc(shortAddr(x.p.address))}</b></td><td>${esc(x.p.status)}${x.p.onHold?' <span class="pill warn">Standby</span>':''}</td><td class="amt" style="color:${x.s.budget&&x.s.total>x.s.budget?'var(--bad)':''}">${x.s.budget?`${money0(x.s.total)} of ${money0(x.s.budget)}`:'no budget'}</td><td>${x.p.pctComplete!=null&&x.p.pctComplete!==''?x.p.pctComplete+'%':'—'}${x.v?.ahead?' <span class="pill warn">spend ahead</span>':''}</td><td class="amt">${x.c?money0(x.c):'—'}</td><td class="amt" style="color:${x.g!=null&&x.g<0?'var(--bad)':''}">${x.g==null?'—':money0(x.g)}</td></tr>`).join('')}</tbody></table></div>
+  <p class="faint" style="font-size:12px">Gross profit is projected from each property’s calculator, not the closing check. Funding, refinance, extension and deal decisions are yours; tax questions go to the CPA.</p>`;
+  return h;
+}
+function snapText(){ const X=snapData(), lv={healthy:'Healthy',watch:'Watch',action:'Action needed'}[X.H.level], dec=snapDecisions(X);
+  return [`THB financial snapshot · ${shortDate(today())} · ${lv}`,...[...X.H.red,...X.H.amber].slice(0,3).map(x=>'• '+x),'',
+    `Cash ${money0(X.cash)} (${money0(X.cash-X.res)} above the ${money0(X.res)} reserve)`,`We owe ${money0(X.owe)}: loans ${money0(X.loans)}, cards ${money0(X.cardsOwed)}, bills ${money0(X.apT)}`,
+    `Coming in next 13 weeks ${money0(X.inc.sale+X.inc.draw+X.inc.other)} (sales ${money0(X.inc.sale)}, draws ${money0(X.inc.draw)})`,`Due next 30 days ${money0(X.out30T)}`,
+    `Bills to pay ${money0(X.apT)}, ${X.wait.length} waiting on you`,`Projected gross profit ${money0(X.gp)} across ${X.props.length-X.noGP} properties`,`Marketing this month ${money0(X.mkT)} (PPC ${money0(X.ppc)})`,'',
+    'DECISIONS I NEED FROM YOU',...(dec.length?dec.map((d,i)=>`${i+1}. ${d.t}${d.d?' – '+d.d:''}`):['None right now'])].join('\n'); }
+function snapBlocks(){ const X=snapData(), lv={healthy:'go',watch:'wait',action:'stop'}[X.H.level], dec=snapDecisions(X);
+  return [{t:'v',v:{level:lv,q:'Where we stand',a:{healthy:'Healthy',watch:'Watch',action:'Action needed'}[X.H.level],why:[...X.H.red,...X.H.amber].slice(0,3).join(' · ')||'Cash covers what is coming due.'}},
+    {t:'tbl',head:['Item','Amount','Detail'],right:[1],rows:[['Cash',money0(X.cash),`${money0(X.cash-X.res)} above reserve`],['We owe',money0(X.owe),`loans ${money0(X.loans)}, cards ${money0(X.cardsOwed)}, bills ${money0(X.apT)}`],['Coming in, 13 weeks',money0(X.inc.sale+X.inc.draw+X.inc.other),`sales ${money0(X.inc.sale)}, draws ${money0(X.inc.draw)}`],['Due next 30 days',money0(X.out30T),''],['Bills to pay',money0(X.apT),`${X.wait.length} waiting on Juan`],['Projected gross profit',money0(X.gp),`${X.props.length-X.noGP} properties`],['Marketing this month',money0(X.mkT),`PPC ${money0(X.ppc)}`]]},
+    {t:'h',x:'Decisions I need from you'},{t:'p',x:dec.length?dec.map((d,i)=>`${i+1}. ${d.t}${d.d?' - '+d.d:''}`).join('\n'):'None right now.'},
+    {t:'tbl',head:['Property','Budget used','% complete','Projected GP'],right:[3],rows:X.props.map(x=>[shortAddr(x.p.address),x.s.budget?`${money0(x.s.total)} of ${money0(x.s.budget)}`:'no budget',x.p.pctComplete!=null&&x.p.pctComplete!==''?x.p.pctComplete+'%':'-',x.g==null?'-':money0(x.g)])}]; }
+/* ----- who sees what ----- */
+const VIEW_OPTS={report:'Snapshot only',juan:'Snapshot + Payables',tracker:'Snapshot + Card Tracker',full:'All tabs (view only)'};
+function allowedTabs(){ if(S.isOwner!==false) return SECTIONS.map(s=>s.k); const v=(S.L.viewers||{})[S.uid]?.view||'report';
+  return v==='full'?SECTIONS.map(s=>s.k).filter(k=>k!=='settings'):v==='juan'?['snapshot','payables']:v==='tracker'?['snapshot','tracker']:['snapshot']; }
+function viewersPanel(){ const vs=S.L.viewers||{};
+  return `<div class="panel panel-pad stack"><h3 style="font-size:16px">Who sees what</h3><span class="muted" style="font-size:13px">Only you can change the books. Anyone else you share with sees just the tabs you pick here; someone not listed sees the Snapshot only. Juan can approve bills (share with him as Contributor); Darlene can type card website balances (Contributor). Everything else is locked to you.</span>
+    ${Object.keys(vs).length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:480px"><tbody>${Object.entries(vs).map(([id,v])=>`<tr data-vid="${esc(id)}"><td><b>${esc(personName(id))}</b></td><td><select data-act="vw-set" aria-label="What they see">${Object.entries(VIEW_OPTS).map(([k,n])=>`<option value="${k}"${v.view===k?' selected':''}>${n}</option>`).join('')}</select></td><td><button class="btn sm ghost" data-act="vw-del" aria-label="Remove">✕</button></td></tr>`).join('')}</tbody></table></div>`:''}
+    <div class="row"><input type="text" id="vw-q" data-draft="vw-q" value="${esc(D('vw-q'))}" placeholder="Search a teammate by name"><button class="btn sm" data-act="vw-search">Find</button>${(S.vwHits||[]).map(p=>`<button class="btn sm" data-act="vw-add" data-id="${esc(p.id)}">＋ ${esc(p.name||'Someone')}</button>`).join('')}</div></div>`; }
 function riskBanner(){
   if(S.tab==='cash') return '';
   const fc=forecast(); const reds=regProps().map(p=>({p,r:riskOf(p,fc)})).filter(x=>x.r.level==='red');
@@ -1997,7 +2238,7 @@ function filesBody(p){
 function viewSettings(){
   const L=S.L, ta=(k,label,rows=8)=>`<label class="field">${label}<textarea id="ls-${k}" rows="${rows}" data-draft="ls-${k}">${esc(D('ls-'+k,(L[k]||[]).join('\n')))}</textarea></label>`;
   return `<div class="toolbar"><h2 style="font-size:20px">Settings</h2><span class="spacer"></span><button class="btn primary" data-act="save-settings">Save changes</button></div>
-  <div class="stack">
+  <div class="stack">${viewersPanel()}
   <div class="panel panel-pad stack"><h3 style="font-size:16px">Cards</h3><span class="muted" style="font-size:13px">Each card gets its own tab in Daily Expenses and the Card Tracker.</span>
     <div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:640px"><thead><tr><th>Card name</th><th>Receipts folder in Company Receipts (Drive link)</th></tr></thead><tbody>${cards().map(c=>`<tr><td><input type="text" id="cn-${esc(c.k)}" data-draft="cn-${esc(c.k)}" value="${esc(D('cn-'+c.k,c.n))}" aria-label="Card name"></td><td><input type="text" style="width:100%" id="cf-${esc(c.k)}" data-draft="cf-${esc(c.k)}" value="${esc(D('cf-'+c.k,(L.cardFolders||{})[c.k]||''))}" placeholder="Blank = the receipts folder below" aria-label="${esc(c.n)} receipts folder"></td></tr>`).join('')}</tbody></table></div>
     <span class="faint" style="font-size:12.5px">A receipt uploaded on a card’s row goes into that card’s folder, so AmEx receipts land in the AmEx folder and Capital One Business receipts in Capital One Business.</span>
@@ -2106,6 +2347,15 @@ document.addEventListener('change',async e=>{
   if(act==='payf'){const pid=tr?.dataset.pid;if(!pid)return;if(tr.dataset.kind==='card')await setTxn(pid,{paid:t.checked});else await write(()=>db.doc('payments/'+pid).update({paid:t.checked}));return;}
   if(act==='mr-file'&&S.modal){S.modal.file=t.files[0]||null;S.modal.err='';renderModal();return;}
   if(act==='ap-file'){S.apFile=t.files[0]||null;render();return;}
+  if(act==='close-month'){S.closeMonth=t.value;render();return;}
+  if(act==='cl-st'||act==='cl-note'){const m=S.closeMonth,n=tr.dataset.step,c=closeDoc(m),st={...((c.steps||{})[n]||{})};if(act==='cl-st'){st.status=t.value;st.by=S.uid||'';st.at=new Date().toISOString();}else{if(bankBlocked(t.value)){render();return;}st.note=t.value;}await saveClose(m,{steps:{...(c.steps||{}),[n]:st}});return;}
+  if(act==='ic'){const m=S.closeMonth,e=tr.dataset.ent,c=closeDoc(m),f=t.dataset.f;if(t.dataset.text&&bankBlocked(t.value)){render();return;}const v=t.dataset.text?t.value:(t.value.trim()===''?null:num(t.value));await saveClose(m,{interco:{...(c.interco||{}),[e]:{...((c.interco||{})[e]||{}),[f]:v}}});return;}
+  if(act==='ex-f'){const id=tr.dataset.ex,f=t.dataset.f;if(f==='resolution'&&bankBlocked(t.value)){render();return;}await write(()=>db.doc('exceptions/'+id).update({[f]:t.value,...(f==='status'?{statusBy:S.uid||'',statusAt:new Date().toISOString()}:{})}));return;}
+  if(act==='rk-hold'){await write(()=>db.doc('properties/'+t.dataset.pid).update({onHold:t.checked}));return;}
+  if(act==='pol-ok'){const pk={...(S.L.policyOk||{})};if(t.checked)pk[t.dataset.k]={by:S.uid||'',at:new Date().toISOString()};else delete pk[t.dataset.k];await write(()=>db.doc('settings/lists').set({...S.L,policyOk:pk}));return;}
+  if(act==='pol-juan'){await write(()=>db.doc('settings/lists').set({...S.L,alwaysJuan:t.checked}));return;}
+  if(act==='vw-set'){const id=tr.dataset.vid;await write(()=>db.doc('settings/lists').set({...S.L,viewers:{...(S.L.viewers||{}),[id]:{view:t.value}}}));return;}
+  if(act==='ap-chk'){const id=t.closest('[data-ap]')?.dataset.ap,x=S.ap.get(id);if(!x)return;await write(()=>db.doc('ap/'+id).update({review:{...(x.review||{}),[t.dataset.k]:t.checked,by:S.uid||'',at:new Date().toISOString()}}));return;}
   if(act==='ap-row-file'&&t.files[0]){
     const x=S.ap.get(t.dataset.ap); if(!x) return; if(!mcp){toast('Uploading needs Google Drive connected to this page.');return;}
     const f=t.files[0]; S.apRowBusy=x.id; render();
@@ -2128,7 +2378,7 @@ document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]'); if(!b||b.tagName==='SELECT'||b.tagName==='INPUT') return;
   if(e.target.closest('a[href^="#"]')) e.preventDefault();
   const act=b.dataset.act, tr=b.closest('tr'), id=tr?.dataset.id;
-  if(!/-yes$|^(del|clear-ex|payall|del-prop|del-pay|del-cpay|del-draw|ap-del|ap-all)$/.test(act)) S.confirm=null;
+  if(!/-yes$|^(del|clear-ex|payall|del-prop|del-pay|del-cpay|del-draw|ap-del|ap-all|ex-del)$/.test(act)) S.confirm=null;
   switch(act){
     case 'dcard': S.dCard=b.dataset.k; S.dMonth='all'; S.sel.clear(); break;
     case 'dview': S.dView=b.dataset.v; break;
@@ -2202,7 +2452,7 @@ document.addEventListener('click',async e=>{
         ppcDailyLimit:num(S.draft['ls-ppcDailyLimit']??S.L.ppcDailyLimit??750)||750, ppcStart:(S.draft['ls-ppcStart']??S.L.ppcStart??''),
         cardFolders:Object.fromEntries(cs.map(c=>[c.k,(S.draft['cf-'+c.k]??(S.L.cardFolders||{})[c.k]??'').trim()]).filter(x=>x[1])),
         receiptFolder:(S.draft['ls-receiptFolder']??S.L.receiptFolder??'').trim(),propertyFolder:(S.draft['ls-propertyFolder']??S.L.propertyFolder??'').trim(),apFolder:(S.draft['ls-apFolder']??S.L.apFolder??'').trim(),requireReceipt:S.draft['ls-req']??S.L.requireReceipt,...Object.fromEntries(['cashOnHand','cashAsOf','cashBuffer','materiality'].filter(k=>S.L[k]!=null).map(k=>[k,S.L[k]]))};
-      if(await write(()=>db.doc('settings/lists').set(data))){for(const k of Object.keys(S.draft))if(/^(ls-|cn-|cf-)/.test(k))delete S.draft[k];toast('Settings saved');}
+      if(await write(()=>db.doc('settings/lists').set({...S.L,...data}))){for(const k of Object.keys(S.draft))if(/^(ls-|cn-|cf-)/.test(k))delete S.draft[k];toast('Settings saved');}
       break;
     }
     case 'cs-sync': await syncCardSheets(); return;
@@ -2216,15 +2466,28 @@ document.addEventListener('click',async e=>{
       if(S.apFile){ if(!mcp){toast('Uploading needs Google Drive connected to this page.');return;} S.apBusy=true; render();
         try{ files=[await apUpload(S.apFile,{vendor,amount,invoiceNo})]; }catch(err){ S.apBusy=false; render(); toast(err?.code==='too_big'?'That file is too large for this viewer. Upload it in Drive and paste the link.':driveErr(err)); return; }
         S.apBusy=false; }
-      if(await write(()=>db.collection('ap').add({vendor,propertyId:S.draft['ap-p']||'',category:S.draft['ap-c']||'Contractor Service',invoiceNo,amount,dueDate:S.draft['ap-d']||today(),docUrl:files[0]?.url||link,files,notes:note,status:b.dataset.v,createdBy:S.uid||'',createdAt:new Date().toISOString()}))){for(const k of ['ap-v','ap-a','ap-i','ap-l','ap-n'])S.draft[k]='';S.apFile=null;toast(b.dataset.v==='Draft'?'Saved as draft':'Sent to Juan');}break;}
+      if(await write(()=>db.collection('ap').add({vendor,propertyId:S.draft['ap-p']||'',entity:S.draft['ap-e']||'Equity Track Inc',category:S.draft['ap-c']||'Contractor Service',invoiceNo,amount,dueDate:S.draft['ap-d']||today(),docUrl:files[0]?.url||link,files,notes:note,status:b.dataset.v,createdBy:S.uid||'',createdAt:new Date().toISOString()}))){for(const k of ['ap-v','ap-a','ap-i','ap-l','ap-n'])S.draft[k]='';S.apFile=null;toast(b.dataset.v==='Draft'?'Saved as draft':'Sent to Juan');}break;}
     case 'ap-file-clear': S.apFile=null; break;
+    case 'wk-done': {const wk=mondayOf(today()),n=(S.draft['wk-note']||'').trim();if(bankBlocked(n))return;await write(()=>db.doc('weekly/'+wk).set({by:S.uid||'',at:new Date().toISOString(),note:n,issues:weeklyChecks().filter(x=>x.n).length}));toast('Weekly check recorded');break;}
+    case 'ex-add': {const desc=(S.draft['ex-w']||'').trim(),cause=(S.draft['ex-c']||'').trim();if(!desc){toast('Describe what you found.');return;}if(bankBlocked(desc,cause))return;
+      if(await write(()=>db.collection('exceptions').add({month:S.closeMonth||prevMonth(),date:S.draft['ex-d']||today(),desc,amount:r2(num(S.draft['ex-a'])),type:S.draft['ex-t']||'Difference',cause,propertyId:S.draft['ex-p']||'',status:'Open',resolution:'',foundBy:S.uid||'',createdAt:new Date().toISOString()}))){for(const k of ['ex-w','ex-a','ex-c'])S.draft[k]='';toast('Logged');}break;}
+    case 'ex-del': S.confirm='exd-'+tr.dataset.ex; break;
+    case 'ex-del-yes': {const id=S.confirm.slice(4);S.confirm=null;await write(()=>db.doc('exceptions/'+id).delete());break;}
+    case 'cl-sign': {const m=S.closeMonth,X=snapData(),ex=exOf(m);await saveClose(m,{signoff:{by:S.uid||'',at:new Date().toISOString(),open:ex.filter(exOpen).length,statement:SIGN_TEXT,snapshot:{cash:X.cash,reserve:X.res,owe:X.owe,apT:X.apT,gp:X.gp,marketing:X.mkT,health:X.H.level}}});toast(`${monthLabel(m)} signed off`);break;}
+    case 'cl-unsign': {const m=S.closeMonth;await saveClose(m,{signoff:null,reopened:{by:S.uid||'',at:new Date().toISOString()}});toast('Month reopened');break;}
+    case 'snap-copy': {const t=snapText();try{await navigator.clipboard.writeText(t);toast('Snapshot copied. Paste it into an email or message to Juan.');}catch{openModal({type:'brief',text:t});}return;}
+    case 'snap-pdf': await fxSavePDF('THB Financial Snapshot',snapBlocks(),'THB Snapshot'); return;
+    case 'snap-dec': {const id=b.closest('[data-ap]')?.dataset.ap,x=S.ap.get(id);if(!x)return;await write(()=>db.doc('ap/'+id).update({status:b.dataset.v,decision:{by:S.uid||'',at:new Date().toISOString(),note:''}}));toast(b.dataset.v==='Approved'?'Approved':'On hold');break;}
+    case 'vw-search': {const q=(S.draft['vw-q']||'').trim();try{S.vwHits=S.user?.search?(await S.user.search(q)).filter(p=>p.id&&p.id!==S.uid).slice(0,6):[];}catch{S.vwHits=[];}if(!S.vwHits.length)toast('No one found. Share the page with them first, then search again.');break;}
+    case 'vw-add': {const id=b.dataset.id;S.vwHits=[];S.draft['vw-q']='';await write(()=>db.doc('settings/lists').set({...S.L,viewers:{...(S.L.viewers||{}),[id]:{view:'report'}}}));break;}
+    case 'vw-del': {const id=b.closest('tr').dataset.vid,v={...(S.L.viewers||{})};delete v[id];await write(()=>db.doc('settings/lists').set({...S.L,viewers:v}));break;}
     case 'brief-copy': {const t=briefText(briefData()); try{await navigator.clipboard.writeText(t);toast('Brief copied. Paste it into an email or message to Juan.');}catch{openModal({type:'brief',text:t});} return;}
     case 'ap-send': await write(()=>db.doc('ap/'+tr.dataset.ap).update({status:'Waiting on Juan'})); break;
-    case 'ap-dec': {const id=tr.dataset.ap,v=b.dataset.v; if(v==='Note'){S.apNote=id;await write(()=>db.doc('ap/'+id).update({status:'Note',decision:{by:S.uid||'',at:new Date().toISOString(),note:''}}));break;}
+    case 'ap-dec': {const id=tr.dataset.ap,v=b.dataset.v; if(v==='Approved'&&S.isOwner&&!apReview(S.ap.get(id)).mine){toast(`Above your ${money0(POL().limit)} limit${POL().alwaysJuan?' / vendor payments need Juan':''}. Juan approves this one.`);return;} if(v==='Note'){S.apNote=id;await write(()=>db.doc('ap/'+id).update({status:'Note',decision:{by:S.uid||'',at:new Date().toISOString(),note:''}}));break;}
       S.apNote=null; await write(()=>db.doc('ap/'+id).update({status:v,decision:{by:S.uid||'',at:new Date().toISOString(),note:''}})); break;}
     case 'ap-note-save': {const id=tr.dataset.ap,n=(S.draft['apn-'+id]||'').trim(); if(bankBlocked(n)) return; await write(()=>db.doc('ap/'+id).update({decision:{by:S.uid||'',at:new Date().toISOString(),note:n}})); S.apNote=null; break;}
     case 'ap-all': S.confirm='ap-all'; break;
-    case 'ap-all-yes': {S.confirm=null; const at=new Date().toISOString(); for(const x of [...S.ap.values()].filter(x=>x.status==='Waiting on Juan')) await write(()=>db.doc('ap/'+x.id).update({status:'Approved',decision:{by:S.uid||'',at,note:''}})); toast('All waiting bills approved'); break;}
+    case 'ap-all-yes': {S.confirm=null; const at=new Date().toISOString(); for(const x of [...S.ap.values()].filter(x=>x.status==='Waiting on Juan'&&(!S.isOwner||apReview(x).mine))) await write(()=>db.doc('ap/'+x.id).update({status:'Approved',decision:{by:S.uid||'',at,note:''}})); toast('All waiting bills approved'); break;}
     case 'ap-paid': await write(()=>db.doc('ap/'+tr.dataset.ap).update({status:'Paid',paidDate:today()})); toast('Marked paid'); break;
     case 'ap-del': S.confirm='apd-'+tr.dataset.ap; break;
     case 'ap-del-yes': {const id=S.confirm.slice(4);S.confirm=null;await write(()=>db.doc('ap/'+id).delete());break;}
@@ -2264,8 +2527,8 @@ render();
   const c=window.claude; if(!c?.use){S.dbState='off';render();return;}
   db=await c.use('db'); if(!db){S.dbState='off';render();return;}
   const user=await c.use('user');
-  try{S.uid=user?await user.id():null;S.user=user;}catch{}
-  try{const can=user?.can?await user.can('data.write'):null;if(can===false)S.readOnly=true;}catch{}
+  try{S.uid=user?await user.id():null;S.user=user;S.isOwner=user?await user.isOwner():false;}catch{S.isOwner=false;}
+  try{const can=user?.can?await user.can('data.write'):null;if(can===false&&S.isOwner)S.readOnly=true;}catch{}
   S.dbState='live';
   const onErr=e=>{if(e?.code==='revoked'){S.dbState='off';render();}};
   const toMap=s=>new Map(s.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
@@ -2277,6 +2540,9 @@ render();
   db.collection('draws').onSnapshot(s=>{S.drawsMap=toMap(s);scheduleRender();},onErr);
   db.collection('ap').onSnapshot(s=>{S.ap=toMap(s);scheduleRender();},onErr);
   db.collection('cashitems').onSnapshot(s=>{S.cashItems=toMap(s);scheduleRender();},onErr);
+  db.collection('closes').onSnapshot(s=>{S.closes=toMap(s);scheduleRender();},onErr);
+  db.collection('exceptions').onSnapshot(s=>{S.exceptions=toMap(s);scheduleRender();},onErr);
+  db.collection('weekly').onSnapshot(s=>{S.weekly=toMap(s);scheduleRender();},onErr);
   db.collection('cardsheetmeta').onSnapshot(s=>{S.csMeta=toMap(s);rebuildSheetRows();scheduleRender();S.csLoaded=true;maybeAutoSync();},onErr);
   db.collection('cardsheet').onSnapshot(s=>{S.csChunks=toMap(s);rebuildSheetRows();scheduleRender();},onErr);
   fxSubscribe();
