@@ -849,7 +849,7 @@ const S={
   tab:(location.hash||'').slice(1)||'daily',
   dCard:null, dView:'todo', dMonth:'all',
   tCard:'all', drawProp:'all', tBucket:'overhead', tPaid:'unpaid', tMonth:today().slice(0,7), mMonth:'all', mPaid:'all', drawsMap:new Map(), ap:new Map(), cashItems:new Map(), apView:'juan', apNote:null, sheets:{}, sheetRows:[], csMeta:new Map(), csChunks:new Map(), csSync:'', csErr:'',
-  propId:'all', propFilter:'active', sel:new Set(), open:{calc:true,fin:false,budget:false,pays:false,files:false,'dr-set':true,'dr-list':true,'dr-where':true},
+  propId:'all', propFilter:'active', sel:new Set(), open:{calc:true,fin:false,budget:false,pays:false,files:false,'dr-set':true,'dr-list':true,'dr-where':true,brief:true},
   preview:null, importing:false, confirm:null, draft:{}, modal:null
 };
 if(!SECTIONS.some(s=>s.k===S.tab)) S.tab='daily';
@@ -1630,13 +1630,13 @@ function riskOf(p,fc){
 function forecast(){
   const w0=mondayOf(today()), weeks=[...Array(13)].map((_,i)=>addDays(w0,i*7));
   const weekOf=d=>{ if(!d) return null; if(d<w0) return 0; const i=Math.floor((dayNum(d)-dayNum(w0))/7); return i<13?i:null; };
-  const rows={sale:[],draw:[],otherIn:[],payoff:[],apAppr:[],apWait:[],qbBills:[],loans:[],cardMin:[],payroll:[],otherOut:[]}; const add=(k,d,amt,label,late)=>{const i=weekOf(d); if(i==null) return; rows[k].push({i,amt:r2(amt),label,date:d,late:late||(d<w0)});};
+  const rows={sale:[],draw:[],otherIn:[],payoff:[],apAppr:[],apWait:[],qbBills:[],loans:[],cardMin:[],payroll:[],otherOut:[]}; const add=(k,d,amt,label,late,pid)=>{const i=weekOf(d); if(i==null) return; rows[k].push({i,amt:r2(amt),label,date:d,late:late||(d<w0),pid});};
   const unsched=[];
   for(const p of S.props.values()){
     if(p.status==='Sold') continue;
     const T=pTerms(p), close=T.close, m=T.mat;
-    if(close&&T.proceeds) add('sale',close,T.proceeds,`${shortAddr(p.address)} closing${T.from.proceeds?' ('+T.from.proceeds+')':''}`);
-    if(m&&T.payoff&&!(close&&close<=m)) add('payoff',m,-T.payoff,`${shortAddr(p.address)} loan matures`);
+    if(close&&T.proceeds) add('sale',close,T.proceeds,`${shortAddr(p.address)} closing${T.from.proceeds?' ('+T.from.proceeds+')':''}`,false,p.id);
+    if(m&&T.payoff&&!(close&&close<=m)) add('payoff',m,-T.payoff,`${shortAddr(p.address)} loan matures`,false,p.id);
   }
   for(const d of S.drawsMap.values()){ const left=r2(dAmt(d)-dRecv(d)); if(left<=0) continue; const p=S.props.get(d.propertyId); if(d.expectedDate) add('draw',d.expectedDate,left,`${shortAddr(p?.address)} ${d.note||'draw'}`); else unsched.push({what:`${shortAddr(p?.address)} · ${d.note||'draw'}`,amt:left}); }
   for(const x of S.ap.values()){ if(!apOpen(x)) continue; const k=x.status==='Approved'?'apAppr':(x.status==='Waiting on Juan'||x.status==='Note')?'apWait':null; if(!k) continue; if(x.dueDate) add(k,x.dueDate,-(Number(x.amount)||0),`${x.vendor}`); else unsched.push({what:`${x.vendor} (no due date)`,amt:-(Number(x.amount)||0)}); }
@@ -1661,6 +1661,7 @@ function viewCash(){
   let h='';
   if(reds.length||lowWeeks.length) h+=`<div class="note" style="background:var(--bad-soft);border-color:var(--bad);color:var(--bad)"><span><b>Tell Juan now:</b> ${[...reds.map(x=>`${esc(shortAddr(x.p.address))}: ${esc(x.r.reasons[0])}`),...(lowWeeks.length?[`cash falls below ${money0(buf)} in the week of ${shortDate(lowWeeks[0].w)} (${money0(lowWeeks[0].e)})`]:[])].join(' · ')}</span></div>`;
   h+=`<div class="note info"><span><b>What this page does:</b> lines up closings, draws, maturities and approved bills so timing gaps show early. <b>What it does not do:</b> extensions or refinances with the lender, payoff letters and loan documents, and escrow or wire instructions go to the attorney and CPA. Nothing here moves money, and no bank or wire details are stored.</span></div>`;
+  h+=`<div style="margin-bottom:14px">${viewBrief()}</div>`;
   h+=`<div class="panel panel-pad stack" style="margin-bottom:14px"><div class="row" style="justify-content:space-between"><h3 style="font-size:16px">13-week cash forecast</h3><span class="muted" style="font-size:12.5px">Weeks start Monday ${shortDate(fc.weeks[0])}</span></div>
     <div class="form-grid"><label class="field">Cash on hand today<input type="text" inputmode="decimal" id="cs-oh" data-act="cs" data-f="cashOnHand" value="${S.L.cashOnHand!=null?Number(S.L.cashOnHand).toLocaleString('en-US'):''}" placeholder="${fxCash().cash!=null?'Banks: '+money0(fxCash().cash):'0'}"></label>
       <label class="field">As of<input type="date" id="cs-as" data-act="cs" data-f="cashAsOf" data-text="1" value="${esc(S.L.cashAsOf||'')}"></label>
@@ -1692,6 +1693,126 @@ function viewCash(){
     <div class="row"><select id="rk-add" data-draft="rk-add"><option value="">Add a property to the register…</option>${[...S.props.values()].filter(p=>!regs.includes(p)&&p.status!=='Sold').map(p=>`<option value="${esc(p.id)}">${esc(p.address)}</option>`).join('')}</select><button class="btn sm" data-act="rk-add">Add</button></div>
     <span class="faint" style="font-size:12.5px">“Mark flagged” records that Juan was told and when. Extension, refinance, payoff letters and loan documents are handled by Juan with the attorney and CPA; record only the status and next step here.</span></div>`;
   return h;
+}
+/* ----- Controller brief for Juan: numbers, risk, decisions needed. Controller lane only. ----- */
+const FC_LINES=[['sale','Sale closings (net)'],['draw','Lender draws expected'],['otherIn','Other cash in'],['payoff','Other loan payoffs'],['apAppr','Approved bills'],['apWait','Bills waiting on Juan'],['qbBills','QuickBooks / mail bills'],['loans','Mortgage & loan payments'],['cardMin','Card minimums'],['payroll','Payroll'],['otherOut','Other cash out']];
+const SSN=/\b\d{3}-\d{2}-\d{4}\b/;
+const materiality=()=>Number(S.L.materiality)||25000;
+function restrictedScan(){
+  const hits=[]; let n=0;
+  const chk=(where,v)=>{ if(v==null||v==='') return; n++; const s=String(v); if(BANKY.test(s)||SSN.test(s)) hits.push(where); };
+  for(const p of S.props.values()) for(const f of ['notes','nextStep','extOption','lender']) chk(`${shortAddr(p.address)} · ${f}`,p[f]);
+  for(const x of S.ap.values()){ chk(`Bill ${x.vendor} · vendor`,x.vendor); chk(`Bill ${x.vendor} · note`,x.notes); }
+  for(const c of S.cashItems.values()) chk(`Cash item ${shortDate(c.date)}`,c.label);
+  for(const d of S.drawsMap.values()){ chk(`Draw ${shortDate(d.date)} · note`,d.note); for(const u of d.uses||[]) chk(`Draw ${shortDate(d.date)} · paid to`,u.to); }
+  return {n,hits};
+}
+// Cash available on the maturity date = cash today + every forecast line dated on or before it, except this loan's own payoff.
+function coverage(p,fc,dropSale){
+  const T=pTerms(p), m=T.mat; if(!m||!T.payoff) return null;
+  const items=Object.entries(fc.rows).flatMap(([k,l])=>l.map(x=>({...x,k}))).filter(x=>x.date<=m&&x.pid!==p.id);
+  const byK={}; for(const x of items) byK[x.k]=r2((byK[x.k]||0)+x.amt);
+  const avail=r2(fc.start+Object.values(byK).reduce((a,b)=>a+b,0)), reserve=cashBuf(), free=r2(avail-reserve);
+  const beyond=dayNum(m)>dayNum(fc.weeks[12])+6;
+  return {T,m,payoff:T.payoff,byK,avail,reserve,free,gap:r2(free-T.payoff),gapR:r2(avail-T.payoff),beyond,days:dayNum(m)-dayNum(today()),saleFirst:!!(T.close&&T.close<=m)};
+}
+function coverageLines(c,fc){
+  const L=[`Cash today ${money0(fc.start)} (${fc.startSrc})`];
+  for(const [k,n] of FC_LINES) if(c.byK[k]) L.push(`${c.byK[k]>0?'+':'−'} ${n} through ${shortDate(c.m)}: ${money0(Math.abs(c.byK[k]))}`);
+  L.push(`= Cash on ${shortDate(c.m)}: ${money0(c.avail)}`);
+  L.push(`− Reserve ${money0(c.reserve)} = ${money0(c.free)} free`);
+  L.push(`− Payoff ${money0(c.payoff)} = ${c.gap>=0?'covered, '+money0(c.gap)+' left':'short '+money0(-c.gap)}`);
+  if(c.beyond) L.push('Maturity is past the 13-week window, so later bills are not counted. Treat this as optimistic.');
+  return L;
+}
+function coverageAnswer(c){
+  if(c.gap>=0) return `Yes. After everything already scheduled, ${money0(c.free)} is free above the reserve, which covers the ${money0(c.payoff)} payoff with ${money0(c.gap)} to spare.`;
+  if(c.gapR>=0) return `Only by using the reserve. Free cash above the reserve is ${money0(c.free)}, ${money0(-c.gap)} short of the ${money0(c.payoff)} payoff. Using ${money0(-c.gap)} of the ${money0(c.reserve)} reserve would cover it.`;
+  return `No. Even using the whole reserve, cash on ${shortDate(c.m)} is ${money0(c.avail)}, ${money0(-c.gapR)} short of the ${money0(c.payoff)} payoff.`;
+}
+function overrun(p){
+  const s=propStats(p); if(!s.budget||s.total<=s.budget) return null;
+  const b=p.budgets||{}, drivers=[];
+  for(const [k,v] of Object.entries(s.byCat)){ const bud=Number(b[k])||0; if(v>bud+0.5) drivers.push({k,spent:v,bud,over:r2(v-bud)}); }
+  drivers.sort((a,c)=>c.over-a.over);
+  const start=p.fx?.purchaseDate||p.fx?.interestFrom||p.purchaseDate||'', days=start?dayNum(today())-dayNum(start):null;
+  return {p,s,over:r2(s.total-s.budget),pct:s.total/s.budget-1,drivers,days};
+}
+function overrunLines(o){
+  return [`Spent ${money0(o.s.total)} − budget ${money0(o.s.budget)} = ${money0(o.over)} over (${Math.round(o.pct*100)}%)${o.days!=null?` at ${o.days} days held`:''}`,
+    ...o.drivers.slice(0,4).map(d=>d.bud?`${d.k}: ${money0(d.spent)} spent vs ${money0(d.bud)} budget = ${money0(d.over)} over`:`${d.k}: ${money0(d.spent)} spent, no budget line`)];
+}
+function mktAnswer(){
+  let ch=[]; try{ ch=fxChannels(); }catch{ return null; }
+  const spend=r2(sum(ch,c=>c.spend)), deals=sum(ch,c=>c.deals), leads=sum(ch,c=>fxN(c.d.leads)||0), tgt=fxN(fxSet().targetCPD);
+  if(!spend) return null;
+  const L=[`Marketing spend ${fxISO().slice(0,4)}: ${money0(spend)} (QuickBooks where loaded, otherwise this ledger)`,
+    leads?`${leads} leads → ${deals} signed deals = ${(deals/leads*100).toFixed(1)}% lead-to-deal`:'Leads: not entered (Controller → Decisions → marketing)',
+    deals?`${money0(spend)} ÷ ${deals} deals = ${money0(spend/deals)} per deal`:'No signed deals entered this year',
+    tgt?`Target on file: ${money0(tgt)} per deal`:'No target cost per deal on file from Juan'];
+  const a=!deals?`${money0(spend)} spent with no signed deal recorded this year.`:`${money0(spend/deals)} per signed deal${leads?`, ${(deals/leads*100).toFixed(1)}% of leads converting`:''}${tgt?`, against a ${money0(tgt)} target`:''}. There is no earlier period on file to compare with, so whether this is normal for us is not verified.`;
+  return {a,L};
+}
+function briefData(){
+  const fc=forecast(), mat=materiality(), items=[], gaps=[], qa=[];
+  const regs=regProps();
+  // 1. maturities
+  const covs=[];
+  for(const p of regs){ const T=pTerms(p); if(!T.mat){gaps.push(`${shortAddr(p.address)}: maturity date`);continue;} if(!T.payoff){gaps.push(`${shortAddr(p.address)}: payoff amount`);continue;}
+    const c=coverage(p,fc); if(!c||c.days>120) continue; covs.push({p,c});
+    const r=riskOf(p,fc);
+    const L=c.saleFirst?[`Sale expected ${shortDate(c.T.close)}, ${dayNum(c.m)-dayNum(c.T.close)} days before maturity; net to us after payoff ${c.T.proceeds!=null?money0(c.T.proceeds):'not entered'}`,'If the sale slips past maturity, cash would need to cover the payoff:',...coverageLines(c,fc)]:coverageLines(c,fc);
+    items.push({sev:r.level==='green'?'amber':r.level,amt:c.payoff,title:`${shortAddr(p.address)}: ${money0(c.payoff)} loan matures ${shortDate(c.m)} (${c.days<0?Math.abs(c.days)+' days ago':c.days+' days'})`,
+      calc:L,decision:'Decision for Juan: how this payoff is funded (sale timing, extension or refinance). Lender talks, payoff letter and loan documents go to Juan with the attorney and CPA.'});
+  }
+  // 2. cash below reserve
+  const buf=cashBuf(), low=fc.weeks.map((w,i)=>({w,e:fc.ending[i]})).filter(x=>x.e<buf);
+  if(low.length){ const worst=low.reduce((a,x)=>x.e<a.e?x:a); items.push({sev:worst.e<0?'red':'amber',amt:r2(buf-worst.e),title:`Cash falls below the ${money0(buf)} reserve in the week of ${shortDate(low[0].w)}`,calc:[`Lowest week ${shortDate(worst.w)}: ending cash ${money0(worst.e)}`,`Reserve ${money0(buf)}, ending cash ${money0(worst.e)}: ${money0(buf-worst.e)} below the reserve`,`${low.length} of 13 weeks under the reserve`],decision:'Decision for Juan: which payments move or what cash comes in. Controller: confirm the dates in the forecast.'}); }
+  // 3. budget overruns
+  const ovs=[...S.props.values()].filter(p=>groupOf(p)==='active').map(overrun).filter(Boolean).sort((a,b)=>b.over-a.over);
+  for(const o of ovs) items.push({sev:o.pct>=0.1?'red':'amber',amt:o.over,title:`${shortAddr(o.p.address)}: ${money0(o.over)} over budget (${Math.round(o.pct*100)}%)`,calc:overrunLines(o),decision:'Decision for Juan: approve the overrun or set a new budget. Controller: confirm each charge is coded to the right property and category.'});
+  // 4. payables
+  const ap=[...S.ap.values()].filter(apOpen), late=ap.filter(x=>x.dueDate&&x.dueDate<today()), soon=ap.filter(x=>x.status==='Waiting on Juan'&&x.dueDate&&dayNum(x.dueDate)-dayNum(today())<=7);
+  if(late.length) items.push({sev:'amber',amt:sum(late),title:`${late.length} bill${late.length===1?'':'s'} past due: ${money0(sum(late))}`,calc:late.slice(0,5).map(x=>`${x.vendor} ${money0(x.amount)} due ${shortDate(x.dueDate)} · ${x.status}`),decision:'Decision for Juan on any not yet approved. Payment itself is made by a person outside this page.'});
+  if(soon.length) items.push({sev:'amber',amt:sum(soon),title:`${soon.length} bill${soon.length===1?'':'s'} waiting on Juan, due within 7 days: ${money0(sum(soon))}`,calc:soon.slice(0,5).map(x=>`${x.vendor} ${money0(x.amount)} due ${shortDate(x.dueDate)}`),decision:'Decision for Juan: approve or hold in Payables.'});
+  const rank={red:0,amber:1};
+  items.sort((a,b)=>rank[a.sev]-rank[b.sev]||b.amt-a.amt);
+  const material=items.filter(x=>x.sev==='red'||x.amt>=mat), minor=items.filter(x=>!material.includes(x));
+  // likely questions
+  const near=covs.filter(x=>!x.c.saleFirst).sort((a,b)=>a.c.days-b.c.days)[0]||covs.sort((a,b)=>a.c.days-b.c.days)[0];
+  if(near) qa.push({q:`Can we cover the ${shortAddr(near.p.address)} payoff without touching the reserve?`,a:coverageAnswer(near.c),L:coverageLines(near.c,fc)});
+  if(ovs[0]){ const o=ovs[0], d=o.drivers[0]; qa.push({q:`Why is ${shortAddr(o.p.address)} over budget${o.days!=null?` at ${o.days} days`:''}?`,a:d?`Most of it is ${d.k}: ${money0(d.over)} of the ${money0(o.over)} overrun${d.bud?'':' (no budget line for it)'}. What changed in the scope is a question for the project lead; the ledger shows where the money went.`:`Spending is over budget by ${money0(o.over)}.`,L:overrunLines(o)}); }
+  const mk=mktAnswer(); if(mk) qa.push({q:'Is the marketing spend converting?',a:mk.a,L:mk.L});
+  // gaps
+  if(S.L.cashOnHand==null&&fxCash().cash==null) gaps.push('Cash on hand');
+  if(!(S.L.cashBuffer!=null&&S.L.cashBuffer!=='')&&!fxN(fxSet().cushion)) gaps.push('Reserve (minimum cash) from Juan');
+  for(const d of S.drawsMap.values()) if(dAmt(d)-dRecv(d)>0&&!d.expectedDate) gaps.push(`${shortAddr(propName(d.propertyId))} draw ${money0(dAmt(d)-dRecv(d))}: expected date`);
+  for(const p of [...S.props.values()].filter(p=>groupOf(p)==='active')) if(!propStats(p).budget) gaps.push(`${shortAddr(p.address)}: budget`);
+  return {fc,mat,material,minor,qa,gaps,scan:restrictedScan()};
+}
+function briefText(B){
+  const out=[`Controller brief for Juan · ${shortDate(today())}`,`Cash today ${money0(B.fc.start)} · reserve ${money0(cashBuf())} · material = ${money0(B.mat)} or more, or red`,''];
+  if(B.scan.hits.length) out.push(`RESTRICTED DATA: ${B.scan.hits.length} field(s) look like account, routing or SSN numbers and must be removed before this is shared: ${B.scan.hits.join('; ')}`,'');
+  out.push(B.material.length?'NEEDS YOUR ATTENTION':'Nothing material this week.');
+  B.material.forEach((x,i)=>{ out.push(`${i+1}. ${x.title}`); x.calc.forEach(l=>out.push('   '+l)); out.push('   '+x.decision); });
+  if(B.qa.length){ out.push('','QUESTIONS YOU MAY ASK'); for(const q of B.qa){ out.push('Q: '+q.q,'A: '+q.a); } }
+  if(B.minor.length) out.push('',`Below the threshold (${B.minor.length}): `+B.minor.map(x=>x.title).join('; '));
+  if(B.gaps.length) out.push('','NOT VERIFIED (missing data): '+B.gaps.join('; '));
+  out.push('','Outside this report: whether to raise debt, refinance, extend or buy (Juan); tax treatment and attest (CPA); payroll filings (payroll provider); payoff letters, loan documents, escrow and wire instructions (attorney and CPA).');
+  return out.join('\n');
+}
+function viewBrief(){
+  const B=briefData(), pill=s=>`<span class="pill ${s==='red'?'bad':'warn'}">${s==='red'?'Act now':'Watch'}</span>`;
+  const calc=L=>`<code class="fx-math" style="white-space:pre-wrap">${L.map(esc).join('\n')}</code>`;
+  let b=`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px">Cash today <b class="mono">${money0(B.fc.start)}</b> · reserve <b class="mono">${money0(cashBuf())}</b> · material: <input type="text" inputmode="decimal" class="mono" style="width:100px;text-align:right" id="cs-mat" data-act="cs" data-f="materiality" value="${B.mat.toLocaleString('en-US')}" aria-label="Materiality threshold"> or more, or red</span>
+    <span class="row">${B.scan.hits.length?`<span class="pill bad">Restricted data found: ${B.scan.hits.length}</span>`:`<span class="pill good">Restricted data check passed · ${B.scan.n} fields</span>`}<button class="btn sm primary" data-act="brief-copy">Copy brief as text</button></span></div>`;
+  if(B.scan.hits.length) b+=`<div class="note" style="margin:0"><span>These fields look like an account, routing or Social Security number. Remove them; they belong with the attorney or CPA, not in this tracker: ${B.scan.hits.map(esc).join(' · ')}</span></div>`;
+  b+=B.material.length?B.material.map((x,i)=>`<div class="fx-flag"><div class="row">${pill(x.sev)}<b>${i+1}. ${esc(x.title)}</b></div>${calc(x.calc)}<div style="font-size:13px">${esc(x.decision)}</div></div>`).join(''):'<div class="faint">Nothing material this week.</div>';
+  if(B.qa.length) b+=`<h3 style="font-size:15px;margin-top:6px">Questions Juan is likely to ask</h3>`+B.qa.map(q=>`<div class="fx-flag"><b>${esc(q.q)}</b><div style="font-size:13.5px">${esc(q.a)}</div><details class="fx-how"><summary>Show the math</summary>${calc(q.L)}</details></div>`).join('');
+  if(B.minor.length) b+=`<details><summary class="muted" style="cursor:pointer;font-weight:600">Below the ${money0(B.mat)} threshold (${B.minor.length})</summary><div style="margin-top:6px">${B.minor.map(x=>`<div class="fx-flag" style="font-size:13px">${esc(x.title)}</div>`).join('')}</div></details>`;
+  if(B.gaps.length) b+=`<div class="note" style="margin:0"><span><b>Not verified, missing data:</b> ${B.gaps.map(esc).join(' · ')}</span></div>`;
+  b+=`<span class="faint" style="font-size:12.5px">Controller lane: what the numbers say, the risk, and what needs a decision. Not in this brief: whether to raise debt, refinance, extend or buy (Juan); tax treatment and attest conclusions (CPA); payroll filings (payroll provider); payoff letters, loan documents, escrow and wire instructions (attorney and CPA).</span>`;
+  return sec('brief','Controller brief for Juan',`${B.material.length} material item${B.material.length===1?'':'s'}`,b);
 }
 function riskBanner(){
   if(S.tab==='cash') return '';
@@ -1934,6 +2055,8 @@ function renderModal(){
   if(!m){el.hidden=true;el.innerHTML='';return;}
   if(m.type==='prop'){
     el.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-labelledby="mh"><h3 id="mh">New property</h3><label class="field">Address<input type="text" id="mp-addr" value="${esc(m.addr||'')}" placeholder="492 Umland Dr, Santa Rosa, CA 95401"></label><div class="row"><button class="btn primary" data-act="mp-create">Create property</button><button class="btn ghost" data-act="m-close">Cancel</button></div></div>`;
+  } else if(m.type==='brief'){
+    el.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-labelledby="mh"><h3 id="mh">Controller brief</h3><textarea rows="16" readonly onfocus="this.select()">${esc(m.text)}</textarea><div class="row"><button class="btn ghost" data-act="m-close">Close</button></div></div>`;
   } else if(m.type==='rcpt'){
     const t=rcptRec(m); if(!t){S.modal=null;el.hidden=true;return;}
     el.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-labelledby="mh"><h3 id="mh">Receipt · ${esc(t.desc)} · ${money(t.amount)}</h3>
@@ -2078,7 +2201,7 @@ document.addEventListener('click',async e=>{
       const data={cards:cs,types:lines('types'),categories:lines('categories'),subcategories:lines('subcategories'),methods:lines('methods'),statuses:lines('statuses'),
         ppcDailyLimit:num(S.draft['ls-ppcDailyLimit']??S.L.ppcDailyLimit??750)||750, ppcStart:(S.draft['ls-ppcStart']??S.L.ppcStart??''),
         cardFolders:Object.fromEntries(cs.map(c=>[c.k,(S.draft['cf-'+c.k]??(S.L.cardFolders||{})[c.k]??'').trim()]).filter(x=>x[1])),
-        receiptFolder:(S.draft['ls-receiptFolder']??S.L.receiptFolder??'').trim(),propertyFolder:(S.draft['ls-propertyFolder']??S.L.propertyFolder??'').trim(),apFolder:(S.draft['ls-apFolder']??S.L.apFolder??'').trim(),requireReceipt:S.draft['ls-req']??S.L.requireReceipt,...Object.fromEntries(['cashOnHand','cashAsOf','cashBuffer'].filter(k=>S.L[k]!=null).map(k=>[k,S.L[k]]))};
+        receiptFolder:(S.draft['ls-receiptFolder']??S.L.receiptFolder??'').trim(),propertyFolder:(S.draft['ls-propertyFolder']??S.L.propertyFolder??'').trim(),apFolder:(S.draft['ls-apFolder']??S.L.apFolder??'').trim(),requireReceipt:S.draft['ls-req']??S.L.requireReceipt,...Object.fromEntries(['cashOnHand','cashAsOf','cashBuffer','materiality'].filter(k=>S.L[k]!=null).map(k=>[k,S.L[k]]))};
       if(await write(()=>db.doc('settings/lists').set(data))){for(const k of Object.keys(S.draft))if(/^(ls-|cn-|cf-)/.test(k))delete S.draft[k];toast('Settings saved');}
       break;
     }
@@ -2095,6 +2218,7 @@ document.addEventListener('click',async e=>{
         S.apBusy=false; }
       if(await write(()=>db.collection('ap').add({vendor,propertyId:S.draft['ap-p']||'',category:S.draft['ap-c']||'Contractor Service',invoiceNo,amount,dueDate:S.draft['ap-d']||today(),docUrl:files[0]?.url||link,files,notes:note,status:b.dataset.v,createdBy:S.uid||'',createdAt:new Date().toISOString()}))){for(const k of ['ap-v','ap-a','ap-i','ap-l','ap-n'])S.draft[k]='';S.apFile=null;toast(b.dataset.v==='Draft'?'Saved as draft':'Sent to Juan');}break;}
     case 'ap-file-clear': S.apFile=null; break;
+    case 'brief-copy': {const t=briefText(briefData()); try{await navigator.clipboard.writeText(t);toast('Brief copied. Paste it into an email or message to Juan.');}catch{openModal({type:'brief',text:t});} return;}
     case 'ap-send': await write(()=>db.doc('ap/'+tr.dataset.ap).update({status:'Waiting on Juan'})); break;
     case 'ap-dec': {const id=tr.dataset.ap,v=b.dataset.v; if(v==='Note'){S.apNote=id;await write(()=>db.doc('ap/'+id).update({status:'Note',decision:{by:S.uid||'',at:new Date().toISOString(),note:''}}));break;}
       S.apNote=null; await write(()=>db.doc('ap/'+id).update({status:v,decision:{by:S.uid||'',at:new Date().toISOString(),note:''}})); break;}
