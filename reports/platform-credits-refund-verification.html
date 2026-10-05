@@ -1,0 +1,490 @@
+<title>Platform Credits &amp; Refund Verification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single-column controller's report — status first, then one ledger section per platform, closing with a sign-off stamp. */
+:root {
+  --bg: #f3f5f7;
+  --paper: #ffffff;
+  --ink: #12202e;
+  --ink-2: #44525f;
+  --ink-3: #6b7783;
+  --rule: #dce2e8;
+  --rule-strong: #b9c3cd;
+  --head: #0f2233;
+  --head-fg: #eef3f7;
+  --head-dim: #9fb2c3;
+
+  --ok: #11734a;
+  --ok-soft: #e4f3ea;
+  --ok-line: #9fd2b5;
+
+  /* transaction-type colors */
+  --cash: #11734a;
+  --cash-soft: #e4f3ea;
+  --adj: #1f5fa8;
+  --adj-soft: #e5eef9;
+  --cred: #7a4bb0;
+  --cred-soft: #efe8f8;
+  --sep: #8a5a10;
+  --sep-soft: #fbf2e1;
+
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c141c; --paper: #121d28; --ink: #e6edf3; --ink-2: #b3c0cc; --ink-3: #8595a4;
+    --rule: #233343; --rule-strong: #34485b; --head: #0a1924; --head-fg: #eef3f7; --head-dim: #8ea3b6;
+    --ok: #4cc58a; --ok-soft: #12301f; --ok-line: #2a6b48;
+    --cash: #4cc58a; --cash-soft: #12301f; --adj: #6fa8ec; --adj-soft: #13263b;
+    --cred: #b893e8; --cred-soft: #241a35; --sep: #e2b260; --sep-soft: #2c2312;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c141c; --paper: #121d28; --ink: #e6edf3; --ink-2: #b3c0cc; --ink-3: #8595a4;
+  --rule: #233343; --rule-strong: #34485b; --head: #0a1924; --head-fg: #eef3f7; --head-dim: #8ea3b6;
+  --ok: #4cc58a; --ok-soft: #12301f; --ok-line: #2a6b48;
+  --cash: #4cc58a; --cash-soft: #12301f; --adj: #6fa8ec; --adj-soft: #13263b;
+  --cred: #b893e8; --cred-soft: #241a35; --sep: #e2b260; --sep-soft: #2c2312;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.55;
+  padding-inline: 16px;
+  padding-block: 0 56px;
+}
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.eyebrow {
+  font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+
+/* ---------- Masthead ---------- */
+.mast {
+  margin-inline: -16px;
+  background: var(--head);
+  color: var(--head-fg);
+  padding-inline: 16px;
+  padding-block: 28px 30px;
+}
+.mast-in { max-width: 980px; margin: 0 auto; display: grid; gap: 18px; }
+.mast .eyebrow { color: var(--head-dim); }
+.mast h1 { font-size: clamp(28px, 4.6vw, 42px); font-weight: 750; font-stretch: 92%; letter-spacing: -.01em; line-height: 1.08; }
+.meta { display: flex; flex-wrap: wrap; gap: 10px 32px; font-size: 13px; color: var(--head-dim); }
+.meta b { display: block; font-weight: 500; color: var(--head-fg); font-size: 14px; }
+
+/* ---------- Status hero ---------- */
+.status {
+  background: var(--paper);
+  border: 1px solid var(--ok-line);
+  border-radius: 10px;
+  padding: 26px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 22px;
+  align-items: center;
+  margin-top: -6px;
+}
+.seal {
+  width: 78px; height: 78px; border-radius: 50%;
+  background: var(--ok); color: var(--paper);
+  display: grid; place-items: center;
+}
+.seal svg { width: 40px; height: 40px; }
+.status .label { font-family: var(--f-mono); font-size: 12px; letter-spacing: .14em; color: var(--ink-3); }
+.status h2 { font-size: clamp(30px, 5vw, 44px); font-weight: 800; font-stretch: 105%; color: var(--ok); letter-spacing: .02em; line-height: 1.05; }
+.status p { font-size: 17px; color: var(--ink-2); margin-top: 4px; }
+
+.question {
+  font-size: 15px; color: var(--ink-2);
+  border-left: 3px solid var(--rule-strong); padding-left: 14px;
+}
+.question b { color: var(--ink); font-weight: 600; }
+
+/* ---------- Type chips ---------- */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--f-mono); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  padding: 4px 9px; border-radius: 4px; white-space: nowrap;
+}
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip.cash { color: var(--cash); background: var(--cash-soft); }
+.chip.adj  { color: var(--adj);  background: var(--adj-soft); }
+.chip.cred { color: var(--cred); background: var(--cred-soft); }
+.chip.sep  { color: var(--sep);  background: var(--sep-soft); }
+
+/* ---------- Summary tiles ---------- */
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.tile {
+  background: var(--paper); border: 1px solid var(--rule); border-radius: 8px;
+  padding: 18px 18px 16px; display: grid; gap: 10px; align-content: start;
+}
+.tile .who { font-weight: 600; font-size: 14px; }
+.tile .amt { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: clamp(26px, 3.6vw, 32px); font-weight: 600; letter-spacing: -.01em; line-height: 1; }
+.tile.cash .amt { color: var(--cash); }
+.tile.adj .amt { color: var(--adj); }
+.tile.cred .amt { color: var(--cred); }
+.tile .sub { font-size: 13px; color: var(--ink-3); }
+.warn-note {
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: 14px; color: var(--ink-2);
+  padding: 12px 14px; border: 1px dashed var(--rule-strong); border-radius: 6px; background: var(--paper);
+}
+.warn-note svg { flex: none; width: 18px; height: 18px; margin-top: 2px; color: var(--ink-3); }
+.warn-note b { color: var(--ink); }
+
+/* ---------- Sections ---------- */
+.section { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+.sec-head {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px;
+  padding: 18px 24px; border-bottom: 1px solid var(--rule);
+}
+.sec-head h2 { font-size: 21px; font-weight: 700; font-stretch: 95%; }
+.sec-body { padding: 22px 24px 24px; display: grid; gap: 22px; }
+
+.split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 26px; align-items: start; }
+
+.bigfig { display: grid; gap: 6px; }
+.bigfig .amt { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: clamp(40px, 7vw, 56px); font-weight: 600; color: var(--cash); line-height: 1; letter-spacing: -.02em; }
+.bigfig .tag { font-family: var(--f-display); font-weight: 800; font-stretch: 105%; font-size: 15px; letter-spacing: .06em; color: var(--cash); }
+.bigfig .count { font-size: 14px; color: var(--ink-2); }
+.meter { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 8px; max-width: 240px; }
+.meter span { height: 8px; border-radius: 2px; background: var(--cash); }
+
+.ledger { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ledger th { text-align: left; font-family: var(--f-mono); font-weight: 500; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); padding: 0 0 8px; border-bottom: 1px solid var(--rule-strong); }
+.ledger td { padding: 10px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.ledger td.r, .ledger th.r { text-align: right; }
+.ledger .ok { color: var(--ok); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.ledger tfoot td { border-bottom: none; border-top: 2px solid var(--ink); font-weight: 600; padding-top: 12px; }
+
+.checks { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 22px; }
+.checks li { display: flex; gap: 9px; align-items: flex-start; font-size: 14px; color: var(--ink-2); }
+.checks li svg { flex: none; width: 16px; height: 16px; margin-top: 3px; color: var(--ok); }
+
+/* Verification trail */
+.trail { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 10px; }
+.step {
+  border: 1px solid var(--ok-line); background: var(--ok-soft); border-radius: 8px;
+  padding: 14px 14px 12px; display: grid; gap: 4px; text-align: center;
+}
+.step .n { font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; color: var(--ink-3); text-transform: uppercase; }
+.step .t { font-weight: 600; font-size: 15px; }
+.step .v { font-family: var(--f-mono); font-size: 12.5px; font-weight: 600; color: var(--ok); }
+.arrow { color: var(--ink-3); }
+.arrow svg { width: 26px; height: 14px; display: block; }
+
+.final {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  background: var(--ok); color: var(--paper);
+  border-radius: 6px; padding: 12px 16px;
+  font-family: var(--f-display); font-weight: 750; font-stretch: 100%; letter-spacing: .05em; font-size: 15px;
+}
+.final svg { width: 20px; height: 20px; }
+
+/* Separate balance */
+.separate {
+  border: 1.5px dashed var(--sep); border-radius: 10px; background: var(--paper);
+  padding: 20px 24px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 22px; align-items: center;
+}
+.separate .amt { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 34px; font-weight: 600; color: var(--sep); line-height: 1; }
+.separate h3 { font-size: 17px; font-weight: 700; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.separate p { font-size: 14px; color: var(--ink-2); grid-column: 2; }
+
+/* Platform pair */
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.pair .section { display: flex; flex-direction: column; }
+.pair .sec-body { flex: 1; align-content: start; }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); margin: 0; font-size: 14px; }
+.kv dt, .kv dd { padding: 9px 0; border-bottom: 1px solid var(--rule); margin: 0; }
+.kv dt { color: var(--ink-3); padding-right: 18px; }
+.kv dd { font-weight: 500; }
+.kv dd.amt-adj { font-family: var(--f-mono); font-weight: 600; color: var(--adj); font-size: 18px; }
+.kv dd.amt-cred { font-family: var(--f-mono); font-weight: 600; color: var(--cred); font-size: 18px; }
+.kv dd.zero { font-family: var(--f-mono); color: var(--ink-2); }
+.kv dd.st { color: var(--ok); font-weight: 600; }
+.explain { font-size: 14px; color: var(--ink-2); background: var(--bg); border-radius: 6px; padding: 12px 14px; }
+.findings { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-2); display: grid; gap: 4px; }
+.reviewed { font-family: var(--f-mono); font-size: 12px; font-weight: 600; letter-spacing: .08em; color: var(--ok); display: inline-flex; gap: 6px; align-items: center; }
+.reviewed svg { width: 14px; height: 14px; }
+
+/* Summary table */
+.tbl-wrap { overflow-x: auto; }
+.sum { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 620px; }
+.sum th { text-align: left; font-family: var(--f-mono); font-weight: 500; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); padding: 0 12px 10px 0; border-bottom: 1px solid var(--rule-strong); }
+.sum td { padding: 14px 12px 14px 0; border-bottom: 1px solid var(--rule); }
+.sum td.r, .sum th.r { text-align: right; }
+.sum td.amt { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; }
+.sum .ok { color: var(--ok); font-weight: 600; white-space: nowrap; }
+.important { font-size: 14px; color: var(--ink-2); }
+.important b { color: var(--ink); }
+
+/* CEO answer */
+.qa { display: grid; gap: 0; margin: 0; }
+.qa > div { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 6px 26px; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.qa > div:last-child { border-bottom: none; }
+.qa dt { font-weight: 600; font-size: 15px; }
+.qa dd { margin: 0; font-size: 15px; color: var(--ink-2); }
+.qa dd strong { color: var(--ok); font-weight: 600; }
+
+/* Conclusion */
+.conclusion {
+  background: var(--head); color: var(--head-fg); border-radius: 10px;
+  padding: 30px 28px; display: grid; gap: 16px;
+}
+.stamp {
+  display: inline-flex; align-items: center; gap: 12px; justify-self: start;
+  border: 2px solid var(--ok); color: var(--ok); border-radius: 6px;
+  padding: 10px 16px;
+  font-family: var(--f-display); font-weight: 800; font-stretch: 108%; letter-spacing: .06em;
+  font-size: clamp(16px, 2.6vw, 22px); line-height: 1.15;
+}
+.conclusion .stamp { color: #4cc58a; border-color: #4cc58a; }
+.stamp svg { flex: none; width: 26px; height: 26px; }
+.conclusion .eyebrow { color: var(--head-dim); }
+.conclusion p { font-size: 16px; line-height: 1.65; max-width: 70ch; color: var(--head-fg); }
+.signoff { display: flex; flex-wrap: wrap; gap: 8px 28px; font-size: 13px; color: var(--head-dim); padding-top: 14px; border-top: 1px solid rgba(255,255,255,.12); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 820px) {
+  .split, .pair { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .tiles { grid-template-columns: 1fr; }
+  .checks { grid-template-columns: 1fr; }
+  .trail { grid-template-columns: 1fr; }
+  .arrow { justify-self: center; transform: rotate(90deg); }
+  .status { grid-template-columns: 1fr; padding: 20px; }
+  .seal { width: 60px; height: 60px; }
+  .seal svg { width: 30px; height: 30px; }
+  .sec-head, .sec-body { padding-inline: 18px; }
+  .separate { grid-template-columns: 1fr; padding: 18px; }
+  .separate p { grid-column: 1; }
+  .qa > div { grid-template-columns: 1fr; }
+  .conclusion { padding: 24px 18px; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 26 14"><path d="M1 7h22M17 1.5L23 7l-6 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 10.5v6M12 7.2v.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</svg>
+
+<header class="mast">
+  <div class="mast-in">
+    <div class="eyebrow">Twin Home Buyer · Controller Verification Report</div>
+    <h1>Platform Credits &amp; Refund Verification</h1>
+    <div class="meta">
+      <div>Prepared for<b>Juan Diaz, CEO</b></div>
+      <div>Platforms reviewed<b>Property Leads · Google Ads · Retell AI</b></div>
+      <div>Report date<b>October 5, 2026</b></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 1. Executive Summary -->
+  <section class="status" aria-label="Overall status">
+    <div class="seal" aria-hidden="true"><svg><use href="#i-check"/></svg></div>
+    <div>
+      <div class="label">STATUS</div>
+      <h2>VERIFIED</h2>
+      <p>No missing refund or credit issue identified</p>
+    </div>
+  </section>
+
+  <p class="question"><b>The question:</b> Were all platform credits and refunds received, and is any action needed? We reviewed the credits and refunds identified across Property Leads, Google Ads and Retell AI. All identified items were accounted for based on the records available.</p>
+
+  <div class="tiles">
+    <div class="tile cash">
+      <span class="chip cash">Cash refund</span>
+      <div class="who">Property Leads Refunds</div>
+      <div class="amt">$2,100.00</div>
+      <div class="sub">Returned to company credit card</div>
+    </div>
+    <div class="tile adj">
+      <span class="chip adj">Billing adjustment</span>
+      <div class="who">Google Ads Billing Adjustment</div>
+      <div class="amt">$11.24</div>
+      <div class="sub">Applied in Google Ads account</div>
+    </div>
+    <div class="tile cred">
+      <span class="chip cred">Workspace credit</span>
+      <div class="who">Retell AI Workspace Credit</div>
+      <div class="amt">$2.00</div>
+      <div class="sub">Applied in Retell AI workspace</div>
+    </div>
+  </div>
+
+  <div class="warn-note">
+    <svg><use href="#i-info"/></svg>
+    <span><b>Not one total.</b> These amounts should not be combined into one refund total because they are different transaction types.</span>
+  </div>
+
+  <!-- 2. Property Leads -->
+  <section class="section" aria-labelledby="pl-h">
+    <div class="sec-head">
+      <h2 id="pl-h">Property Leads — Cash Refund Verification</h2>
+      <span class="chip cash">Cash refund</span>
+    </div>
+    <div class="sec-body">
+      <div class="split">
+        <div class="bigfig">
+          <div class="amt">$2,100</div>
+          <div class="tag">REFUNDED &amp; VERIFIED</div>
+          <div class="count">4 of 4 refunds received</div>
+          <div class="meter" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div style="min-width:0">
+          <table class="ledger">
+            <thead><tr><th>Refund</th><th>Issued</th><th class="r">Amount</th><th class="r">Status</th></tr></thead>
+            <tbody>
+              <tr><td>Refund #1</td><td>Sep 24, 2026</td><td class="r num">$400.00</td><td class="r ok">✓ Received</td></tr>
+              <tr><td>Refund #2</td><td>Sep 24, 2026</td><td class="r num">$550.00</td><td class="r ok">✓ Received</td></tr>
+              <tr><td>Refund #3</td><td>Sep 24, 2026</td><td class="r num">$575.00</td><td class="r ok">✓ Received</td></tr>
+              <tr><td>Refund #4</td><td>Sep 24, 2026</td><td class="r num">$575.00</td><td class="r ok">✓ Received</td></tr>
+            </tbody>
+            <tfoot><tr><td colspan="2">Total refunds</td><td class="r num">$2,100.00</td><td></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px">Verification trail</div>
+        <div class="trail">
+          <div class="step"><span class="n">Issued by</span><span class="t">Property Leads</span><span class="v">✓ Verified</span></div>
+          <div class="arrow" aria-hidden="true"><svg><use href="#i-arrow"/></svg></div>
+          <div class="step"><span class="n">Returned to</span><span class="t">Credit Card</span><span class="v">✓ Verified</span></div>
+          <div class="arrow" aria-hidden="true"><svg><use href="#i-arrow"/></svg></div>
+          <div class="step"><span class="n">Recorded in</span><span class="t">QuickBooks</span><span class="v">✓ Verified</span></div>
+        </div>
+      </div>
+
+      <ul class="checks">
+        <li><svg><use href="#i-check"/></svg>All 4 refunds were processed by Property Leads.</li>
+        <li><svg><use href="#i-check"/></svg>All 4 refunds were returned to the company credit card.</li>
+        <li><svg><use href="#i-check"/></svg>The refunds were not left as credits on the Property Leads platform.</li>
+        <li><svg><use href="#i-check"/></svg>The refunds were verified as received.</li>
+        <li><svg><use href="#i-check"/></svg>The refunds have already been recorded in QuickBooks.</li>
+        <li><svg><use href="#i-check"/></svg>No missing Property Leads refund was identified.</li>
+      </ul>
+
+      <div class="final"><svg><use href="#i-check"/></svg>COMPLETE — NO FURTHER ACTION REQUIRED</div>
+    </div>
+  </section>
+
+  <!-- 3. Separate Partner Balance -->
+  <aside class="separate" aria-label="Separate platform balance">
+    <div class="amt">$500</div>
+    <h3>Separate Platform Balance — $500 <span class="chip sep">Not a refund</span></h3>
+    <p>Property Leads currently displays a separate $500 Partner Balance. It is separate from the four refunds totaling $2,100 and should not be classified as a refund unless separately confirmed.</p>
+  </aside>
+
+  <!-- 4 & 5. Google Ads and Retell AI -->
+  <div class="pair">
+    <section class="section" aria-labelledby="ga-h">
+      <div class="sec-head">
+        <h2 id="ga-h">Google Ads — Billing Adjustment Review</h2>
+        <span class="reviewed"><svg><use href="#i-check"/></svg>REVIEWED</span>
+      </div>
+      <div class="sec-body">
+        <span class="chip adj" style="justify-self:start">Billing adjustment</span>
+        <dl class="kv">
+          <dt>Cash refund</dt><dd class="zero">$0 identified</dd>
+          <dt>Billing adjustment</dt><dd class="amt-adj">$11.24</dd>
+          <dt>Reason</dt><dd>Invalid clicks — August 2026</dd>
+          <dt>Applied</dt><dd>September 2026</dd>
+          <dt>Where applied</dt><dd>Google Ads billing account</dd>
+          <dt>Status</dt><dd class="st">✓ Applied · no outstanding refund issue</dd>
+        </dl>
+        <p class="explain">Google Ads billing adjustments are different from cash refunds. In this case, Google reduced the account charges by $11.24 because of invalid clicks rather than sending cash back to the credit card.</p>
+        <ul class="findings">
+          <li>No cash refund to the company credit card was identified in the reviewed activity.</li>
+          <li>Not the same transaction type as the Property Leads cash refunds.</li>
+          <li>No outstanding Google Ads refund problem identified.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="ra-h">
+      <div class="sec-head">
+        <h2 id="ra-h">Retell AI — Workspace Credit Review</h2>
+        <span class="reviewed"><svg><use href="#i-check"/></svg>REVIEWED</span>
+      </div>
+      <div class="sec-body">
+        <span class="chip cred" style="justify-self:start">Workspace credit</span>
+        <dl class="kv">
+          <dt>Cash refund</dt><dd class="zero">$0</dd>
+          <dt>Workspace credit</dt><dd class="amt-cred">$2.00</dd>
+          <dt>Confirmed by</dt><dd>Retell AI support</dd>
+          <dt>Where applied</dt><dd>Retell AI workspace</dd>
+          <dt>Status</dt><dd class="st">✓ Credit confirmed</dd>
+        </dl>
+        <p class="explain">The $2 Retell AI amount is a platform credit, not a cash refund. It remains inside the Retell AI workspace and should reduce future usage or billing.</p>
+        <ul class="findings">
+          <li>Not a cash refund to the company credit card.</li>
+          <li>Applied directly inside the Retell AI workspace as a platform credit.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <!-- 6. Platform Verification Summary -->
+  <section class="section" aria-labelledby="sum-h">
+    <div class="sec-head"><h2 id="sum-h">Platform Verification Summary</h2></div>
+    <div class="sec-body">
+      <div class="tbl-wrap">
+        <table class="sum">
+          <thead><tr><th>Platform</th><th>Transaction type</th><th class="r">Amount</th><th>Where applied</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Property Leads</b></td><td><span class="chip cash">Cash refunds</span></td><td class="r amt">$2,100.00</td><td>Company credit card</td><td class="ok">✓ Received &amp; recorded</td></tr>
+            <tr><td><b>Google Ads</b></td><td><span class="chip adj">Billing adjustment</span></td><td class="r amt">$11.24</td><td>Google Ads account</td><td class="ok">✓ Applied</td></tr>
+            <tr><td><b>Retell AI</b></td><td><span class="chip cred">Workspace credit</span></td><td class="r amt">$2.00</td><td>Retell AI workspace</td><td class="ok">✓ Confirmed</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="important"><b>Important:</b> These amounts represent different transaction types and should not be added together as one refund total.</p>
+    </div>
+  </section>
+
+  <!-- 7. CEO Answer -->
+  <section class="section" aria-labelledby="ceo-h">
+    <div class="sec-head"><h2 id="ceo-h">CEO Answer</h2></div>
+    <div class="sec-body">
+      <dl class="qa">
+        <div><dt>What happened?</dt><dd>We reviewed the identified platform credits and refunds.</dd></div>
+        <div><dt>Did we receive the Property Leads refunds?</dt><dd><strong>Yes.</strong> All 4 refunds totaling $2,100 were returned to the company credit card.</dd></div>
+        <div><dt>Were they recorded?</dt><dd><strong>Yes.</strong> The Property Leads refunds were already recorded in QuickBooks.</dd></div>
+        <div><dt>Did Google Ads issue a refund?</dt><dd>No cash refund was identified. Google Ads applied an $11.24 invalid-click billing adjustment to the account.</dd></div>
+        <div><dt>What happened with Retell AI?</dt><dd>Retell AI applied a $2 credit directly to the workspace.</dd></div>
+        <div><dt>Is anything missing?</dt><dd><strong>No.</strong> No missing refund or credit issue was identified based on the records reviewed.</dd></div>
+        <div><dt>Do we need to take action?</dt><dd><strong>No.</strong> No further action is required for the verified Property Leads refunds. The Google Ads adjustment and Retell AI credit have also been accounted for.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 8. Final Controller Conclusion -->
+  <section class="conclusion" aria-labelledby="concl-h">
+    <div class="stamp" id="concl-h"><svg><use href="#i-check"/></svg>PLATFORM CREDIT &amp; REFUND REVIEW COMPLETE</div>
+    <div class="eyebrow">Conclusion</div>
+    <p>All identified platform credits and refunds reviewed have been accounted for. Property Leads returned all four refunds totaling $2,100 to the company credit card, and the refunds have been recorded in QuickBooks. Google Ads applied an $11.24 billing adjustment for invalid clicks, and Retell AI applied a $2 workspace credit. Based on the records reviewed, no missing refund or credit issue has been identified.</p>
+    <div class="signoff"><span>Controller verification · Twin Home Buyer</span><span>Prepared for Juan Diaz, CEO</span><span>October 5, 2026</span></div>
+  </section>
+
+</main>
