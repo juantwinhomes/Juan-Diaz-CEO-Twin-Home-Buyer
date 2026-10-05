@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: a single-column verification report — status first, then one ledger section per platform, closing with a sign-off stamp. */
+/* Layout: bottom line first (answer, amounts, closing questions), then a marked "supporting detail" zone with the proof per platform. Built for a fast, results-first reader. */
 :root {
   --bg: #f3f5f7;
   --paper: #ffffff;
@@ -130,6 +130,7 @@ p { margin: 0; }
   background: var(--paper); border: 1px solid var(--rule); border-radius: 8px;
   padding: 18px 18px 16px; display: grid; gap: 10px; align-content: start;
 }
+.tile .chip { justify-self: start; }
 .tile .who { font-weight: 600; font-size: 14px; }
 .tile .amt { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: clamp(26px, 3.6vw, 32px); font-weight: 600; letter-spacing: -.01em; line-height: 1; }
 .tile.cash .amt { color: var(--cash); }
@@ -247,11 +248,24 @@ p { margin: 0; }
 .conclusion p { font-size: 16px; line-height: 1.65; max-width: 70ch; color: var(--head-fg); }
 .signoff { display: flex; flex-wrap: wrap; gap: 8px 28px; font-size: 13px; color: var(--head-dim); padding-top: 14px; border-top: 1px solid rgba(255,255,255,.12); }
 
+/* Closing answers strip */
+.closes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; grid-column: 1 / -1; }
+.close { border: 1px solid var(--ok-line); background: var(--ok-soft); border-radius: 6px; padding: 10px 12px; display: grid; gap: 2px; }
+.close .q { font-size: 12.5px; color: var(--ink-2); }
+.close .a { font-family: var(--f-display); font-weight: 800; font-stretch: 105%; font-size: 20px; letter-spacing: .03em; color: var(--ok); }
+
+/* Divider into supporting detail */
+.divider { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; padding-top: 6px; }
+.divider h2 { font-size: 15px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.divider::after { content: ""; height: 1px; background: var(--rule-strong); grid-column: 2; grid-row: 1; }
+.divider p { grid-column: 1 / -1; font-size: 14px; color: var(--ink-3); }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 820px) {
   .split, .pair { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
+  .closes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tiles { grid-template-columns: 1fr; }
   .checks { grid-template-columns: 1fr; }
   .trail { grid-template-columns: 1fr; }
@@ -285,17 +299,21 @@ p { margin: 0; }
 
 <main class="wrap">
 
-  <!-- 1. Executive Summary -->
-  <section class="status" aria-label="Overall status">
+  <!-- 1. Bottom line -->
+  <section class="status" aria-label="Bottom line">
     <div class="seal" aria-hidden="true"><svg><use href="#i-check"/></svg></div>
     <div>
       <div class="label">STATUS</div>
       <h2>VERIFIED</h2>
-      <p>No missing refund or credit issue identified</p>
+      <p>No missing refund or credit issue identified. No action needed.</p>
+    </div>
+    <div class="closes">
+      <div class="close"><span class="q">Property Leads refunds received?</span><span class="a">YES · 4 of 4</span></div>
+      <div class="close"><span class="q">Recorded in QuickBooks?</span><span class="a">YES</span></div>
+      <div class="close"><span class="q">Anything missing?</span><span class="a">NO</span></div>
+      <div class="close"><span class="q">Action needed?</span><span class="a">NONE</span></div>
     </div>
   </section>
-
-  <p class="question"><b>The question:</b> Were all platform credits and refunds received, and is any action needed? We reviewed the credits and refunds identified across Property Leads, Google Ads and Retell AI. All identified items were accounted for based on the records available.</p>
 
   <div class="tiles">
     <div class="tile cash">
@@ -321,6 +339,27 @@ p { margin: 0; }
   <div class="warn-note">
     <svg><use href="#i-info"/></svg>
     <span><b>Not one total.</b> These amounts should not be combined into one refund total because they are different transaction types.</span>
+  </div>
+
+  <!-- 7. CEO Answer -->
+  <section class="section" aria-labelledby="ceo-h">
+    <div class="sec-head"><h2 id="ceo-h">CEO Answer</h2></div>
+    <div class="sec-body">
+      <dl class="qa">
+        <div><dt>What happened?</dt><dd>We reviewed the identified platform credits and refunds.</dd></div>
+        <div><dt>Did we receive the Property Leads refunds?</dt><dd><strong>Yes.</strong> All 4 refunds totaling $2,100 were returned to the company credit card.</dd></div>
+        <div><dt>Were they recorded?</dt><dd><strong>Yes.</strong> The Property Leads refunds were already recorded in QuickBooks.</dd></div>
+        <div><dt>Did Google Ads issue a refund?</dt><dd>No cash refund was identified. Google Ads applied an $11.24 invalid-click billing adjustment to the account.</dd></div>
+        <div><dt>What happened with Retell AI?</dt><dd>Retell AI applied a $2 credit directly to the workspace.</dd></div>
+        <div><dt>Is anything missing?</dt><dd><strong>No.</strong> No missing refund or credit issue was identified based on the records reviewed.</dd></div>
+        <div><dt>Do we need to take action?</dt><dd><strong>No.</strong> No further action is required for the verified Property Leads refunds. The Google Ads adjustment and Retell AI credit have also been accounted for.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <div class="divider">
+    <h2>Supporting detail</h2>
+    <p>The proof behind each answer above, by platform. The answer does not change below this line.</p>
   </div>
 
   <!-- 2. Property Leads -->
@@ -363,11 +402,7 @@ p { margin: 0; }
       </div>
 
       <ul class="checks">
-        <li><svg><use href="#i-check"/></svg>All 4 refunds were processed by Property Leads.</li>
-        <li><svg><use href="#i-check"/></svg>All 4 refunds were returned to the company credit card.</li>
         <li><svg><use href="#i-check"/></svg>The refunds were not left as credits on the Property Leads platform.</li>
-        <li><svg><use href="#i-check"/></svg>The refunds were verified as received.</li>
-        <li><svg><use href="#i-check"/></svg>The refunds have already been recorded in QuickBooks.</li>
         <li><svg><use href="#i-check"/></svg>No missing Property Leads refund was identified.</li>
       </ul>
 
@@ -394,11 +429,6 @@ p { margin: 0; }
           <dt>Status</dt><dd class="st">✓ Applied · no outstanding refund issue</dd>
         </dl>
         <p class="explain">Google Ads billing adjustments are different from cash refunds. In this case, Google reduced the account charges by $11.24 because of invalid clicks rather than sending cash back to the credit card.</p>
-        <ul class="findings">
-          <li>No cash refund to the company credit card was identified in the reviewed activity.</li>
-          <li>Not the same transaction type as the Property Leads cash refunds.</li>
-          <li>No outstanding Google Ads refund problem identified.</li>
-        </ul>
       </div>
     </section>
 
@@ -417,10 +447,6 @@ p { margin: 0; }
           <dt>Status</dt><dd class="st">✓ Credit confirmed</dd>
         </dl>
         <p class="explain">The $2 Retell AI amount is a platform credit, not a cash refund. It remains inside the Retell AI workspace and should reduce future usage or billing.</p>
-        <ul class="findings">
-          <li>Not a cash refund to the company credit card.</li>
-          <li>Applied directly inside the Retell AI workspace as a platform credit.</li>
-        </ul>
       </div>
     </section>
   </div>
@@ -440,22 +466,6 @@ p { margin: 0; }
         </table>
       </div>
       <p class="important"><b>Important:</b> These amounts represent different transaction types and should not be added together as one refund total.</p>
-    </div>
-  </section>
-
-  <!-- 7. CEO Answer -->
-  <section class="section" aria-labelledby="ceo-h">
-    <div class="sec-head"><h2 id="ceo-h">CEO Answer</h2></div>
-    <div class="sec-body">
-      <dl class="qa">
-        <div><dt>What happened?</dt><dd>We reviewed the identified platform credits and refunds.</dd></div>
-        <div><dt>Did we receive the Property Leads refunds?</dt><dd><strong>Yes.</strong> All 4 refunds totaling $2,100 were returned to the company credit card.</dd></div>
-        <div><dt>Were they recorded?</dt><dd><strong>Yes.</strong> The Property Leads refunds were already recorded in QuickBooks.</dd></div>
-        <div><dt>Did Google Ads issue a refund?</dt><dd>No cash refund was identified. Google Ads applied an $11.24 invalid-click billing adjustment to the account.</dd></div>
-        <div><dt>What happened with Retell AI?</dt><dd>Retell AI applied a $2 credit directly to the workspace.</dd></div>
-        <div><dt>Is anything missing?</dt><dd><strong>No.</strong> No missing refund or credit issue was identified based on the records reviewed.</dd></div>
-        <div><dt>Do we need to take action?</dt><dd><strong>No.</strong> No further action is required for the verified Property Leads refunds. The Google Ads adjustment and Retell AI credit have also been accounted for.</dd></div>
-      </dl>
     </div>
   </section>
 
