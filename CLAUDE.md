@@ -100,8 +100,8 @@ exposure). If the SF deal competes with 820 28th St or the Sep 28–Oct 2
 closings for time or cash, flag the trade-off to Juan instead of letting
 either one slip quietly. **Most likely lead: 3375 17th St #311, SF**
 (seller Robert Gunn / Gunn Family Trust, $736K offer, under contract, WFG loan
-file #927963). **Update 2026-10-06 (Bryan): Gunn is ACQUIRED** — book final purchase price
-and tag it to the Bateman PPC campaign. See `knowledge/master-property-list.md`.
+file #927963). **Update 2026-10-06 (Bryan): Gunn is BOUGHT AND SOLD** — get the sale
+settlement statement and tag the profit to the Bateman PPC campaign. See `knowledge/master-property-list.md`.
 
 Live team tools: **Property Command Center** board
 (https://claude.ai/artifact/4AMZxHejytEdUkP7zcDW7L), **Master Property List**

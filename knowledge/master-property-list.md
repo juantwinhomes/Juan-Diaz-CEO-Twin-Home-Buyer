@@ -41,7 +41,13 @@ purchase. None of the three sources is a certified title report.
 
 ## The San Francisco lead: 3375 17th St #311 (Mission / Valencia)
 
-- **Status: ACQUIRED (per Bryan, 2026-10-06).** Previously Under Contract. Seller: **Robert Gunn** (Gunn Family
+- **Status: BOUGHT AND SOLD (per Bryan, 2026-10-06).**
+  Purchase funded Jul 29–30, 2026 (Anchor Loans; WFG #927963; our cash in
+  $21,065.37 = $500 EMD + $20,565.37). Juan set list price **$899K** on Jul 31.
+  Rehab/selling costs logged $48,746.45 (project sheet, Drive). Anchor draw
+  holdback $44,100. **Sale price/date not found in email or Drive — get the
+  sale settlement statement.** Also arrived as a PropertyLeads.com lead ($400)
+  on Jul 1, after the Jun 28 Google PPC lead. Seller: **Robert Gunn** (Gunn Family
   Trust). **Offer $736,000**, seller has 74.6% equity.
 - REI BlackBook task "Get Contract Signed — Robert Gunn" was due Jun 30 2026.
   Loan file #927963 with WFG National Title (Nancy Sanchez). Disclosure

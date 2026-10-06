@@ -14,7 +14,7 @@ leads imported from screenshots Jul 21 2026. Attribution correction from Bryan,
   pipeline. The campaign produced:
   - **Robert Gunn — 3375 17th St #311, San Francisco.** Lead 6/28/2026 via
     keyword **"companies that buy houses"** (phrase: 12 clicks, $2,213.75,
-    $184.48 CPC, 4.15 conv). **Acquired** (Bryan, 2026-10-06). $736K offer, WFG file #927963; final price/profit not yet recorded.
+    $184.48 CPC, 4.15 conv). **Bought and sold** (Bryan, 2026-10-06); see master-property-list for deal numbers. $736K offer, WFG file #927963; final price/profit not yet recorded.
     **This is the SF priority deal.** Not closed yet → ROAS stays $0 until it
     funds; once it closes, the whole $27.3K campaign is judged against this
     one spread.
