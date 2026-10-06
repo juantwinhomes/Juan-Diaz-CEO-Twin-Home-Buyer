@@ -75,3 +75,12 @@ Sources: "Request for Repair 1" (C.A.R. RR + TOA No. 1, DocuSign 62567C66…, 3 
 - **Options don't match:** in the proposal, shingle replacement is **Option 2**, not 3. Option 3 is venting. The addendum's numbering doesn't line up with the proposal.
 - **Not in either document:** any slope-area *repair* by our local crew. Only full shingle replacement is mentioned.
 - **Buyer acceptance:** the buyer-acceptance block on RR p.2 is **unsigned** in this copy.
+
+## Update 2026-10-06: Ruben's invoice and payments received
+
+- **Ruben's invoice:** handwritten on a stock "Purchase Order" form with pre-printed #987621. No date. Property: 1464 Sunrise Pkwy, Petaluma CA 94954. Ruben's address in the "Ship To" box: Jose R. [signature], 1100 88th Ave, Oakland CA 94621. No license #, no tax, no unit prices.
+- **One lump-sum line, $8,000 for "work and roof materials":** tear off 10 squares of flat roof and 6 squares of shingles; 30-year shingles; new plywood on the flat roof; base sheet; all new metal flashing; new pipe jacks; new 30-year torch-down rolls.
+- **Paid in full:** two $4,000 next-day ACH payments on 9/30/2026 (1:05 PM "Half Payment", 1:06 PM "Remaining Payment"), from Equity Track's Relay account "Rehab and Holding Costs ••5776" to Jose Ruben Murillo Bedolla's personal checking. $4,000 + $4,000 = $8,000, which matches his total.
+- **Area doesn't match the permit:** 10 + 6 = 16 squares = 1,600 sq ft. The permit says 1,250 sq ft.
+- **Not in Ruben's scope:** gutters (required by the addendum's Option 5 item), attic venting, and any slope-area repair.
+- **Permit valuation $16,250 = Creative's base bid $11,770 + Option 2 (Highlander shingles) $4,480,** exactly.
