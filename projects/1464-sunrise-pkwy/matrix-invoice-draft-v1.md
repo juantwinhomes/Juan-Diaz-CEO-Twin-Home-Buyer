@@ -1,6 +1,6 @@
 # Matrix Group One: Invoice (DRAFT v1, not for sending)
 
-Status: **Draft. Documented actual costs only. No markup until management confirms. Crew labor is not billed separately.**
+Status: **ON HOLD: sloped roof was an overlay per the city final inspection, not the tear-off Ruben's invoice describes. See `roof-source-comparison.md`, section A.** Draft. Documented actual costs only. No markup until management confirms. Crew labor is not billed separately.**
 Working notes and sources: `roof-invoice-draft.md` (same folder).
 
 | | |
