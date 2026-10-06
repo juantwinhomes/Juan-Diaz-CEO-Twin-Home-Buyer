@@ -46,6 +46,10 @@ purchase. None of the three sources is a certified title report.
 - REI BlackBook task "Get Contract Signed — Robert Gunn" was due Jun 30 2026.
   Loan file #927963 with WFG National Title (Nancy Sanchez). Disclosure
   package via Organized Escrows (Aug 2026). Agent: Mariaelena Diaz.
+- **Lead source (confirmed 2026-10-05, Bryan):** Google PPC, **Bateman –
+  Scale – RSA** campaign (ID 23913739190), keyword **"companies that buy
+  houses"** (phrase). Form lead 6/28/2026 7:47 PM; dispositioned Qualified →
+  Contract. See `knowledge/bateman-ppc-campaign.md`.
 - Closing is **not yet shown** in email, so the purchase price is still blank.
 - This is most likely the "SF lead" Juan wants closed (see the CLAUDE.md
   priority update from 2026-09-23). **Confirm with Juan/Bryan.**
