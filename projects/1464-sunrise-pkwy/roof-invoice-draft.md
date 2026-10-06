@@ -38,7 +38,7 @@ Inspections (from `dashboards/1464-sunrise-pkwy-petaluma.html`):
 | 4 | Roofing materials supplied by Matrix/Equity Track (Home Depot order H6667-304384, 9/2/2026, PO "petaluma", includes roofing nails) | 1 | — | $1,104.12 receipt total, only if it's billed as roof materials | Drive: "$1,104.12 - The Home Depot.pdf". Most SKUs aren't described on the receipt |
 | 5 | Re-roof permit fee, BLDR-2026-0711 | 1 | — | $390.11 (+ $11.70 card service fee) if billed through | City permit card; Sept 2026 expense tracker |
 | 6 | Debris haul-off / dump fees | TBD | TBD | TBD | Not found |
-| 7 | Water-heater ceiling sealing (inspector correction) | TBD | TBD | TBD | Include or leave out? See Q8 |
+| 7 | Water-heater ceiling sealing (inspector correction) | TBD | TBD | TBD | Include or leave out? See Q9 |
 | | **Subtotal / markup / total** | | | **TBD** | |
 
 Other Sunrise Home Depot charges in September aren't itemized: 9/2 $1,035.33 and $163.24; 9/12 $686.18 and $273.86; 9/15 $40.91; 9/16 $138.13; 9/18 $823.19; 9/19 $74.60; 9/23 $68.60; 9/26 $599.77. I can't tell which of these were for the roof without the receipts.
@@ -54,7 +54,7 @@ Other Sunrise Home Depot charges in September aren't itemized: 9/2 $1,035.33 and
 
 **Missing source documents**
 6. Ruben's invoice or written scope for 1464 Sunrise: squares, materials, flat-roof system, and price. Nothing for this property is in Drive or on the transfer sheet.
-7. The local crew's slope-area work: what they did, the dates, crew names, hours, and materials. No record found. The Monday board and timesheets don't show it.
+7. The local crew's slope-area work: what they did, the dates, crew names, hours, and materials. No record found in Drive or on the September 2026 expense tracker.
 8. The roof addendum, signed by both buyer and seller. It's not in Drive. What does it promise (scope, warranty, credit amount, who pays)?
 9. Should the invoice include the water-heater ceiling seal (the inspector's correction under the roof permit)?
 10. Do we have the receipts or SKU descriptions for the Home Depot charges listed above, so roof materials can be separated out?
