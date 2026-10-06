@@ -37,6 +37,8 @@ Facebook (BOFU – Bateman): $3,626 spend, 13 leads, 0 live deals.
 
 ## Data gaps to fix
 
+- ~~Bateman account access~~ — **removed** (confirmed by Bryan, 2026-10-06).
+
 - Sheet "Ad Spend Inputs" shows Google spend **$39,187** (Jun $22,527 + Jul 1–21
   $16,660, "user-provided") vs **$27,331** in Google Ads. Likely includes
   Bateman management fees — confirm. True all-in cost per contract may be ~$19.6K.
