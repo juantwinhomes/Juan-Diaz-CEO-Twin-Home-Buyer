@@ -70,3 +70,9 @@ Mismatches are listed as questions for Cherry. None are resolved here.
 19. Ruben's CSLB license # (C-39)? The addendum promises "appropriately licensed contractors."
 20. Warranties: the addendum promises the buyer copies. Nothing exists yet from Ruben, the shingle manufacturer, or the membrane manufacturer. Who collects them?
 21. Our repo dashboard notes a water-heater ceiling correction and photos sent to the inspector. The city inspection history shows both inspections passed with no correction or reinspection. Was that a separate item, and does it belong on any invoice?
+
+## Follow-up 2026-10-06: section A (tear-off vs overlay)
+
+- **Drafted messages to Ruben:** (1) clarify how many layers were on the sloped roof before, whether it was a tear-off or an overlay, and how many are there now; (2) reissue his invoice with an accurate description, license #, dates and warranty. Text is in the chat, sent by Marieflor.
+- **Layer count:** Creative's "two layers" comes from its 9/13 bid, which was written *before* the work. Cesar says 1 layer before + 1 new = 2 now. The two accounts conflict on the *before* count. The city passed the overlay, which fits Cesar's account, because the California Residential Code generally allows an overlay only over a single existing layer. Ruben's "up to 3 layers" is not current code. Still unresolved: waiting on Ruben and photos.
+- **Recommendation on the addendum gap:** hold the invoice and all buyer paperwork. Get the facts. Then Juan, the listing agent (Roger Lopez) and the attorney decide on written disclosure to the buyer: an amendment the buyer signs (possibly with a credit), or tearing off and redoing the shingles. Staying silent is not an option, because the city record already says "overlay."
