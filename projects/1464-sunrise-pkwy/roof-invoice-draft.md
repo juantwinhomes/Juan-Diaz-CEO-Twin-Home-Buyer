@@ -102,3 +102,30 @@ Sources: "Request for Repair 1" (C.A.R. RR + TOA No. 1, DocuSign 62567C66…, 3 
 - The hangers bought are 5" but the gutters are 4".
 - The drop outlets are 2" round but the elbows are 1¾×2¾ rectangular.
 - No downspout pipe appears on either receipt.
+
+## Update 2026-10-06: pricing set (Cesar's final answers)
+
+- **Pricing:** Matrix bills at cost, no markup. The roof is billed at Ruben's $8,000 invoice. The gutters are billed as Home Depot materials only; Cesar's crew labor is **no charge**.
+- **Cesar's final gutter materials list (he says nothing else was used):** 100 LF gutters, 10 end caps, 4 downspouts, 4 tubes of silicone, 4 metal-cutting blades, screws.
+- **The 8/29 Santa Rosa receipt ($550.06) is dropped entirely.** None of its items are on Cesar's list.
+
+### Current invoice lines
+
+| # | Description | Amount |
+|---|---|---|
+| 1 | Roof replacement per Permit BLDR-2026-0711, by roofing subcontractor (Jose Ruben Murillo Bedolla), labor and materials. Tear-off of approx. 10 sq flat roof and 6 sq asphalt shingles. New plywood, base sheet and 30-yr torch-down modified bitumen at both flat-roof areas. 30-yr asphalt shingles at the sloped roof. All new metal flashing and pipe jacks. | $8,000.00 |
+| 2 | Gutter replacement: approx. 100 LF 4" steel fascia gutter with end caps, hangers, outlets, fasteners and sealant, connected to (4) downspouts. Materials at cost per Home Depot #H0628-590684 (9/26/2026), tools excluded. Installation by Matrix Group One crew, no charge. | $560.45 |
+| | **Total** | **$8,560.45** |
+
+Optional: add the re-roof permit fee of $390.11, which brings the total to $8,950.56.
+
+### Cesar's list vs. the 9/26 receipt
+
+| Item | Cesar says | Receipt shows |
+|---|---|---|
+| Gutters | 100 LF | 104 LF |
+| End caps | 10 | 8 (no receipt for the other 2) |
+| Downspouts | 4 | No downspout pipe on the receipt (existing ones reused?) |
+| Silicone / sealant | 4 tubes | 6 tubes |
+| Metal-cutting blades | 4 | 3 |
+| Hangers and drop outlets | not listed | 30 hangers, 4 outlets, and they were installed |
