@@ -64,3 +64,14 @@ Other Sunrise Home Depot charges in September aren't itemized: 9/2 $1,035.33 and
 12. How should pricing be built: Ruben's cost plus Matrix overhead and profit (what %), or a lump sum? Are materials billed at cost or marked up?
 13. Should a roof workmanship warranty be stated on the invoice (term)? Will the invoice come with a conditional or unconditional lien waiver (Civ. Code 8132/8134/8136/8138)?
 14. This is a related-party invoice: Matrix is Equity Track's sister company, and Equity Track owns the house. Should it be disclosed as related-party on the invoice or in the AB 968 / contractor summary for the buyer? The Kiavi SOW showed $0 for Roof/Gutters, so check the draw records stay consistent.
+
+## Update 2026-10-06: roof addendum and buyer's roof proposal received
+
+Sources: "Request for Repair 1" (C.A.R. RR + TOA No. 1, DocuSign 62567C66…, 3 pp) and "Roof Inspection Report 9.13.26" (actually a Creative Roofing of Northern California proposal, Lic. #743007, dated 9/13/2026, addressed to buyer Rolando Aguilar; only 4 of 6 pages received).
+
+- **What the seller agreed to** (RR p.2, signed by Juan M. Diaz 9/21/2026): "Seller agrees to replace the roof per item 1 on Text Overflow Addendum. No other repairs or credits to be provided."
+- **TOA item 1** (p.3): re-roof both flat-roof areas; remove and replace the two existing layers of asphalt shingles "as described in Option 3 of the roofing proposal"; replace gutters "as described in Option 5 of the roofing proposal."
+- **Creative proposal prices (a real local bid we can benchmark against):** flat-roof base scope $11,770. Opt 1 flat-roof gutters $1,955. Opt 2 shingle tear-off and replace $4,480 / $4,730 / $5,175 (Highlander / Vista / Legacy). Opt 3 high SmartVent $430. Opt 4 low SmartVent $430. Opt 5 sloped-roof gutters $395. Extra flat-roof layers $1,355 each.
+- **Options don't match:** in the proposal, shingle replacement is **Option 2**, not 3. Option 3 is venting. The addendum's numbering doesn't line up with the proposal.
+- **Not in either document:** any slope-area *repair* by our local crew. Only full shingle replacement is mentioned.
+- **Buyer acceptance:** the buyer-acceptance block on RR p.2 is **unsigned** in this copy.
