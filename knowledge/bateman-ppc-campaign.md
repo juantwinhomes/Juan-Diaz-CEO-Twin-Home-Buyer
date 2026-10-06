@@ -56,6 +56,6 @@ Facebook (BOFU – Bateman): $3,626 spend, 13 leads, 0 live deals.
 ## Mission 1 sign-off (2026-10-06)
 
 Sign-off page: https://claude.ai/artifact/AuEetYRRc51kCjr5xn9boh. Bryan
-**cancelled** these follow-ups (no longer tracked): CSV exports, Facebook Ads
+marked these follow-ups **acquired** (Oct 6; first said "cancelled", then "acquired"): CSV exports, Facebook Ads
 Manager export, ad copy/disapproval reasons, original Jul 21 screenshots,
 single Drive folder, Martha Reece contract check. Spend-gap item also dropped.
