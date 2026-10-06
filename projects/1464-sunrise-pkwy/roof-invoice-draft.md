@@ -84,3 +84,21 @@ Sources: "Request for Repair 1" (C.A.R. RR + TOA No. 1, DocuSign 62567C66…, 3 
 - **Area doesn't match the permit:** 10 + 6 = 16 squares = 1,600 sq ft. The permit says 1,250 sq ft.
 - **Not in Ruben's scope:** gutters (required by the addendum's Option 5 item), attic venting, and any slope-area repair.
 - **Permit valuation $16,250 = Creative's base bid $11,770 + Option 2 (Highlander shingles) $4,480,** exactly.
+
+## Update 2026-10-06: Cesar's crew work (gutters) and Home Depot receipts
+
+**What Cesar reported:** his crew did the gutters. He says Ruben's contract covered the shingles and both flat roofs, labor and materials included. He described **no separate slope-area repair** and gave no brand, layer count, or underlayment.
+
+**Receipts (both totals check out):**
+- **HD #H0628-590684, 9/26/2026, San Carlos, PO "1464 Sunrise Pkwy", $599.77** (548.36 + 51.41 tax). Everything on it is gutter work. It includes 104 LF of 4" bonderized steel fascia gutter (4×16' + 4×10'), 30 hidden hangers, 8 end caps (all "Left"), 4 drop outlets, 6 OSI gutter sealant, screws, 3 metal discs, plus tools: a hole saw $22.97 and a caulk gun $12.98. This matches the 9/26 entry in the Sept expense tracker.
+- **HD #H1379-458968, 8/29/2026, Santa Rosa, PO "Petaluma", $550.06** (500.05 + 50.01 tax). Only about $84.74 is gutter-related: 4 downspout elbows, 4 straps, 5 splash blocks ($93.21 with tax). Spray paint and DAP sealant ($21.34) are uncertain. The rest is not roof-related: Behr wet-look sealer, bamboo privacy screens, Bondo, deck sprayer, wall plate, kitchen/bath silicone, masonry discs, pails, cloths.
+
+**Materials:** $692.98 (all of the 9/26 receipt + the gutter items from 8/29). That drops to $653.66 if the tools are left out.
+
+**Labor, dump, equipment:** nothing on file yet; see the open questions.
+
+**Problems with the gutter spec:**
+- The addendum asks for 26-ga pre-painted seamless 5½" gutters (Creative's Option 5). The crew installed 4" sectional bonderized steel.
+- The hangers bought are 5" but the gutters are 4".
+- The drop outlets are 2" round but the elbows are 1¾×2¾ rectangular.
+- No downspout pipe appears on either receipt.
