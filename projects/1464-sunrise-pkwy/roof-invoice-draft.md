@@ -143,3 +143,20 @@ Optional: add the re-roof permit fee of $390.11, which brings the total to $8,95
 - **Cesar's WhatsApp, what's still open:**
   - Asked whether the downspouts were bought separately or we already had them, he answered "Los bajantes son los mismos" ("the downspouts are the same ones"). Most likely the existing downspouts were reused.
   - He hasn't answered whether 3 or 4 blades were used. The receipt shows 3, so we bill 3.
+
+## Update 2026-10-06: Request for Repair No. 2 (controlling)
+
+Source: RR No. 2 (DocuSign D2FD35AA…, prepared 9/16/2026). Buyers signed 9/16 and 9/17. **Seller checked 1A "All", signed Juan M. Diaz 9/23/2026.** Under RR ¶6, RR No. 2 replaces RR No. 1. Because the seller agreed to everything, no buyer re-signature is needed, so the agreement is binding. Attached report: Roof Proposal only.
+
+TOA No. 1, verbatim:
+> "Seller shall complete the roof replacement and repairs recommended including:
+> 1. Removing and Re-roofing both flat-roof areas.
+> 2. Removing and replacing the existing two layers of asphalt shingles, as described in Option 3 of the roofing proposal.
+> 3. Replacing the gutters, as described in Option 5 of the roofing proposal.
+> All work shall be completed by appropriately licensed contractors and in compliance with applicable building codes and permit requirements. Copies of permits, invoices, and warranties shall be provided to Buyer upon completion."
+
+What changed from RR No. 1:
+- The electrical panel item and the "roof has failed" language are gone.
+- The licensing, code and paperwork promise now clearly applies to the roof work.
+- The "Option 3" mislabel is still there: in the proposal, shingles are Option 2.
+- The Option 5 gutter spec (seamless, 5½") still doesn't match what was installed (4" sectional).

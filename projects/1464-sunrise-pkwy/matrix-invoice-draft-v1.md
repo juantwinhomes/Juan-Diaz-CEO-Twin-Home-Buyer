@@ -9,7 +9,7 @@ Working notes and sources: `roof-invoice-draft.md` (same folder).
 | **Bill to** | TBD (Equity Track Inc., seller?) |
 | **Escrow** | Organized Escrows, Attn: Tabetha Selle-Berkheiser, Escrow # TBD |
 | **Property** | 1464 Sunrise Parkway, Petaluma, CA 94954 (APN 149-260-003) |
-| **References** | City of Petaluma Re-Roof Permit BLDR-2026-0711 (final roof inspection passed 9/23/2026); Request for Repair No. 1 / Text Overflow Addendum No. 1, item 1 |
+| **References** | City of Petaluma Re-Roof Permit BLDR-2026-0711 (final roof inspection passed 9/23/2026); Request for Repair No. 2 / Text Overflow Addendum No. 1 (DocuSign D2FD35AA…), accepted in full by Seller 9/23/2026 |
 | **Invoice # / Date** | TBD |
 
 ## Line items
@@ -37,4 +37,6 @@ Working notes and sources: `roof-invoice-draft.md` (same folder).
 2. Get Ruben's final invoice or a paid receipt showing the completed scope, the $8,000 total, his full name, and his license # if he has one.
 3. Get Matrix's decision on lines 2a, 3 and 4.
 4. Fill in bill-to, escrow #, invoice #, date, and Matrix's address.
-5. Get the fully signed Request for Repair from escrow. The buyer-acceptance block is blank in our copy.
+5. ~~Fully signed repair request.~~ **Resolved.** RR No. 2 replaces RR No. 1. The seller checked "All" (1A), which needs no buyer re-signature.
+6. **The addendum promises the buyer copies of permits, invoices, and warranties.** This invoice will be seen by the buyer. Collect: the permit BLDR-2026-0711 final; Ruben's workmanship warranty; the shingle and torch-down manufacturer warranties.
+7. **The addendum promises "appropriately licensed contractors."** Get Ruben's CSLB license # (C-39) before sending.
