@@ -10,8 +10,12 @@ https://claude.ai/artifact/CQ3oB9ACuNuWQ8EjMqJ5Lm
   cancelled, rejected offers, duplicates), **not closed deals**. Do not use it.
 - **Real: 16 paid PPC deals, $391,482.29 in fees** (2024: 6, $120,000;
   2025: 8, $206,482.29; 2026: 2, $65,000).
-- **Wei Wang** (164 Springdale Way, Redwood City, $30,000): fee recorded but not
-  marked paid; lead logs disagree. With it: 17 deals, $421,482.29.
+- **Wei Wang** (164 Springdale Way, Redwood City, $30,000): **acquired**
+  (Bryan, Oct 6); the sheet still doesn't mark it paid. With it: 17 deals,
+  $421,482.29. **Count of record: 18** (16 paid + Wei Wang + Robert Gunn) →
+  $15,817 clean, $26,737 blended per deal; average fee $24,793 (17 fee deals).
+- The budget page's 10 BOFU deals: the sheet ties only Ellis Jones (BOFU We Buy
+  Houses Aug-2025) and Wei Wang (KEYWORD BIDDING) to those 4 campaigns.
 - **Robert Gunn** (3375 17th St #311, SF, Bateman RSA, $131,220.31 flip
   profit): **not in the sheet yet**. Add it to the 2026 tab.
 - **Valdez** (2448 Morraine Dr, Santa Clara, $24,388.91 PPC): the same house is
