@@ -41,7 +41,7 @@ purchase. None of the three sources is a certified title report.
 
 ## The San Francisco lead: 3375 17th St #311 (Mission / Valencia)
 
-- **Status: Under Contract (2026).** Seller: **Robert Gunn** (Gunn Family
+- **Status: ACQUIRED (per Bryan, 2026-10-06).** Previously Under Contract. Seller: **Robert Gunn** (Gunn Family
   Trust). **Offer $736,000**, seller has 74.6% equity.
 - REI BlackBook task "Get Contract Signed — Robert Gunn" was due Jun 30 2026.
   Loan file #927963 with WFG National Title (Nancy Sanchez). Disclosure

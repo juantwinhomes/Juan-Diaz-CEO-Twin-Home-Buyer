@@ -14,14 +14,14 @@ leads imported from screenshots Jul 21 2026. Attribution correction from Bryan,
   pipeline. The campaign produced:
   - **Robert Gunn — 3375 17th St #311, San Francisco.** Lead 6/28/2026 via
     keyword **"companies that buy houses"** (phrase: 12 clicks, $2,213.75,
-    $184.48 CPC, 4.15 conv). Under contract, $736K offer, WFG file #927963.
+    $184.48 CPC, 4.15 conv). **Acquired** (Bryan, 2026-10-06). $736K offer, WFG file #927963; final price/profit not yet recorded.
     **This is the SF priority deal.** Not closed yet → ROAS stays $0 until it
     funds; once it closes, the whole $27.3K campaign is judged against this
     one spread.
   - **Martha Reece — 5475 E Illinois Ave, Fresno.** 6/22, Qualified →
-    Contract ("lead already signed…"). Status needs confirming.
+    Contract ("lead already signed…"). **Contract cancelled** (Bryan, 2026-10-06).
   - **MK Ding — 1549 5th Ave, Oakland.** 7/7, appointment completed.
-- Cost per contract: **~$13.7K** ($27,331 ÷ 2). Cost per live deal ~$9.1K.
+- Cost per acquired deal: **$27,331** (Gunn only; $39,187 on the sheet's spend).
 
 ## Lead funnel (sheet, 55 gross leads)
 
