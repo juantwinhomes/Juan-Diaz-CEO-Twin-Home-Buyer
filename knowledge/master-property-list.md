@@ -45,8 +45,10 @@ purchase. None of the three sources is a certified title report.
   Purchase funded Jul 29–30, 2026 (Anchor Loans; WFG #927963; our cash in
   $21,065.37 = $500 EMD + $20,565.37). Juan set list price **$899K** on Jul 31.
   Rehab/selling costs logged $48,746.45 (project sheet, Drive). Anchor draw
-  holdback $44,100. **Sale price/date not found in email or Drive — get the
-  sale settlement statement.** Also arrived as a PropertyLeads.com lead ($400)
+  holdback $44,100. **Deal row (Bryan, 2026-10-06): purchased $755,000
+  (Jul 31, 2026), sold $1,020,000 (Sep 2, 2026), profit $131,220.31.**
+  Status "Accepted Offer / 10 Acquired", source PPC. MLS ML82057066 shows it
+  sold 28 days before Sep 30 — confirm the exact sale date. Also arrived as a PropertyLeads.com lead ($400)
   on Jul 1, after the Jun 28 Google PPC lead. Seller: **Robert Gunn** (Gunn Family
   Trust). **Offer $736,000**, seller has 74.6% equity.
 - REI BlackBook task "Get Contract Signed — Robert Gunn" was due Jun 30 2026.
@@ -56,9 +58,13 @@ purchase. None of the three sources is a certified title report.
   Scale – RSA** campaign (ID 23913739190), keyword **"companies that buy
   houses"** (phrase). Form lead 6/28/2026 7:47 PM; dispositioned Qualified →
   Contract. See `knowledge/bateman-ppc-campaign.md`.
-- Closing is **not yet shown** in email, so the purchase price is still blank.
-- This is most likely the "SF lead" Juan wants closed (see the CLAUDE.md
-  priority update from 2026-09-23). **Confirm with Juan/Bryan.**
+- Note: offer was $736,000; the deal row shows purchase at $755,000.
+- This is the "SF lead" Juan wanted closed (CLAUDE.md priority update,
+  2026-09-23). Done. Counted as San Francisco's PPC deal on the City scorecard
+  (https://claude.ai/artifact/BojdQpqGK9nd1m45SG8FcW): $131,220.31 on
+  $42,523.33 SF spend (3.1x); and on the We Buy Houses keyword page
+  (https://claude.ai/artifact/ABCZoNaGnQiekTjTufHtox): 21x on the keyword's
+  $6,250.01 total spend.
 - Other SF rows for context: 52 Paramount Ter (held, under construction), 519
   Orizaba Ave (held), 1576 Jerrold Ave (held, listed, free and clear), 2777
   Golden Gate Ave (held, **deeply underwater: equity −$488K**), 2920 Judah St
