@@ -129,3 +129,17 @@ Optional: add the re-roof permit fee of $390.11, which brings the total to $8,95
 | Silicone / sealant | 4 tubes | 6 tubes |
 | Metal-cutting blades | 4 | 3 |
 | Hangers and drop outlets | not listed | 30 hangers, 4 outlets, and they were installed |
+
+## Update 2026-10-06: CSLB check and Cesar WhatsApp thread
+
+- **Blockers 2 and 3 resolved.** CSLB shows #1066892 is current and active, expiring **07/31/2028**. The "07/31/2026" on the permit disclosure form was not the license expiration. Workers' comp was renewed: Everest Premier #7600027329261, valid 09/05/2026 to 09/05/2027.
+- **Two small mismatches with the city disclosure form:**
+  - Policy number: the form says #…329**251**, CSLB says #…329**261**.
+  - Phone: the form says (510) 214-3393, CSLB says (510) 214-3899.
+- **Comp class codes on file:** 5432, 5403 (carpentry) and 54821 (painting). None are roofing or sheet-metal codes. Ask the broker whether the crew's gutter work is covered under these codes.
+- **Cesar's WhatsApp (screenshots), what's confirmed:**
+  - Asked what our crew did on the shingle roof, he said he worked on the gutters. Both flat roofs and the shingles are new, and the shingles were under Ruben's contract including materials.
+  - His list: 100 LF gutters, 10 end caps (later said 8 were used), 4 downspouts, 4 tubes of silicone, 4 metal blades, screws. He confirmed "No" other materials.
+- **Cesar's WhatsApp, what's still open:**
+  - Asked whether the downspouts were bought separately or we already had them, he answered "Los bajantes son los mismos" ("the downspouts are the same ones"). Most likely the existing downspouts were reused.
+  - He hasn't answered whether 3 or 4 blades were used. The receipt shows 3, so we bill 3.

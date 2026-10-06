@@ -5,7 +5,7 @@ Working notes and sources: `roof-invoice-draft.md` (same folder).
 
 | | |
 |---|---|
-| **From** | Matrix Group One, CA License B #1066892 (*verify active status*), (510) 214-3393, address TBD |
+| **From** | Matrix Group One (a corporation), 170 Glenn Way, Suite 5, San Carlos, CA 94070. CSLB License #1066892, Class B General Building, active, expires 07/31/2028. Phone: TBD (CSLB lists (510) 214-3899; the permit form says (510) 214-3393) |
 | **Bill to** | TBD (Equity Track Inc., seller?) |
 | **Escrow** | Organized Escrows, Attn: Tabetha Selle-Berkheiser, Escrow # TBD |
 | **Property** | 1464 Sunrise Parkway, Petaluma, CA 94954 (APN 149-260-003) |
@@ -33,7 +33,7 @@ Working notes and sources: `roof-invoice-draft.md` (same folder).
 
 ## Before sending
 
-1. Verify on cslb.ca.gov that license #1066892 is active and has current workers' comp on file. The form on file showed 07/31/2026 and 09/05/2026.
+1. ~~Verify the CSLB license.~~ **Done 10/06/2026 (CSLB screenshot):** current and active, expires 07/31/2028. Bond: North River #04CF643315, $25,000. Workers' comp: Everest Premier #7600027329261, 09/05/2026 to 09/05/2027, so coverage was continuous through the roof and gutter work. Still to confirm: which phone number to use, and whether gutter work fits the comp class codes on file (5432, 5403, 54821). Ask the broker.
 2. Get Ruben's final invoice or a paid receipt showing the completed scope, the $8,000 total, his full name, and his license # if he has one.
 3. Get Matrix's decision on lines 2a, 3 and 4.
 4. Fill in bill-to, escrow #, invoice #, date, and Matrix's address.
