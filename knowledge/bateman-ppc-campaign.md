@@ -63,3 +63,12 @@ screenshots, single Drive folder, Martha Reece contract check, spend gap.
 Google Ads CSV exports (Jan 2024 – Oct 2026, keyword cost + call details) found
 in Drive folder M4_keywords-to-deals:
 https://drive.google.com/drive/folders/1DvpiPlbCjABlLJf8oKyTS589dXQfyMsO
+
+## Mission 7: "We Buy Houses" keyword verdicts (2026-10-06)
+
+Report: https://claude.ai/artifact/C8jRfSyD8gxgXd8Pocax2o. All-time (Jul 2021 –
+Oct 4 2026), 5 keywords, $48,068.78 / 910 clicks. KEEP: we buy houses ($406/lead,
+anchor), house buying companies ($410), we buy houses for cash ($397), companies
+that buy houses ($478; **Gunn deal — missing from M4 deal log**, verdict flipped
+from CHANGE to KEEP with CPC cap). FOLD: we buy homes for cash (26 clicks).
+DelGiudice fee = $69,190.04 paid (via "we buy houses vallejo").
