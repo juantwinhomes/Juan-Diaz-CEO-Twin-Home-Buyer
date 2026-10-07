@@ -36,7 +36,7 @@ https://claude.ai/artifact/2YDbCtBHbB24ZGd9ZWsG4s (page prepared 2026-09-25, las
 - Well electrical permit **#22-0432-WWE**, issued 1/3/23 to Drew & Hefner. Pump, underground conduit, and final electrical were **approved 2/3/23**. Received 9/29 under public records request **#62935**.
 
 ## Confirmed by the CITY
-- **Nothing.** The property is in unincorporated Madera County, so the City of Madera has no records or involvement on this page. All permits are county permits.
+- **Nothing.** The artifact has no city records or contacts. Every permit is a county permit, which suggests the property is in unincorporated county. This is inferred, not verified.
   If a city item exists elsewhere (business license, utility), it is not in this artifact.
 
 ## From the INSPECTOR / service providers (not the county)
