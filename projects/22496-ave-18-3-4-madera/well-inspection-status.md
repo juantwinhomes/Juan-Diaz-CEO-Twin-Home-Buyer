@@ -122,3 +122,25 @@ Pest clearance is due 10/12, and rehab is expected to finish 10/12.
 3. The old-well conflict is resolved, with photos.
 4. The pump power source is confirmed on an active PG&E account.
 5. All docs are filed for the disclosure package.
+
+## MASTER WATER CHECKLIST (single path, logged 2026-10-08)
+
+The 7 "not thinking" items are folded into these steps. Nothing is tracked separately.
+
+| # | When | Owner | Action | Covers | Done when |
+|---|---|---|---|---|---|
+| 1 | Today | Ops | Call Dellavalle (report 26I2069): get nitrate + arsenic results; book a post-rehab sample for 10/13 with bacteria + 1,2,3-TCP + DBCP | Potability, farm chemicals | Results in hand + sample date booked |
+| 2 | Today | Ops (Juan OK on $650) | Book Ron Drew (559-645-2483) above-ground inspection, earliest slot, written report: sustained flow 2–4 hr, static and pumping water level, cut-in/cut-out, tank precharge, amp draw, pump saver/control box, repair list + prices; ask "any other well casing on this lot?" | Capacity, pressure gauge, backup well | Visit date confirmed |
+| 3 | Today | Luis | Photos: tank label, control box, flow meter reading; 5-gal bucket test; 15-min multi-fixture run logging cut-in/cut-out and seconds between cycles; walk the lot for any 2nd casing | Pressure gauge, backup well | Photos + numbers sent |
+| 4 | Today | Ops | PG&E: confirm the well pump's meter is billed to account 805-2602-0 (not the prior owner's); chase the confirmation email | Pump power | Written confirmation |
+| 5 | Today | Ops → plumber | Tell the plumber to shock-chlorinate + flush the lines when rehab plumbing finishes (10/12), before the lab sample | Rehab retest | Plumber confirms |
+| 6 | Before any digging | Ops → contractor | Seepage pit: get the planned location + distance to the well; confirm the County Environmental Health septic permit (Sunshine, 559-675-7823) | Seepage pit | Permit # + distance on file |
+| 7 | 1–3 days | Ops → Juan | Review Ron's report. No repairs until the diagnosis + estimate are in hand; repairs over $1–2K go to Juan's review | Capacity | Report filed, decision made |
+| 8 | If a 2nd casing is found | Ops | Call County Environmental Health with the photos + location; the county says the old well was destroyed (22-0125-DESWELL) | Backup well | County answer recorded |
+| 9 | 10/13 → about 10/18 | Lab | Post-rehab sample → results | Potability | All results below the limits |
+| 10 | End | Ops | File for disclosure: WCR, permits, lab reports, Ron's report, seepage pit permit | Disclosure | Filed |
+
+**Jurisdiction:**
+- **City of Madera:** not involved. The property is under the county.
+- **County Building:** no well action needed. All well permits are already finaled.
+- **County Environmental Health:** involved only for the seepage pit permit and any second-casing question.
