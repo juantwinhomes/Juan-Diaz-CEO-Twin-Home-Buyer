@@ -159,3 +159,21 @@ The 7 "not thinking" items are folded into these steps. Nothing is tracked separ
   - **The household chemistry report, which includes nitrate and arsenic, is NOT in Drive.** It was paid for, so it is owed.
 - **Results contact on the order:** Thea Margate, cherry@twinhomebuyer.com, (650) 209-0828. The results go to her inbox.
 - **Post-rehab retest timing:** do not sample right after the plumber chlorinates the lines. Flush until there is no chlorine smell, wait 24–48 hrs, then sample. Realistic sample date: about **10/14–10/15**, not 10/13.
+
+## Household chemistry results RECEIVED (logged 2026-10-08)
+
+Report **26I2065** (Dellavalle). Sampled 9/24/26 14:05 by Jose L. Fernandez. Reported 9/28/26. The report was issued 9/28 but never filed to Drive.
+
+| Analyte | Result | Limit (MCL) | Status |
+|---|---|---|---|
+| **Nitrate (NO3-N)** | **5.3 mg/L** | 10 | 🟢 Pass. Over half the limit, so retest yearly and disclose |
+| **Arsenic** | **2.9 µg/L** | 10 | 🟢 Pass |
+| Iron / Manganese | ND / ND | 0.3 / 0.05 (secondary) | 🟢 |
+| Sodium | 26 mg/L | none | Info only |
+| Hardness | 109 mg/L | none | Moderately hard |
+| Chloride / Sulfate | 20.8 / 4.9 mg/L | 250 / 250 (secondary) | 🟢 |
+| pH | 6.9 | 6.5–8.5 (secondary) | 🟢 (lab "H" flag: holding time, normal for pH) |
+
+**Retest needs:**
+- **Chemistry:** no retest needed. Nitrate and arsenic come from the aquifer, and the rehab plumbing does not change them.
+- **Bacteria:** **retest** after the rehab plumbing and any well/pump work by Ron are done. Bacteria-only cost was $44 + $60 collection on the last invoice.
