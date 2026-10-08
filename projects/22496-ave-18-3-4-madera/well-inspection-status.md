@@ -86,3 +86,39 @@ Pest clearance is due 10/12, and rehab is expected to finish 10/12.
 **Next action:** call Madera County Building (559-675-7821) with APN 029-270-052 and ask whether any building permit is open.
 - **If yes:** get the permit number and the job card status. Book the county final only after all earlier inspections have passed.
 - **If no:** the 10/13 booking is a private home inspection.
+
+---
+
+# Utilities / water handoff (logged 2026-10-08)
+
+**PG&E:**
+- Account 805-2602-0, electricity + gas, started 10/7/26. The confirmation email is pending.
+- **Check:** is the well pump on this same meter, or on its own PG&E service? It runs off the 2023 well electrical permit (22-0432-WWE). If it has a separate service, it needs its own account or there is no water.
+
+**Field (Luis):**
+- Water at the system and inside the house.
+- The gauge showed about 60–70 PSI (visual only).
+
+**What we already have in hand (the handoff marked these as gaps):**
+- Well records / permit: **DONE.** County well permit 22-0433-WELL was finaled 1/30/23 with no violations. Electrical permit 22-0432-WWE was finaled 2/3/23. The county has the Well Completion Report (WCR). It is not on file with the state (DWR).
+- Bacteria test: **PASSED** (sampled 9/24). It was taken **before the rehab plumbing work**, so it needs a retest after the rehab.
+- Nitrate + arsenic: **pending** at Dellavalle (report 26I2069). No result is recorded yet.
+
+**CONFLICT:**
+- The handoff says an "older backup well, not hooked up" is on site.
+- The county says the old well was **destroyed and sealed** (22-0125-DESWELL, final 1/30/23).
+- If a second open casing exists on site, it is unpermitted or a different well. Locate it and photograph it.
+
+**Septic interaction:**
+- The proposed new 50 ft seepage pit has to meet the county setback from the well.
+- The current tank is 171 ft from the well and the leach lines are 166 ft. Get the pit's location and distance from the well.
+- Environmental Health must permit the pit before it is dug.
+
+**Plan:** see the steps below. The water status stays 🟡 PENDING until all of the exit criteria are met.
+
+## Exit criteria for water = GREEN
+1. Written well/pump inspection with measured numbers: sustained GPM, static water level, pressure-switch cut-in/cut-out, tank precharge, pump amp draw. No required repairs, or the repairs are completed.
+2. Lab: nitrate and arsenic below the MCLs (10 mg/L nitrate-N, 10 µg/L arsenic). Bacteria absent on a **post-rehab** sample.
+3. The old-well conflict is resolved, with photos.
+4. The pump power source is confirmed on an active PG&E account.
+5. All docs are filed for the disclosure package.
