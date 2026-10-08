@@ -57,3 +57,32 @@ https://claude.ai/artifact/2YDbCtBHbB24ZGd9ZWsG4s (page prepared 2026-09-25, las
 ## How to use this file
 When a task, email, or update about this property comes in, compare it to the open items above.
 If it matches, it is **connected**. Update the status here with the date and source. Do not mark anything done without proof (lab report, county record, receipt).
+
+---
+
+# Inspection sequence: 10/12 pest clearance, 10/13 "full property inspection" (logged 2026-10-08)
+
+**Instruction received:** "book the full property inspection for Tuesday 10/13 so the inspector sees the finished house."
+Pest clearance is due 10/12, and rehab is expected to finish 10/12.
+
+**What the instruction means is NOT verified.** It did not come from the Twin, and nothing in the repo, Drive, or the well dashboard says who wrote it or what it means.
+- **No open Madera County building permit for a rehab is on record.** The only county permits we have are from 2022–23: well 22-0433-WELL, destruction 22-0125-DESWELL, meter 22-0334-METER, and electrical 22-0432-WWE. **All of them are finaled.**
+- **Without an open permit, there is nothing for the county to give a final inspection on.** In that case, "full property inspection" can only mean a private home inspection.
+- **Conflict:** the acquisitions whiteboard (9/12) lists this deal as exit **Wholesale**, closing 9/23. The well dashboard says closing 10/2. The rehab plan contradicts a wholesale exit. **Confirm the exit strategy with Juan.**
+
+**Rules (from research, not legal advice):**
+- **Pest vs. home inspection:** no California or Madera County rule we found requires the pest/WDO inspection to come first.
+  - B&P 8516 governs pest reports. They must be done by a licensed Branch 3 pest inspector.
+  - Any sequence is set by the purchase contract or the lender, not by law.
+- **Private home inspection** (B&P 7195–7199):
+  - It is a visual, non-invasive inspection.
+  - It has **no legal connection** to a county permit final. It cannot close a permit, and the county does not need one.
+- **County final** (Madera County Building Division, 559-675-7821; inspection requests 559-675-5206):
+  - It happens only when an open permit exists and every earlier inspection on the job card has passed. That means foundation/underfloor, framing, rough electrical/plumbing/mechanical, insulation, and drywall, as each applies.
+  - Environmental Health must have passed the septic/well work, if the permit touches it. A Public Works encroachment permit must be closed, if there is one.
+  - The county requires the building to be complete and ready for occupancy.
+  - Pest clearance is **not** a county prerequisite.
+
+**Next action:** call Madera County Building (559-675-7821) with APN 029-270-052 and ask whether any building permit is open.
+- **If yes:** get the permit number and the job card status. Book the county final only after all earlier inspections have passed.
+- **If no:** the 10/13 booking is a private home inspection.
