@@ -144,3 +144,18 @@ The 7 "not thinking" items are folded into these steps. Nothing is tracked separ
 - **City of Madera:** not involved. The property is under the county.
 - **County Building:** no well action needed. All well permits are already finaled.
 - **County Environmental Health:** involved only for the seepage pit permit and any second-casing question.
+
+## Step 1 detail: Dellavalle water lab (logged 2026-10-08, from Drive)
+
+- **Lab:** Dellavalle Laboratory, 1910 W McKinley Ave Ste 110, Fresno CA 93728.
+  - Phone: (559) 233-6129. Accounting: ext. 113, accounting@dellavallelab.com.
+  - ELAP cert #1595.
+- **Account:** #2609039, account manager code 102. Invoice 100177: $376, **paid** 9/25/26 on AMEX ****5004.
+- **What was ordered on the 9/24 sample:**
+  - Household panel, $272: pH, EC, Cl, HCO3+CO3, SO4, **NO3-N (nitrate)**, SAR, Langelier index, alkalinity, hardness, Ca, Mg, B, Na, **Fe, Mn, As (arsenic)**.
+  - Bacteria panel, $44.
+  - Sample collection, $60. The lab's own sampler, Jose L. Fernandez, took the sample.
+- **Received so far:** only the bacteria report (26I2069-MPN). It is in Drive.
+  - **The household chemistry report, which includes nitrate and arsenic, is NOT in Drive.** It was paid for, so it is owed.
+- **Results contact on the order:** Thea Margate, cherry@twinhomebuyer.com, (650) 209-0828. The results go to her inbox.
+- **Post-rehab retest timing:** do not sample right after the plumber chlorinates the lines. Flush until there is no chlorine smell, wait 24–48 hrs, then sample. Realistic sample date: about **10/14–10/15**, not 10/13.
