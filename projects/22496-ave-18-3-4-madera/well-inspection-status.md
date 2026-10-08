@@ -177,3 +177,14 @@ Report **26I2065** (Dellavalle). Sampled 9/24/26 14:05 by Jose L. Fernandez. Rep
 **Retest needs:**
 - **Chemistry:** no retest needed. Nitrate and arsenic come from the aquifer, and the rehab plumbing does not change them.
 - **Bacteria:** **retest** after the rehab plumbing and any well/pump work by Ron are done. Bacteria-only cost was $44 + $60 collection on the last invoice.
+
+## 10/13 inspection: resolved (logged 2026-10-08)
+
+**Booked:** a private home inspection (private company) for after the rehab.
+- The team found no rehab building permit in city or county records, so this is **not** a County final.
+- **Excluded from its scope:** pest/WDO, septic, well, sewer lateral, code/compliance.
+- It is **not connected** to the well/water utility task. It is not connected to any county permit.
+
+**Open caveats:**
+- Confirm "no open permit" by phone with County Building, (559) 675-7821, using the APN. An online search can miss permits.
+- Confirm the rehab scope had no permit-required work (electrical, plumbing, water heater, structural, HVAC). If it did and there was no permit, that is a disclosure risk.
