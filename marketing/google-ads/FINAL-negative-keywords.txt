@@ -1,7 +1,3 @@
-TWIN HOME BUYER - NEGATIVE KEYWORDS (NONSENSE ONLY) - v2, double-checked
-No competitors. No seller searches. Distressed-seller terms (estate sale, eviction, landlord, roof repair, home equity, reverse mortgage) removed.
-
-=== PART 1: PHRASE MATCH (45) - add these first ===
 "houses for sale"
 "house for sale"
 "homes for sale"
@@ -47,8 +43,6 @@ No competitors. No seller searches. Distressed-seller terms (estate sale, evicti
 "resume"
 "pdf"
 "template"
-
-=== PART 2: EXACT MATCH (3,289) ===
 [$1 house auctions]
 [$1 properties for sale]
 [$100 house]
@@ -126,8 +120,6 @@ No competitors. No seller searches. Distressed-seller terms (estate sale, evicti
 [796 oak grove rd concord ca 94518]
 [91 mandarin way atherton ca 94027]
 [939 innes ave san francisco ca 94124]
-[94509]
-[94531]
 [99acres india]
 [a frame homes for sale]
 [a free house]
@@ -477,7 +469,6 @@ No competitors. No seller searches. Distressed-seller terms (estate sale, evicti
 [buyer listing]
 [buyer rebate san diego]
 [buyers consultation]
-[buyhouse]
 [buying a forclosed house]
 [buying a forclosed property]
 [buying a foreclosed home at auction]
@@ -688,7 +679,6 @@ No competitors. No seller searches. Distressed-seller terms (estate sale, evicti
 [career]
 [careers]
 [cars for sale]
-[casa de prã©stamo en efectivo]
 [casa de préstamo en efectivo]
 [casa ventures home buyers]
 [casas de remate en san jose california]
@@ -778,7 +768,6 @@ No competitors. No seller searches. Distressed-seller terms (estate sale, evicti
 [colusa homes]
 [como comprar casa en california con itin]
 [como funciona el equity de una casa]
-[como hacer un avalãºo de una casa]
 [como hacer un avalúo de una casa]
 [como saber cuanto vale mi casa]
 [como saber el precio de mi casa]
@@ -2349,7 +2338,6 @@ No competitors. No seller searches. Distressed-seller terms (estate sale, evicti
 [i will buy a house]
 [i would like to buy a house]
 [ibuy houses]
-[ibuyhouses]
 [if a house cost 500 000 how much down payment]
 [if i want to buy a second home]
 [if you buy a house]
@@ -3227,8 +3215,6 @@ No competitors. No seller searches. Distressed-seller terms (estate sale, evicti
 [we houses]
 [website to buy house in usa]
 [websites to buy houses in usa]
-[webuyhouse]
-[webuyhouses]
 [wedgewood drive house for sale]
 [wells fargo home loans]
 [west covina houses for sale]
@@ -3322,13 +3308,11 @@ No competitors. No seller searches. Distressed-seller terms (estate sale, evicti
 [加州 买房 网]
 [加州 买房 补助]
 [加州 买房 补贴]
-[加州 卖房 交 税]
 [加州 買房 補助]
 [加州 首次 购房 补助]
 [加州 首次 购房 补贴 2024]
 [加州 首次 购房 补贴]
 [卖 房子]
-[卖房]
 [房产 中介]
 [房地产]
 [现金 买房]
