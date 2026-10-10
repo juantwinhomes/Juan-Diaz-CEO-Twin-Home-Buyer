@@ -176,6 +176,13 @@ function mockClaude() {
   await emp.getByRole('button', { name: 'Submit My Signature' }).click();
   await emp.getByText("Awaiting Juan's signature").waitFor({ timeout: T });
   step('Employee drew, previewed and submitted a signature');
+  await emp.locator('.doc-frame canvas').first().waitFor({ timeout: T });
+  await emp.getByRole('button', { name: 'Download my signed copy (PDF)' }).click();
+  for (let i = 0; i < 40 && !downloads.length; i++) await new Promise((r) => setTimeout(r, 250));
+  const partial = downloads.shift();
+  if (!partial || !/AwaitingCompanySignature/.test(partial.name)) throw new Error('employee-signed copy was not offered');
+  fs.writeFileSync(path.join(outDir, partial.name), partial.bytes);
+  step('Employee sees and can download the contract with their own signature before Juan signs');
   await hr.waitForFunction(() => true);
   for (let i = 0; i < 40 && !store.get(empKey).employeeSig; i++) await new Promise((r) => setTimeout(r, 250));
   if (!store.get(empKey).employeeSig) throw new Error('HR did not lock the employee signature');

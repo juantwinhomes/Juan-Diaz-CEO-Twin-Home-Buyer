@@ -499,12 +499,13 @@
       page.drawText(ET.phDateLong(sig.signedAt), { x: at.date.x, y: at.date.y + 1, size: at.date.size || 10, font, color: ink });
       page.drawText('Electronically signed ' + ET.phDateTime(sig.signedAt), { x: at.date.x + 172, y: at.date.y + 1, size: 6.5, font: small, color: grey });
     }
-    await place(o.company, a.company);
+    // Without o.company this is the employee-signed copy shown while the contract waits for Juan.
+    if (o.company) await place(o.company, a.company);
     await place(o.employee, a.employee);
 
     const n = pages.length;
     pages.forEach((pg, i) => {
-      const t = `Contract Ref. ${o.ref}  ·  Version ${o.version}  ·  Contract SHA-256 ${o.sourceSha.slice(0, 16)}`;
+      const t = `Contract Ref. ${o.ref}  ·  Version ${o.version}  ·  Contract SHA-256 ${o.sourceSha.slice(0, 16)}${o.company ? '' : '  ·  Signed by the employee; awaiting the Company signature'}`;
       pg.drawText(t, { x: 50, y: 26, size: 6.5, font: small, color: grey });
     });
 
@@ -512,8 +513,8 @@
     doc.setSubject(`Contract Ref. ${o.ref}, version ${o.version}`);
     doc.setAuthor('Equity Track Inc. Philippines');
     doc.setProducer('Equity Track contract signing');
-    doc.setCreationDate(new Date(o.company.signedAt));
-    doc.setModificationDate(new Date(o.company.signedAt));
+    doc.setCreationDate(new Date((o.company || o.employee).signedAt));
+    doc.setModificationDate(new Date((o.company || o.employee).signedAt));
     return await doc.save();
   };
 

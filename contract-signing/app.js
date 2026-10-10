@@ -130,6 +130,14 @@
   }
   const docFrame = (bytes) => { const f = h('div', { class: 'doc-frame' }); renderPdf(f, bytes); return f; };
 
+  /** The contract with only the employee's signature on it, for viewing while it waits for Juan. Nothing is stored. */
+  async function employeeSignedPdf(sourceBytes, c, sig) {
+    return ET.buildFinalPdf(window.PDFLib, {
+      sourceBytes, anchors: c.anchors, ref: c.contractId, version: c.version, sourceSha: c.sha,
+      employee: { name: c.name, sigPng: ET.bytesFromB64(sig.sigPng), signedAt: sig.signedAt },
+    });
+  }
+
   /* ---------------- shared status logic ---------------- */
   function sigFor(rec) {
     const e = rec.vault && S.esign[rec.key];
@@ -569,14 +577,25 @@
 
   function empAwaiting() {
     const i = E.issued;
-    const sig = (E.esign && E.esign.signature) || {};
+    const sig = (E.esign && E.esign.signature && E.esign.signature.sha === i.sha) ? E.esign.signature : null;
+    const frame = h('div', { class: 'doc-frame' }, spinner('Loading your signed contract…'));
+    let signedBytes = null;
+    (async () => {
+      const src = await loadSource();
+      signedBytes = sig && i.anchors ? await employeeSignedPdf(src, i, sig) : src;
+      renderPdf(frame, signedBytes);
+    })().catch((e) => frame.replaceChildren(h('p', { class: 'note bad', text: errText(e) })));
+    const dl = h('button', { class: 'btn secondary', text: 'Download my signed copy (PDF)', onclick: async () => {
+      if (!signedBytes) { toast('The document is still loading.', 'error'); return; }
+      if (await saveFile(ET.employeeFileName(i.name, (sig && sig.signedAt) || nowIso()).replace('.pdf', '_AwaitingCompanySignature.pdf'), new Blob([signedBytes]))) logEvent({ action: 'Employee downloaded the employee-signed copy', contractId: i.contractId, version: i.version });
+    } });
     mount(h('div', { class: 'narrow' }, stepper('awaiting'),
       h('section', { class: 'panel' },
         h('div', { class: 'eyebrow', text: 'Signed by you' }),
         h('h1', { class: 'title', text: "Awaiting Juan's signature" }),
-        h('p', { class: 'lede', text: `You signed on ${sig.signedAt ? ET.phDateTime(sig.signedAt) : (i.employeeSignedAt ? ET.phDateTime(i.employeeSignedAt) : '—')}. Your signed version is locked. When Juan Diaz signs for the Company, your fully signed contract will appear on this page.` }),
-        sig.sigPng ? h('div', { class: 'sig-preview' }, h('img', { src: 'data:image/png;base64,' + sig.sigPng, alt: 'Your signature' })) : null,
-        h('div', { class: 'row' }, h('button', { class: 'btn secondary', text: 'View the contract I signed', onclick: async () => { try { modal('Your contract', docFrame(await loadSource()), { wide: true }); } catch (e) { toast(errText(e), 'error'); } } })))));
+        h('p', { class: 'lede', text: `You signed on ${sig ? ET.phDateTime(sig.signedAt) : (i.employeeSignedAt ? ET.phDateTime(i.employeeSignedAt) : '—')}. Your signature is on the contract below and your signed version is locked. Juan Diaz's line stays blank until he signs for the Company; then your fully signed contract appears on this page.` }),
+        frame,
+        h('div', { class: 'row' }, dl))));
   }
 
   function empReturned() {
@@ -868,7 +887,7 @@
       startDate: rec.startDate, effective: rec.effective, monthly: rec.monthly, perCutoff: rec.perCutoff,
       status: st === 'draft' ? 'awaiting_employee' : st, issuedAt: rec.issuedAt, returnNote: rec.status === 'returned' ? (rec.returnNote || '') : '',
       payroll: payrollInputs(rec), employeeSignedAt: rec.employeeSig ? rec.employeeSig.signedAt : null,
-      companySignedAt: rec.companySig ? rec.companySig.signedAt : null, finalSha: rec.finalSha || null,
+      companySignedAt: rec.companySig ? rec.companySig.signedAt : null, finalSha: rec.finalSha || null, anchors: rec.anchors,
     });
   }
   async function unpublishFromEmployee(vault) {
@@ -949,7 +968,10 @@
       h('li', { class: rec.dob ? 'check-ok' : 'check-bad', text: rec.dob ? 'Birthdate on file.' : 'Birthdate missing. Required before issuing.' }));
 
     const frame = h('div', { class: 'doc-frame' }, spinner('Loading contract…'));
-    getVersionBytes(rec.currentVid, rec.sha).then(({ bytes }) => renderPdf(frame, bytes)).catch((e) => frame.replaceChildren(h('p', { class: 'note bad', text: errText(e) })));
+    const shownSig = (rec.employeeSig && rec.employeeSig.sha === rec.sha) ? rec.employeeSig : sigFor(rec);
+    getVersionBytes(rec.currentVid, rec.sha)
+      .then(async ({ bytes }) => renderPdf(frame, shownSig && rec.status !== 'fully_signed' ? await employeeSignedPdf(bytes, { anchors: rec.anchors, contractId: rec.contractId, version: rec.versionNo, sha: rec.sha, name: rec.name }, shownSig) : bytes))
+      .catch((e) => frame.replaceChildren(h('p', { class: 'note bad', text: errText(e) })));
 
     const actions = h('div', { class: 'row' });
     const blocking = !rec.anchors || !rec.monthly || !rec.name || !rec.startDate || !!rec.preApproval || !(rec.fidelity && rec.fidelity.ok);
@@ -1375,7 +1397,10 @@
     modal(`${r.name} — ${r.contractId} v${r.versionNo}`, h('div', { class: 'stack' }, factsFromRec(r),
       sig ? h('div', { class: 'stack' }, h('span', { class: 'small muted', text: `Employee signature (${sig.method}), ${ET.phDateTime(sig.signedAt)}` }), h('div', { class: 'sig-preview' }, h('img', { src: 'data:image/png;base64,' + sig.sigPng, alt: 'Employee signature' }))) : null,
       frame), { wide: true });
-    try { renderPdf(frame, (await getVersionBytes(r.currentVid, r.sha)).bytes); } catch (e) { frame.replaceChildren(h('p', { class: 'note bad', text: errText(e) })); }
+    try {
+      const { bytes } = await getVersionBytes(r.currentVid, r.sha);
+      renderPdf(frame, sig ? await employeeSignedPdf(bytes, { anchors: r.anchors, contractId: r.contractId, version: r.versionNo, sha: r.sha, name: r.name }, sig) : bytes);
+    } catch (e) { frame.replaceChildren(h('p', { class: 'note bad', text: errText(e) })); }
   }
 
   function batchReview() {
