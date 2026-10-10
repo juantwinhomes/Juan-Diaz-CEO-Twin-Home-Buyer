@@ -11,16 +11,7 @@
 "first time buyer"
 "1st time home buyer"
 "down payment assistance"
-"foreclosed homes"
-"buy a foreclosed"
-"buy foreclosed"
-"buying a foreclosure"
-"new homes"
 "new construction"
-"pay cash for a house"
-"buy a house with cash"
-"buy a house cash"
-"buying a house cash"
 "mortgage rates"
 "pre approval"
 "for rent"
@@ -33,8 +24,6 @@
 "how to wholesale"
 "fix and flip"
 "flipping houses"
-"find cash buyers"
-"cash buyers list"
 "home depot"
 "movers"
 "bloxburg"
@@ -995,7 +984,6 @@
 [find distressed properties to buy]
 [find me the house]
 [find off market homes]
-[find pre foreclosure homes]
 [find your dream home]
 [finding home]
 [finding homes]
@@ -1148,18 +1136,12 @@
 [forecasa]
 [foreclosed homes for $5000]
 [foreclosed homes for sale]
-[foreclosed homes los angeles]
-[foreclosed homes]
 [foreclosed houses for sale]
-[foreclosed houses]
-[foreclosed land near me]
 [foreclosed listings]
-[foreclosed properties near me]
 [foreclosure and buying a new home]
 [foreclosure first time home buyer]
 [foreclosure home buying process]
 [foreclosure homes buying process]
-[foreclosure near me]
 [forgivable equity builder loan 2025]
 [forgivable equity builder loan california]
 [forgivable equity builder loan]
@@ -2042,7 +2024,6 @@
 [houses in my area]
 [houses in natomas]
 [houses in norco for sale]
-[houses in pre foreclosure near me]
 [houses in sac]
 [houses in sacramento]
 [houses in san mateo]
@@ -2247,14 +2228,12 @@
 [how to flip a house with $10 k]
 [how to flip houses with no money]
 [how to gain equity in a home]
-[how to get a foreclosed property]
 [how to get a house when you have no money]
 [how to get a house with no down payment]
 [how to get an investment property]
 [how to get cash for auction house]
 [how to get cash to buy a house]
 [how to get equity out of your home without refinancing]
-[how to get foreclosure homes]
 [how to get fsbo listings]
 [how to get into property investment]
 [how to get prequalified for a house]
@@ -2423,7 +2402,6 @@
 [lease to own homes near me]
 [lease to own homes]
 [lease]
-[lender's foreclosure services]
 [lenders who finance manufactured homes]
 [lendgo home equity loan]
 [leveraging equity to buy a new house]
@@ -2736,7 +2714,6 @@
 [pre owned homes for sale]
 [pre qualify first time home buyer]
 [precio de casas]
-[preforeclosure near me]
 [prepare house for sale]
 [prepping home for sale]
 [price per sq foot]
@@ -2887,7 +2864,6 @@
 [renting to own homes near me]
 [renting]
 [reo advisory listing]
-[reo foreclosed homes]
 [reo homes]
 [reo houses near me]
 [reo listings near me]
@@ -3187,7 +3163,6 @@
 [victorville home for sale]
 [victorville homes for sale]
 [victorville houses for sale]
-[view foreclosure homes]
 [visalia ca homes]
 [wall houses for sale]
 [wasco houses for sale]
