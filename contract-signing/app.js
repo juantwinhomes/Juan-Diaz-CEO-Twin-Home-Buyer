@@ -584,12 +584,47 @@
   const personLabel = (uid) => { const p = S.profiles[uid]; return p ? [p.name, p.email].filter(Boolean).join(' · ') || 'Unnamed account' : 'Account'; };
 
   /* ---------------- HR console ---------------- */
-  const H = { tab: 'contracts', filter: '', statusFilter: 'all', focus: null };
+  const H = { tab: 'contracts', filter: '', statusFilter: 'all', focus: null, upgradeNote: null, upgradeFailed: {} };
 
   function hrMain() {
     S.role = 'hr';
     mount(spinner('Loading HR records…'));
-    subscribeAdminData(() => renderHr(false));
+    subscribeAdminData(() => { renderHr(false); upgradeUnformatted(); });
+  }
+
+  /** Contracts uploaded before the onboarding format existed have no formatted copy yet. Build it from Juan's saved draft. */
+  let upgrading = false;
+  async function upgradeUnformatted() {
+    if (upgrading) return;
+    const todo = Object.values(S.employees).filter((r) => !r.fidelity && r.currentVid && r.status === 'draft' && !H.upgradeFailed[r.key]);
+    if (!todo.length) return;
+    upgrading = true;
+    H.upgradeNote = `Laying out ${todo.length} uploaded contract(s) in the onboarding format. This takes a few seconds…`;
+    renderHr();
+    let done = 0;
+    try {
+      const lib = await pdfjs();
+      for (const r of todo) {
+        try {
+          const v = await S.db.doc('hr/data/versions/' + r.currentVid).get();
+          if (!v.exists) throw new Error('Juan’s draft is missing; upload it again.');
+          const vd = v.data();
+          const { pages } = await ET.extractPdf(lib, ET.bytesFromB64(vd.b64));
+          const parsed = ET.parseContract(pages);
+          const fmt = await formatDraft(lib, pages);
+          if (!fmt.fidelity.ok) parsed.issues.push(fmt.fidelity.detail);
+          await S.db.doc('hr/data/formatted/' + r.currentVid).set({ b64: fmt.b64, sha: fmt.sha });
+          await S.db.doc('hr/data/versions/' + r.currentVid).update({ draftSha: vd.draftSha || vd.sha, sha: fmt.sha, anchors: fmt.anchors, fidelity: fmt.fidelity, parsed });
+          await S.db.doc('hr/data/employees/' + r.key).update(Object.assign(versionFields(parsed, r.currentVid, fmt), { pendingVid: r.pendingVid || null }));
+          done++;
+        } catch (e) { H.upgradeFailed[r.key] = `${r.name}: ${errText(e)}`; }
+      }
+    } catch (e) { todo.forEach((r) => { H.upgradeFailed[r.key] = `${r.name}: ${errText(e)}`; }); }
+    upgrading = false;
+    const failed = Object.values(H.upgradeFailed);
+    H.upgradeNote = failed.length ? 'These contracts could not be laid out in the onboarding format: ' + failed.join(' · ') : null;
+    renderHr();
+    if (done) toast(`${done} contract(s) are now in the onboarding format.`);
   }
 
   /** Live data refreshes skip tabs that hold a form or a one-time load, so nothing HR is typing gets wiped. */
@@ -613,6 +648,7 @@
 
   function setupWarnings() {
     const w = [];
+    if (H.upgradeNote) w.push(H.upgradeNote);
     if (!S.cfg.signatoryUid) w.push('No company signatory is designated yet. Share this artifact with Juan Diaz as an Editor; when he opens it and requests the signatory role, approve it under Access requests.');
     return w.length ? h('div', { class: 'stack' }, w.map((t) => h('p', { class: 'note warn', text: t }))) : null;
   }
@@ -728,7 +764,7 @@
   /** The formatted contract that employees review and sign. */
   async function getVersionBytes(vid, sha) {
     const v = await S.db.doc('hr/data/formatted/' + vid).get();
-    if (!v.exists) throw new Error('Contract file not found.');
+    if (!v.exists) throw new Error('The formatted contract is not ready yet. Close this window; the app is laying it out now.');
     const bytes = ET.bytesFromB64(v.data().b64);
     if (sha && (await ET.sha256Hex(bytes)) !== sha) throw new Error('Stored contract failed its integrity check.');
     return { bytes, data: v.data() };
