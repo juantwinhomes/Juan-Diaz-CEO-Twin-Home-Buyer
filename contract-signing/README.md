@@ -9,6 +9,7 @@ A small Claude Artifact for Equity Track Inc. Philippines. Employees review thei
 | `core.js` | PDF parsing, onboarding-format layout and wording check, payroll estimate, employee codes, signature stamping. No employee data. |
 | `assets/` | Header banner from the onboarding packet and the Liberation Sans fonts (SIL Open Font License) used in the contract PDF |
 | `tests/core.test.js` | Checks for `core.js`. Contract PDFs are passed as arguments and never committed. |
+| `tests/e2e.js` | Runs the whole flow in Chromium (HR upload and issue, wrong and right access code, employee signature, Juan's batch signature, both downloads, activity export) against an in-memory stand-in for Claude's storage |
 
 ## How each person uses it
 
@@ -48,6 +49,10 @@ The page's HTML and scripts are identical for everyone and contain no employee d
 So an employee who opens developer tools, edits the URL, changes the dropdown, or picks another person's name still receives nothing but their own record: the server returns other employees' documents as if they did not exist. The page has no AI chat, so no assistant can be asked about anyone's pay.
 
 **The access code is the key.** Each employee's records are stored under an identifier derived from their personal access code (12 random letters and numbers, about 59 bits, not based on the birthdate or employee ID). The database cannot list these records, not even for the owner; a record can only be opened by someone who supplies the matching code, and the page checks that the name selected belongs to that code. Codes work on shared department accounts because they do not depend on who is signed in. Anyone holding an employee's code can open that employee's contract, so codes must be handed out privately. HR can replace a code at any time, which makes the old one stop working. Employees cannot change their contract, salary or status: those records accept writes from HR and Juan only.
+
+## Salary packages
+
+HR keeps pay breakdowns under **Settings → Salary packages** (earnings and deductions, one line each). An employee is matched to the package whose gross equals their contract's monthly salary, or to the package picked on their record. A package is shown only after HR ticks **Confirmed**, only to the employees it applies to, and only when its earnings add up to the contract salary; otherwise the employee sees the standard explanation. Packages are never part of the contract or the signed PDF.
 
 ## Signing records
 

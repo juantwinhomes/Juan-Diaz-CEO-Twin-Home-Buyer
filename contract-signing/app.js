@@ -271,8 +271,42 @@
     return { el, capture };
   }
 
+  /* ---------------- salary packages (HR's pay breakdowns; informational, never in the contract) ---------------- */
+  const sumAmt = (rows) => ET.round2((rows || []).reduce((a, r) => a + (Number(r.amount) || 0), 0));
+  function pkgFor(rec) {
+    const list = (S.cfg && S.cfg.packages) || [];
+    return (rec.packageId ? list.find((p) => p.id === rec.packageId) : list.find((p) => Math.abs(p.gross - rec.monthly) < 0.005)) || null;
+  }
+  function pkgProblems(p, rec) {
+    const out = [];
+    if (Math.abs(sumAmt(p.earnings) - p.gross) > 0.005) out.push(`Earnings add up to ${ET.peso(sumAmt(p.earnings))}, not ${ET.peso(p.gross)}.`);
+    if (rec && Math.abs(p.gross - rec.monthly) > 0.005) out.push(`Package gross ${ET.peso(p.gross)} differs from the contract's monthly salary ${ET.peso(rec.monthly)}.`);
+    return out;
+  }
+  const parseRows = (text) => text.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => { const i = l.lastIndexOf(','); return { label: l.slice(0, i).trim(), amount: Number(l.slice(i + 1).replace(/[₱\s,]/g, '')) }; }).filter((r) => r.label && isFinite(r.amount));
+  const rowsText = (rows) => (rows || []).map((r) => `${r.label}, ${r.amount}`).join('\n');
+
+  function packageView(d) {
+    const p = d.pkg;
+    const gross = sumAmt(p.earnings), ded = sumAmt(p.deductions), net = ET.round2(gross - ded);
+    const row = (label, amount, cls) => h('tr', { class: cls || '' }, h('td', { text: label }), h('td', { class: amount < 0 ? 'neg' : '', text: amount < 0 ? '−' + ET.peso(-amount) : ET.peso(amount) }));
+    return h('div', { class: 'stack' },
+      h('div', { class: 'table-wrap', style: 'border:0;background:none' }, h('table', { class: 'pay' },
+        p.earnings.map((r) => row(r.label, r.amount)),
+        row('Total gross', gross, 'sub'),
+        p.deductions.map((r) => row(r.label, -r.amount)),
+        row('Total deductions', -ded, 'sub'),
+        row('Estimated monthly take-home pay', net, 'total'),
+        row('Estimated take-home per cut-off', ET.round2(net / 2), 'total'))),
+      p.note ? h('p', { class: 'small', text: p.note }) : null,
+      h('p', { class: 'small', text: 'Why gross and take-home differ: your gross pay is what the Company pays you before deductions. Philippine law requires the Company to withhold your share of SSS, PhilHealth and Pag-IBIG contributions and your income tax, and remit them to the government for you. What remains is your take-home pay.' }),
+      h('p', { class: 'small', text: d.thirteenthApplicable ? '13th-month pay: by December 24 each year you receive one-twelfth of the basic salary you earned during the calendar year, as Philippine law requires.' : 'Your contract classifies your position as managerial. Under Presidential Decree No. 851 the 13th-month pay requirement covers rank-and-file employees. Ask HR if you have questions.' }),
+      h('p', { class: 'note info small', text: 'These figures are estimates for a full month with complete attendance. Actual payslips depend on days and hours worked, absences, approved overtime and current government rates, and a cut-off may differ from half the monthly figure. Your employment contract is what governs your pay. This page is not part of the contract and you do not sign it.' }));
+  }
+
   /* ---------------- payroll explanation (informational) ---------------- */
   function payrollView(d) {
+    if (d.pkg) return packageView(d);
     const st = d.statutory || ET.DEFAULT_STATUTORY;
     const p = ET.computePayroll(d, st);
     const row = (label, why, amount, cls) => h('tr', { class: cls || '' }, h('td', {}, label, why ? h('span', { class: 'why', text: why }) : null), h('td', { class: amount < 0 ? 'neg' : '', text: amount < 0 ? '−' + ET.peso(-amount) : ET.peso(amount) }));
@@ -814,7 +848,9 @@
   }
 
   function payrollInputs(rec) {
-    return { monthly: rec.monthly, hourly: rec.hourly, ndHoursPerMonth: rec.ndHoursPerMonth, deMinimis: rec.deMinimis, otherDeductions: rec.otherDeductions || [], thirteenthApplicable: !!rec.thirteenthApplicable, hasNightDiff: !!rec.hasNightDiff, statutory: S.cfg.statutory || ET.DEFAULT_STATUTORY };
+    const p = pkgFor(rec);
+    const pkg = p && p.confirmed && !pkgProblems(p, rec).length ? { name: p.name, gross: p.gross, earnings: p.earnings, deductions: p.deductions, note: p.note || '' } : null;
+    return { monthly: rec.monthly, hourly: rec.hourly, ndHoursPerMonth: rec.ndHoursPerMonth, deMinimis: rec.deMinimis, otherDeductions: rec.otherDeductions || [], thirteenthApplicable: !!rec.thirteenthApplicable, hasNightDiff: !!rec.hasNightDiff, statutory: S.cfg.statutory || ET.DEFAULT_STATUTORY, pkg };
   }
 
   /** Writes the employee's own copy to the location their access code points to. */
@@ -850,13 +886,19 @@
     if (rec.vault) await unpublishFromEmployee(rec.vault);
     const accessCode = ET.newAccessCode();
     const vault = await ET.vaultId(accessCode);
-    await S.db.doc('hr/data/employees/' + rec.key).update({ accessCode, vault });
+    await updateRec(rec.key, { accessCode, vault });
     await publishToEmployee(Object.assign({}, rec, { accessCode, vault }));
     await logEvent({ action: rec.vault ? 'Access code replaced (old code no longer works)' : 'Access code created', contractId: rec.contractId, version: rec.versionNo, employeeKey: rec.key });
   }
   async function updateDirectory() {
     const names = Object.values(S.employees).filter((r) => r.status !== 'draft').map((r) => ({ key: r.key, name: r.name })).sort((a, b) => a.name.localeCompare(b.name));
     await S.db.doc('public/directory').set({ names });
+  }
+
+  /** Saves a change to an employee record and applies it locally at once, so a reopened window shows it. */
+  async function updateRec(key, patch) {
+    await S.db.doc('hr/data/employees/' + key).update(patch);
+    S.employees[key] = Object.assign({}, S.employees[key], patch);
   }
 
   async function openEmployee(key) {
@@ -876,6 +918,13 @@
     const dm = h('input', { type: 'number', id: 'f-dm', min: 0, step: 0.01, value: rec.deMinimis || 0 });
     const th = h('input', { type: 'checkbox', id: 'f-13', checked: !!rec.thirteenthApplicable });
     const others = h('textarea', { id: 'f-other', placeholder: 'One per line: label, amount\nSSS salary loan, 1200', value: (rec.otherDeductions || []).map((o) => `${o.label}, ${o.amount}`).join('\n') });
+    const pkgSel = h('select', { id: 'f-pkg' }, h('option', { value: '', text: 'Match by the contract’s monthly salary' }),
+      ((S.cfg && S.cfg.packages) || []).map((p) => h('option', { value: p.id, text: `${p.name} (${ET.peso(p.gross)})`, selected: rec.packageId === p.id })));
+    const curPkg = pkgFor(rec);
+    const pkgStatus = !curPkg ? 'No salary package matches this contract. The employee sees the standard pay explanation.'
+      : pkgProblems(curPkg, rec).length ? `Package “${curPkg.name}” is not shown: ${pkgProblems(curPkg, rec).join(' ')}`
+        : curPkg.confirmed ? `Package “${curPkg.name}” is confirmed and shown to the employee.`
+          : `Package “${curPkg.name}” is not confirmed yet, so the employee sees the standard pay explanation. Confirm it under Settings → Salary packages.`;
     const saveBtn = h('button', { class: 'btn', text: 'Save details' });
     saveBtn.onclick = async () => {
       const otherDeductions = others.value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => { const i = l.lastIndexOf(','); return { label: l.slice(0, i).trim(), amount: Number(l.slice(i + 1)) }; }).filter((o) => o.label && o.amount > 0);
@@ -883,8 +932,8 @@
       if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { toast('Enter a valid email address or leave it blank.', 'error'); return; }
       const done = busy(saveBtn, 'Saving…');
       try {
-        const patch = { dob: dob.value, email: em, ndHoursPerMonth: Number(nd.value) || 0, deMinimis: Number(dm.value) || 0, thirteenthApplicable: th.checked, otherDeductions };
-        await S.db.doc('hr/data/employees/' + key).update(patch);
+        const patch = { packageId: pkgSel.value || null, dob: dob.value, email: em, ndHoursPerMonth: Number(nd.value) || 0, deMinimis: Number(dm.value) || 0, thirteenthApplicable: th.checked, otherDeductions };
+        await updateRec(key, patch);
         const r = Object.assign({}, fresh(), patch);
         if (r.vault && r.status !== 'draft') await publishToEmployee(r);
         toast('Saved.'); reopen();
@@ -910,7 +959,7 @@
           const contractId = rec.contractId || `ETP-EC-${new Date().getFullYear()}-${ET.randomId(3)}`;
           const patch = { status: 'issued', contractId, issuedAt: nowIso(), returnNote: '', employeeSig: null };
           if (!rec.vault) { patch.accessCode = ET.newAccessCode(); patch.vault = await ET.vaultId(patch.accessCode); }
-          await S.db.doc('hr/data/employees/' + key).update(patch);
+          await updateRec(key, patch);
           const r = Object.assign({}, fresh(), patch);
           const e = S.esign[key];
           if (e && e.correction && !e.correction.handled) await S.db.doc(P.sign(r.vault)).update({ correction: Object.assign({}, e.correction, { handled: true }) });
@@ -932,7 +981,7 @@
         ok.onclick = async () => {
           const done = busy(ok);
           try {
-            await S.db.doc('hr/data/employees/' + key).update({ status: 'returned', returnNote: ta.value.trim(), employeeSig: null });
+            await updateRec(key, { status: 'returned', returnNote: ta.value.trim(), employeeSig: null });
             if (rec.vault) await S.db.doc(P.record(rec.vault)).update({ status: 'returned', returnNote: ta.value.trim() });
             if (rec.vault && S.esign[key]) await S.db.doc(P.sign(rec.vault)).delete();
             await logEvent({ action: 'Contract returned for correction', contractId: rec.contractId, version: rec.versionNo, employeeKey: key, detail: ta.value.trim() });
@@ -978,7 +1027,7 @@
             const v = b.data();
             const patch = Object.assign(versionFields(v.parsed, rec.pendingVid, v), { versionNo: (rec.versionNo || 1) + 1, employeeSig: null, name: v.parsed.name || rec.name });
             if (rec.status === 'issued') { patch.status = 'returned'; patch.returnNote = 'A corrected version is being prepared.'; }
-            await S.db.doc('hr/data/employees/' + key).update(patch);
+            await updateRec(key, patch);
             if (rec.vault && S.esign[key] && S.esign[key].signature) await S.db.doc(P.sign(rec.vault)).delete();
             const r = Object.assign({}, fresh(), patch);
             if (r.vault && r.status !== 'draft') await publishToEmployee(r);
@@ -986,7 +1035,7 @@
             toast('Revised draft approved. Re-issue it when ready.'); reopen();
           } catch (e) { done(); toast(errText(e), 'error'); }
         };
-        discard.onclick = async () => { await S.db.doc('hr/data/employees/' + key).update({ pendingVid: null }); await S.db.doc('hr/data/versions/' + rec.pendingVid).delete(); await S.db.doc('hr/data/formatted/' + rec.pendingVid).delete(); reopen(); };
+        discard.onclick = async () => { await updateRec(key, { pendingVid: null }); await S.db.doc('hr/data/versions/' + rec.pendingVid).delete(); await S.db.doc('hr/data/formatted/' + rec.pendingVid).delete(); reopen(); };
         diffSection.replaceChildren(
           h('h3', { text: 'Revised draft waiting for review' }),
           h('p', { class: 'small muted', text: `${changed} line(s) differ. Removed text is struck through; added text is green. Nothing changes until you approve.` }),
@@ -1030,6 +1079,7 @@
         h('div', { class: 'grid2' },
           h('label', { class: 'f', for: 'f-nd' }, 'Estimated night-shift hours per month', h('span', { class: 'h', text: rec.hasNightDiff ? 'Leave at 0 to describe it without an amount. Hours between 10 PM and 6 AM (208 = 8 hours × 26 days).' : 'This contract has no night differential.' }), nd),
           h('label', { class: 'f', for: 'f-dm' }, 'Qualifying de minimis benefits per month', h('span', { class: 'h', text: 'Leave at 0 unless Juan approved one in writing.' }), dm)),
+        h('label', { class: 'f', for: 'f-pkg' }, 'Salary package (pay breakdown)', h('span', { class: 'h', text: pkgStatus }), pkgSel),
         h('label', { class: 'f', for: 'f-other' }, 'Other authorized deductions', others),
         h('label', { class: 'check', for: 'f-13' }, th, h('span', { text: 'Show 13th-month pay as a statutory benefit (rank-and-file employees)' })),
         h('div', { class: 'row end' }, saveBtn)),
@@ -1209,6 +1259,7 @@
     };
     resolveProfiles([S.cfg.signatoryUid]).then(() => { const el = document.getElementById('sig-who'); if (el) el.textContent = S.cfg.signatoryUid ? personLabel(S.cfg.signatoryUid) : 'Not designated'; });
     return h('div', { class: 'stack', style: 'gap:16px' },
+      packagesPanel(),
       h('section', { class: 'panel' }, h('h3', { text: 'Company signatory' }),
         h('p', {}, 'Designated account: ', h('strong', { id: 'sig-who', text: S.cfg.signatoryUid ? personLabel(S.cfg.signatoryUid) : 'Not designated' })),
         S.cfg.signatoryUid ? h('div', { class: 'row' }, h('button', { class: 'btn danger sm', text: 'Remove designation', onclick: async () => { const n = Object.assign({}, S.cfg); delete n.signatoryUid; await S.db.doc('hr/config').set(n); await logEvent({ action: 'Company signatory designation removed' }); } })) : null),
@@ -1219,6 +1270,67 @@
         h('div', { class: 'grid2' }, fields.map((f) => h('label', { class: 'f', for: f.input.id }, f.label, f.input))),
         h('label', { class: 'f', for: 's-tax' }, 'Monthly withholding tax table', h('span', { class: 'h', text: 'One row per bracket: taxable pay over, base tax, rate on the excess.' }), taxTa)),
       h('div', { class: 'row end' }, save));
+  }
+
+  function packagesPanel() {
+    const list = JSON.parse(JSON.stringify((S.cfg && S.cfg.packages) || []));
+    const box = h('div', { class: 'stack', style: 'gap:18px' });
+    const recs = Object.values(S.employees);
+    function editor(p, i) {
+      const name = h('input', { type: 'text', id: `pk-${i}-name`, value: p.name || '' });
+      const gross = h('input', { type: 'number', step: '0.01', id: `pk-${i}-gross`, value: p.gross || 0 });
+      const earn = h('textarea', { id: `pk-${i}-earn`, value: rowsText(p.earnings), style: 'min-height:140px' });
+      const ded = h('textarea', { id: `pk-${i}-ded`, value: rowsText(p.deductions), style: 'min-height:110px' });
+      const note = h('textarea', { id: `pk-${i}-note`, value: p.note || '', style: 'min-height:60px' });
+      const conf = h('input', { type: 'checkbox', id: `pk-${i}-conf`, checked: !!p.confirmed });
+      const summary = h('p', { class: 'small' });
+      const sync = () => {
+        Object.assign(p, { name: name.value.trim(), gross: Number(gross.value) || 0, earnings: parseRows(earn.value), deductions: parseRows(ded.value), note: note.value.trim(), confirmed: conf.checked });
+        const probs = pkgProblems(p);
+        const who = recs.filter((r) => pkgFor(Object.assign({}, r, {})) && (r.packageId ? r.packageId === p.id : Math.abs(r.monthly - p.gross) < 0.005)).map((r) => r.name);
+        summary.replaceChildren(
+          h('span', { class: probs.length ? 'check-bad' : 'check-ok', text: probs.length ? probs.join(' ') : `Gross ${ET.peso(sumAmt(p.earnings))} − deductions ${ET.peso(sumAmt(p.deductions))} = take-home ${ET.peso(sumAmt(p.earnings) - sumAmt(p.deductions))}.` }),
+          h('span', { class: 'muted', text: ` Applies to ${who.length} employee(s).` }));
+      };
+      [name, gross, earn, ded, note, conf].forEach((el) => el.addEventListener('input', sync));
+      conf.addEventListener('change', sync);
+      sync();
+      return h('div', { class: 'stack', style: 'border-top:1px solid var(--line);padding-top:14px' },
+        h('div', { class: 'grid2' }, h('label', { class: 'f', for: name.id }, 'Package name', name), h('label', { class: 'f', for: gross.id }, 'Monthly gross (must equal the contract salary)', gross)),
+        h('div', { class: 'grid2' },
+          h('label', { class: 'f', for: earn.id }, 'Earnings', h('span', { class: 'h', text: 'One per line: label, amount' }), earn),
+          h('label', { class: 'f', for: ded.id }, 'Deductions', h('span', { class: 'h', text: 'One per line: label, amount' }), ded)),
+        h('label', { class: 'f', for: note.id }, 'Note shown to employees', note),
+        summary,
+        h('div', { class: 'row between' },
+          h('label', { class: 'check', for: conf.id }, conf, h('span', { text: 'Confirmed by HR — show this breakdown to the employees it applies to' })),
+          h('button', { class: 'btn ghost sm', text: 'Remove package', onclick: () => { list.splice(i, 1); draw(); } })));
+    }
+    const save = h('button', { class: 'btn', text: 'Save salary packages' });
+    save.onclick = async () => {
+      const bad = list.find((p) => !p.name || !p.gross || pkgProblems(p).length);
+      if (bad) { toast(`Fix “${bad.name || 'unnamed package'}” first: ${pkgProblems(bad).join(' ') || 'it needs a name and a gross amount.'}`, 'error'); return; }
+      const done = busy(save, 'Saving…');
+      try {
+        const packages = list.map((p) => Object.assign({}, p, { id: p.id || 'p' + ET.randomId(4) }));
+        await S.db.doc('hr/config').set(Object.assign({}, S.cfg, { packages }));
+        S.cfg = Object.assign({}, S.cfg, { packages });
+        for (const r of Object.values(S.employees)) if (r.vault && r.status !== 'draft') await S.db.doc(P.record(r.vault)).update({ payroll: payrollInputs(r) });
+        await logEvent({ action: 'Salary packages updated', detail: packages.map((p) => `${p.name}${p.confirmed ? ' (confirmed)' : ''}`).join('; ') });
+        toast('Salary packages saved.');
+      } catch (e) { toast(errText(e), 'error'); }
+      done();
+    };
+    function draw() {
+      box.replaceChildren(...list.map(editor),
+        h('div', { class: 'row between' },
+          h('button', { class: 'btn secondary sm', text: 'Add package', onclick: () => { list.push({ name: 'New package', gross: 0, earnings: [], deductions: [], note: '', confirmed: false }); draw(); } }),
+          save));
+    }
+    draw();
+    return h('section', { class: 'panel' }, h('h3', { text: 'Salary packages (pay breakdown shown to employees)' }),
+      h('p', { class: 'small muted', text: 'Each employee is matched to the package whose gross equals their contract salary, or to the package chosen on their record. Only confirmed packages are shown, and only to the employees they apply to. Packages never appear in the contract or the signed PDF.' }),
+      box);
   }
 
   /* ---------------- Juan / company signatory ---------------- */
