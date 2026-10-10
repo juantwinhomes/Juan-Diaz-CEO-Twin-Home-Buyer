@@ -242,15 +242,18 @@
     blocks.forEach((b) => { for (const k of ['runs', 'left', 'right']) if (b[k]) { b[k] = b[k].map((r) => ({ t: r.t.replace(/\s+/g, ' '), b: r.b })); b[k][0].t = b[k][0].t.trimStart(); b[k][b[k].length - 1].t = b[k][b[k].length - 1].t.trimEnd(); } });
     const sigItems = lines.slice(sigIdx).flatMap((l) => l.items);
     const col = (pred) => groupLines(sigItems.filter(pred), 0).map((l) => runsText(toRuns(l.items)));
+    let ti = header.findIndex((t, i) => i >= 2 && /^EMPLOYMENT CONTRACT$/.test(t));
+    if (ti < 0) ti = 2;
     return {
       letterhead: { name: header[0], address: header[1] },
-      title: header[2], subtitle: header.slice(3).join(' '),
+      preamble: header.slice(2, ti),
+      title: header[ti], subtitle: header.slice(ti + 1).join(' '),
       blocks,
       signature: { company: col((i) => i.x < 300), employee: col((i) => i.x >= 300) },
     };
   };
 
-  ET.modelText = (m) => squash([m.letterhead.name, m.letterhead.address, m.title, m.subtitle,
+  ET.modelText = (m) => squash([m.letterhead.name, m.letterhead.address, ...(m.preamble || []), m.title, m.subtitle,
     ...m.blocks.map((b) => b.type === 'h' ? b.text : b.type === 'row' ? runsText(b.left) + runsText(b.right) : runsText(b.runs)),
     ...m.signature.company, ...m.signature.employee].join(''));
 
@@ -267,6 +270,15 @@
     const marker = squash('(to be filled in before signing)');
     if (expected.split(marker).length !== 2) throw new Error('The blank could not be located in the draft text.');
     return { model: m, expected: expected.replace(marker, squash(value)) };
+  };
+
+  /** Removes Juan's "DRAFT for Juan Diaz's approval…" stamp above the title. Nothing else changes. */
+  ET.removeDraftNote = function (model, expected) {
+    const note = (model.preamble || []).join(' ');
+    if (!/DRAFT for Juan Diaz.s approval|Not valid until signed/i.test(note)) throw new Error('This contract has no pre-approval note to remove.');
+    const k = expected.indexOf(squash(note));
+    if (k < 0) throw new Error('The note could not be located in the draft text.');
+    return { model: Object.assign(JSON.parse(JSON.stringify(model)), { preamble: [] }), expected: expected.slice(0, k) + expected.slice(k + squash(note).length), note };
   };
 
   /** Draws the contract in the packet layout. Returns the PDF and where each signature and date go. */
@@ -324,6 +336,7 @@
     y -= LEAD; draw(ET.LETTERHEAD.phone, L, false);
     y -= LEAD; const ew = draw('Email: ', L, false); const lw = draw(ET.LETTERHEAD.email, L + ew, false, SZ, link); line(L + ew, L + ew + lw, y - 1.5);
     y -= 10;
+    if ((m.preamble || []).length) { para([{ t: m.preamble.join(' '), b: false }], L, CW); y -= 6; }
     y -= LEAD + 1; draw(m.title, L, true, 11);
     if (m.subtitle) { y -= LEAD; draw(m.subtitle, L, true); }
     y -= 6;
