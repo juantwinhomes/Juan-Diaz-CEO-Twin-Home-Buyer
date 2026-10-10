@@ -5,10 +5,12 @@
  * artifact's db under access rules enforced by the server (see README.md):
  *   public/directory            names only, readable by every signed-in viewer
  *   hr/**                       HR (owner) and the company signatory (Editor) only
- *   issued/<uid>/**             one employee's own contract and pay data; readable only by that account and admins
- *   esign/<uid>, claims/<uid>, activity/<uid>   written by that account, read by admins only
+ *   vault/<id>/d/*              one employee's contract, pay data and signed copy; <id> is derived from their
+ *                               personal access code, so the record cannot be found or listed without the code
+ *   vsign/<id>/d/signature      that employee's signature, written with the same code
+ *   claims/<uid>, activity/<uid>   written by that account, read by admins only
  *   signatory/<uid>/**          the signatory's own batch authorizations
- * An employee's browser never receives another employee's data because the server refuses to send it.
+ * An employee's browser only ever requests the one record their code points to.
  */
 (function () {
   'use strict';
@@ -22,6 +24,13 @@
     awaiting_company: "Awaiting Juan's Signature",
     fully_signed: 'Fully Signed',
     returned: 'Returned for Correction',
+  };
+  const ARTIFACT_URL = 'https://claude.ai/artifact/NoKxD18fdtPjajyHHywzQx';
+  const P = {
+    record: (v) => `vault/${v}/d/record`,
+    source: (v) => `vault/${v}/d/source`,
+    final: (v) => `vault/${v}/d/final`,
+    sign: (v) => `vsign/${v}/d/signature`,
   };
   const S = { db: null, user: null, uid: null, me: null, role: null, cfg: {}, employees: {}, esign: {}, claims: {}, profiles: {} };
 
@@ -76,7 +85,7 @@
   /* ---------------- activity history ---------------- */
   let logQueue = Promise.resolve();
   function logEvent(ev) {
-    const entry = Object.assign({ at: nowIso(), actorUid: S.uid, role: S.role, outcome: 'success' }, ev);
+    const entry = Object.assign({ at: nowIso(), actorUid: S.uid, role: S.role, outcome: 'success' }, S.role === 'employee' && E.key ? { employeeKey: E.key } : {}, ev);
     logQueue = logQueue.then(async () => {
       const ref = S.db.doc('activity/' + S.uid);
       const snap = await ref.get();
@@ -123,7 +132,7 @@
 
   /* ---------------- shared status logic ---------------- */
   function sigFor(rec) {
-    const e = rec.uid && S.esign[rec.uid];
+    const e = rec.vault && S.esign[rec.key];
     return e && e.signature && e.signature.sha === rec.sha && e.signature.contractId === rec.contractId ? e.signature : null;
   }
   function statusOf(rec) {
@@ -141,14 +150,14 @@
   async function ingestEmployeeActions() {
     for (const rec of Object.values(S.employees)) {
       if (rec.status !== 'issued' || ingesting.has(rec.key)) continue;
-      const e = rec.uid && S.esign[rec.uid];
+      const e = rec.vault && S.esign[rec.key];
       if (!e) continue;
       const sig = sigFor(rec);
       if (sig && !(rec.employeeSig && rec.employeeSig.sha === rec.sha)) {
         ingesting.add(rec.key);
         try {
           await S.db.doc('hr/data/employees/' + rec.key).update({ employeeSig: sig });
-          await S.db.doc('issued/' + rec.uid).update({ status: 'awaiting_company', employeeSignedAt: sig.signedAt });
+          await S.db.doc(P.record(rec.vault)).update({ status: 'awaiting_company', employeeSignedAt: sig.signedAt });
           await logEvent({ action: 'Employee signature locked; contract placed in Juan’s signing queue', contractId: rec.contractId, version: rec.versionNo, employeeKey: rec.key });
         } catch (err) { console.warn(err); }
         ingesting.delete(rec.key);
@@ -156,7 +165,7 @@
         ingesting.add(rec.key);
         try {
           await S.db.doc('hr/data/employees/' + rec.key).update({ status: 'returned', returnNote: 'Employee: ' + e.correction.note, returnedAt: e.correction.at });
-          await S.db.doc('issued/' + rec.uid).update({ status: 'returned', returnNote: e.correction.note });
+          await S.db.doc(P.record(rec.vault)).update({ status: 'returned', returnNote: e.correction.note });
           await logEvent({ action: 'Employee requested a correction', contractId: rec.contractId, version: rec.versionNo, employeeKey: rec.key, detail: e.correction.note });
         } catch (err) { console.warn(err); }
         ingesting.delete(rec.key);
@@ -267,9 +276,10 @@
     const st = d.statutory || ET.DEFAULT_STATUTORY;
     const p = ET.computePayroll(d, st);
     const row = (label, why, amount, cls) => h('tr', { class: cls || '' }, h('td', {}, label, why ? h('span', { class: 'why', text: why }) : null), h('td', { class: amount < 0 ? 'neg' : '', text: amount < 0 ? '−' + ET.peso(-amount) : ET.peso(amount) }));
-    const ndWhy = d.hasNightDiff
-      ? `Estimate: about ${d.ndHoursPerMonth || 0} night hours a month × 10% × your hourly rate of ${ET.peso(p.hourly)}. Actual pay depends on hours worked between 10:00 PM and 6:00 AM.`
-      : 'Not part of your contract.';
+    const ndWhy = !d.hasNightDiff ? 'Not part of your contract.'
+      : d.ndHoursPerMonth
+        ? `Estimate: about ${d.ndHoursPerMonth} night hours a month × 10% × your hourly rate of ${ET.peso(p.hourly)}. Actual pay depends on hours worked between 10:00 PM and 6:00 AM.`
+        : 'See section 4 of your contract. Not estimated here because it depends on the hours you actually work between 10:00 PM and 6:00 AM.';
     const table = h('table', { class: 'pay' },
       row('Monthly basic salary', 'From section SALARY of your contract.', p.monthly),
       row('Guaranteed monthly gross compensation', 'Your fixed monthly salary. It does not change with hours.', p.guaranteed),
@@ -296,23 +306,31 @@
   /* ================================================================
    *  EMPLOYEE
    * ================================================================ */
-  const E = { issued: undefined, esign: undefined, claim: undefined, step: 'pay', source: null, sourceSha: null, final: null, routeKey: '', loggedAccess: false, loggedPay: false };
+  const E_INIT = { vault: null, key: null, unsubs: [], issued: undefined, esign: undefined, step: 'pay', source: null, sourceSha: null, final: null, routeKey: '', loggedAccess: false, loggedPay: false, failures: 0 };
+  const E = Object.assign({}, E_INIT);
 
-  async function employeeMain() {
-    S.role = 'employee';
-    const ready = () => E.issued !== undefined && E.esign !== undefined && E.claim !== undefined;
+  function employeeMain() { S.role = 'employee'; empLogin(); }
+
+  /** Leaves this employee's contract, e.g. on a shared department account. */
+  function empSignOut(message) {
+    E.unsubs.forEach((u) => u());
+    Object.assign(E, E_INIT, { unsubs: [], failures: E.failures });
+    empLogin(message);
+  }
+
+  function empOpen(vault, key) {
+    E.vault = vault; E.key = key;
     const onErr = (e) => mount(blocked('Your records could not be loaded', errText(e)));
-    S.db.doc('issued/' + S.uid).onSnapshot((s) => { E.issued = s.exists ? s.data() : null; if (ready()) routeEmployee(); }, onErr);
-    S.db.doc('esign/' + S.uid).onSnapshot((s) => { E.esign = s.exists ? s.data() : null; if (ready()) routeEmployee(); }, onErr);
-    S.db.doc('claims/' + S.uid).onSnapshot((s) => { E.claim = s.exists ? s.data() : null; if (ready()) routeEmployee(); }, onErr);
+    E.unsubs.push(S.db.doc(P.record(vault)).onSnapshot((s) => {
+      if (!s.exists) { empSignOut('Your access code is no longer valid. Ask HR for your current code.'); return; }
+      E.issued = s.data();
+      if (E.esign !== undefined) routeEmployee();
+    }, onErr));
+    E.unsubs.push(S.db.doc(P.sign(vault)).onSnapshot((s) => { E.esign = s.exists ? s.data() : null; if (E.issued !== undefined) routeEmployee(); }, onErr));
   }
 
   function employeeState() {
     const i = E.issued;
-    if (!i) {
-      if (E.claim && E.claim.kind === 'employee' && E.claim.status === 'pending') return 'waiting';
-      return 'welcome';
-    }
     if (i.status === 'fully_signed') return 'complete';
     if (i.status === 'returned') return 'returned';
     const sig = E.esign && E.esign.signature;
@@ -322,21 +340,27 @@
 
   function routeEmployee(force) {
     const st = employeeState();
-    const key = [st, E.issued && E.issued.sha, E.issued && E.issued.status, E.claim && E.claim.status].join('|');
+    const key = [st, E.issued.sha, E.issued.status].join('|');
     if (!force && key === E.routeKey) return;
     E.routeKey = key;
-    if (E.issued && !E.loggedAccess) { E.loggedAccess = true; logEvent({ action: 'Employee accessed contract', contractId: E.issued.contractId, version: E.issued.version }); }
-    ({ welcome: empWelcome, waiting: empWaiting, pay: empPay, contract: empContract, sign: empSign, awaiting: empAwaiting, complete: empComplete, returned: empReturned }[st])();
+    if (!E.loggedAccess) { E.loggedAccess = true; logEvent({ action: 'Employee accessed contract', contractId: E.issued.contractId, version: E.issued.version }); }
+    ({ pay: empPay, contract: empContract, sign: empSign, awaiting: empAwaiting, complete: empComplete, returned: empReturned }[st])();
   }
   function goStep(step) { E.step = step; routeEmployee(true); window.scrollTo(0, 0); }
 
+  function empBar() {
+    return h('div', { class: 'row between small' },
+      h('span', { class: 'muted', text: E.issued ? `Contract of ${E.issued.name}` : '' }),
+      h('button', { class: 'btn ghost sm', text: 'Not you? Exit', onclick: () => empSignOut() }));
+  }
   function stepper(now) {
     const steps = [['pay', 'Your pay'], ['contract', 'Review contract'], ['sign', 'Sign'], ['awaiting', "Juan's signature"], ['complete', 'Complete']];
     const idx = steps.findIndex((s) => s[0] === now);
-    return h('ol', { class: 'steps', 'aria-label': 'Signing progress' }, steps.map((s, i) => h('li', { class: i < idx ? 'done' : i === idx ? 'now' : '', 'aria-current': i === idx ? 'step' : null, text: s[1] })));
+    return h('div', { class: 'stack' }, empBar(),
+      h('ol', { class: 'steps', 'aria-label': 'Signing progress' }, steps.map((s, i) => h('li', { class: i < idx ? 'done' : i === idx ? 'now' : '', 'aria-current': i === idx ? 'step' : null, text: s[1] }))));
   }
 
-  async function empWelcome() {
+  async function empLogin(message) {
     let names = [];
     try { const d = await S.db.doc('public/directory').get(); names = d.exists ? (d.data().names || []) : []; } catch (_) { /* empty list below */ }
     let chosen = null;
@@ -352,51 +376,51 @@
     input.addEventListener('input', () => { chosen = null; show(); });
     input.addEventListener('focus', show);
     input.addEventListener('blur', () => setTimeout(() => { list.hidden = true; }, 120));
-    const dob = h('input', { type: 'date', id: 'emp-dob', max: ET.phYMD(nowIso()) });
+    const fromLink = /^#[A-Za-z0-9-]{12,16}$/.test(location.hash) ? location.hash.slice(1) : '';
+    const code = h('input', { type: 'text', id: 'emp-code', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', placeholder: 'XXXX-XXXX-XXXX', value: fromLink, style: 'font-family:var(--mono);letter-spacing:.08em' });
     const msg = h('div');
-    const btn = h('button', { class: 'btn big', type: 'submit', text: 'Continue' });
+    if (message) msg.append(h('p', { class: 'note warn', text: message }));
+    const btn = h('button', { class: 'btn big', type: 'submit', text: 'Open my contract' });
     const form = h('form', { class: 'stack', onsubmit: async (e) => {
       e.preventDefault();
       msg.replaceChildren();
       if (!chosen) { const exact = names.find((n) => ET.normName(n.name) === ET.normName(input.value)); if (exact) pick(exact); }
       if (!chosen) { msg.append(h('p', { class: 'note bad', text: 'Select your name from the list.' })); return; }
-      if (!dob.value) { msg.append(h('p', { class: 'note bad', text: 'Enter your date of birth.' })); return; }
-      const done = busy(btn, 'Sending…');
+      const norm = ET.normCode(code.value);
+      if (norm.length !== 12) { msg.append(h('p', { class: 'note bad', text: 'Your access code has 12 letters and numbers, like ABCD-EFGH-JKMN.' })); return; }
+      const done = busy(btn, 'Checking…');
       try {
-        await S.db.doc('claims/' + S.uid).set({ kind: 'employee', key: chosen.key, dob: dob.value, at: nowIso(), status: 'pending' });
-        await logEvent({ action: 'Employee requested access', employeeKey: chosen.key });
-      } catch (err) {
-        done();
-        if (err && err.code === 'invalid_argument') msg.append(h('p', { class: 'note bad', text: 'Your Claude account can view this page but cannot submit. Ask HR to give your account Contributor access in the company Claude organization.' }));
-        else msg.append(h('p', { class: 'note bad', text: 'Your request could not be sent: ' + errText(err) }));
-      }
+        if (E.failures >= 5) await new Promise((r) => setTimeout(r, 15000));
+        const vault = await ET.vaultId(norm);
+        const r = await S.db.doc(P.record(vault)).get();
+        if (!r.exists || r.data().key !== chosen.key) {
+          E.failures++;
+          done();
+          msg.append(h('p', { class: 'note bad', text: 'That name and access code do not match. Check the code HR gave you. ' + CONFIDENTIAL }));
+          logEvent({ action: 'Contract access refused: name and code did not match', employeeKey: chosen.key, outcome: 'failed' });
+          return;
+        }
+        E.failures = 0;
+        mount(spinner('Opening your contract…'));
+        empOpen(vault, chosen.key);
+      } catch (err) { done(); msg.append(h('p', { class: 'note bad', text: 'Your contract could not be opened: ' + errText(err) })); }
     } },
       h('label', { class: 'f', for: 'emp-name' }, 'Your full name', h('div', { class: 'combo' }, input, list)),
-      h('label', { class: 'f', for: 'emp-dob' }, 'Date of birth', dob),
+      h('label', { class: 'f', for: 'emp-code' }, 'Your access code', h('span', { class: 'h', text: 'The personal code HR gave you. It is not your birthdate or employee ID.' }), code),
       msg, h('div', { class: 'row' }, btn));
-    const rejected = E.claim && E.claim.status === 'rejected';
     mount(h('div', { class: 'narrow' },
       h('section', { class: 'panel' },
         h('div', { class: 'eyebrow', text: 'Welcome' }),
         h('h1', { class: 'title', text: 'Review and sign your employment contract' }),
-        h('p', { class: 'lede', text: 'Select your name and enter your date of birth. HR confirms these details against your employee record before your contract opens on this account.' }),
-        rejected ? h('p', { class: 'note bad', text: 'HR could not confirm your last request. ' + CONFIDENTIAL + ' Check your details and try again, or contact HR.' }) : null,
+        h('p', { class: 'lede', text: 'Select your name and enter the personal access code HR gave you.' }),
         names.length ? form : h('p', { class: 'note warn', text: 'No contracts are open for signing yet. HR will tell you when yours is ready.' })),
-      h('p', { class: 'confidential', text: 'Your name and birthdate identify your record. Access is protected by your Claude sign-in: your contract opens only on the account HR links to your record. ' + CONFIDENTIAL })));
-  }
-
-  function empWaiting() {
-    mount(h('div', { class: 'narrow' }, h('section', { class: 'panel' },
-      h('div', { class: 'eyebrow', text: 'Request sent' }),
-      h('h1', { class: 'title', text: 'HR is confirming your details' }),
-      h('p', { class: 'lede', text: 'Your contract will open on this page as soon as HR links your record to this Claude account. You can keep this page open or come back later.' }),
-      h('div', { class: 'row' }, h('div', { class: 'spinner' }), h('span', { class: 'muted small', text: 'Waiting for HR…' })),
-      h('div', { class: 'row' }, h('button', { class: 'btn secondary sm', text: 'Change my details', onclick: async () => { await S.db.doc('claims/' + S.uid).delete(); } })))));
+      h('p', { class: 'confidential', text: 'Keep your access code private: anyone with it can open your contract and pay details. If you share a computer or a department account, click "Not you? Exit" when you finish. ' + CONFIDENTIAL })));
+    if (!fromLink) input.focus();
   }
 
   async function loadSource() {
     if (E.source && E.sourceSha === E.issued.sha) return E.source;
-    const s = await S.db.doc(`issued/${S.uid}/docs/source`).get();
+    const s = await S.db.doc(P.source(E.vault)).get();
     if (!s.exists) throw new Error('Your contract file is not available yet.');
     const bytes = ET.bytesFromB64(s.data().b64);
     if ((await ET.sha256Hex(bytes)) !== E.issued.sha) throw new Error('The contract file failed its integrity check. Contact HR.');
@@ -452,10 +476,10 @@
       if (!ta.value.trim()) { toast('Describe the correction first.', 'error'); return; }
       const done = busy(btn, 'Sending…');
       try {
-        await S.db.doc('esign/' + S.uid).set({ correction: { note: ta.value.trim().slice(0, 1000), sha: E.issued.sha, contractId: E.issued.contractId, at: nowIso() } });
+        await S.db.doc(P.sign(E.vault)).set({ correction: { note: ta.value.trim().slice(0, 1000), sha: E.issued.sha, contractId: E.issued.contractId, at: nowIso() } });
         await logEvent({ action: 'Employee requested a correction', contractId: E.issued.contractId, version: E.issued.version, detail: ta.value.trim().slice(0, 200) });
         close(); toast('Sent to HR.');
-        mount(h('div', { class: 'narrow' }, h('section', { class: 'panel' }, h('h1', { class: 'title', text: 'Correction sent to HR' }), h('p', { class: 'lede', text: 'HR will review your note. You will sign the corrected contract once it is ready.' }))));
+        mount(h('div', { class: 'narrow' }, empBar(), h('section', { class: 'panel' }, h('h1', { class: 'title', text: 'Correction sent to HR' }), h('p', { class: 'lede', text: 'HR will review your note. You will sign the corrected contract once it is ready.' }))));
       } catch (e) { done(); toast('Could not send: ' + errText(e), 'error'); }
     };
   }
@@ -486,15 +510,15 @@
         const sha = await ET.sha256Hex(bytes);
         if (sha !== i.sha) throw new Error('Your contract changed while you were signing. Review it again.');
         const signedAt = nowIso();
-        const signature = { contractId: i.contractId, version: i.version, sha, sigPng: captured.b64, method: captured.method, typedName: captured.typedName || null, style: captured.style || null, consentText: consentText(i), consentAt: signedAt, signedAt, userAgent: navigator.userAgent.slice(0, 200) };
+        const signature = { contractId: i.contractId, version: i.version, sha, sigPng: captured.b64, method: captured.method, typedName: captured.typedName || null, style: captured.style || null, consentText: consentText(i), consentAt: signedAt, signedAt, accountUid: S.uid, userAgent: navigator.userAgent.slice(0, 200) };
         await logEvent({ action: 'Employee consent recorded', contractId: i.contractId, version: i.version });
-        await S.db.doc('esign/' + S.uid).set({ signature });
+        await S.db.doc(P.sign(E.vault)).set({ signature });
         await logEvent({ action: 'Employee signed', contractId: i.contractId, version: i.version, detail: captured.method });
         await logEvent({ action: 'Contract placed in Juan’s signing queue', contractId: i.contractId, version: i.version });
         toast('Signature submitted.');
       } catch (e) {
         done();
-        toast(e && e.code === 'invalid_argument' ? 'Your account cannot sign. Ask HR for Contributor access.' : 'Could not submit: ' + errText(e), 'error');
+        toast(e && e.code === 'invalid_argument' ? 'This Claude account can view but cannot sign. Ask HR to give it Contributor access.' : 'Could not submit: ' + errText(e), 'error');
       }
     };
     mount(h('div', { class: 'narrow' }, stepper('sign'),
@@ -523,7 +547,7 @@
 
   function empReturned() {
     const i = E.issued;
-    mount(h('div', { class: 'narrow' }, h('section', { class: 'panel' },
+    mount(h('div', { class: 'narrow' }, empBar(), h('section', { class: 'panel' },
       h('div', { class: 'eyebrow', text: STATUS.returned }),
       h('h1', { class: 'title', text: 'Your contract is being corrected' }),
       h('p', { class: 'lede', text: 'HR is preparing a corrected version. You will review and sign it here when it is ready.' }),
@@ -532,7 +556,7 @@
 
   async function loadFinal() {
     if (E.final && E.final.sha === E.issued.finalSha) return E.final.bytes;
-    const s = await S.db.doc(`issued/${S.uid}/docs/final`).get();
+    const s = await S.db.doc(P.final(E.vault)).get();
     if (!s.exists) throw new Error('The signed copy is still being prepared.');
     const bytes = ET.bytesFromB64(s.data().b64);
     if ((await ET.sha256Hex(bytes)) !== E.issued.finalSha) throw new Error('The signed copy failed its integrity check. Contact HR.');
@@ -560,20 +584,32 @@
           h('div', {}, h('dt', { text: 'You signed' }), h('dd', { text: i.employeeSignedAt ? ET.phDateTime(i.employeeSignedAt) : '—' })),
           h('div', {}, h('dt', { text: 'Juan Diaz signed for the Company' }), h('dd', { text: i.companySignedAt ? ET.phDateTime(i.companySignedAt) : '—' }))),
         h('div', { class: 'row' }, view, dlBtn),
-        h('p', { class: 'confidential', text: 'This copy stays available on this page whenever you sign in. ' + CONFIDENTIAL }))));
+        h('p', { class: 'confidential', text: 'This copy stays available here whenever you open the page with your name and access code. ' + CONFIDENTIAL }))));
   }
 
   /* ================================================================
    *  HR (artifact owner) and JUAN (designated signatory)
    * ================================================================ */
+  /** One live subscription per issued contract to that employee's signature record. */
+  const signSubs = {};
+  function syncSignSubs(onChange) {
+    for (const [k, sub] of Object.entries(signSubs)) {
+      const r = S.employees[k];
+      if (!r || r.vault !== sub.vault) { sub.unsub(); delete signSubs[k]; delete S.esign[k]; }
+    }
+    for (const r of Object.values(S.employees)) {
+      if (!r.vault || signSubs[r.key]) continue;
+      const key = r.key;
+      signSubs[key] = { vault: r.vault, unsub: S.db.doc(P.sign(r.vault)).onSnapshot((snap) => { S.esign[key] = snap.exists ? snap.data() : null; onChange(); ingestEmployeeActions(); }, () => {}) };
+    }
+  }
   function subscribeAdminData(onChange) {
-    let n = 0; const need = 3; const seen = new Set();
-    const tick = (k) => { if (!seen.has(k)) { seen.add(k); n++; } if (n >= need) onChange(); };
+    const ready = { e: false, c: false };
+    const go = () => { if (ready.e && ready.c) onChange(); };
     const err = (e) => mount(blocked('Records could not be loaded', errText(e)));
-    S.db.doc('hr/config').onSnapshot((s) => { S.cfg = s.exists ? s.data() : {}; if (n >= need) onChange(); }, err);
-    S.db.collection('hr/data/employees').onSnapshot((q) => { S.employees = {}; q.docs.forEach((d) => { S.employees[d.id] = d.data(); }); tick('e'); ingestEmployeeActions(); }, err);
-    S.db.collection('esign').onSnapshot((q) => { S.esign = {}; q.docs.forEach((d) => { S.esign[d.id] = d.data(); }); tick('s'); ingestEmployeeActions(); }, err);
-    S.db.collection('claims').onSnapshot((q) => { S.claims = {}; q.docs.forEach((d) => { S.claims[d.id] = d.data(); }); tick('c'); }, err);
+    S.db.doc('hr/config').onSnapshot((s) => { S.cfg = s.exists ? s.data() : {}; go(); }, err);
+    S.db.collection('hr/data/employees').onSnapshot((q) => { S.employees = {}; q.docs.forEach((d) => { S.employees[d.id] = d.data(); }); ready.e = true; syncSignSubs(go); go(); ingestEmployeeActions(); }, err);
+    S.db.collection('claims').onSnapshot((q) => { S.claims = {}; q.docs.forEach((d) => { S.claims[d.id] = d.data(); }); ready.c = true; go(); }, err);
   }
   async function resolveProfiles(ids) {
     ids = ids.filter(Boolean);
@@ -634,9 +670,9 @@
     const active = document.activeElement;
     H.focus = active && active.id && app.contains(active) ? { id: active.id, start: active.selectionStart, end: active.selectionEnd } : null;
     const recs = Object.values(S.employees);
-    const pendingClaims = Object.entries(S.claims).filter(([, c]) => c.status === 'pending');
+    const pendingClaims = Object.entries(S.claims).filter(([, c]) => c.status === 'pending' && c.kind === 'signatory');
     const done = recs.filter((r) => statusOf(r) === 'fully_signed');
-    const tabs = [['contracts', 'Contracts', recs.length], ['access', 'Access requests', pendingClaims.length], ['signing', 'Signing status', recs.filter((r) => statusOf(r) === 'awaiting_company').length], ['completed', 'Signed PDFs', done.length], ['activity', 'Activity history'], ['settings', 'Settings']];
+    const tabs = [['contracts', 'Contracts', recs.length], ['access', 'Access codes', pendingClaims.length], ['signing', 'Signing status', recs.filter((r) => statusOf(r) === 'awaiting_company').length], ['completed', 'Signed PDFs', done.length], ['activity', 'Activity history'], ['settings', 'Settings']];
     const tabBar = h('div', { class: 'tabs', role: 'tablist' }, tabs.map(([id, label, count]) =>
       h('button', { class: 'tab', role: 'tab', 'aria-selected': String(H.tab === id), onclick: () => { H.tab = id; renderHr(); } }, label, count ? h('span', { class: 'count', text: count }) : null)));
     const body = { contracts: hrContracts, access: hrAccess, signing: hrSigning, completed: hrCompleted, activity: hrActivity, settings: hrSettings }[H.tab]();
@@ -649,7 +685,7 @@
   function setupWarnings() {
     const w = [];
     if (H.upgradeNote) w.push(H.upgradeNote);
-    if (!S.cfg.signatoryUid) w.push('No company signatory is designated yet. Share this artifact with Juan Diaz as an Editor; when he opens it and requests the signatory role, approve it under Access requests.');
+    if (!S.cfg.signatoryUid) w.push('No company signatory is designated yet. Share this artifact with Juan Diaz as an Editor; when he opens it and requests the signatory role, approve it under Access codes.');
     return w.length ? h('div', { class: 'stack' }, w.map((t) => h('p', { class: 'note warn', text: t }))) : null;
   }
 
@@ -674,14 +710,14 @@
     drop.addEventListener('dragleave', () => drop.classList.remove('over'));
     drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); uploadContracts([...e.dataTransfer.files].filter((f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name))); });
     const table = h('div', { class: 'table-wrap' }, h('table', {},
-      h('thead', {}, h('tr', {}, ['Employee', 'Code', 'Position', 'Monthly salary', 'Status', 'Account', ''].map((t, i) => h('th', { class: i === 3 ? 'num' : '', text: t })))),
+      h('thead', {}, h('tr', {}, ['Employee', 'Code', 'Position', 'Monthly salary', 'Status', 'Access', ''].map((t, i) => h('th', { class: i === 3 ? 'num' : '', text: t })))),
       h('tbody', {}, recs.length ? recs.map((r) => h('tr', {},
         h('td', {}, h('strong', { text: r.name }), r.pendingVid ? h('div', { class: 'small', style: 'color:var(--warn)', text: 'Revised draft waiting for review' }) : null),
         h('td', { class: 'code', text: c[r.key] || '—' }),
         h('td', { class: 'small', text: r.position || '—' }),
         h('td', { class: 'num', text: r.monthly ? ET.peso(r.monthly) : '—' }),
         h('td', {}, pill(statusOf(r))),
-        h('td', { class: 'small muted', text: r.uid ? 'Linked' : 'Not linked' }),
+        h('td', { class: 'small muted', text: r.accessCode ? 'Code ready' : '—' }),
         h('td', {}, h('button', { class: 'btn secondary sm', text: 'Open', onclick: () => openEmployee(r.key) }))))
         : h('tr', {}, h('td', { colspan: 7, class: 'muted', text: 'No contracts yet. Upload the PDFs above to start.' })))));
     return h('div', { class: 'stack', style: 'gap:16px' }, drop, h('div', { class: 'row' }, h('div', { style: 'flex:1;min-width:220px' }, searchBox('hr-search', 'Search by name, employee code, status or contract ID'))), table);
@@ -713,8 +749,8 @@
         if (!rec) {
           const key = ET.randomId(6);
           await S.db.doc('hr/data/employees/' + key).set(Object.assign(versionFields(parsed, vid, fmt), {
-            key, name: parsed.name, createdAt: nowIso(), status: 'draft', versionNo: 1, dob: '', email: '', uid: null,
-            ndHoursPerMonth: parsed.hasNightDiff ? 208 : 0, deMinimis: 0, otherDeductions: [], thirteenthApplicable: !parsed.managerial,
+            key, name: parsed.name, createdAt: nowIso(), status: 'draft', versionNo: 1, dob: '', email: '', vault: null, accessCode: null,
+            ndHoursPerMonth: 0, deMinimis: 0, otherDeductions: [], thirteenthApplicable: !parsed.managerial,
           }));
           await logEvent({ action: 'Contract created', employeeKey: key, version: 1, detail: file.name });
           li.textContent = `${file.name}: added ${parsed.name}.` + (parsed.issues.length ? ' Needs attention: ' + parsed.issues.join(' ') : '');
@@ -781,17 +817,17 @@
     return { monthly: rec.monthly, hourly: rec.hourly, ndHoursPerMonth: rec.ndHoursPerMonth, deMinimis: rec.deMinimis, otherDeductions: rec.otherDeductions || [], thirteenthApplicable: !!rec.thirteenthApplicable, hasNightDiff: !!rec.hasNightDiff, statutory: S.cfg.statutory || ET.DEFAULT_STATUTORY };
   }
 
-  /** Writes the employee's own copy. Only called for a record linked to a verified account. */
+  /** Writes the employee's own copy to the location their access code points to. */
   async function publishToEmployee(rec) {
-    if (!rec.uid || !['issued', 'returned', 'fully_signed'].includes(rec.status)) return;
+    if (!rec.vault || !['issued', 'returned', 'fully_signed'].includes(rec.status)) return;
     const { bytes } = await getVersionBytes(rec.currentVid, rec.sha);
-    await S.db.doc(`issued/${rec.uid}/docs/source`).set({ b64: ET.b64FromBytes(bytes), sha: rec.sha, contractId: rec.contractId, version: rec.versionNo });
+    await S.db.doc(P.source(rec.vault)).set({ b64: ET.b64FromBytes(bytes), sha: rec.sha, contractId: rec.contractId, version: rec.versionNo });
     if (rec.status === 'fully_signed') {
       const f = await S.db.doc('hr/data/finals/' + rec.key).get();
-      if (f.exists) await S.db.doc(`issued/${rec.uid}/docs/final`).set({ b64: f.data().b64, sha: f.data().sha, contractId: rec.contractId, version: rec.versionNo });
+      if (f.exists) await S.db.doc(P.final(rec.vault)).set({ b64: f.data().b64, sha: f.data().sha, contractId: rec.contractId, version: rec.versionNo });
     }
     const st = statusOf(rec);
-    await S.db.doc('issued/' + rec.uid).set({
+    await S.db.doc(P.record(rec.vault)).set({
       key: rec.key, contractId: rec.contractId, version: rec.versionNo, sha: rec.sha, name: rec.name, dob: rec.dob, position: rec.position,
       startDate: rec.startDate, effective: rec.effective, monthly: rec.monthly, perCutoff: rec.perCutoff,
       status: st === 'draft' ? 'awaiting_employee' : st, issuedAt: rec.issuedAt, returnNote: rec.status === 'returned' ? (rec.returnNote || '') : '',
@@ -799,8 +835,24 @@
       companySignedAt: rec.companySig ? rec.companySig.signedAt : null, finalSha: rec.finalSha || null,
     });
   }
-  async function unpublishFromEmployee(uid) {
-    for (const p of [`issued/${uid}/docs/final`, `issued/${uid}/docs/source`, `issued/${uid}`]) await S.db.doc(p).delete();
+  async function unpublishFromEmployee(vault) {
+    for (const p of [P.final(vault), P.source(vault), P.record(vault), P.sign(vault)]) await S.db.doc(p).delete();
+  }
+  const personalLink = (code) => `${ARTIFACT_URL}#${code}`;
+  const inviteMessage = (rec) => `Hi ${rec.name.split(' ')[0]}, your employment contract with Equity Track Inc. Philippines is ready for review and signature.\n\n1. Open this link (sign in to Claude if asked): ${personalLink(rec.accessCode)}\n2. Select your name: ${rec.name}\n3. Your access code: ${rec.accessCode}\n\nKeep this code private. It opens your contract and pay details. If you use a shared or department account, click "Not you? Exit" when you finish.`;
+  function copyButton(label, text, cls) {
+    return h('button', { class: cls || 'btn secondary sm', text: label, onclick: async () => {
+      try { await navigator.clipboard.writeText(text); toast('Copied.'); }
+      catch (_) { const ta = h('textarea', { readonly: true, value: text, style: 'min-height:160px' }); modal(label, h('div', { class: 'stack' }, h('p', { class: 'small muted', text: 'Copy this text:' }), ta)); ta.select(); }
+    } });
+  }
+  async function newAccessCode(rec) {
+    if (rec.vault) await unpublishFromEmployee(rec.vault);
+    const accessCode = ET.newAccessCode();
+    const vault = await ET.vaultId(accessCode);
+    await S.db.doc('hr/data/employees/' + rec.key).update({ accessCode, vault });
+    await publishToEmployee(Object.assign({}, rec, { accessCode, vault }));
+    await logEvent({ action: rec.vault ? 'Access code replaced (old code no longer works)' : 'Access code created', contractId: rec.contractId, version: rec.versionNo, employeeKey: rec.key });
   }
   async function updateDirectory() {
     const names = Object.values(S.employees).filter((r) => r.status !== 'draft').map((r) => ({ key: r.key, name: r.name })).sort((a, b) => a.name.localeCompare(b.name));
@@ -834,7 +886,7 @@
         const patch = { dob: dob.value, email: em, ndHoursPerMonth: Number(nd.value) || 0, deMinimis: Number(dm.value) || 0, thirteenthApplicable: th.checked, otherDeductions };
         await S.db.doc('hr/data/employees/' + key).update(patch);
         const r = Object.assign({}, fresh(), patch);
-        if (r.uid && r.status !== 'draft') await publishToEmployee(r);
+        if (r.vault && r.status !== 'draft') await publishToEmployee(r);
         toast('Saved.'); reopen();
       } catch (e) { done(); toast('Could not save: ' + errText(e), 'error'); }
     };
@@ -857,13 +909,12 @@
         try {
           const contractId = rec.contractId || `ETP-EC-${new Date().getFullYear()}-${ET.randomId(3)}`;
           const patch = { status: 'issued', contractId, issuedAt: nowIso(), returnNote: '', employeeSig: null };
+          if (!rec.vault) { patch.accessCode = ET.newAccessCode(); patch.vault = await ET.vaultId(patch.accessCode); }
           await S.db.doc('hr/data/employees/' + key).update(patch);
           const r = Object.assign({}, fresh(), patch);
-          if (r.uid) {
-            const e = S.esign[r.uid];
-            if (e && e.correction && !e.correction.handled) await S.db.doc('esign/' + r.uid).update({ correction: Object.assign({}, e.correction, { handled: true }) });
-            await publishToEmployee(r);
-          }
+          const e = S.esign[key];
+          if (e && e.correction && !e.correction.handled) await S.db.doc(P.sign(r.vault)).update({ correction: Object.assign({}, e.correction, { handled: true }) });
+          await publishToEmployee(r);
           await updateDirectory();
           await logEvent({ action: st === 'returned' ? 'Contract re-issued after correction' : 'Contract issued for employee review and signature', contractId, version: r.versionNo, employeeKey: key });
           toast('Issued.'); reopen();
@@ -882,8 +933,8 @@
           const done = busy(ok);
           try {
             await S.db.doc('hr/data/employees/' + key).update({ status: 'returned', returnNote: ta.value.trim(), employeeSig: null });
-            if (rec.uid) await S.db.doc('issued/' + rec.uid).update({ status: 'returned', returnNote: ta.value.trim() });
-            if (rec.uid && S.esign[rec.uid]) await S.db.doc('esign/' + rec.uid).delete();
+            if (rec.vault) await S.db.doc(P.record(rec.vault)).update({ status: 'returned', returnNote: ta.value.trim() });
+            if (rec.vault && S.esign[key]) await S.db.doc(P.sign(rec.vault)).delete();
             await logEvent({ action: 'Contract returned for correction', contractId: rec.contractId, version: rec.versionNo, employeeKey: key, detail: ta.value.trim() });
             c2(); reopen();
           } catch (e) { done(); toast(errText(e), 'error'); }
@@ -892,7 +943,7 @@
       actions.append(retBtn);
     }
 
-    if ((st === 'draft' || st === 'returned') && !rec.uid) {
+    if (st === 'draft' || st === 'returned' || st === 'awaiting_employee') {
       const rm = h('button', { class: 'btn danger', text: 'Remove contract' });
       rm.onclick = () => {
         const ok = h('button', { class: 'btn danger', text: `Remove ${rec.name}` });
@@ -900,6 +951,7 @@
         ok.onclick = async () => {
           const done = busy(ok, 'Removing…');
           try {
+            if (rec.vault) await unpublishFromEmployee(rec.vault);
             for (const vid of [rec.currentVid, rec.pendingVid].filter(Boolean)) { await S.db.doc('hr/data/versions/' + vid).delete(); await S.db.doc('hr/data/formatted/' + vid).delete(); }
             await S.db.doc('hr/data/employees/' + key).delete();
             await updateDirectory();
@@ -927,9 +979,9 @@
             const patch = Object.assign(versionFields(v.parsed, rec.pendingVid, v), { versionNo: (rec.versionNo || 1) + 1, employeeSig: null, name: v.parsed.name || rec.name });
             if (rec.status === 'issued') { patch.status = 'returned'; patch.returnNote = 'A corrected version is being prepared.'; }
             await S.db.doc('hr/data/employees/' + key).update(patch);
-            if (rec.uid && S.esign[rec.uid] && S.esign[rec.uid].signature) await S.db.doc('esign/' + rec.uid).delete();
+            if (rec.vault && S.esign[key] && S.esign[key].signature) await S.db.doc(P.sign(rec.vault)).delete();
             const r = Object.assign({}, fresh(), patch);
-            if (r.uid && r.status !== 'draft') await publishToEmployee(r);
+            if (r.vault && r.status !== 'draft') await publishToEmployee(r);
             await logEvent({ action: 'Revised contract approved by HR', contractId: rec.contractId, version: patch.versionNo, employeeKey: key, detail: `${changed} changed lines` });
             toast('Revised draft approved. Re-issue it when ready.'); reopen();
           } catch (e) { done(); toast(errText(e), 'error'); }
@@ -945,13 +997,19 @@
       }).catch((e) => diffSection.replaceChildren(h('p', { class: 'note bad', text: errText(e) })));
     }
 
-    const account = rec.uid ? (await resolveProfiles([rec.uid]), personLabel(rec.uid)) : 'No Claude account linked yet. The employee links their account by selecting their name and entering their birthdate; you approve it under Access requests.';
-    const unlink = rec.uid ? h('button', { class: 'btn ghost sm', text: 'Unlink account', onclick: async () => {
-      await unpublishFromEmployee(rec.uid);
-      await S.db.doc('hr/data/employees/' + key).update({ uid: null });
-      await logEvent({ action: 'Employee account unlinked', contractId: rec.contractId, employeeKey: key });
-      reopen();
-    } }) : null;
+    const codeSection = rec.accessCode
+      ? h('section', { class: 'stack' }, h('h3', { text: 'Access code (HR only — give it to the employee privately)' }),
+          h('p', { class: 'code', style: 'font-size:1.3rem;letter-spacing:.1em', text: rec.accessCode }),
+          h('div', { class: 'row' },
+            copyButton('Copy message for employee', inviteMessage(rec), 'btn sm'),
+            copyButton('Copy code', rec.accessCode),
+            copyButton('Copy personal link', personalLink(rec.accessCode)),
+            h('button', { class: 'btn ghost sm', text: 'Replace code', onclick: async (e) => {
+              const done = busy(e.target, 'Replacing…');
+              try { await newAccessCode(fresh()); toast('New code created. The old code no longer works.'); reopen(); } catch (er) { done(); toast(errText(er), 'error'); }
+            } })),
+          h('p', { class: 'small muted', text: 'The personal link fills in the code automatically. Replace the code if it was shared with the wrong person.' }))
+      : h('p', { class: 'small muted', text: 'An access code is created when you issue the contract.' });
 
     close = modal(rec.name, h('div', { class: 'stack', style: 'gap:18px' },
       h('div', { class: 'row between' }, pill(st), h('span', { class: 'small muted', text: rec.contractId ? `${rec.contractId} · version ${rec.versionNo}` : `Version ${rec.versionNo || 1} (not issued)` })),
@@ -964,13 +1022,13 @@
       h('section', { class: 'stack' }, h('h3', { text: 'Employee details (HR only)' }),
         h('div', { class: 'grid2' },
           h('label', { class: 'f', for: 'f-dob' }, 'Date of birth', dob),
-          h('label', { class: 'f', for: 'f-email' }, 'Work or personal email', h('span', { class: 'h', text: 'Optional. Checked against the requesting Claude account when Claude shares account emails with this page.' }), email)),
-        h('p', { class: 'small' }, 'Internal employee code: ', codePreview, h('span', { class: 'muted', text: ' (HR only; never shown to employees)' })),
-        h('p', { class: 'small' }, h('strong', { text: 'Linked account: ' }), account, ' ', unlink)),
+          h('label', { class: 'f', for: 'f-email' }, 'Email', h('span', { class: 'h', text: 'Optional. Not needed for signing.' }), email)),
+        h('p', { class: 'small' }, 'Internal employee code: ', codePreview, h('span', { class: 'muted', text: ' (HR only; never shown to employees)' }))),
+      codeSection,
       h('section', { class: 'stack' }, h('h3', { text: 'Payroll explanation settings' }),
         h('p', { class: 'small muted', text: 'These only change the informational pay estimate. They never change the contract.' }),
         h('div', { class: 'grid2' },
-          h('label', { class: 'f', for: 'f-nd' }, 'Estimated night-shift hours per month', h('span', { class: 'h', text: rec.hasNightDiff ? 'Hours between 10 PM and 6 AM. 208 = 8 hours × 26 days.' : 'This contract has no night differential.' }), nd),
+          h('label', { class: 'f', for: 'f-nd' }, 'Estimated night-shift hours per month', h('span', { class: 'h', text: rec.hasNightDiff ? 'Leave at 0 to describe it without an amount. Hours between 10 PM and 6 AM (208 = 8 hours × 26 days).' : 'This contract has no night differential.' }), nd),
           h('label', { class: 'f', for: 'f-dm' }, 'Qualifying de minimis benefits per month', h('span', { class: 'h', text: 'Leave at 0 unless Juan approved one in writing.' }), dm)),
         h('label', { class: 'f', for: 'f-other' }, 'Other authorized deductions', others),
         h('label', { class: 'check', for: 'f-13' }, th, h('span', { text: 'Show 13th-month pay as a statutory benefit (rank-and-file employees)' })),
@@ -988,70 +1046,38 @@
   }
 
   function hrAccess() {
-    const entries = Object.entries(S.claims).sort((a, b) => String(b[1].at).localeCompare(String(a[1].at)));
-    const unknown = entries.map(([u]) => u).filter((u) => !S.profiles[u]);
+    const c = codes();
+    const recs = Object.values(S.employees).filter((r) => r.accessCode && matches(r, c[r.key])).sort((a, b) => a.name.localeCompare(b.name));
+    const sigClaims = Object.entries(S.claims).filter(([, cl]) => cl.kind === 'signatory' && cl.status === 'pending');
+    const unknown = sigClaims.map(([u]) => u).filter((u) => !S.profiles[u]);
     if (unknown.length) resolveProfiles(unknown).then(() => { if (H.tab === 'access') renderHr(); });
-    const byUid = {}; Object.values(S.employees).forEach((r) => { if (r.uid) byUid[r.uid] = r; });
-    const verify = (uid, c) => {
-      const rec = S.employees[c.key];
-      if (!rec) return { ok: false, reasons: ['Record no longer exists'] };
-      const p = S.profiles[uid] || {};
-      const reasons = [];
-      const dobOk = !!rec.dob && rec.dob === c.dob;
-      reasons.push(dobOk ? '✓ Birthdate matches' : rec.dob ? '✗ Birthdate does not match' : '✗ No birthdate on file');
-      let emailOk = true;
-      if (rec.email && p.email) { emailOk = p.email.toLowerCase() === rec.email.toLowerCase(); reasons.push(emailOk ? '✓ Email matches' : '✗ Account email differs from email on file'); }
-      reasons.push(p.name ? `• Claude account name: ${p.name}. Confirm it is this employee.` : '• Account name not available. Confirm with the employee before approving.');
-      if (rec.uid && rec.uid !== uid) reasons.push('✗ Record is already linked to another account');
-      if (byUid[uid] && byUid[uid].key !== rec.key) reasons.push('✗ This account is linked to another employee');
-      return { rec, ok: dobOk && emailOk && !(rec.uid && rec.uid !== uid) && !(byUid[uid] && byUid[uid].key !== rec.key), reasons };
-    };
-    async function grant(uid, c) {
-      const rec = S.employees[c.key];
-      await S.db.doc('hr/data/employees/' + rec.key).update({ uid, linkedAt: nowIso() });
-      await S.db.doc('claims/' + uid).update({ status: 'approved', decidedAt: nowIso() });
-      const r = Object.assign({}, rec, { uid });
-      if (r.status !== 'draft') await publishToEmployee(r);
-      await logEvent({ action: 'Contract assigned to verified employee account', contractId: rec.contractId, version: rec.versionNo, employeeKey: rec.key });
-    }
-    const pending = entries.filter(([, c]) => c.status === 'pending');
-    const verifiedPending = pending.filter(([u, c]) => c.kind === 'employee' && verify(u, c).ok);
-    const grantAll = h('button', { class: 'btn', text: `Approve all verified (${verifiedPending.length})`, disabled: !verifiedPending.length });
-    grantAll.onclick = async () => { const done = busy(grantAll); for (const [u, c] of verifiedPending) { try { await grant(u, c); } catch (e) { toast(errText(e), 'error'); } } done(); toast('Approved.'); };
-    const rows = entries.map(([uid, c]) => {
-      const actions = h('div', { class: 'row' });
-      let detail;
-      if (c.kind === 'signatory') {
-        detail = h('span', { text: 'Requests the company signatory role (Juan Diaz)' });
-        if (c.status === 'pending') {
-          actions.append(h('button', { class: 'btn sm', text: 'Designate as signatory', onclick: async (e) => {
-            const done = busy(e.target);
-            try {
-              await S.db.doc('hr/config').set(Object.assign({}, S.cfg, { signatoryUid: uid, signatoryAt: nowIso() }));
-              await S.db.doc('claims/' + uid).update({ status: 'approved', decidedAt: nowIso() });
-              await logEvent({ action: 'Company signatory designated', detail: personLabel(uid) });
-            } catch (er) { done(); toast(errText(er), 'error'); }
-          } }));
-        }
-      } else {
-        const v = verify(uid, c);
-        detail = h('div', { class: 'stack', style: 'gap:2px' }, h('span', {}, 'Requests the record of ', h('strong', { text: v.rec ? v.rec.name : 'unknown' })), v.reasons.map((t) => h('span', { class: 'small ' + (t.startsWith('✓') ? 'check-ok' : t.startsWith('✗') ? 'check-bad' : 'muted'), text: t })));
-        if (c.status === 'pending') {
-          actions.append(h('button', { class: 'btn sm', text: 'Approve', disabled: !v.rec || (v.rec.uid && v.rec.uid !== uid), onclick: async (e) => { const done = busy(e.target); try { await grant(uid, c); } catch (er) { done(); toast(errText(er), 'error'); } } }));
-        }
-      }
-      if (c.status === 'pending') actions.append(h('button', { class: 'btn danger sm', text: 'Reject', onclick: async () => { await S.db.doc('claims/' + uid).update({ status: 'rejected', decidedAt: nowIso() }); await logEvent({ action: 'Access request rejected', employeeKey: c.key || null, outcome: 'info' }); } }));
-      return h('tr', {},
-        h('td', {}, h('span', { 'data-person': uid, text: personLabel(uid) }), h('div', { class: 'small muted', text: c.at ? ET.phDateTime(c.at) : '' })),
-        h('td', {}, detail),
-        h('td', { text: c.status }),
-        h('td', {}, actions));
-    });
+    const exportBtn = h('button', { class: 'btn secondary', text: 'Download code list (CSV)', disabled: !recs.length, onclick: async () => {
+      const csv = ET.csv([['Employee', 'Employee code', 'Access code', 'Personal link'], ...recs.map((r) => [r.name, c[r.key] || '', r.accessCode, personalLink(r.accessCode)])]);
+      if (await saveFile(`EquityTrack_AccessCodes_${ET.phYMD(nowIso())}.csv`, csv)) logEvent({ action: 'Access code list downloaded by HR' });
+    } });
     return h('div', { class: 'stack', style: 'gap:14px' },
-      h('p', { class: 'lede', text: 'Each request comes from a signed-in Claude account. Approving links that account to the employee record, and only that account can then open the contract and pay details. Approve only when the birthdate matches and you recognise the person.' }),
-      h('div', { class: 'row' }, grantAll),
-      h('div', { class: 'table-wrap' }, h('table', {}, h('thead', {}, h('tr', {}, ['Claude account', 'Request', 'Status', ''].map((t) => h('th', { text: t })))),
-        h('tbody', {}, rows.length ? rows : h('tr', {}, h('td', { colspan: 4, class: 'muted', text: 'No access requests yet.' }))))));
+      sigClaims.length ? h('section', { class: 'panel' }, h('h3', { text: 'Signatory request' }),
+        sigClaims.map(([uid]) => h('div', { class: 'row between' },
+          h('span', { text: `${personLabel(uid)} asks to sign for the Company as Juan Diaz.` }),
+          h('div', { class: 'row' },
+            h('button', { class: 'btn sm', text: 'Designate as signatory', onclick: async (e) => {
+              const done = busy(e.target);
+              try {
+                await S.db.doc('hr/config').set(Object.assign({}, S.cfg, { signatoryUid: uid, signatoryAt: nowIso() }));
+                await S.db.doc('claims/' + uid).update({ status: 'approved', decidedAt: nowIso() });
+                await logEvent({ action: 'Company signatory designated', detail: personLabel(uid) });
+              } catch (er) { done(); toast(errText(er), 'error'); }
+            } }),
+            h('button', { class: 'btn danger sm', text: 'Reject', onclick: async () => { await S.db.doc('claims/' + uid).update({ status: 'rejected', decidedAt: nowIso() }); } }))))) : null,
+      h('p', { class: 'lede', text: 'Each issued contract has a personal access code. Give each employee their own code privately (chat or in person). They open the link, select their name and enter the code. A code opens only that one contract.' }),
+      h('div', { class: 'row' }, exportBtn, h('div', { style: 'flex:1;min-width:220px' }, searchBox('code-search', 'Search by name or employee code'))),
+      h('div', { class: 'table-wrap' }, h('table', {}, h('thead', {}, h('tr', {}, ['Employee', 'Status', 'Access code', ''].map((t) => h('th', { text: t })))),
+        h('tbody', {}, recs.length ? recs.map((r) => h('tr', {},
+          h('td', {}, h('strong', { text: r.name }), h('div', { class: 'small muted code', text: c[r.key] || '' })),
+          h('td', {}, pill(statusOf(r))),
+          h('td', { class: 'code', style: 'letter-spacing:.06em', text: r.accessCode }),
+          h('td', {}, h('div', { class: 'row' }, copyButton('Copy message', inviteMessage(r), 'btn sm'), copyButton('Copy code', r.accessCode)))))
+          : h('tr', {}, h('td', { colspan: 4, class: 'muted', text: 'Codes appear here when you issue contracts.' }))))));
   }
 
   function statusBoard(recs, onPick, current) {
@@ -1175,7 +1201,7 @@
       const done = busy(save, 'Saving…');
       try {
         await S.db.doc('hr/config').set(Object.assign({}, S.cfg, { statutory: ns, driveFolderId: m ? m[1] : folder.value.trim() }));
-        for (const r of Object.values(S.employees)) if (r.uid && r.status !== 'draft') await S.db.doc('issued/' + r.uid).update({ payroll: Object.assign(payrollInputs(r), { statutory: ns }) });
+        for (const r of Object.values(S.employees)) if (r.vault && r.status !== 'draft') await S.db.doc(P.record(r.vault)).update({ payroll: Object.assign(payrollInputs(r), { statutory: ns }) });
         await logEvent({ action: 'Settings updated', outcome: 'info' });
         toast('Settings saved.');
       } catch (e) { toast(errText(e), 'error'); }
@@ -1305,7 +1331,7 @@
     if (statusOf(r) !== 'awaiting_company') throw new Error('It is no longer waiting for your signature (status: ' + STATUS[statusOf(r)] + ').');
     const empSig = (r.employeeSig && r.employeeSig.sha === r.sha) ? r.employeeSig : sigFor(r);
     if (!empSig) throw new Error('The employee signature for this version is missing.');
-    if (!r.uid) throw new Error('No employee account is linked.');
+    if (!r.vault) throw new Error('This contract has no access code.');
     const { bytes } = await getVersionBytes(r.currentVid, r.sha);
     const signedAt = nowIso();
     const finalBytes = await ET.buildFinalPdf(window.PDFLib, {
@@ -1318,9 +1344,9 @@
     if (b64.length > 250000) throw new Error('The signed PDF is too large to store. Use a simpler signature and try again.');
     const companySig = { signedAt, signerUid: S.uid, batchId, method: juanSig.method, sigPng: juanSig.b64, consentText: consentTxt };
     await S.db.doc('hr/data/finals/' + r.key).set({ b64, sha: finalSha, contractId: r.contractId, version: r.versionNo, createdAt: signedAt });
-    await S.db.doc(`issued/${r.uid}/docs/final`).set({ b64, sha: finalSha, contractId: r.contractId, version: r.versionNo });
+    await S.db.doc(P.final(r.vault)).set({ b64, sha: finalSha, contractId: r.contractId, version: r.versionNo });
     await S.db.doc('hr/data/employees/' + r.key).update({ status: 'fully_signed', employeeSig: empSig, companySig, finalSha, fullySignedAt: signedAt });
-    await S.db.doc('issued/' + r.uid).update({ status: 'fully_signed', companySignedAt: signedAt, employeeSignedAt: empSig.signedAt, finalSha });
+    await S.db.doc(P.record(r.vault)).update({ status: 'fully_signed', companySignedAt: signedAt, employeeSignedAt: empSig.signedAt, finalSha });
     await logEvent({ action: 'Juan signed', contractId: r.contractId, version: r.versionNo, employeeKey: r.key, detail: batchId });
     await logEvent({ action: 'Final PDF generated', contractId: r.contractId, version: r.versionNo, employeeKey: r.key, detail: 'SHA-256 ' + finalSha.slice(0, 16) });
   }
@@ -1344,7 +1370,7 @@
 
   /* ---------------- boot ---------------- */
   async function boot() {
-    if (!window.claude || !window.claude.use) { mount(blocked('Open this page in Claude', 'Sign in to Claude and open the link HR sent you. Your contract is only available to your own signed-in account.')); return; }
+    if (!window.claude || !window.claude.use) { mount(blocked('Open this page in Claude', 'Sign in to Claude and open the link HR sent you. Then select your name and enter your access code.')); return; }
     const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
     if (!db || !user) { mount(blocked('Sign in to continue', 'Sign in to Claude with the account HR invited, then reload this page.')); return; }
     S.db = db; S.user = user;

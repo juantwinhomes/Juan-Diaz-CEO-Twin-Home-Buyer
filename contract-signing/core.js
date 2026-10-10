@@ -49,6 +49,22 @@
     return out;
   };
 
+  /* ---------------- Personal access codes ---------------- */
+  // 12 characters from a 31-symbol alphabet (no 0/O, 1/I/L): about 59 bits, shown as XXXX-XXXX-XXXX.
+  const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  ET.newAccessCode = function () {
+    const out = [];
+    while (out.length < 12) {
+      const b = new Uint8Array(16);
+      root.crypto.getRandomValues(b);
+      for (const x of b) if (x < 248 && out.length < 12) out.push(CODE_ALPHABET[x % 31]);
+    }
+    return out.join('').replace(/(.{4})(?=.)/g, '$1-');
+  };
+  ET.normCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
+  /** Storage location for one employee's records, derived from their code. Without the code it cannot be found. */
+  ET.vaultId = async (code) => (await ET.sha256Hex(new TextEncoder().encode('etp-access:' + ET.normCode(code)))).slice(0, 40);
+
   /* ---------------- Money ---------------- */
   ET.round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
   ET.peso = (n) => '₱' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
