@@ -632,7 +632,7 @@
     const input = h('input', { type: 'file', id: 'upload', accept: 'application/pdf', multiple: true, hidden: true, onchange: (e) => uploadContracts([...e.target.files]) });
     const drop = h('div', { class: 'drop' },
       h('strong', { text: "Upload Juan's drafted contracts (PDF)" }),
-      h('span', { class: 'muted small', text: 'Drop files here or choose them. Each PDF is matched to an employee by the name in its opening paragraph. The approved wording and layout are kept exactly as uploaded.' }),
+      h('span', { class: 'muted small', text: 'Drop files here or choose them. Each PDF is matched to an employee by the name in its opening paragraph. Juan’s wording is kept exactly and laid out in the company onboarding format; the app reads the result back to prove no word changed.' }),
       h('button', { class: 'btn secondary', text: 'Choose PDF files', onclick: () => input.click() }), input);
     drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
     drop.addEventListener('dragleave', () => drop.classList.remove('over'));
@@ -669,17 +669,21 @@
         const vid = sha.slice(0, 32);
         const rec = Object.values(S.employees).find((r) => ET.normName(r.name) === ET.normName(parsed.name));
         if (rec && (rec.currentVid === vid || rec.pendingVid === vid)) { li.textContent = `${file.name}: already uploaded for ${parsed.name}.`; continue; }
-        await S.db.doc('hr/data/versions/' + vid).set({ b64: ET.b64FromBytes(bytes), sha, lines: ET.textLines(pages), parsed, fileName: file.name, uploadedAt: nowIso(), uploadedBy: S.uid });
+        li.textContent = `${file.name}: laying out in the onboarding format…`;
+        const fmt = await formatDraft(lib, pages);
+        if (!fmt.fidelity.ok) parsed.issues.push(fmt.fidelity.detail);
+        await S.db.doc('hr/data/formatted/' + vid).set({ b64: fmt.b64, sha: fmt.sha });
+        await S.db.doc('hr/data/versions/' + vid).set({ b64: ET.b64FromBytes(bytes), draftSha: sha, sha: fmt.sha, anchors: fmt.anchors, fidelity: fmt.fidelity, lines: ET.textLines(pages), parsed, fileName: file.name, uploadedAt: nowIso(), uploadedBy: S.uid });
         if (!rec) {
           const key = ET.randomId(6);
-          await S.db.doc('hr/data/employees/' + key).set(Object.assign(versionFields(parsed, vid, sha), {
+          await S.db.doc('hr/data/employees/' + key).set(Object.assign(versionFields(parsed, vid, fmt), {
             key, name: parsed.name, createdAt: nowIso(), status: 'draft', versionNo: 1, dob: '', email: '', uid: null,
             ndHoursPerMonth: parsed.hasNightDiff ? 208 : 0, deMinimis: 0, otherDeductions: [], thirteenthApplicable: !parsed.managerial,
           }));
           await logEvent({ action: 'Contract created', employeeKey: key, version: 1, detail: file.name });
           li.textContent = `${file.name}: added ${parsed.name}.` + (parsed.issues.length ? ' Needs attention: ' + parsed.issues.join(' ') : '');
         } else if (!rec.currentVid) {
-          await S.db.doc('hr/data/employees/' + rec.key).update(versionFields(parsed, vid, sha));
+          await S.db.doc('hr/data/employees/' + rec.key).update(versionFields(parsed, vid, fmt));
           li.textContent = `${file.name}: attached to ${parsed.name}.`;
         } else {
           await S.db.doc('hr/data/employees/' + rec.key).update({ pendingVid: vid });
@@ -693,16 +697,48 @@
     }
     list.append(h('li', { style: 'list-style:none;margin-top:8px' }, h('button', { class: 'btn', text: 'Done', onclick: close })));
   }
-  function versionFields(p, vid, sha) {
-    return { currentVid: vid, sha, position: p.position, startDate: p.startDate, effective: p.effective, monthly: p.monthly, perCutoff: p.perCutoff, hourly: p.hourly, daily: p.daily, managerial: p.managerial, hasNightDiff: p.hasNightDiff, anchors: p.anchors, issues: p.issues, pendingVid: null };
+  /* Juan's wording, re-typeset in the onboarding-packet layout and read back to prove nothing changed. */
+  let assetsP = null;
+  function formatAssets() {
+    if (!assetsP) {
+      assetsP = Promise.all(['assets/LiberationSans-Regular.ttf', 'assets/LiberationSans-Bold.ttf', 'assets/letterhead-banner.jpg'].map(async (u) => {
+        const r = await fetch(u);
+        if (!r.ok) throw new Error('Could not load ' + u);
+        return new Uint8Array(await r.arrayBuffer());
+      })).then(([regular, bold, banner]) => ({ regular, bold, banner }));
+      assetsP.catch(() => { assetsP = null; });
+    }
+    return assetsP;
+  }
+  async function formatDraft(lib, pages) {
+    if (!window.fontkit) throw new Error('The contract font engine did not load. Reload the page and try again.');
+    const model = ET.structureDraft(pages);
+    const expected = ET.fingerprintText(pages);
+    if (ET.modelText(model) !== expected) throw new Error('The structure of this draft could not be read exactly, so it was not reformatted.');
+    const out = await ET.renderPacketPdf(window.PDFLib, window.fontkit, await formatAssets(), model);
+    const fidelity = await ET.verifyFormatted(lib, out.bytes, expected);
+    return { b64: ET.b64FromBytes(out.bytes), sha: await ET.sha256Hex(out.bytes), anchors: out.anchors, fidelity };
   }
 
+  /** fmt: the formatted version ({sha, anchors, fidelity}). */
+  function versionFields(p, vid, fmt) {
+    return { currentVid: vid, sha: fmt.sha, anchors: fmt.anchors, fidelity: fmt.fidelity, position: p.position, startDate: p.startDate, effective: p.effective, monthly: p.monthly, perCutoff: p.perCutoff, hourly: p.hourly, daily: p.daily, managerial: p.managerial, hasNightDiff: p.hasNightDiff, issues: p.issues, pendingVid: null };
+  }
+
+  /** The formatted contract that employees review and sign. */
   async function getVersionBytes(vid, sha) {
-    const v = await S.db.doc('hr/data/versions/' + vid).get();
+    const v = await S.db.doc('hr/data/formatted/' + vid).get();
     if (!v.exists) throw new Error('Contract file not found.');
     const bytes = ET.bytesFromB64(v.data().b64);
     if (sha && (await ET.sha256Hex(bytes)) !== sha) throw new Error('Stored contract failed its integrity check.');
     return { bytes, data: v.data() };
+  }
+
+  /** Juan's original draft, kept for comparison. */
+  async function getDraftBytes(vid) {
+    const v = await S.db.doc('hr/data/versions/' + vid).get();
+    if (!v.exists) throw new Error('Original draft not found.');
+    return ET.bytesFromB64(v.data().b64);
   }
 
   function payrollInputs(rec) {
@@ -769,13 +805,14 @@
 
     const checks = h('ul', { class: 'stack small', style: 'padding-left:18px;margin:0' },
       (rec.issues || []).length ? rec.issues.map((t) => h('li', { class: 'check-bad', text: t })) : h('li', { class: 'check-ok', text: 'Name, salary, start date and signature fields found in the PDF.' }),
+      h('li', { class: rec.fidelity && rec.fidelity.ok ? 'check-ok' : 'check-bad', text: rec.fidelity && rec.fidelity.ok ? `Wording check passed: the formatted contract contains Juan's draft character for character (${rec.fidelity.chars} characters).` : 'Wording check failed. The formatted contract cannot be issued.' }),
       h('li', { class: rec.dob ? 'check-ok' : 'check-bad', text: rec.dob ? 'Birthdate on file.' : 'Birthdate missing. Required before issuing.' }));
 
     const frame = h('div', { class: 'doc-frame' }, spinner('Loading contract…'));
     getVersionBytes(rec.currentVid, rec.sha).then(({ bytes }) => renderPdf(frame, bytes)).catch((e) => frame.replaceChildren(h('p', { class: 'note bad', text: errText(e) })));
 
     const actions = h('div', { class: 'row' });
-    const blocking = !rec.anchors || !rec.monthly || !rec.name || !rec.startDate;
+    const blocking = !rec.anchors || !rec.monthly || !rec.name || !rec.startDate || !(rec.fidelity && rec.fidelity.ok);
     if (st === 'draft' || st === 'returned') {
       const issueBtn = h('button', { class: 'btn', text: st === 'returned' ? 'Re-issue for signature' : 'Issue for employee signature', disabled: blocking || !rec.dob || !!rec.pendingVid });
       issueBtn.onclick = async () => {
@@ -825,13 +862,13 @@
         const d = ET.diffLines(a.data().lines || [], b.data().lines || []);
         const changed = d.filter((x) => x.op !== '=').length;
         const np = b.data().parsed || {};
-        const approve = h('button', { class: 'btn', text: 'Approve revised draft', disabled: st === 'fully_signed' });
+        const approve = h('button', { class: 'btn', text: 'Approve revised draft', disabled: st === 'fully_signed' || !(b.data().fidelity && b.data().fidelity.ok) });
         const discard = h('button', { class: 'btn secondary', text: 'Discard revised draft' });
         approve.onclick = async () => {
           const done = busy(approve, 'Approving…');
           try {
             const v = b.data();
-            const patch = Object.assign(versionFields(v.parsed, rec.pendingVid, v.sha), { versionNo: (rec.versionNo || 1) + 1, employeeSig: null, name: v.parsed.name || rec.name });
+            const patch = Object.assign(versionFields(v.parsed, rec.pendingVid, v), { versionNo: (rec.versionNo || 1) + 1, employeeSig: null, name: v.parsed.name || rec.name });
             if (rec.status === 'issued') { patch.status = 'returned'; patch.returnNote = 'A corrected version is being prepared.'; }
             await S.db.doc('hr/data/employees/' + key).update(patch);
             if (rec.uid && S.esign[rec.uid] && S.esign[rec.uid].signature) await S.db.doc('esign/' + rec.uid).delete();
@@ -841,7 +878,7 @@
             toast('Revised draft approved. Re-issue it when ready.'); reopen();
           } catch (e) { done(); toast(errText(e), 'error'); }
         };
-        discard.onclick = async () => { await S.db.doc('hr/data/employees/' + key).update({ pendingVid: null }); await S.db.doc('hr/data/versions/' + rec.pendingVid).delete(); reopen(); };
+        discard.onclick = async () => { await S.db.doc('hr/data/employees/' + key).update({ pendingVid: null }); await S.db.doc('hr/data/versions/' + rec.pendingVid).delete(); await S.db.doc('hr/data/formatted/' + rec.pendingVid).delete(); reopen(); };
         diffSection.replaceChildren(
           h('h3', { text: 'Revised draft waiting for review' }),
           h('p', { class: 'small muted', text: `${changed} line(s) differ. Removed text is struck through; added text is green. Nothing changes until you approve.` }),
@@ -883,7 +920,10 @@
         h('label', { class: 'check', for: 'f-13' }, th, h('span', { text: 'Show 13th-month pay as a statutory benefit (rank-and-file employees)' })),
         h('div', { class: 'row end' }, saveBtn)),
       h('details', {}, h('summary', { text: 'Preview the employee’s pay explanation' }), h('div', { style: 'margin-top:10px' }, payrollView(payrollInputs(rec)))),
-      h('section', { class: 'stack' }, h('h3', { text: 'Contract preview' }), frame),
+      h('section', { class: 'stack' },
+        h('div', { class: 'row between' }, h('h3', { text: 'Contract preview (onboarding format)' }),
+          h('button', { class: 'btn ghost sm', text: 'View Juan’s original draft', onclick: async () => { try { modal('Juan’s original draft', docFrame(await getDraftBytes(rec.currentVid)), { wide: true }); } catch (e) { toast(errText(e), 'error'); } } })),
+        frame),
       actions), { wide: true });
   }
   function factsFromRec(rec) {

@@ -83,10 +83,12 @@
     const pages = [];
     for (let p = 1; p <= doc.numPages; p++) {
       const page = await doc.getPage(p);
+      await page.getOperatorList(); // loads fonts so bold faces can be recognised by name
       const tc = await page.getTextContent();
+      const fontName = (id) => { try { return page.commonObjs.get(id).name || ''; } catch (_) { return ''; } };
       const items = tc.items
         .filter((it) => it.str && it.str.trim())
-        .map((it) => ({ str: it.str, x: it.transform[4], y: it.transform[5], size: Math.abs(it.transform[3]) || 10 }));
+        .map((it) => ({ str: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0, size: Math.abs(it.transform[3]) || 10, bold: /bold/i.test(fontName(it.fontName)) }));
       pages.push({ items });
     }
     return { pages };
@@ -132,32 +134,218 @@
     if (monthly && perCutoff && ET.round2(monthly / 2) !== ET.round2(perCutoff)) issues.push('Per cut-off amount is not half of the monthly salary. Check the draft with Juan.');
     if (!startDate) issues.push(/employment began on _{3,}/.test(full) ? 'The start date is blank in this draft. Ask Juan for a revised PDF with the date filled in; it cannot be typed in here.' : 'Start date not found.');
 
-    // Signature anchors on the page that carries the signature block.
-    let anchors = null;
-    for (let p = pages.length - 1; p >= 0 && !anchors; p--) {
-      const items = pages[p].items;
-      const company = items.find((i) => i.str.trim() === 'JUAN DIAZ');
-      const emp = name && items.find((i) => i.str.trim().toUpperCase() === name.toUpperCase() && i !== company);
-      const dates = items.filter((i) => /^Date:/.test(i.str.trim()));
-      if (company && emp && dates.length >= 2) {
-        const near = (a) => dates.slice().sort((d1, d2) => Math.abs(d1.x - a.x) - Math.abs(d2.x - a.x))[0];
-        const cd = near(company), ed = near(emp);
-        anchors = {
-          page: p,
-          company: { x: company.x, y: company.y, size: company.size },
-          companyDate: { x: cd.x, y: cd.y, size: cd.size },
-          employee: { x: emp.x, y: emp.y, size: emp.size },
-          employeeDate: { x: ed.x, y: ed.y, size: ed.size },
-        };
-      }
-    }
-    if (!anchors) issues.push('Signature block (JUAN DIAZ / employee name / Date lines) not found, so signatures cannot be placed.');
+    const all = pages.flatMap((p) => p.items.map((i) => i.str.trim()));
+    if (!all.includes('JUAN DIAZ') || !name || !all.some((t) => t.toUpperCase() === name.toUpperCase()))
+      issues.push('Signature block (JUAN DIAZ and the employee name) not found, so signatures cannot be placed.');
 
     return {
       name, position: titleLine, effective, startDate, monthly, perCutoff,
       hourly: hourlyS ? num(hourlyS) : 0, daily: dailyS ? num(dailyS) : 0,
-      managerial, hasNightDiff, anchors, issues,
+      managerial, hasNightDiff, issues,
     };
+  };
+
+  /* ---------------- Re-typeset Juan's draft in the onboarding-packet format ---------------- */
+  // The wording comes only from Juan's draft. The packet supplies the layout: long-bond page, header banner,
+  // Arial-style type, ruled sections and stacked signature blocks. Letterhead contact lines are the only additions.
+  ET.LETTERHEAD = { phone: 'Phone: 0995-125-9905 | 0947-261-8667', email: 'hr@equitytrackph.com' };
+  ET.FORMAT_EXTRAS = [ET.LETTERHEAD.phone, 'Email: ' + ET.LETTERHEAD.email, 'Signature:', 'Signature:'];
+  const squash = (t) => String(t).replace(/[\s_]+/g, '');
+
+  /** Every character of a PDF in reading-stream order, ignoring spaces and blank-line underscores. */
+  ET.fingerprintText = (pages, minY) => squash(pages.map((p) => p.items.filter((i) => minY == null || i.y > minY).map((i) => i.str).join('')).join(''));
+
+  function toRuns(items) {
+    const runs = [];
+    let prev = null;
+    for (const it of items) {
+      let t = it.str.replace(/\s+/g, ' ');
+      if (prev && it.x - (prev.x + prev.w) > it.size * 0.12 && !/^ /.test(t) && !/ $/.test(runs[runs.length - 1].t)) t = ' ' + t;
+      const last = runs[runs.length - 1];
+      if (last && last.b === it.bold) last.t += t; else runs.push({ t, b: it.bold });
+      prev = it;
+    }
+    return runs;
+  }
+  const runsText = (runs) => runs.map((r) => r.t).join('').replace(/\s+/g, ' ').trim();
+  function appendRuns(into, more) {
+    const last = into[into.length - 1];
+    const joinNoSpace = /[A-Za-z]-$/.test(last.t.trimEnd());
+    const first = Object.assign({}, more[0], { t: (joinNoSpace ? '' : ' ') + more[0].t.replace(/^ +/, '') });
+    if (joinNoSpace) last.t = last.t.trimEnd();
+    [first, ...more.slice(1)].forEach((r) => { const l = into[into.length - 1]; if (l.b === r.b) l.t += r.t; else into.push(Object.assign({}, r)); });
+  }
+  function groupLines(items, page) {
+    const rows = [];
+    for (const it of items) {
+      let r = rows.find((q) => Math.abs(q.y - it.y) < 1.5);
+      if (!r) rows.push((r = { page, y: it.y, items: [] }));
+      r.items.push(it);
+    }
+    rows.sort((a, b) => b.y - a.y);
+    for (const r of rows) {
+      r.items.sort((a, b) => a.x - b.x);
+      r.x = r.items[0].x;
+      const last = r.items[r.items.length - 1];
+      r.right = last.x + last.w;
+      r.size = Math.max(...r.items.map((i) => i.size));
+    }
+    return rows;
+  }
+
+  /** Splits Juan's draft into letterhead, title, blocks and signature lines without changing a character. */
+  ET.structureDraft = function (pages) {
+    const lines = pages.flatMap((pg, pi) => groupLines(pg.items, pi));
+    const xs = {};
+    lines.forEach((l) => { const k = Math.round(l.x); xs[k] = (xs[k] || 0) + 1; });
+    const left = Number(Object.entries(xs).sort((a, b) => b[1] - a[1])[0][0]);
+    const firstBody = lines.findIndex((l) => Math.abs(l.x - left) < 1.5);
+    const sigIdx = lines.findIndex((l, i) => i > firstBody && l.items[0].str.trim() === 'JUAN DIAZ');
+    if (firstBody < 3 || sigIdx < 0) throw new Error('This PDF does not follow the drafted contract layout (letterhead, title, sections, signature block).');
+    const header = lines.slice(0, firstBody).map((l) => runsText(toRuns(l.items)));
+    const body = lines.slice(firstBody, sigIdx);
+    const maxRight = Math.max(...body.map((l) => l.right));
+    const blocks = [];
+    let cur = null, prev = null;
+    for (const l of body) {
+      const runs = toRuns(l.items);
+      const txt = runsText(runs);
+      let gapAt = -1;
+      for (let k = 1; k < l.items.length; k++) if (l.items[k].x - (l.items[k - 1].x + l.items[k - 1].w) > 40) gapAt = k;
+      if (l.items.every((i) => i.bold) && /^\d+\.\s/.test(txt)) { blocks.push({ type: 'h', text: txt }); cur = null; prev = l; continue; }
+      if (gapAt > 0) { blocks.push({ type: 'row', left: toRuns(l.items.slice(0, gapAt)), right: toRuns(l.items.slice(gapAt)) }); cur = null; prev = l; continue; }
+      const kind = l.x > left + 5 ? 'li' : 'p';
+      let cont = false;
+      if (cur && cur.type === kind && prev) cont = prev.page === l.page ? prev.y - l.y < l.size * 1.55 : prev.right > maxRight - 25;
+      if (cont) appendRuns(cur.runs, runs);
+      else { cur = { type: kind, runs: runs.map((r) => Object.assign({}, r)) }; blocks.push(cur); }
+      prev = l;
+    }
+    blocks.forEach((b) => { for (const k of ['runs', 'left', 'right']) if (b[k]) { b[k] = b[k].map((r) => ({ t: r.t.replace(/\s+/g, ' '), b: r.b })); b[k][0].t = b[k][0].t.trimStart(); b[k][b[k].length - 1].t = b[k][b[k].length - 1].t.trimEnd(); } });
+    const sigItems = lines.slice(sigIdx).flatMap((l) => l.items);
+    const col = (pred) => groupLines(sigItems.filter(pred), 0).map((l) => runsText(toRuns(l.items)));
+    return {
+      letterhead: { name: header[0], address: header[1] },
+      title: header[2], subtitle: header.slice(3).join(' '),
+      blocks,
+      signature: { company: col((i) => i.x < 300), employee: col((i) => i.x >= 300) },
+    };
+  };
+
+  ET.modelText = (m) => squash([m.letterhead.name, m.letterhead.address, m.title, m.subtitle,
+    ...m.blocks.map((b) => b.type === 'h' ? b.text : b.type === 'row' ? runsText(b.left) + runsText(b.right) : runsText(b.runs)),
+    ...m.signature.company, ...m.signature.employee].join(''));
+
+  /** Draws the contract in the packet layout. Returns the PDF and where each signature and date go. */
+  ET.renderPacketPdf = async function (PDFLib, fontkit, assets, m) {
+    const { PDFDocument, rgb } = PDFLib;
+    const doc = await PDFDocument.create();
+    doc.registerFontkit(fontkit);
+    const R = await doc.embedFont(assets.regular, { subset: true });
+    const B = await doc.embedFont(assets.bold, { subset: true });
+    const banner = await doc.embedJpg(assets.banner);
+    const supported = new Set(R.getCharacterSet());
+    const W = 612, H = 936, L = 50, RX = 562, CW = RX - L, TOP = 850, BOTTOM = 60, SZ = 10, LEAD = 12;
+    const ink = rgb(0, 0, 0), rule = rgb(0.6, 0.6, 0.6), link = rgb(0.07, 0.33, 0.8);
+    const font = (b) => (b ? B : R);
+    const pages = [];
+    let page, y;
+    const newPage = () => { page = doc.addPage([W, H]); pages.push(page); page.drawImage(banner, { x: 9.72, y: H - 9.72 - 66.6, width: 592.9, height: 66.6 }); y = TOP; };
+    const ensure = (h) => { if (y - h < BOTTOM) newPage(); };
+    const draw = (t, x, b, size = SZ, color = ink) => {
+      for (const ch of t) if (!supported.has(ch.codePointAt(0))) throw new Error(`The character "${ch}" cannot be printed in the contract font.`);
+      page.drawText(t, { x, y, size, font: font(b), color });
+      return font(b).widthOfTextAtSize(t, size);
+    };
+    const line = (x1, x2, yy) => page.drawLine({ start: { x: x1, y: yy }, end: { x: x2, y: yy }, thickness: 0.6, color: rule });
+    const ruleBreak = () => { ensure(LEAD * 3); y -= 7; line(L, RX, y); y -= 3; };
+    const spaceW = R.widthOfTextAtSize(' ', SZ);
+    function words(runs) {
+      const out = []; let w = null;
+      for (const r of runs) for (const p of r.t.split(/( +)/)) {
+        if (!p) continue;
+        if (/^ +$/.test(p)) { w = null; continue; }
+        if (!w) { w = { segs: [], w: 0 }; out.push(w); }
+        const pw = font(r.b).widthOfTextAtSize(p, SZ);
+        w.segs.push({ t: p, b: r.b, w: pw }); w.w += pw;
+      }
+      return out;
+    }
+    function para(runs, x0, width, onFirst) {
+      const ws = words(runs); const rows = []; let row = [], rw = 0;
+      for (const w of ws) { if (row.length && rw + spaceW + w.w > width) { rows.push({ row, rw }); row = []; rw = 0; } rw += (row.length ? spaceW : 0) + w.w; row.push(w); }
+      if (row.length) rows.push({ row, rw });
+      rows.forEach(({ row: r, rw: used }, i) => {
+        ensure(LEAD); y -= LEAD;
+        if (i === 0 && onFirst) onFirst();
+        let extra = i < rows.length - 1 && r.length > 1 ? (width - used) / (r.length - 1) : 0;
+        if (extra > 14) extra = 0;
+        let x = x0;
+        r.forEach((w) => { w.segs.forEach((sg) => { draw(sg.t, x, sg.b); x += sg.w; }); x += spaceW + extra; });
+      });
+    }
+
+    newPage();
+    y -= LEAD; draw(m.letterhead.name, L, true);
+    y -= LEAD; draw(m.letterhead.address, L, false);
+    y -= LEAD; draw(ET.LETTERHEAD.phone, L, false);
+    y -= LEAD; const ew = draw('Email: ', L, false); const lw = draw(ET.LETTERHEAD.email, L + ew, false, SZ, link); line(L + ew, L + ew + lw, y - 1.5);
+    y -= 10;
+    y -= LEAD + 1; draw(m.title, L, true, 11);
+    if (m.subtitle) { y -= LEAD; draw(m.subtitle, L, true); }
+    y -= 6;
+    let prevType = null;
+    for (const b of m.blocks) {
+      if (b.type === 'h') { ruleBreak(); y -= LEAD; draw(b.text, L, true); y -= 1; }
+      else if (b.type === 'p') { if (prevType === 'p' || prevType === 'li' || prevType === 'row') y -= 4; para(b.runs, L, CW); }
+      else if (b.type === 'li') { y -= prevType === 'li' ? 2 : 2; para(b.runs, L + 32, CW - 32, () => page.drawCircle({ x: L + 19, y: y + 3.4, size: 1.6, color: ink })); }
+      else if (b.type === 'row') {
+        if (prevType !== 'row') y -= 6;
+        ensure(18); y -= 17;
+        page.drawRectangle({ x: L, y: y - 5.5, width: CW, height: 17, borderColor: rule, borderWidth: 0.6 });
+        let x = L + 8; b.left.forEach((r) => { x += draw(r.t, x, r.b); });
+        const rw = b.right.reduce((a, r) => a + font(r.b).widthOfTextAtSize(r.t, SZ), 0);
+        x = RX - 8 - rw; b.right.forEach((r) => { x += draw(r.t, x, r.b); });
+      }
+      if (b.type === 'row') y -= 0; else if (prevType === 'row' && b.type !== 'row') y -= 2;
+      prevType = b.type;
+    }
+
+    // Signature blocks, kept together on one page.
+    const anchors = { page: 0 };
+    ensure(250);
+    function sigBlock(lines, key) {
+      ruleBreak();
+      const textLines = lines.filter((t) => !/^Date:/.test(t));
+      const dateLine = lines.find((t) => /^Date:/.test(t)) || 'Date:';
+      textLines.forEach((t, i) => { y -= LEAD; draw(t, L, i === 0); });
+      y -= 30;
+      const sw = draw('Signature:', L, false);
+      line(L + sw + 4, L + sw + 170, y - 2);
+      const sig = { x: L + sw + 10, y };
+      y -= LEAD + 4;
+      const dateLabel = dateLine.replace(/[_\s]+$/, '');
+      const dw = draw(dateLabel, L, false);
+      line(L + dw + 4, L + dw + 170, y - 2);
+      anchors[key] = { sig, date: { x: L + dw + 8, y, size: SZ } };
+      anchors.page = pages.length - 1;
+    }
+    sigBlock(m.signature.company, 'company');
+    sigBlock(m.signature.employee, 'employee');
+
+    pages.forEach((pg, i) => { const t = String(i + 1); pg.drawText(t, { x: RX - R.widthOfTextAtSize(t, 10), y: 26, size: 10, font: R, color: ink }); });
+    doc.setTitle('Employment Contract'); doc.setAuthor('Equity Track Inc. Philippines'); doc.setProducer('Equity Track contract signing');
+    return { bytes: await doc.save(), anchors, pageCount: pages.length };
+  };
+
+  /** Reads the formatted PDF back and confirms it carries exactly the draft's characters, in order. */
+  ET.verifyFormatted = async function (pdfjsLib, bytes, expected) {
+    const { pages } = await ET.extractPdf(pdfjsLib, bytes);
+    let got = ET.fingerprintText(pages, 45);
+    for (const extra of ET.FORMAT_EXTRAS) { const e = squash(extra); const k = got.indexOf(e); if (k >= 0) got = got.slice(0, k) + got.slice(k + e.length); }
+    if (got === expected) return { ok: true, chars: got.length };
+    let i = 0; while (i < got.length && got[i] === expected[i]) i++;
+    return { ok: false, detail: `Wording differs from Juan's draft near: “${expected.slice(Math.max(0, i - 40), i + 40)}”` };
   };
 
   /* ---------------- Line diff for version review ---------------- */
@@ -249,32 +437,29 @@
   ET.buildFinalPdf = async function (PDFLib, o) {
     const { PDFDocument, StandardFonts, rgb } = PDFLib;
     const doc = await PDFDocument.load(o.sourceBytes, { updateMetadata: false });
-    const font = await doc.embedFont(StandardFonts.TimesRoman);
-    const small = await doc.embedFont(StandardFonts.Helvetica);
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const small = font;
     const pages = doc.getPages();
     const a = o.anchors;
-    if (!a || !pages[a.page]) throw new Error('Signature fields are missing from this contract.');
+    if (!a || !pages[a.page] || !a.company || !a.employee) throw new Error('Signature fields are missing from this contract.');
     const page = pages[a.page];
     const ink = rgb(0.06, 0.13, 0.33);
     const grey = rgb(0.4, 0.42, 0.48);
 
-    async function place(sig, nameA, dateA) {
+    async function place(sig, at) {
       const img = await doc.embedPng(sig.sigPng);
-      const maxW = 170, maxH = 27;
-      const s = Math.min(maxW / img.width, maxH / img.height);
-      const w = img.width * s, h = img.height * s;
-      page.drawImage(img, { x: nameA.x + 2, y: nameA.y + 15, width: w, height: h });
-      const size = dateA.size || 10;
-      page.drawText(ET.phDateLong(sig.signedAt), { x: dateA.x + font.widthOfTextAtSize('Date: ', size) + 4, y: dateA.y + 2, size, font, color: ink });
-      page.drawText('Electronically signed ' + ET.phDateTime(sig.signedAt), { x: dateA.x, y: dateA.y - 12, size: 6.5, font: small, color: grey });
+      const s = Math.min(160 / img.width, 26 / img.height);
+      page.drawImage(img, { x: at.sig.x, y: at.sig.y - 1, width: img.width * s, height: img.height * s });
+      page.drawText(ET.phDateLong(sig.signedAt), { x: at.date.x, y: at.date.y + 1, size: at.date.size || 10, font, color: ink });
+      page.drawText('Electronically signed ' + ET.phDateTime(sig.signedAt), { x: at.date.x + 172, y: at.date.y + 1, size: 6.5, font: small, color: grey });
     }
-    await place(o.company, a.company, a.companyDate);
-    await place(o.employee, a.employee, a.employeeDate);
+    await place(o.company, a.company);
+    await place(o.employee, a.employee);
 
     const n = pages.length;
     pages.forEach((pg, i) => {
-      const t = `Contract Ref. ${o.ref}  ·  Version ${o.version}  ·  Approved text SHA-256 ${o.sourceSha.slice(0, 16)}  ·  Page ${i + 1} of ${n}`;
-      pg.drawText(t, { x: 67.5, y: 22, size: 6.5, font: small, color: grey });
+      const t = `Contract Ref. ${o.ref}  ·  Version ${o.version}  ·  Contract SHA-256 ${o.sourceSha.slice(0, 16)}`;
+      pg.drawText(t, { x: 50, y: 26, size: 6.5, font: small, color: grey });
     });
 
     doc.setTitle(`Employment Contract — ${o.employee.name}`);

@@ -1,5 +1,5 @@
 // Run: node contract-signing/tests/core.test.js [path/to/contract.pdf ...]
-// Needs pdfjs-dist@3.11.174 and pdf-lib@1.17.1 on NODE_PATH for the PDF checks.
+// Needs pdfjs-dist@3.11.174, pdf-lib@1.17.1 and @pdf-lib/fontkit@1.1.1 on NODE_PATH for the PDF checks.
 // Contract PDFs are passed as arguments and never committed: they contain salaries.
 const assert = require('assert');
 const fs = require('fs');
@@ -46,19 +46,32 @@ console.log('pure checks: ok');
   if (!files.length) return;
   const pdfjs = require('pdfjs-dist/legacy/build/pdf.js');
   const PDFLib = require('pdf-lib');
+  const fontkit = require('@pdf-lib/fontkit');
+  const asset = (f) => new Uint8Array(fs.readFileSync(path.join(__dirname, '..', 'assets', f)));
+  const assets = { regular: asset('LiberationSans-Regular.ttf'), bold: asset('LiberationSans-Bold.ttf'), banner: asset('letterhead-banner.jpg') };
   // 1x1 navy PNG stands in for a drawn signature.
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  let failures = 0;
   for (const f of files) {
     const bytes = new Uint8Array(fs.readFileSync(f));
     const { pages } = await ET.extractPdf(pdfjs, bytes);
     const c = ET.parseContract(pages);
-    assert.ok(c.name && c.monthly && c.anchors, `${path.basename(f)}: ${c.issues.join(' ')}`);
-    const out = await ET.buildFinalPdf(PDFLib, {
-      sourceBytes: bytes, anchors: c.anchors, ref: 'ETP-EC-2026-TEST01', version: 1, sourceSha: await ET.sha256Hex(bytes),
+    const model = ET.structureDraft(pages);
+    const expected = ET.fingerprintText(pages);
+    const modelOk = ET.modelText(model) === expected;
+    const out = await ET.renderPacketPdf(PDFLib, fontkit, assets, model);
+    const v = await ET.verifyFormatted(pdfjs, out.bytes, expected);
+    const signed = await ET.buildFinalPdf(PDFLib, {
+      sourceBytes: out.bytes, anchors: out.anchors, ref: 'ETP-EC-2026-TEST01', version: 1, sourceSha: await ET.sha256Hex(out.bytes),
       employee: { name: c.name, sigPng: png, signedAt: '2026-10-12T05:00:00Z' },
       company: { name: 'Juan Diaz', sigPng: png, signedAt: '2026-10-13T02:30:00Z' },
     });
-    if (process.env.OUT_DIR) fs.writeFileSync(path.join(process.env.OUT_DIR, 'signed-' + path.basename(f)), out);
-    console.log(`${path.basename(f)}: parsed (${c.issues.length} notes), signed PDF ${Math.round(out.length / 1024)} KB`);
+    if (process.env.OUT_DIR) {
+      fs.writeFileSync(path.join(process.env.OUT_DIR, 'formatted-' + path.basename(f)), out.bytes);
+      fs.writeFileSync(path.join(process.env.OUT_DIR, 'signed-' + path.basename(f)), signed);
+    }
+    if (!modelOk || !v.ok) failures++;
+    console.log(`${path.basename(f)}: blocks ${model.blocks.length}, pages ${out.pageCount}, structure ${modelOk ? 'exact' : 'MISMATCH'}, re-read ${v.ok ? 'exact' : v.detail}, notes ${c.issues.length}, formatted ${Math.round(out.bytes.length / 1024)} KB, signed ${Math.round(signed.length / 1024)} KB`);
   }
+  if (failures) { console.error(failures + ' contract(s) failed the wording check'); process.exit(1); }
 })().catch((e) => { console.error(e); process.exit(1); });

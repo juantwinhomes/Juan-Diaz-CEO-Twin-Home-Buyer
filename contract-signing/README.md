@@ -6,7 +6,8 @@ A small Claude Artifact for Equity Track Inc. Philippines. Employees review thei
 | --- | --- |
 | `index.html` | Page shell and styles (navy and white, Iriga contract typography) |
 | `app.js` | Employee, HR and signatory screens |
-| `core.js` | PDF parsing, payroll estimate, employee codes, signature stamping. No employee data. |
+| `core.js` | PDF parsing, onboarding-format layout and wording check, payroll estimate, employee codes, signature stamping. No employee data. |
+| `assets/` | Header banner from the onboarding packet and the Liberation Sans fonts (SIL Open Font License) used in the contract PDF |
 | `tests/core.test.js` | Checks for `core.js`. Contract PDFs are passed as arguments and never committed. |
 
 ## How each person uses it
@@ -53,7 +54,8 @@ So an employee who opens developer tools, edits the URL, changes the dropdown, o
 - **Exact version.** Each uploaded PDF gets a SHA-256 fingerprint. The employee's signature, Juan's batch authorization and the final PDF all record the contract ID, version number and fingerprint. If the contract changes after someone reviews it, signing stops for that document.
 - **Employee signature lock.** As soon as HR or Juan has the page open, the employee's signature is copied into the HR record, which the employee cannot write. Any later change the employee makes to their own signature record is ignored.
 - **Batch authorization.** Before signing, Juan's authorization (the list of contracts with versions and fingerprints, the consent text and his typed name) is written to his private signatory record. His signature image is applied only to the contracts in that batch and is not kept for reuse.
-- **Final PDF.** The signed PDF is Juan's approved PDF, unchanged, with both signatures, both dates and a reference footer stamped onto it. It contains no pay explanation, verification step or activity log. It is stored in the artifact database with its fingerprint and checked against it on every download.
+- **Contract format.** Juan's drafts are re-typeset in the company onboarding-packet layout: 8.5 × 13 in long-bond page, the Equity Track PH header banner on every page, Arial-style type (Liberation Sans), ruled sections, and stacked signature blocks with Signature and Date lines. The wording comes only from Juan's draft. The only additions are the letterhead phone and email lines, the "Signature:" labels and page numbers. When a draft is uploaded, the app reads the formatted PDF back and compares it with the draft character by character; a contract that fails this check cannot be issued. HR can open Juan's original draft next to the formatted version at any time.
+- **Final PDF.** The signed PDF is the formatted contract the employee reviewed, unchanged, with both signatures, both dates and a reference footer stamped on. It contains no pay explanation, verification step or activity log. It is stored in the artifact database with its fingerprint and checked against it on every download.
 - **File names.** HR copies: `EmployeeCode_FullName_EmploymentContract_YYYY-MM-DD.pdf` (for example `MS-170701_Maria-Santos_EmploymentContract_2026-10-12.pdf`).
 
 ## Limits to know about
@@ -70,7 +72,7 @@ So an employee who opens developer tools, edits the URL, changes the dropdown, o
 ## Tests
 
 ```
-npm i pdfjs-dist@3.11.174 pdf-lib@1.17.1   # in any scratch folder
+npm i pdfjs-dist@3.11.174 pdf-lib@1.17.1 @pdf-lib/fontkit@1.1.1   # in any scratch folder
 NODE_PATH=<that folder>/node_modules node contract-signing/tests/core.test.js path/to/Contract.pdf
 ```
 
