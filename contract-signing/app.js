@@ -841,14 +841,15 @@
 
     const checks = h('ul', { class: 'stack small', style: 'padding-left:18px;margin:0' },
       (rec.issues || []).length ? rec.issues.map((t) => h('li', { class: 'check-bad', text: t })) : h('li', { class: 'check-ok', text: 'Name, salary, start date and signature fields found in the PDF.' }),
-      h('li', { class: rec.fidelity && rec.fidelity.ok ? 'check-ok' : 'check-bad', text: rec.fidelity && rec.fidelity.ok ? `Wording check passed: the formatted contract contains Juan's draft character for character (${rec.fidelity.chars} characters).` : 'Wording check failed. The formatted contract cannot be issued.' }),
+      h('li', { class: rec.fidelity && rec.fidelity.ok ? 'check-ok' : 'check-bad', text: rec.fidelity && rec.fidelity.ok ? `Wording check passed: the formatted contract contains Juan's draft character for character${(rec.fills || []).length ? ', apart from the filled-in blank below' : ''} (${rec.fidelity.chars} characters).` : 'Wording check failed. The formatted contract cannot be issued.' }),
+      (rec.fills || []).map((f) => h('li', { class: 'check-ok', text: `Blank filled in: ${f.field} → ${f.value}. Juan's draft left this blank “(to be filled in before signing)”. Entered ${ET.phDateTime(f.at)} on HR's instruction.` })),
       h('li', { class: rec.dob ? 'check-ok' : 'check-bad', text: rec.dob ? 'Birthdate on file.' : 'Birthdate missing. Required before issuing.' }));
 
     const frame = h('div', { class: 'doc-frame' }, spinner('Loading contract…'));
     getVersionBytes(rec.currentVid, rec.sha).then(({ bytes }) => renderPdf(frame, bytes)).catch((e) => frame.replaceChildren(h('p', { class: 'note bad', text: errText(e) })));
 
     const actions = h('div', { class: 'row' });
-    const blocking = !rec.anchors || !rec.monthly || !rec.name || !rec.startDate || !(rec.fidelity && rec.fidelity.ok);
+    const blocking = !rec.anchors || !rec.monthly || !rec.name || !rec.startDate || !!rec.preApproval || !(rec.fidelity && rec.fidelity.ok);
     if (st === 'draft' || st === 'returned') {
       const issueBtn = h('button', { class: 'btn', text: st === 'returned' ? 'Re-issue for signature' : 'Issue for employee signature', disabled: blocking || !rec.dob || !!rec.pendingVid });
       issueBtn.onclick = async () => {
@@ -889,6 +890,25 @@
         };
       };
       actions.append(retBtn);
+    }
+
+    if ((st === 'draft' || st === 'returned') && !rec.uid) {
+      const rm = h('button', { class: 'btn danger', text: 'Remove contract' });
+      rm.onclick = () => {
+        const ok = h('button', { class: 'btn danger', text: `Remove ${rec.name}` });
+        const c2 = modal('Remove contract', h('div', { class: 'stack' }, h('p', { text: `This deletes ${rec.name}'s contract and record from the app. Use it for employees who have left before signing. It cannot be undone; the original PDF stays in Google Drive.` }), h('div', { class: 'row end' }, ok)));
+        ok.onclick = async () => {
+          const done = busy(ok, 'Removing…');
+          try {
+            for (const vid of [rec.currentVid, rec.pendingVid].filter(Boolean)) { await S.db.doc('hr/data/versions/' + vid).delete(); await S.db.doc('hr/data/formatted/' + vid).delete(); }
+            await S.db.doc('hr/data/employees/' + key).delete();
+            await updateDirectory();
+            await logEvent({ action: 'Contract removed', employeeKey: key, contractId: rec.contractId || null, detail: rec.name });
+            c2(); close();
+          } catch (e) { done(); toast(errText(e), 'error'); }
+        };
+      };
+      actions.append(rm);
     }
 
     let diffSection = null;

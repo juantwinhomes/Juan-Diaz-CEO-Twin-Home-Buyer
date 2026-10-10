@@ -134,6 +134,8 @@
     if (monthly && perCutoff && ET.round2(monthly / 2) !== ET.round2(perCutoff)) issues.push('Per cut-off amount is not half of the monthly salary. Check the draft with Juan.');
     if (!startDate) issues.push(/employment began on _{3,}/.test(full) ? 'The start date is blank in this draft. Ask Juan for a revised PDF with the date filled in; it cannot be typed in here.' : 'Start date not found.');
 
+    const preApproval = /DRAFT for Juan Diaz.s approval|Not valid until signed/i.test(full);
+    if (preApproval) issues.push('This file is a pre-approval draft: it says “DRAFT for Juan Diaz’s approval. Not valid until signed…”. Ask Juan for the approved version without that note.');
     const all = pages.flatMap((p) => p.items.map((i) => i.str.trim()));
     if (!all.includes('JUAN DIAZ') || !name || !all.some((t) => t.toUpperCase() === name.toUpperCase()))
       issues.push('Signature block (JUAN DIAZ and the employee name) not found, so signatures cannot be placed.');
@@ -141,7 +143,7 @@
     return {
       name, position: titleLine, effective, startDate, monthly, perCutoff,
       hourly: hourlyS ? num(hourlyS) : 0, daily: dailyS ? num(dailyS) : 0,
-      managerial, hasNightDiff, issues,
+      managerial, hasNightDiff, preApproval, issues,
     };
   };
 
@@ -235,6 +237,21 @@
   ET.modelText = (m) => squash([m.letterhead.name, m.letterhead.address, m.title, m.subtitle,
     ...m.blocks.map((b) => b.type === 'h' ? b.text : b.type === 'row' ? runsText(b.left) + runsText(b.right) : runsText(b.runs)),
     ...m.signature.company, ...m.signature.employee].join(''));
+
+  /**
+   * Fills a blank the draft itself marks "(to be filled in before signing)". Returns the filled model and the
+   * draft fingerprint with the same fill applied, so the wording check still proves nothing else changed.
+   */
+  ET.BLANK_RE = /_{3,}\s*\(to be filled in before signing\)/;
+  ET.fillBlank = function (model, expected, value) {
+    const m = JSON.parse(JSON.stringify(model));
+    let hits = 0;
+    m.blocks.forEach((b) => (b.runs || []).forEach((r) => { if (ET.BLANK_RE.test(r.t)) { r.t = r.t.replace(ET.BLANK_RE, value); hits++; } }));
+    if (hits !== 1) throw new Error('Expected exactly one blank marked “(to be filled in before signing)”, found ' + hits + '.');
+    const marker = squash('(to be filled in before signing)');
+    if (expected.split(marker).length !== 2) throw new Error('The blank could not be located in the draft text.');
+    return { model: m, expected: expected.replace(marker, squash(value)) };
+  };
 
   /** Draws the contract in the packet layout. Returns the PDF and where each signature and date go. */
   ET.renderPacketPdf = async function (PDFLib, fontkit, assets, m) {
