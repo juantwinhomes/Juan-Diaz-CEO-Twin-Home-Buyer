@@ -982,7 +982,9 @@
     const checks = h('ul', { class: 'stack small', style: 'padding-left:18px;margin:0' },
       (rec.issues || []).length ? rec.issues.map((t) => h('li', { class: 'check-bad', text: t })) : h('li', { class: 'check-ok', text: 'Name, salary, start date and signature fields found in the PDF.' }),
       h('li', { class: rec.fidelity && rec.fidelity.ok ? 'check-ok' : 'check-bad', text: rec.fidelity && rec.fidelity.ok ? `Wording check passed: the formatted contract contains Juan's draft character for character${(rec.fills || []).length ? ', apart from the filled-in blank below' : ''} (${rec.fidelity.chars} characters).` : 'Wording check failed. The formatted contract cannot be issued.' }),
-      (rec.fills || []).map((f) => h('li', { class: 'check-ok', text: f.kind === 'removed-note'
+      (rec.fills || []).map((f) => h('li', { class: 'check-ok', text: f.kind === 'renamed'
+        ? `Employee name corrected from “${f.from}” to “${f.value}” at the employee's request (${ET.phDateTime(f.at)}). No other wording changed.`
+        : f.kind === 'removed-note'
         ? `Pre-approval note removed: “${f.value}”. No other wording changed. Removed ${ET.phDateTime(f.at)} on HR's instruction; Juan's signature confirms his approval.`
         : `Blank filled in: ${f.field} → ${f.value}. Juan's draft left this blank “(to be filled in before signing)”. Entered ${ET.phDateTime(f.at)} on HR's instruction.` })),
       h('li', { class: rec.dob ? 'check-ok' : 'check-bad', text: rec.dob ? 'Birthdate on file.' : 'Birthdate missing. Required before issuing.' }));

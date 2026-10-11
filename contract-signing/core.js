@@ -281,6 +281,20 @@
     return { model: Object.assign(JSON.parse(JSON.stringify(model)), { preamble: [] }), expected: expected.slice(0, k) + expected.slice(k + squash(note).length), note };
   };
 
+  /** Corrects the employee's name in the opening paragraph and signature block. Nothing else changes. */
+  ET.renameEmployee = function (model, expected, oldName, newName) {
+    const m = JSON.parse(JSON.stringify(model));
+    let hits = 0;
+    const swap = (t) => { let out = t; for (const [a, b] of [[oldName, newName], [oldName.toUpperCase(), newName.toUpperCase()]]) { const n = out.split(a).length - 1; if (n) { hits += n; out = out.split(a).join(b); } } return out; };
+    m.blocks.forEach((b) => ['runs', 'left', 'right'].forEach((k) => (b[k] || []).forEach((r) => { r.t = swap(r.t); })));
+    m.signature.company = m.signature.company.map(swap);
+    m.signature.employee = m.signature.employee.map(swap);
+    if (hits < 2) throw new Error(`Expected the name in the opening paragraph and the signature block; found it ${hits} time(s).`);
+    let e = expected;
+    for (const [a, b] of [[oldName, newName], [oldName.toUpperCase(), newName.toUpperCase()]]) e = e.split(squash(a)).join(squash(b));
+    return { model: m, expected: e, hits };
+  };
+
   /** Draws the contract in the packet layout. Returns the PDF and where each signature and date go. */
   ET.renderPacketPdf = async function (PDFLib, fontkit, assets, m) {
     const { PDFDocument, rgb } = PDFLib;
