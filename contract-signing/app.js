@@ -584,6 +584,7 @@
       const src = await loadSource();
       signedBytes = sig && i.anchors ? await employeeSignedPdf(src, i, sig) : src;
       renderPdf(frame, signedBytes);
+      if (sig && !i.anchors) frame.before(h('div', { class: 'stack' }, h('p', { class: 'note info', text: 'Your signature is saved. HR’s next visit refreshes this copy so your signature also appears on the signature line.' }), h('div', { class: 'sig-preview' }, h('img', { src: 'data:image/png;base64,' + sig.sigPng, alt: 'Your signature' }))));
     })().catch((e) => frame.replaceChildren(h('p', { class: 'note bad', text: errText(e) })));
     const dl = h('button', { class: 'btn secondary', text: 'Download my signed copy (PDF)', onclick: async () => {
       if (!signedBytes) { toast('The document is still loading.', 'error'); return; }
@@ -657,10 +658,10 @@
     }
   }
   function subscribeAdminData(onChange) {
-    const ready = { e: false, c: false };
-    const go = () => { if (ready.e && ready.c) onChange(); };
+    const ready = { e: false, c: false, f: false };
+    const go = () => { if (ready.e && ready.c && ready.f) onChange(); };
     const err = (e) => mount(blocked('Records could not be loaded', errText(e)));
-    S.db.doc('hr/config').onSnapshot((s) => { S.cfg = s.exists ? s.data() : {}; go(); }, err);
+    S.db.doc('hr/config').onSnapshot((s) => { S.cfg = s.exists ? s.data() : {}; ready.f = true; go(); }, err);
     S.db.collection('hr/data/employees').onSnapshot((q) => { S.employees = {}; q.docs.forEach((d) => { S.employees[d.id] = d.data(); }); ready.e = true; syncSignSubs(go); go(); ingestEmployeeActions(); }, err);
     S.db.collection('claims').onSnapshot((q) => { S.claims = {}; q.docs.forEach((d) => { S.claims[d.id] = d.data(); }); ready.c = true; go(); }, err);
   }
@@ -678,7 +679,26 @@
   function hrMain() {
     S.role = 'hr';
     mount(spinner('Loading HR records…'));
-    subscribeAdminData(() => { renderHr(false); upgradeUnformatted(); });
+    subscribeAdminData(() => { renderHr(false); upgradeUnformatted(); repairEmployeeCopies(); });
+  }
+
+  /** Rewrites any employee copy that is missing or out of date (e.g. issued by an older version of this page). */
+  let repairing = false, repairedOnce = false;
+  async function repairEmployeeCopies() {
+    if (repairing || repairedOnce) return;
+    repairing = true;
+    let fixed = 0;
+    for (const r of Object.values(S.employees)) {
+      if (!r.vault || !['issued', 'returned', 'fully_signed'].includes(r.status)) continue;
+      try {
+        const d = await S.db.doc(P.record(r.vault)).get();
+        const src = await S.db.doc(P.source(r.vault)).get();
+        const cur = d.exists ? d.data() : null;
+        if (!cur || !cur.anchors || cur.sha !== r.sha || !src.exists) { await publishToEmployee(r); fixed++; }
+      } catch (e) { console.warn('repair failed for', r.key, e); }
+    }
+    repairing = false; repairedOnce = true;
+    if (fixed) { logEvent({ action: `Refreshed ${fixed} employee contract copies`, outcome: 'info' }); toast(`Refreshed ${fixed} employee contract copies.`); }
   }
 
   /** Contracts uploaded before the onboarding format existed have no formatted copy yet. Build it from Juan's saved draft. */
@@ -981,13 +1001,15 @@
         const done = busy(issueBtn, 'Issuing…');
         try {
           const contractId = rec.contractId || `ETP-EC-${new Date().getFullYear()}-${ET.randomId(3)}`;
+          // Order matters: keep the code, write the employee's copy, and only then mark the contract issued,
+          // so a failure part-way never leaves an "issued" contract that the employee cannot open.
+          if (!rec.vault) { const accessCode = ET.newAccessCode(); await updateRec(key, { accessCode, vault: await ET.vaultId(accessCode) }); }
           const patch = { status: 'issued', contractId, issuedAt: nowIso(), returnNote: '', employeeSig: null };
-          if (!rec.vault) { patch.accessCode = ET.newAccessCode(); patch.vault = await ET.vaultId(patch.accessCode); }
-          await updateRec(key, patch);
           const r = Object.assign({}, fresh(), patch);
           const e = S.esign[key];
           if (e && e.correction && !e.correction.handled) await S.db.doc(P.sign(r.vault)).update({ correction: Object.assign({}, e.correction, { handled: true }) });
           await publishToEmployee(r);
+          await updateRec(key, patch);
           await updateDirectory();
           await logEvent({ action: st === 'returned' ? 'Contract re-issued after correction' : 'Contract issued for employee review and signature', contractId, version: r.versionNo, employeeKey: key });
           toast('Issued.'); reopen();
@@ -995,6 +1017,26 @@
       };
       actions.append(issueBtn);
       if (rec.pendingVid) actions.append(h('span', { class: 'small muted', text: 'Review the revised draft first.' }));
+    }
+    if (st === 'awaiting_company') {
+      const clr = h('button', { class: 'btn secondary', text: 'Clear signature (employee signs again)' });
+      clr.onclick = () => {
+        const ok = h('button', { class: 'btn danger', text: 'Clear signature' });
+        const c2 = modal('Clear employee signature', h('div', { class: 'stack' }, h('p', { text: `${rec.name}'s signature is removed from this contract and they can sign again with the same access code. The old signature is kept in the HR record for the audit trail.` }), h('div', { class: 'row end' }, ok)));
+        ok.onclick = async () => {
+          const done = busy(ok, 'Clearing…');
+          try {
+            const old = (rec.employeeSig && rec.employeeSig.sha === rec.sha) ? rec.employeeSig : sigFor(rec);
+            await S.db.doc(P.record(rec.vault)).update({ status: 'awaiting_employee', employeeSignedAt: null });
+            if (S.esign[key]) await S.db.doc(P.sign(rec.vault)).delete();
+            await updateRec(key, { employeeSig: null, previousSignatures: (rec.previousSignatures || []).concat(old ? [Object.assign({}, old, { resetAt: nowIso(), resetReason: 'Cleared by HR so the employee signs again' })] : []) });
+            S.esign[key] = null;
+            await logEvent({ action: 'Employee signature cleared by HR; employee can sign again', contractId: rec.contractId, version: rec.versionNo, employeeKey: key });
+            c2(); toast('Signature cleared.'); reopen();
+          } catch (e) { done(); toast(errText(e), 'error'); }
+        };
+      };
+      actions.append(clr);
     }
     if (st === 'awaiting_employee' || st === 'awaiting_company') {
       const retBtn = h('button', { class: 'btn danger', text: 'Return for correction' });
@@ -1363,7 +1405,7 @@
   function juanMain() {
     S.role = 'signatory';
     mount(spinner('Loading contracts…'));
-    subscribeAdminData(() => { if (!J.busy) renderJuan(); });
+    subscribeAdminData(() => { if (!J.busy) renderJuan(); repairEmployeeCopies(); });
   }
 
   function renderJuan() {

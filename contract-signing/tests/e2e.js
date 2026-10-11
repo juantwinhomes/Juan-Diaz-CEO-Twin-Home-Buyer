@@ -145,6 +145,13 @@ function mockClaude() {
   if (!rec.accessCode || !store.has(`vault/${rec.vault}/d/record`)) throw new Error('issue did not create the employee record');
   step(`HR issued the contract; access code ${rec.accessCode} created`);
   await hr.getByRole('button', { name: 'Close' }).click();
+  // A copy issued by an older version has no signature positions: HR's next visit must repair it.
+  const recPath = `vault/${rec.vault}/d/record`;
+  const old = Object.assign({}, store.get(recPath)); delete old.anchors; store.set(recPath, old);
+  await hr.reload();
+  for (let i = 0; i < 60 && !store.get(recPath).anchors; i++) await new Promise((r) => setTimeout(r, 250));
+  if (!store.get(recPath).anchors) throw new Error('HR console did not repair the employee copy');
+  step('HR console repaired an employee copy issued by an older version');
 
   // 2. Employee: wrong code is refused, right code opens
   const emp = await open('emp');
@@ -187,6 +194,25 @@ function mockClaude() {
   for (let i = 0; i < 40 && !store.get(empKey).employeeSig; i++) await new Promise((r) => setTimeout(r, 250));
   if (!store.get(empKey).employeeSig) throw new Error('HR did not lock the employee signature');
   step('HR console locked the employee signature');
+  // HR clears the signature; the employee gets the signing page back and signs again.
+  await hr.getByRole('button', { name: 'Open' }).first().click();
+  await hr.getByRole('button', { name: 'Clear signature (employee signs again)' }).click();
+  await hr.getByRole('button', { name: 'Clear signature', exact: true }).click();
+  for (let i = 0; i < 40 && store.get(empKey).employeeSig; i++) await new Promise((r) => setTimeout(r, 250));
+  if (store.get(empKey).employeeSig || !(store.get(empKey).previousSignatures || []).length) throw new Error('signature was not cleared and archived');
+  await emp.getByText('Sign your contract').waitFor({ timeout: T });
+  const pad2 = await emp.locator('.pad canvas').boundingBox();
+  await emp.mouse.move(pad2.x + 40, pad2.y + 120); await emp.mouse.down();
+  for (let i = 0; i < 25; i++) await emp.mouse.move(pad2.x + 40 + i * 10, pad2.y + 115 + Math.cos(i / 2) * 25);
+  await emp.mouse.up();
+  await emp.getByRole('button', { name: 'Preview signature' }).click();
+  await emp.locator('#consent').check();
+  await emp.getByRole('button', { name: 'Submit My Signature' }).click();
+  await emp.getByText("Awaiting Juan's signature").waitFor({ timeout: T });
+  for (let i = 0; i < 40 && !store.get(empKey).employeeSig; i++) await new Promise((r) => setTimeout(r, 250));
+  if (!store.get(empKey).employeeSig) throw new Error('re-signed signature was not locked');
+  await hr.getByRole('button', { name: 'Close' }).click();
+  step('HR cleared the signature; the employee signed again');
 
   // 3. Juan requests the role, HR designates him, Juan batch-signs
   const juan = await open('juan');
