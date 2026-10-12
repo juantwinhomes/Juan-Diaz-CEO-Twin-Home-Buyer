@@ -1,0 +1,808 @@
+<title>Madera Weekly Payroll Cost Estimator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: navy header band, then a single 1200px column of ledger-style panels — summary first, detail below. */
+:root {
+  --bg: #f2f5f9;
+  --surface: #ffffff;
+  --surface-2: #edf2f7;
+  --ink: #0f1f38;
+  --ink-2: #4b5b73;
+  --ink-3: #6f7f96;
+  --line: #d6dee9;
+  --navy: #13294b;
+  --navy-2: #1c3863;
+  --on-navy: #ffffff;
+  --on-navy-2: #b9c8de;
+  --teal: #0b7a84;
+  --teal-soft: #d5edef;
+  --green: #1d8a4b;
+  --green-soft: #dbf1e3;
+  --amber: #9a5a06;
+  --amber-soft: #fbecd3;
+  --red: #b0222e;
+  --red-soft: #f8dfe2;
+  --bar-gross: #13294b;
+  --bar-liab: #0b7a84;
+  --bar-fee: #79c4ca;
+  --bar-markup: #2b9b5b;
+  --focus: #0b7a84;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-head: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1424; --surface: #101d32; --surface-2: #162741; --ink: #e6edf6; --ink-2: #a3b3c9; --ink-3: #7e90aa; --line: #253a5c;
+    --navy: #0f2445; --navy-2: #1a3561; --on-navy: #ffffff; --on-navy-2: #a9bcd8;
+    --teal: #45c1ca; --teal-soft: #11373f; --green: #4fc784; --green-soft: #12382a; --amber: #f1b45e; --amber-soft: #3a2a12; --red: #f27f89; --red-soft: #3d1a21;
+    --bar-gross: #7ea2df; --bar-liab: #45c1ca; --bar-fee: #a9e2e6; --bar-markup: #4fc784; --focus: #45c1ca;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a1424; --surface: #101d32; --surface-2: #162741; --ink: #e6edf6; --ink-2: #a3b3c9; --ink-3: #7e90aa; --line: #253a5c;
+  --navy: #0f2445; --navy-2: #1a3561; --on-navy: #ffffff; --on-navy-2: #a9bcd8;
+  --teal: #45c1ca; --teal-soft: #11373f; --green: #4fc784; --green-soft: #12382a; --amber: #f1b45e; --amber-soft: #3a2a12; --red: #f27f89; --red-soft: #3d1a21;
+  --bar-gross: #7ea2df; --bar-liab: #45c1ca; --bar-fee: #a9e2e6; --bar-markup: #4fc784; --focus: #45c1ca;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.num, .money { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+h1, h2, h3 { font-family: var(--font-head); text-wrap: balance; margin: 0; line-height: 1.15; }
+h2 { font-size: 1.45rem; font-weight: 600; }
+h3 { font-size: 1.05rem; font-weight: 600; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.band { background: var(--navy); color: var(--on-navy); padding-inline: 16px; }
+.band-inner { max-width: 1200px; margin-inline: auto; padding-block: 28px 24px; display: grid; gap: 14px; }
+.eyebrow { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--on-navy-2); font-weight: 600; }
+.band h1 { font-size: clamp(1.7rem, 4vw, 2.5rem); font-weight: 700; }
+.band .meta { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--on-navy-2); font-size: 0.92rem; }
+.band .meta strong { color: var(--on-navy); font-weight: 500; }
+.notice { display: inline-flex; align-items: center; gap: 8px; background: var(--navy-2); border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; padding: 6px 12px; font-size: 0.85rem; color: var(--on-navy); width: fit-content; max-width: 100%; }
+.notice-dot { width: 8px; height: 8px; border-radius: 50%; background: #f1b45e; flex: none; }
+.nav { display: flex; flex-wrap: wrap; gap: 6px; }
+.nav a { color: var(--on-navy); text-decoration: none; font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.2); }
+.nav a:hover { background: var(--navy-2); }
+
+.wrap { max-width: 1200px; margin-inline: auto; padding-inline: 16px; padding-block: 24px 64px; display: grid; gap: 28px; }
+.section { display: grid; gap: 14px; min-width: 0; scroll-margin-top: 12px; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+.section-head p { color: var(--ink-2); font-size: 0.92rem; max-width: 70ch; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+
+.legend-key { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; font-size: 0.85rem; color: var(--ink-2); }
+.tag { display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; white-space: nowrap; line-height: 1.5; }
+.tag-actual { background: var(--navy); color: var(--on-navy); }
+.tag-proj { border: 1px dashed var(--teal); color: var(--teal); }
+.tag-hist { background: var(--amber-soft); color: var(--amber); }
+.approx { font-style: italic; color: var(--amber); }
+
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.kpi-label { font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.kpi-value { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: 1.6rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; overflow-wrap: anywhere; }
+.kpi-sub { font-size: 0.84rem; color: var(--ink-2); }
+.kpi.hl { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
+.kpi.hl .kpi-label, .kpi.hl .kpi-sub { color: var(--on-navy-2); }
+.kpi.hl .tag-proj { border-color: var(--on-navy-2); color: var(--on-navy); }
+.kpi.up .kpi-value { color: var(--teal); }
+.crew-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.crew-row .kpi-value { font-size: 2rem; }
+.status-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 3px 10px 3px 8px; border-radius: 999px; font-weight: 500; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.Confirmed { background: var(--green-soft); color: var(--green); }
+.pill.Pending { background: var(--amber-soft); color: var(--amber); }
+.pill.NotAvailable { background: var(--red-soft); color: var(--red); }
+
+/* Forms */
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label { font-size: 0.8rem; color: var(--ink-2); font-weight: 500; }
+.field .hint { font-size: 0.76rem; color: var(--ink-3); }
+.input { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; min-width: 0; }
+.input:hover { border-color: var(--ink-3); }
+.input.numeric { font-family: var(--font-num); font-variant-numeric: tabular-nums; text-align: right; }
+.input.bad { border-color: var(--red); background: var(--red-soft); }
+.input.override { border-color: var(--teal); }
+.prefix { position: relative; }
+.prefix > span { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--ink-3); font-family: var(--font-num); pointer-events: none; font-size: 0.9rem; }
+.prefix > .input { padding-left: 20px; }
+.suffix { position: relative; }
+.suffix > span { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; font-size: 0.9rem; }
+.suffix > .input { padding-right: 26px; }
+.grid-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 14px; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); padding: 7px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.9rem; }
+.btn:hover { border-color: var(--ink-3); background: var(--surface-2); }
+.btn.primary { background: var(--teal); border-color: var(--teal); color: #ffffff; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.navy { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
+.btn.danger { color: var(--red); }
+.btn.small { padding: 3px 9px; font-size: 0.8rem; }
+.linkbtn { background: none; border: none; color: var(--teal); padding: 0; cursor: pointer; font-size: 0.78rem; text-decoration: underline; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.iconbtn { border: 1px solid transparent; background: none; color: var(--ink-3); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; font-size: 1.1rem; line-height: 1; }
+.iconbtn:hover { color: var(--red); border-color: var(--red-soft); background: var(--red-soft); }
+
+/* Tables */
+.scroll { overflow-x: auto; min-width: 0; -webkit-overflow-scrolling: touch; }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; padding: 8px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: bottom; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th.r, td.r { text-align: right; }
+tr.placeholder-row td { background: var(--surface-2); }
+tr.na-row td { opacity: 0.55; }
+tfoot td { font-weight: 600; border-bottom: none; border-top: 2px solid var(--ink); }
+.workers-table { min-width: 1300px; }
+.w-sel { min-width: 140px; }
+.workers-table .input { padding: 5px 7px; }
+.w-name { min-width: 150px; }
+.w-num { width: 92px; }
+.w-prop { min-width: 210px; }
+.ledger td { padding: 8px 10px; }
+.ledger td:first-child { color: var(--ink); }
+.ledger .step { font-family: var(--font-num); color: var(--ink-3); width: 2.2em; }
+.ledger .formula { color: var(--ink-3); font-size: 0.82rem; }
+.ledger tr.total td { font-weight: 600; border-top: 1px solid var(--ink-3); }
+.ledger tr.grand td { font-weight: 700; background: var(--teal-soft); border-bottom: none; }
+.ledger tr.grand td.money { color: var(--teal); font-size: 1.05rem; }
+.compare-table { min-width: 720px; }
+.compare-table th.actual-col, .compare-table td.actual-col { background: var(--surface-2); }
+
+.two-col { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+/* Scenarios */
+.scen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.scen { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 10px; align-content: start; }
+.scen.custom { border-color: var(--teal); border-style: dashed; }
+.scen-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.scen-count { font-family: var(--font-num); font-size: 0.9rem; color: var(--ink-2); }
+.scen-big { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: 1.55rem; font-weight: 600; }
+.scen dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; margin: 0; font-size: 0.86rem; }
+.scen dt { color: var(--ink-2); }
+.scen dd { margin: 0; text-align: right; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.delta-pos { color: var(--teal); font-weight: 600; }
+.basis { font-size: 0.8rem; color: var(--ink-2); border-top: 1px dashed var(--line); padding-top: 8px; display: grid; gap: 2px; }
+input[type="range"] { width: 100%; accent-color: var(--teal); }
+.range-ends { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--ink-3); font-family: var(--font-num); }
+
+/* Chart */
+.chart-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--ink-2); }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+.chart-box { min-width: 0; overflow-x: auto; }
+.chart-box svg { display: block; width: 100%; min-width: 560px; height: auto; }
+.chart-box text { font-family: var(--font-body); }
+
+/* Summary */
+.summary-box { width: 100%; min-height: 360px; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; background: var(--surface-2); line-height: 1.55; resize: vertical; font-size: 0.92rem; }
+.toast { font-size: 0.85rem; color: var(--green); font-weight: 500; }
+.toast.warn { color: var(--amber); }
+.footnotes { font-size: 0.8rem; color: var(--ink-3); display: grid; gap: 4px; max-width: 90ch; }
+
+@media (max-width: 560px) {
+  .crew-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .crew-row .kpi { padding: 10px; }
+  .crew-row .kpi-value { font-size: 1.5rem; }
+  .kpi-label { font-size: 0.7rem; }
+  .panel { padding: 14px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .input { transition: border-color .12s, background-color .12s; }
+}
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+(function () {
+  const { useState, useMemo, useEffect, useRef } = React;
+  const html = htm.bind(React.createElement);
+
+  const ADDRESS = "22496 Avenue 18 3/4, Madera, CA";
+  const STATUSES = ["Confirmed", "Pending", "Not Available"];
+  const STORE_KEY = "madera-payroll-estimator-v1";
+  const OT_MULT = 1.5;
+
+  const DEFAULT_REF = { period: "Sep 21–27, 2026", gross: "8812.52", liability: "699.05", fee: "136.52", markup: "2894.43", workers: "5" };
+  const DEFAULT_ASSUME = { liabPct: null, feePct: null, markupPct: "30", weeksPerMonth: "4.33", target: "12", expanded: "8" };
+
+  let seq = 0;
+  const nid = () => "w" + Date.now().toString(36) + (seq++).toString(36);
+  const mk = (name, status, placeholder) => ({ id: nid(), name, rate: "", reg: "40", ot: "0", property: ADDRESS, status, placeholder });
+  function defaultWorkers() {
+    const named = [mk("Jairo", "Confirmed", false), mk("Cesar", "Confirmed", false), mk("Luis", "Confirmed", false), mk("Chris", "Pending", false), mk("Alex", "Confirmed", false)];
+    const open = [];
+    for (let i = 6; i <= 12; i++) open.push(mk("Open position " + i, "Pending", true));
+    return named.concat(open);
+  }
+
+  // ---------- number helpers ----------
+  const isNumStr = (s) => String(s).trim() === "" || /^-?\$?\s*[\d,]*\.?\d*$/.test(String(s).trim());
+  const num = (s) => { const n = parseFloat(String(s ?? "").replace(/[$,\s%]/g, "")); return isFinite(n) ? n : 0; };
+  const r2 = (n) => Math.round(n * 100 + (n >= 0 ? 1e-7 : -1e-7)) / 100;
+  const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const money = (n) => USD.format(r2(n || 0));
+  const signed = (n) => (n > 0 ? "+" : n < 0 ? "−" : "") + USD.format(Math.abs(r2(n)));
+  const pct = (n, d = 4) => (isFinite(n) ? n.toFixed(d) : "0") + "%";
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      if (!s || !Array.isArray(s.workers)) return null;
+      return s;
+    } catch (e) { return null; }
+  }
+
+  // ---------- small UI pieces ----------
+  function MoneyInput({ id, value, onChange, label, hint, className }) {
+    const bad = !isNumStr(value);
+    return html`<div class=${"field " + (className || "")}>
+      ${label && html`<label htmlFor=${id}>${label}</label>`}
+      <div class="prefix"><span>$</span>
+        <input id=${id} class=${"input numeric" + (bad ? " bad" : "")} inputMode="decimal" value=${value} onChange=${(e) => onChange(e.target.value)} />
+      </div>
+      ${hint && html`<span class="hint">${hint}</span>`}
+    </div>`;
+  }
+  function PctInput({ id, value, onChange, label, hint, override, onReset }) {
+    const bad = !isNumStr(value);
+    return html`<div class="field">
+      <label htmlFor=${id}>${label}</label>
+      <div class="suffix"><span>%</span>
+        <input id=${id} class=${"input numeric" + (bad ? " bad" : "") + (override ? " override" : "")} inputMode="decimal" value=${value} onChange=${(e) => onChange(e.target.value)} />
+      </div>
+      <span class="hint">${hint}${override && onReset ? html` · <button class="linkbtn" onClick=${onReset}>Use reference rate</button>` : null}</span>
+    </div>`;
+  }
+
+  function Chart({ rows, refDeposit, refLabel }) {
+    const W = 760, labelW = 150, rightPad = 118, barH = 34, gap = 24, top = 34, axisH = 30;
+    const max = Math.max(refDeposit, ...rows.map((r) => r.deposit), 1);
+    const raw = max / 5, mag = Math.pow(10, Math.floor(Math.log10(raw))), nrm = raw / mag;
+    const step = (nrm <= 1 ? 1 : nrm <= 2 ? 2 : nrm <= 2.5 ? 2.5 : nrm <= 5 ? 5 : 10) * mag;
+    const axisMax = Math.ceil(max / step) * step;
+    const plotW = W - labelW - rightPad;
+    const x = (v) => labelW + (v / axisMax) * plotW;
+    const H = top + rows.length * (barH + gap) - gap + axisH;
+    const ticks = [];
+    for (let v = 0; v <= axisMax + 0.001; v += step) ticks.push(v);
+    const kfmt = (v) => "$" + (v >= 1000 ? (v / 1000).toLocaleString("en-US", { maximumFractionDigits: 1 }) + "k" : v);
+    const segs = [["gross", "var(--bar-gross)"], ["liab", "var(--bar-liab)"], ["fee", "var(--bar-fee)"], ["markup", "var(--bar-markup)"]];
+    const refX = x(refDeposit);
+    return html`<svg viewBox=${"0 0 " + W + " " + H} role="img" aria-label="Weekly cost comparison by crew size">
+      ${ticks.map((t) => html`<g key=${"t" + t}>
+        <line x1=${x(t)} x2=${x(t)} y1=${top - 6} y2=${H - axisH + 4} stroke="var(--line)" strokeWidth="1" />
+        <text x=${x(t)} y=${H - 8} textAnchor="middle" fontSize="12" fill="var(--ink-3)">${kfmt(t)}</text>
+      </g>`)}
+      ${rows.map((r, i) => {
+        const y = top + i * (barH + gap);
+        let acc = 0;
+        return html`<g key=${r.key}>
+          <text x=${labelW - 12} y=${y + barH / 2 - 3} textAnchor="end" fontSize="13" fontWeight="600" fill="var(--ink)">${r.label}</text>
+          <text x=${labelW - 12} y=${y + barH / 2 + 13} textAnchor="end" fontSize="12" fill="var(--ink-2)">${r.n} workers</text>
+          ${segs.map(([k, c]) => {
+            const x0 = x(acc); acc += r[k]; const w = Math.max(0, x(acc) - x0);
+            return html`<rect key=${k} x=${x0} y=${y} width=${w} height=${barH} fill=${c}><title>${k}: ${money(r[k])}</title></rect>`;
+          })}
+          <text x=${x(r.deposit) + 8} y=${y + barH / 2 + 5} fontSize="13" fontWeight="600" fill="var(--ink)" style=${{ fontFamily: "var(--font-num)" }}>${money(r.deposit)}</text>
+        </g>`;
+      })}
+      <line x1=${refX} x2=${refX} y1=${top - 12} y2=${H - axisH + 4} stroke="var(--amber)" strokeWidth="2" strokeDasharray="5 4" />
+      <text x=${refX} y=${top - 18} textAnchor=${refX > W - 200 ? "end" : "middle"} fontSize="12" fontWeight="600" fill="var(--amber)">Actual ${refLabel}: ${money(refDeposit)}</text>
+    </svg>`;
+  }
+
+  // ---------- App ----------
+  function App() {
+    const saved = useMemo(loadState, []);
+    const [ref, setRef] = useState(saved?.ref || DEFAULT_REF);
+    const [assume, setAssume] = useState(saved?.assume || DEFAULT_ASSUME);
+    const [workers, setWorkers] = useState(saved?.workers || defaultWorkers);
+    const [slider, setSlider] = useState(saved?.slider || 10);
+    const [removed, setRemoved] = useState(null);
+    const [confirmReset, setConfirmReset] = useState(false);
+    const [toast, setToast] = useState({ text: "", warn: false });
+    const [csvFallback, setCsvFallback] = useState("");
+    const [downloads, setDownloads] = useState(null);
+    const summaryRef = useRef(null);
+    const csvRef = useRef(null);
+
+    useEffect(() => {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify({ ref, assume, workers, slider })); } catch (e) {}
+    }, [ref, assume, workers, slider]);
+    useEffect(() => {
+      let alive = true;
+      try {
+        const p = window.claude && window.claude.use ? window.claude.use("downloads") : null;
+        if (p && p.then) p.then((d) => { if (alive) setDownloads(d); }).catch(() => {});
+      } catch (e) {}
+      return () => { alive = false; };
+    }, []);
+    useEffect(() => {
+      if (!toast.text) return;
+      const t = setTimeout(() => setToast({ text: "", warn: false }), 3500);
+      return () => clearTimeout(t);
+    }, [toast]);
+
+    // ---------- derived reference figures ----------
+    const refGross = num(ref.gross), refLiab = num(ref.liability), refFee = num(ref.fee), refMarkup = num(ref.markup);
+    const refWorkers = Math.max(1, Math.round(num(ref.workers)) || 1);
+    const refTotal = r2(refGross + refLiab + refFee);
+    const refDeposit = r2(refTotal + refMarkup);
+    const autoLiab = refGross ? (refLiab / refGross) * 100 : 0;
+    const autoFee = refGross ? (refFee / refGross) * 100 : 0;
+    const autoMarkup = refTotal ? (refMarkup / refTotal) * 100 : 0;
+    const liabPct = assume.liabPct == null ? autoLiab : num(assume.liabPct);
+    const feePct = assume.feePct == null ? autoFee : num(assume.feePct);
+    const markupPct = num(assume.markupPct);
+    const wpm = num(assume.weeksPerMonth);
+    const target = Math.max(0, Math.round(num(assume.target)));
+    const expanded = Math.max(0, Math.round(num(assume.expanded)));
+    const histAvg = refGross / refWorkers;
+
+    function rowCalc(w) {
+      const rate = num(w.rate);
+      const hasRate = String(w.rate).trim() !== "" && rate > 0;
+      if (!hasRate) return { hasRate: false, regular: 0, ot: 0, gross: histAvg };
+      const regular = r2(rate * num(w.reg));
+      const ot = r2(rate * OT_MULT * num(w.ot));
+      return { hasRate: true, regular, ot, gross: r2(regular + ot) };
+    }
+    function fin(gross) {
+      const g = r2(gross), l = r2(g * liabPct / 100), f = r2(g * feePct / 100), t = r2(g + l + f), m = r2(t * markupPct / 100);
+      return { gross: g, liab: l, fee: f, total: t, markup: m, deposit: r2(t + m) };
+    }
+    function crewCost(rows, n) {
+      let entered = 0, eN = 0, proj = 0, pN = 0, regular = 0, ot = 0;
+      rows.slice(0, n).forEach((w) => {
+        const c = rowCalc(w);
+        if (c.hasRate) { entered += c.gross; eN++; regular += c.regular; ot += c.ot; } else { proj += histAvg; pN++; }
+      });
+      const extra = Math.max(0, n - rows.length);
+      proj += extra * histAvg; pN += extra;
+      const f = fin(entered + proj);
+      return { n, entered: r2(entered), eN, proj: r2(proj), pN, regular: r2(regular), ot: r2(ot), ...f, monthly: r2(f.deposit * wpm), perWorker: n ? r2(f.deposit / n) : 0 };
+    }
+
+    const named = workers.filter((w) => !w.placeholder);
+    const active = workers.filter((w) => w.status !== "Not Available");
+    const ordered = active.filter((w) => !w.placeholder).concat(active.filter((w) => w.placeholder));
+    const currentRows = active.filter((w) => !w.placeholder);
+    const currentCount = currentRows.length;
+    const confirmedRows = named.filter((w) => w.status === "Confirmed");
+    const pendingNames = named.filter((w) => w.status === "Pending").map((w) => w.name || "Unnamed");
+    const naNames = named.filter((w) => w.status === "Not Available").map((w) => w.name || "Unnamed");
+    const additionalNeeded = Math.max(0, target - currentCount);
+
+    const cur = crewCost(ordered, currentCount);
+    const confirmedOnly = crewCost(confirmedRows, confirmedRows.length);
+    const tgt = crewCost(ordered, target);
+    const exp = crewCost(ordered, expanded);
+    const custom = crewCost(ordered, slider);
+    const addlWeekly = r2(tgt.deposit - cur.deposit);
+
+    // ---------- mutations ----------
+    const setW = (id, patch) => setWorkers((ws) => ws.map((w) => (w.id === id ? { ...w, ...patch } : w)));
+    const removeW = (id) => setWorkers((ws) => {
+      const idx = ws.findIndex((w) => w.id === id);
+      if (idx < 0) return ws;
+      setRemoved({ worker: ws[idx], idx });
+      return ws.filter((w) => w.id !== id);
+    });
+    const undoRemove = () => {
+      if (!removed) return;
+      setWorkers((ws) => { const c = ws.slice(); c.splice(Math.min(removed.idx, c.length), 0, removed.worker); return c; });
+      setRemoved(null);
+    };
+    const addWorker = (placeholder) => setWorkers((ws) => {
+      const w = mk(placeholder ? "Open position " + (ws.length + 1) : "", placeholder ? "Pending" : "Pending", placeholder);
+      if (placeholder) return ws.concat(w);
+      const firstOpen = ws.findIndex((x) => x.placeholder);
+      if (firstOpen < 0) return ws.concat(w);
+      const c = ws.slice(); c.splice(firstOpen, 0, w); return c;
+    });
+    const resetAll = () => {
+      if (!confirmReset) { setConfirmReset(true); setTimeout(() => setConfirmReset(false), 4000); return; }
+      setRef(DEFAULT_REF); setAssume(DEFAULT_ASSUME); setWorkers(defaultWorkers()); setSlider(10); setRemoved(null); setConfirmReset(false);
+      setToast({ text: "Restored the Sep 21–27 reference and default crew.", warn: false });
+    };
+
+    // ---------- Cherry summary ----------
+    const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const currentNames = currentRows.map((w) => w.name || "Unnamed").join(", ");
+    const totalEnteredAll = workers.filter((w) => rowCalc(w).hasRate).length;
+    const summary = [
+      "Hi Cherry,",
+      "",
+      `Here is a rough weekly payroll estimate for the construction crew at ${ADDRESS} (prepared ${today}).`,
+      "",
+      `• Current crew: ${currentCount} worker${currentCount === 1 ? "" : "s"}${currentNames ? " (" + currentNames + ")" : ""}`,
+      `• Awaiting confirmation: ${pendingNames.length ? pendingNames.join(", ") : "none"}${naNames.length ? " | Not available: " + naNames.join(", ") : ""}`,
+      `• Estimated weekly payroll, current crew: ${money(cur.deposit)} (payroll cost ${money(cur.total)} + ${r2(markupPct)}% markup ${money(cur.markup)})`,
+      pendingNames.length ? `• Confirmed workers only (${confirmedRows.length}): ${money(confirmedOnly.deposit)} per week` : null,
+      `• Estimated weekly payroll for ${target} workers: ${money(tgt.deposit)}`,
+      `• Additional weekly funding required to reach ${target} workers: ${money(addlWeekly)} (${additionalNeeded} more worker${additionalNeeded === 1 ? "" : "s"})`,
+      `• Estimated monthly (${wpm} weeks): ${money(cur.monthly)} now / ${money(tgt.monthly)} at ${target} workers`,
+      "",
+      `Basis: the ${ref.period} payroll (gross ${money(refGross)}, total deposit ${money(refDeposit)} for ${refWorkers} workers). ` +
+        (totalEnteredAll === 0
+          ? `Hourly rates have not been entered yet, so every worker is projected at the historical average of ${money(histAvg)} gross per week.`
+          : `${totalEnteredAll} worker${totalEnteredAll === 1 ? " uses an entered hourly rate" : "s use entered hourly rates"}; the rest are projected at the historical average of ${money(histAvg)} gross per week.`) +
+        ` Employer liability is estimated at ${pct(liabPct, 2)} of gross and Paychex fees at ${pct(feePct, 2)} of gross.`,
+      "",
+      "Please note this is a rough planning estimate only. It is not approved or finalized payroll; actual amounts will depend on confirmed workers, hourly rates, hours worked, taxes and Paychex charges.",
+      "",
+      "Thank you,",
+      "Accounting – Twin Home Buyer / Matrix Group One",
+    ].filter((l) => l !== null).join("\n");
+
+    // ---------- CSV ----------
+    function buildCsv() {
+      const esc = (v) => { const s = v == null ? "" : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const f2 = (n) => r2(n).toFixed(2);
+      const L = [];
+      const row = (...c) => L.push(c.map(esc).join(","));
+      row("Madera Weekly Payroll Cost Estimator");
+      row("Property", ADDRESS);
+      row("Generated", new Date().toLocaleString("en-US"));
+      row("Status", "Planning estimate - not approved or finalized payroll");
+      row();
+      row("HISTORICAL REFERENCE (ACTUAL)", ref.period);
+      row("Component", "Amount");
+      row("Gross Salary", f2(refGross)); row("Employer Liability", f2(refLiab)); row("Paychex Payroll Fee", f2(refFee));
+      row("Total Payroll Cost", f2(refTotal)); row("Markup", f2(refMarkup)); row("Total Deposit", f2(refDeposit));
+      row("Workers on reference payroll", refWorkers); row("Average gross per worker", f2(histAvg));
+      row();
+      row("ASSUMPTIONS (PROJECTION)");
+      row("Employer liability % of gross", liabPct.toFixed(4)); row("Paychex fee % of gross", feePct.toFixed(4));
+      row("Markup % of total payroll cost", markupPct.toFixed(2)); row("Overtime multiplier", OT_MULT);
+      row("Weeks per month", wpm); row("Target workers", target);
+      row();
+      row("WORKERS");
+      row("Name", "Position type", "Status", "Assigned property", "Hourly rate", "Regular hours", "Overtime hours", "Regular wages", "Overtime wages", "Weekly gross", "Gross basis");
+      workers.forEach((w) => {
+        const c = rowCalc(w);
+        row(w.name, w.placeholder ? "Open position" : "Crew member", w.status, w.property, c.hasRate ? f2(num(w.rate)) : "", num(w.reg), num(w.ot),
+          c.hasRate ? f2(c.regular) : "", c.hasRate ? f2(c.ot) : "", f2(c.gross), c.hasRate ? "Entered rate" : "Historical-average projection");
+      });
+      row();
+      row("SCENARIOS (PROJECTED WEEKLY)");
+      row("Scenario", "Workers", "Workers with entered rates", "Workers at historical average", "Gross wages", "Employer liability", "Paychex fees", "Total payroll cost", "Markup", "Weekly deposit", "Monthly deposit", "Cost per worker (weekly)", "Additional vs current crew");
+      [["Current crew", cur], ["Expanded crew", exp], ["Target crew", tgt], ["Custom (slider)", custom]].forEach(([n, s]) =>
+        row(n, s.n, s.eN, s.pN, f2(s.gross), f2(s.liab), f2(s.fee), f2(s.total), f2(s.markup), f2(s.deposit), f2(s.monthly), f2(s.perWorker), f2(s.deposit - cur.deposit)));
+      return L.join("\r\n");
+    }
+    async function exportCsv() {
+      const csv = buildCsv();
+      const filename = "madera-payroll-estimate-" + new Date().toISOString().slice(0, 10) + ".csv";
+      if (downloads) {
+        try {
+          await downloads.save({ filename, data: csv });
+          setCsvFallback("");
+          setToast({ text: "CSV saved.", warn: false });
+          return;
+        } catch (e) {
+          if (e && e.code === "declined") { setToast({ text: "Export cancelled.", warn: true }); return; }
+          if (e && e.code === "rate_limited") { setToast({ text: "A save prompt is already open. Try again in a moment.", warn: true }); return; }
+        }
+      }
+      setCsvFallback(csv);
+      setToast({ text: "Downloads are not available here. Copy the CSV below and paste it into a .csv file or Excel.", warn: true });
+    }
+    function copyText(text, el, okMsg) {
+      const fallback = () => {
+        if (el) { el.focus(); el.select(); }
+        setToast({ text: "Text selected. Press Ctrl+C (or ⌘C) to copy.", warn: true });
+      };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => setToast({ text: okMsg, warn: false }), fallback);
+        } else fallback();
+      } catch (e) { fallback(); }
+    }
+
+    // ---------- render ----------
+    const statusClass = (s) => s.replace(/\s/g, "");
+    const Basis = ({ s }) => html`<div class="basis">
+      ${s.eN > 0 && html`<span>${s.eN} at entered rates: <span class="money">${money(s.entered)}</span> gross</span>`}
+      ${s.pN > 0 && html`<span class="approx">${s.pN} at historical average: <span class="money">≈ ${money(s.proj)}</span> gross</span>`}
+    </div>`;
+    const ScenCard = ({ title, s, children, custom: isCustom }) => {
+      const delta = r2(s.deposit - cur.deposit);
+      return html`<div class=${"scen" + (isCustom ? " custom" : "")}>
+        <div class="scen-top"><h3>${title}</h3><span class="scen-count">${s.n} workers</span></div>
+        ${children}
+        <div><div class="scen-big">${money(s.deposit)}</div><div class="kpi-sub">estimated weekly deposit</div></div>
+        <dl>
+          <dt>Total payroll cost</dt><dd>${money(s.total)}</dd>
+          <dt>${r2(markupPct)}% markup</dt><dd>${money(s.markup)}</dd>
+          <dt>Monthly (×${wpm})</dt><dd>${money(s.monthly)}</dd>
+          <dt>Per worker / week</dt><dd>${money(s.perWorker)}</dd>
+          <dt>vs current crew</dt><dd class=${delta > 0 ? "delta-pos" : ""}>${delta === 0 ? "Baseline" : signed(delta)}</dd>
+        </dl>
+        <${Basis} s=${s} />
+      </div>`;
+    };
+
+    const ledgerRows = (s) => [
+      ["1", "Regular wages", "Rate × regular hours (entered rates)", s.regular, ""],
+      ["2", "Overtime wages", "Rate × 1.5 × OT hours (entered rates)", s.ot, ""],
+      ["", "Historical-average projection", s.pN + " worker" + (s.pN === 1 ? "" : "s") + " × " + money(histAvg) + " (no rate entered)", s.proj, "approx"],
+      ["3", "Total gross wages", "", s.gross, "total"],
+      ["4", "Employer liability", pct(liabPct) + " of gross", s.liab, ""],
+      ["5", "Paychex payroll fees", pct(feePct) + " of gross", s.fee, ""],
+      ["6", "Total payroll cost", "Gross + liability + fees", s.total, "total"],
+      ["7", r2(markupPct) + "% markup", "Applied to total payroll cost", s.markup, ""],
+      ["8", "Estimated weekly deposit", "Payroll cost + markup", s.deposit, "grand"],
+    ];
+
+    const compareRows = [
+      ["Gross wages", refGross, cur.gross, tgt.gross],
+      ["Employer liability", refLiab, cur.liab, tgt.liab],
+      ["Paychex payroll fee", refFee, cur.fee, tgt.fee],
+      ["Total payroll cost", refTotal, cur.total, tgt.total],
+      [r2(markupPct) + "% markup", refMarkup, cur.markup, tgt.markup],
+      ["Weekly deposit", refDeposit, cur.deposit, tgt.deposit],
+      ["Monthly deposit (×" + wpm + " weeks)", r2(refDeposit * wpm), cur.monthly, tgt.monthly],
+      ["Cost per worker / week", r2(refDeposit / refWorkers), cur.perWorker, tgt.perWorker],
+      ["Cost per worker / month", r2((refDeposit / refWorkers) * wpm), r2(cur.perWorker * wpm), r2(tgt.perWorker * wpm)],
+    ];
+
+    return html`
+    <header class="band">
+      <div class="band-inner">
+        <span class="eyebrow">Twin Home Buyer · Matrix Group One · Accounting & Operations</span>
+        <h1>Madera Weekly Payroll Cost Estimator</h1>
+        <div class="meta">
+          <span>Job site <strong>${ADDRESS}</strong></span>
+          <span>Reference payroll <strong>${ref.period}</strong></span>
+          <span>Currency <strong>USD</strong></span>
+        </div>
+        <span class="notice"><span class="notice-dot"></span>Planning estimate only. Projected amounts are not approved or finalized payroll.</span>
+        <nav class="nav" aria-label="Sections">
+          <a href="#overview">Overview</a><a href="#reference">Reference & assumptions</a><a href="#workers">Workers</a>
+          <a href="#calculator">Calculator</a><a href="#scenarios">Scenarios</a><a href="#forecast">Budget & forecast</a><a href="#summary">Cherry's summary</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <div class="legend-key">
+        <span><span class="tag tag-actual">Actual</span> figures from the processed ${ref.period} payroll</span>
+        <span><span class="tag tag-proj">Projection</span> estimates calculated by this tool</span>
+        <span><span class="tag tag-hist">≈ Hist. avg</span> worker has no rate entered, projected at ${money(histAvg)} gross / week</span>
+      </div>
+
+      <section class="section" id="overview">
+        <div class="section-head"><h2>Overview</h2><p>Every figure updates as soon as you change a worker, rate or assumption.</p></div>
+        <div class="crew-row">
+          <div class="kpi"><span class="kpi-label">Current workers</span><span class="kpi-value">${currentCount}</span><span class="kpi-sub">${confirmedRows.length} confirmed</span></div>
+          <div class="kpi"><span class="kpi-label">Target workers</span><span class="kpi-value">${target}</span><span class="kpi-sub">set in assumptions</span></div>
+          <div class="kpi up"><span class="kpi-label">Still needed</span><span class="kpi-value">${additionalNeeded}</span><span class="kpi-sub">additional workers</span></div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><span class="kpi-label">Current weekly payroll <span class="tag tag-proj">Projection</span></span><span class="kpi-value">${money(cur.deposit)}</span><span class="kpi-sub">${currentCount} workers, deposit incl. ${r2(markupPct)}% markup</span></div>
+          <div class="kpi hl"><span class="kpi-label">Weekly payroll, ${target} workers <span class="tag tag-proj">Projection</span></span><span class="kpi-value">${money(tgt.deposit)}</span><span class="kpi-sub">estimated weekly deposit</span></div>
+          <div class="kpi up"><span class="kpi-label">Additional weekly funding <span class="tag tag-proj">Projection</span></span><span class="kpi-value">${signed(addlWeekly)}</span><span class="kpi-sub">target vs current crew</span></div>
+          <div class="kpi"><span class="kpi-label">Monthly (×${wpm} weeks) <span class="tag tag-proj">Projection</span></span><span class="kpi-value">${money(cur.monthly)}</span><span class="kpi-sub">${money(tgt.monthly)} at ${target} workers</span></div>
+        </div>
+        <div class="panel" style=${{ display: "grid", gap: "10px" }}>
+          <div class="section-head"><h3>Worker confirmation status</h3>
+            <span class="kpi-sub">${confirmedRows.length} confirmed · ${pendingNames.length} pending · ${naNames.length} not available</span></div>
+          <div class="status-list">
+            ${named.map((w) => html`<span key=${w.id} class=${"pill " + statusClass(w.status)}>${w.name || "Unnamed"} · ${w.status === "Pending" ? "Awaiting confirmation" : w.status}</span>`)}
+          </div>
+          ${pendingNames.length > 0 && html`<p class="kpi-sub">If only confirmed workers report (${confirmedRows.length}), the weekly estimate is <strong class="money">${money(confirmedOnly.deposit)}</strong>.</p>`}
+        </div>
+      </section>
+
+      <section class="section" id="reference">
+        <div class="section-head"><h2>Reference payroll & assumptions</h2><p>The reference figures come from the processed payroll and set the provisional rates. Edit them if a newer payroll report should be the baseline.</p></div>
+        <div class="two-col">
+          <div class="panel" style=${{ display: "grid", gap: "12px" }}>
+            <div class="section-head"><h3>Historical payroll</h3><span class="tag tag-actual">Actual · ${ref.period}</span></div>
+            <div class="grid-fields">
+              <div class="field"><label htmlFor="ref-period">Pay period</label><input id="ref-period" class="input" value=${ref.period} onChange=${(e) => setRef({ ...ref, period: e.target.value })} /></div>
+              <div class="field"><label htmlFor="ref-workers">Workers on this payroll</label><input id="ref-workers" class=${"input numeric" + (isNumStr(ref.workers) ? "" : " bad")} inputMode="numeric" value=${ref.workers} onChange=${(e) => setRef({ ...ref, workers: e.target.value })} /><span class="hint">Jairo, Cesar, Luis, Chris, Alex</span></div>
+            </div>
+            <div class="scroll"><table class="ledger">
+              <tbody>
+                <tr><td>Gross salary</td><td class="r" style=${{ width: "170px" }}><${MoneyInput} id="ref-gross" value=${ref.gross} onChange=${(v) => setRef({ ...ref, gross: v })} /></td></tr>
+                <tr><td>Employer liability</td><td class="r"><${MoneyInput} id="ref-liab" value=${ref.liability} onChange=${(v) => setRef({ ...ref, liability: v })} /></td></tr>
+                <tr><td>Paychex payroll fee</td><td class="r"><${MoneyInput} id="ref-fee" value=${ref.fee} onChange=${(v) => setRef({ ...ref, fee: v })} /></td></tr>
+                <tr class="total"><td>Total payroll cost</td><td class="r money">${money(refTotal)}</td></tr>
+                <tr><td>Markup</td><td class="r"><${MoneyInput} id="ref-markup" value=${ref.markup} onChange=${(v) => setRef({ ...ref, markup: v })} /></td></tr>
+                <tr class="grand"><td>Total deposit</td><td class="r money">${money(refDeposit)}</td></tr>
+              </tbody>
+            </table></div>
+            <div class="footnotes">
+              <span>Derived from this payroll: employer liability ${pct(autoLiab)} of gross · Paychex fee ${pct(autoFee)} of gross · markup ${pct(autoMarkup, 2)} of payroll cost · average gross ${money(histAvg)} per worker.</span>
+            </div>
+          </div>
+          <div class="panel" style=${{ display: "grid", gap: "14px", alignContent: "start" }}>
+            <div class="section-head"><h3>Estimating assumptions</h3><span class="tag tag-proj">Adjustable</span></div>
+            <div class="grid-fields">
+              <${PctInput} id="as-liab" label="Employer liability rate" value=${assume.liabPct == null ? autoLiab.toFixed(4) : assume.liabPct}
+                onChange=${(v) => setAssume({ ...assume, liabPct: v })} override=${assume.liabPct != null}
+                onReset=${() => setAssume({ ...assume, liabPct: null })} hint=${assume.liabPct == null ? "From reference payroll" : "Custom rate"} />
+              <${PctInput} id="as-fee" label="Paychex fee rate" value=${assume.feePct == null ? autoFee.toFixed(4) : assume.feePct}
+                onChange=${(v) => setAssume({ ...assume, feePct: v })} override=${assume.feePct != null}
+                onReset=${() => setAssume({ ...assume, feePct: null })} hint=${assume.feePct == null ? "From reference payroll" : "Custom rate"} />
+              <${PctInput} id="as-markup" label="Markup on payroll cost" value=${assume.markupPct} onChange=${(v) => setAssume({ ...assume, markupPct: v })} hint="Matches the reference report" />
+              <div class="field"><label htmlFor="as-wpm">Weeks per month</label><input id="as-wpm" class=${"input numeric" + (isNumStr(assume.weeksPerMonth) ? "" : " bad")} inputMode="decimal" value=${assume.weeksPerMonth} onChange=${(e) => setAssume({ ...assume, weeksPerMonth: e.target.value })} /><span class="hint">52 ÷ 12 ≈ 4.33</span></div>
+              <div class="field"><label htmlFor="as-target">Target crew size</label><input id="as-target" class=${"input numeric" + (isNumStr(assume.target) ? "" : " bad")} inputMode="numeric" value=${assume.target} onChange=${(e) => setAssume({ ...assume, target: e.target.value })} /></div>
+              <div class="field"><label htmlFor="as-exp">Expanded crew size</label><input id="as-exp" class=${"input numeric" + (isNumStr(assume.expanded) ? "" : " bad")} inputMode="numeric" value=${assume.expanded} onChange=${(e) => setAssume({ ...assume, expanded: e.target.value })} /></div>
+            </div>
+            <div class="footnotes">
+              <span>Overtime is paid at 1.5× the hourly rate. California daily overtime (over 8 hours in a day) and double time are not modeled separately; enter those hours as overtime hours.</span>
+              <span>Liability and fee rates are provisional. Actual employer taxes and Paychex charges vary with wage bases and per-check fees.</span>
+            </div>
+            <div class="btn-row">
+              <button class=${"btn" + (confirmReset ? " danger" : "")} onClick=${resetAll}>${confirmReset ? "Click again to reset everything" : "Reset to original figures"}</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="workers">
+        <div class="section-head"><h2>Workers</h2><p>Hourly rates are blank until you enter them. Until then a worker is projected at the historical average and marked ≈. Gray rows are open positions toward the ${target}-worker target.</p></div>
+        <div class="panel" style=${{ display: "grid", gap: "12px", padding: "12px" }}>
+          <div class="scroll">
+            <table class="workers-table">
+              <thead><tr>
+                <th>#</th><th>Employee name</th><th>Position</th><th class="r">Hourly rate</th><th class="r">Reg. hrs / wk</th><th class="r">OT hrs / wk</th>
+                <th>Assigned property</th><th>Status</th><th class="r">Regular wages</th><th class="r">OT wages</th><th class="r">Weekly gross</th><th></th>
+              </tr></thead>
+              <tbody>
+                ${workers.map((w, i) => {
+                  const c = rowCalc(w);
+                  const cls = (w.placeholder ? "placeholder-row" : "") + (w.status === "Not Available" ? " na-row" : "");
+                  return html`<tr key=${w.id} class=${cls}>
+                    <td class="num" style=${{ color: "var(--ink-3)" }}>${i + 1}</td>
+                    <td><input id=${"name-" + w.id} aria-label="Employee name" class="input w-name" placeholder="Employee name" value=${w.name} onChange=${(e) => setW(w.id, { name: e.target.value })} /></td>
+                    <td><select id=${"type-" + w.id} aria-label="Position type" class="input w-sel" value=${w.placeholder ? "open" : "crew"} onChange=${(e) => setW(w.id, { placeholder: e.target.value === "open" })}>
+                      <option value="crew">Crew member</option><option value="open">Open position</option></select></td>
+                    <td><div class="prefix w-num"><span>$</span><input id=${"rate-" + w.id} aria-label="Hourly rate" class=${"input numeric" + (isNumStr(w.rate) ? "" : " bad")} inputMode="decimal" placeholder="Enter" value=${w.rate} onChange=${(e) => setW(w.id, { rate: e.target.value })} /></div></td>
+                    <td><input id=${"reg-" + w.id} aria-label="Regular hours" class=${"input numeric w-num" + (isNumStr(w.reg) ? "" : " bad")} style=${{ width: "78px" }} inputMode="decimal" value=${w.reg} onChange=${(e) => setW(w.id, { reg: e.target.value })} /></td>
+                    <td><input id=${"ot-" + w.id} aria-label="Overtime hours" class=${"input numeric w-num" + (isNumStr(w.ot) ? "" : " bad")} style=${{ width: "70px" }} inputMode="decimal" value=${w.ot} onChange=${(e) => setW(w.id, { ot: e.target.value })} /></td>
+                    <td><input id=${"prop-" + w.id} aria-label="Assigned property" class="input w-prop" value=${w.property} onChange=${(e) => setW(w.id, { property: e.target.value })} /></td>
+                    <td><select id=${"status-" + w.id} aria-label="Status" class="input w-sel" value=${w.status} onChange=${(e) => setW(w.id, { status: e.target.value })}>
+                      ${STATUSES.map((s) => html`<option key=${s} value=${s}>${s}</option>`)}</select></td>
+                    <td class="r money">${c.hasRate ? money(c.regular) : html`<span style=${{ color: "var(--ink-3)" }}>—</span>`}</td>
+                    <td class="r money">${c.hasRate ? money(c.ot) : html`<span style=${{ color: "var(--ink-3)" }}>—</span>`}</td>
+                    <td class="r">${c.hasRate
+                      ? html`<span class="money" style=${{ fontWeight: 600 }}>${money(c.gross)}</span>`
+                      : html`<span style=${{ display: "inline-grid", justifyItems: "end", gap: "2px" }}><span class="money approx">≈ ${money(histAvg)}</span><span class="tag tag-hist">Hist. avg</span></span>`}</td>
+                    <td><button class="iconbtn" title=${"Remove " + (w.name || "row")} aria-label=${"Remove " + (w.name || "row")} onClick=${() => removeW(w.id)}>×</button></td>
+                  </tr>`;
+                })}
+              </tbody>
+              <tfoot><tr>
+                <td></td><td colSpan="7">All active rows (${active.length}) · ${active.filter((w) => rowCalc(w).hasRate).length} with entered rates</td>
+                <td class="r money">${money(active.reduce((a, w) => a + rowCalc(w).regular, 0))}</td>
+                <td class="r money">${money(active.reduce((a, w) => a + rowCalc(w).ot, 0))}</td>
+                <td class="r money">${money(active.reduce((a, w) => a + rowCalc(w).gross, 0))}</td><td></td>
+              </tr></tfoot>
+            </table>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" onClick=${() => addWorker(false)}>+ Add crew member</button>
+            <button class="btn" onClick=${() => addWorker(true)}>+ Add open position</button>
+            ${removed && html`<span class="kpi-sub">Removed ${removed.worker.name || "a row"}.</span><button class="btn small" onClick=${undoRemove}>Undo</button>`}
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="calculator">
+        <div class="section-head"><h2>Payroll calculator</h2><p>Step-by-step weekly estimate. Workers marked “Not Available” are left out.</p></div>
+        <div class="two-col">
+          ${[["Current crew", cur], ["Target crew", tgt]].map(([title, s]) => html`<div class="panel" key=${title} style=${{ display: "grid", gap: "8px" }}>
+            <div class="section-head"><h3>${title} · ${s.n} workers</h3><span class="tag tag-proj">Projection</span></div>
+            <div class="scroll"><table class="ledger"><tbody>
+              ${ledgerRows(s).map(([n, label, formula, val, kind]) => html`<tr key=${label} class=${kind === "total" ? "total" : kind === "grand" ? "grand" : ""}>
+                <td class="step">${n}</td>
+                <td><div class=${kind === "approx" ? "approx" : ""}>${label}</div>${formula && html`<div class="formula">${formula}</div>`}</td>
+                <td class=${"r money" + (kind === "approx" ? " approx" : "")}>${kind === "approx" && val ? "≈ " : ""}${money(val)}</td>
+              </tr>`)}
+            </tbody></table></div>
+          </div>`)}
+        </div>
+      </section>
+
+      <section class="section" id="scenarios">
+        <div class="section-head"><h2>Crew scenarios</h2><p>Rows are filled in list order: current crew first, then open positions. Any extra slots beyond the list use the historical average.</p></div>
+        <div class="scen-grid">
+          <${ScenCard} title="Current crew" s=${cur} />
+          <${ScenCard} title="Expanded crew" s=${exp} />
+          <${ScenCard} title="Target crew" s=${tgt} />
+          <${ScenCard} title="Custom crew size" s=${custom} custom=${true}>
+            <div class="field">
+              <label htmlFor="crew-slider">Crew size: <strong class="num">${slider}</strong></label>
+              <input id="crew-slider" type="range" min="1" max="20" step="1" value=${slider} onChange=${(e) => setSlider(parseInt(e.target.value, 10))} />
+              <div class="range-ends"><span>1</span><span>20</span></div>
+            </div>
+          <//>
+        </div>
+      </section>
+
+      <section class="section" id="forecast">
+        <div class="section-head"><h2>Budget & forecast</h2><p>The shaded column is the processed payroll. The other columns are projections.</p></div>
+        <div class="panel" style=${{ display: "grid", gap: "12px" }}>
+          <div class="section-head"><h3>Weekly cost by crew size</h3>
+            <div class="chart-legend">
+              <span><i class="sw" style=${{ background: "var(--bar-gross)" }}></i>Gross wages</span>
+              <span><i class="sw" style=${{ background: "var(--bar-liab)" }}></i>Employer liability</span>
+              <span><i class="sw" style=${{ background: "var(--bar-fee)" }}></i>Paychex fee</span>
+              <span><i class="sw" style=${{ background: "var(--bar-markup)" }}></i>${r2(markupPct)}% markup</span>
+            </div>
+          </div>
+          <div class="chart-box">
+            <${Chart} refDeposit=${refDeposit} refLabel=${ref.period}
+              rows=${[{ key: "c", label: "Current", ...cur }, { key: "e", label: "Expanded", ...exp }, { key: "t", label: "Target", ...tgt }]} />
+          </div>
+        </div>
+        <div class="panel" style=${{ padding: "12px" }}>
+          <div class="scroll">
+            <table class="compare-table ledger">
+              <thead><tr>
+                <th></th>
+                <th class="r actual-col">Historical<br/><span class="tag tag-actual">Actual · ${refWorkers} workers</span></th>
+                <th class="r">Current crew<br/><span class="tag tag-proj">Proj. · ${cur.n} workers</span></th>
+                <th class="r">Target crew<br/><span class="tag tag-proj">Proj. · ${tgt.n} workers</span></th>
+                <th class="r">Difference<br/><span class="tag tag-proj">Target − current</span></th>
+              </tr></thead>
+              <tbody>
+                ${compareRows.map(([label, a, c, t]) => html`<tr key=${label} class=${label === "Weekly deposit" ? "grand" : label === "Total payroll cost" ? "total" : ""}>
+                  <td>${label}</td>
+                  <td class="r money actual-col">${money(a)}</td>
+                  <td class="r money">${money(c)}</td>
+                  <td class="r money">${money(t)}</td>
+                  <td class="r money">${signed(r2(t - c))}</td>
+                </tr>`)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="summary">
+        <div class="section-head"><h2>Cherry's Payroll Summary</h2><p>Written automatically from the figures above. Copy it into an email or message.</p></div>
+        <div class="panel" style=${{ display: "grid", gap: "12px" }}>
+          <textarea id="cherry-summary" ref=${summaryRef} class="summary-box" readOnly value=${summary} aria-label="Payroll summary for Cherry"></textarea>
+          <div class="btn-row">
+            <button class="btn navy" onClick=${() => copyText(summary, summaryRef.current, "Summary copied.")}>Copy summary</button>
+            <button class="btn" onClick=${exportCsv}>Export CSV</button>
+            ${toast.text && html`<span class=${"toast" + (toast.warn ? " warn" : "")} role="status">${toast.text}</span>`}
+          </div>
+          ${csvFallback && html`<div class="field">
+            <label htmlFor="csv-out">CSV export</label>
+            <textarea id="csv-out" ref=${csvRef} class="summary-box" style=${{ minHeight: "200px", fontFamily: "var(--font-num)", fontSize: "0.78rem" }} readOnly value=${csvFallback}></textarea>
+            <div class="btn-row"><button class="btn small" onClick=${() => copyText(csvFallback, csvRef.current, "CSV copied.")}>Copy CSV</button></div>
+          </div>`}
+        </div>
+        <div class="footnotes">
+          <span>Projections assume wages and hours similar to the ${ref.period} payroll unless rates and hours are entered. They are not approved or finalized payroll.</span>
+          <span>Edits are kept in this browser only. Other people opening this page see the original figures.</span>
+        </div>
+      </section>
+    </main>`;
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")).render(html`<${App} />`);
+})();
+</script>
