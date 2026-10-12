@@ -213,19 +213,22 @@ input[type="range"] { width: 100%; accent-color: var(--teal); }
 
   const ADDRESS = "22496 Avenue 18 3/4, Madera, CA";
   const STATUSES = ["Confirmed", "Pending", "Not Available"];
-  const STORE_KEY = "madera-payroll-estimator-v1";
+  const STORE_KEY = "madera-payroll-estimator-v2";
+  const ASSUMED_RATE = "30";
   const OT_MULT = 1.5;
 
   const DEFAULT_REF = { period: "Sep 21–27, 2026", gross: "8812.52", liability: "699.05", fee: "136.52", markup: "2894.43", workers: "5" };
-  const DEFAULT_ASSUME = { liabPct: null, feePct: null, markupPct: "30", weeksPerMonth: "4.33", target: "12", expanded: "8" };
+  const DEFAULT_ASSUME = { liabPct: null, feePct: null, markupPct: "30", weeksPerMonth: "4.33", target: "12", expanded: "5" };
 
   let seq = 0;
   const nid = () => "w" + Date.now().toString(36) + (seq++).toString(36);
-  const mk = (name, status, placeholder) => ({ id: nid(), name, rate: "", reg: "40", ot: "0", property: ADDRESS, status, placeholder });
+  const mk = (name, status, placeholder, rate) => ({ id: nid(), name, rate: rate || "", assumed: !!rate, reg: "40", ot: "0", property: ADDRESS, status, placeholder });
   function defaultWorkers() {
-    const named = [mk("Jairo", "Confirmed", false), mk("Cesar", "Confirmed", false), mk("Luis", "Confirmed", false), mk("Chris", "Pending", false), mk("Alex", "Confirmed", false)];
+    // Rough estimate per Juan's group-chat update: 8 workers on site, all at an assumed $30/hr x 40 hrs.
+    const named = ["Jairo", "Cesar", "Luis", "Chris", "Alex"].map((n) => mk(n, "Confirmed", false, ASSUMED_RATE));
+    for (let i = 6; i <= 8; i++) named.push(mk("New worker " + i + " (name TBD)", "Confirmed", false, ASSUMED_RATE));
     const open = [];
-    for (let i = 6; i <= 12; i++) open.push(mk("Open position " + i, "Pending", true));
+    for (let i = 9; i <= 12; i++) open.push(mk("Open position " + i, "Pending", true, ASSUMED_RATE));
     return named.concat(open);
   }
 
@@ -426,12 +429,13 @@ input[type="range"] { width: 100%; accent-color: var(--teal); }
     const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     const currentNames = currentRows.map((w) => w.name || "Unnamed").join(", ");
     const totalEnteredAll = workers.filter((w) => rowCalc(w).hasRate).length;
+    const assumedCount = active.filter((w) => w.assumed && rowCalc(w).hasRate).length;
     const summary = [
       "Hi Cherry,",
       "",
-      `Here is a rough weekly payroll estimate for the construction crew at ${ADDRESS} (prepared ${today}).`,
+      `Here is a rough one-week payroll estimate for the construction crew at ${ADDRESS} (prepared ${today}).`,
       "",
-      `• Current crew: ${currentCount} worker${currentCount === 1 ? "" : "s"}${currentNames ? " (" + currentNames + ")" : ""}`,
+      `• Current crew (per Juan's latest update): ${currentCount} worker${currentCount === 1 ? "" : "s"}${currentNames ? " (" + currentNames + ")" : ""}`,
       `• Awaiting confirmation: ${pendingNames.length ? pendingNames.join(", ") : "none"}${naNames.length ? " | Not available: " + naNames.join(", ") : ""}`,
       `• Estimated weekly payroll, current crew: ${money(cur.deposit)} (payroll cost ${money(cur.total)} + ${r2(markupPct)}% markup ${money(cur.markup)})`,
       pendingNames.length ? `• Confirmed workers only (${confirmedRows.length}): ${money(confirmedOnly.deposit)} per week` : null,
@@ -442,8 +446,12 @@ input[type="range"] { width: 100%; accent-color: var(--teal); }
       `Basis: the ${ref.period} payroll (gross ${money(refGross)}, total deposit ${money(refDeposit)} for ${refWorkers} workers). ` +
         (totalEnteredAll === 0
           ? `Hourly rates have not been entered yet, so every worker is projected at the historical average of ${money(histAvg)} gross per week.`
-          : `${totalEnteredAll} worker${totalEnteredAll === 1 ? " uses an entered hourly rate" : "s use entered hourly rates"}; the rest are projected at the historical average of ${money(histAvg)} gross per week.`) +
-        ` Employer liability is estimated at ${pct(liabPct, 2)} of gross and Paychex fees at ${pct(feePct, 2)} of gross.`,
+          : assumedCount === active.length
+            ? `Every worker is estimated at an assumed $${ASSUMED_RATE}/hr for 40 regular hours (${money(num(ASSUMED_RATE) * 40)} gross per worker per week). These are not confirmed wages.`
+            : `${totalEnteredAll} worker${totalEnteredAll === 1 ? " uses an entered hourly rate" : "s use entered hourly rates"}` +
+              (assumedCount ? ` (${assumedCount} at an assumed $${ASSUMED_RATE}/hr, not confirmed)` : "") +
+              (totalEnteredAll < workers.length ? `; the rest are projected at the historical average of ${money(histAvg)} gross per week.` : ".")) +
+` Employer liability is estimated at ${pct(liabPct, 2)} of gross and Paychex fees at ${pct(feePct, 2)} of gross.`,
       "",
       "Please note this is a rough planning estimate only. It is not approved or finalized payroll; actual amounts will depend on confirmed workers, hourly rates, hours worked, taxes and Paychex charges.",
       "",
@@ -478,12 +486,12 @@ input[type="range"] { width: 100%; accent-color: var(--teal); }
       workers.forEach((w) => {
         const c = rowCalc(w);
         row(w.name, w.placeholder ? "Open position" : "Crew member", w.status, w.property, c.hasRate ? f2(num(w.rate)) : "", num(w.reg), num(w.ot),
-          c.hasRate ? f2(c.regular) : "", c.hasRate ? f2(c.ot) : "", f2(c.gross), c.hasRate ? "Entered rate" : "Historical-average projection");
+          c.hasRate ? f2(c.regular) : "", c.hasRate ? f2(c.ot) : "", f2(c.gross), c.hasRate ? (w.assumed ? "Assumed rate" : "Entered rate") : "Historical-average projection");
       });
       row();
       row("SCENARIOS (PROJECTED WEEKLY)");
       row("Scenario", "Workers", "Workers with entered rates", "Workers at historical average", "Gross wages", "Employer liability", "Paychex fees", "Total payroll cost", "Markup", "Weekly deposit", "Monthly deposit", "Cost per worker (weekly)", "Additional vs current crew");
-      [["Current crew", cur], ["Expanded crew", exp], ["Target crew", tgt], ["Custom (slider)", custom]].forEach(([n, s]) =>
+      [["Original crew", exp], ["Current crew", cur], ["Target crew", tgt], ["Custom (slider)", custom]].forEach(([n, s]) =>
         row(n, s.n, s.eN, s.pN, f2(s.gross), f2(s.liab), f2(s.fee), f2(s.total), f2(s.markup), f2(s.deposit), f2(s.monthly), f2(s.perWorker), f2(s.deposit - cur.deposit)));
       return L.join("\r\n");
     }
@@ -585,6 +593,7 @@ input[type="range"] { width: 100%; accent-color: var(--teal); }
       <div class="legend-key">
         <span><span class="tag tag-actual">Actual</span> figures from the processed ${ref.period} payroll</span>
         <span><span class="tag tag-proj">Projection</span> estimates calculated by this tool</span>
+        <span><span class="tag tag-hist">Assumed rate</span> rough-estimate rate ($${ASSUMED_RATE}/hr × 40 hrs), not a confirmed wage</span>
         <span><span class="tag tag-hist">≈ Hist. avg</span> worker has no rate entered, projected at ${money(histAvg)} gross / week</span>
       </div>
 
@@ -646,7 +655,7 @@ input[type="range"] { width: 100%; accent-color: var(--teal); }
               <${PctInput} id="as-markup" label="Markup on payroll cost" value=${assume.markupPct} onChange=${(v) => setAssume({ ...assume, markupPct: v })} hint="Matches the reference report" />
               <div class="field"><label htmlFor="as-wpm">Weeks per month</label><input id="as-wpm" class=${"input numeric" + (isNumStr(assume.weeksPerMonth) ? "" : " bad")} inputMode="decimal" value=${assume.weeksPerMonth} onChange=${(e) => setAssume({ ...assume, weeksPerMonth: e.target.value })} /><span class="hint">52 ÷ 12 ≈ 4.33</span></div>
               <div class="field"><label htmlFor="as-target">Target crew size</label><input id="as-target" class=${"input numeric" + (isNumStr(assume.target) ? "" : " bad")} inputMode="numeric" value=${assume.target} onChange=${(e) => setAssume({ ...assume, target: e.target.value })} /></div>
-              <div class="field"><label htmlFor="as-exp">Expanded crew size</label><input id="as-exp" class=${"input numeric" + (isNumStr(assume.expanded) ? "" : " bad")} inputMode="numeric" value=${assume.expanded} onChange=${(e) => setAssume({ ...assume, expanded: e.target.value })} /></div>
+              <div class="field"><label htmlFor="as-exp">Comparison crew size</label><input id="as-exp" class=${"input numeric" + (isNumStr(assume.expanded) ? "" : " bad")} inputMode="numeric" value=${assume.expanded} onChange=${(e) => setAssume({ ...assume, expanded: e.target.value })} /></div>
             </div>
             <div class="footnotes">
               <span>Overtime is paid at 1.5× the hourly rate. California daily overtime (over 8 hours in a day) and double time are not modeled separately; enter those hours as overtime hours.</span>
@@ -660,7 +669,7 @@ input[type="range"] { width: 100%; accent-color: var(--teal); }
       </section>
 
       <section class="section" id="workers">
-        <div class="section-head"><h2>Workers</h2><p>Hourly rates are blank until you enter them. Until then a worker is projected at the historical average and marked ≈. Gray rows are open positions toward the ${target}-worker target.</p></div>
+        <div class="section-head"><h2>Workers</h2><p>Rates start at an assumed $${ASSUMED_RATE}/hr × 40 hrs for a rough estimate. Type a real rate to replace it; clear a rate to fall back to the historical average (marked ≈). Gray rows are open positions toward the ${target}-worker target.</p></div>
         <div class="panel" style=${{ display: "grid", gap: "12px", padding: "12px" }}>
           <div class="scroll">
             <table class="workers-table">
@@ -677,7 +686,7 @@ input[type="range"] { width: 100%; accent-color: var(--teal); }
                     <td><input id=${"name-" + w.id} aria-label="Employee name" class="input w-name" placeholder="Employee name" value=${w.name} onChange=${(e) => setW(w.id, { name: e.target.value })} /></td>
                     <td><select id=${"type-" + w.id} aria-label="Position type" class="input w-sel" value=${w.placeholder ? "open" : "crew"} onChange=${(e) => setW(w.id, { placeholder: e.target.value === "open" })}>
                       <option value="crew">Crew member</option><option value="open">Open position</option></select></td>
-                    <td><div class="prefix w-num"><span>$</span><input id=${"rate-" + w.id} aria-label="Hourly rate" class=${"input numeric" + (isNumStr(w.rate) ? "" : " bad")} inputMode="decimal" placeholder="Enter" value=${w.rate} onChange=${(e) => setW(w.id, { rate: e.target.value })} /></div></td>
+                    <td><div class="prefix w-num"><span>$</span><input id=${"rate-" + w.id} aria-label="Hourly rate" class=${"input numeric" + (isNumStr(w.rate) ? "" : " bad")} inputMode="decimal" placeholder="Enter" value=${w.rate} onChange=${(e) => setW(w.id, { rate: e.target.value, assumed: false })} /></div>${w.assumed && rowCalc(w).hasRate && html`<div style=${{ textAlign: "right", marginTop: "3px" }}><span class="tag tag-hist">Assumed rate</span></div>`}</td>
                     <td><input id=${"reg-" + w.id} aria-label="Regular hours" class=${"input numeric w-num" + (isNumStr(w.reg) ? "" : " bad")} style=${{ width: "78px" }} inputMode="decimal" value=${w.reg} onChange=${(e) => setW(w.id, { reg: e.target.value })} /></td>
                     <td><input id=${"ot-" + w.id} aria-label="Overtime hours" class=${"input numeric w-num" + (isNumStr(w.ot) ? "" : " bad")} style=${{ width: "70px" }} inputMode="decimal" value=${w.ot} onChange=${(e) => setW(w.id, { ot: e.target.value })} /></td>
                     <td><input id=${"prop-" + w.id} aria-label="Assigned property" class="input w-prop" value=${w.property} onChange=${(e) => setW(w.id, { property: e.target.value })} /></td>
@@ -727,8 +736,8 @@ input[type="range"] { width: 100%; accent-color: var(--teal); }
       <section class="section" id="scenarios">
         <div class="section-head"><h2>Crew scenarios</h2><p>Rows are filled in list order: current crew first, then open positions. Any extra slots beyond the list use the historical average.</p></div>
         <div class="scen-grid">
+          <${ScenCard} title="Original crew" s=${exp} />
           <${ScenCard} title="Current crew" s=${cur} />
-          <${ScenCard} title="Expanded crew" s=${exp} />
           <${ScenCard} title="Target crew" s=${tgt} />
           <${ScenCard} title="Custom crew size" s=${custom} custom=${true}>
             <div class="field">
@@ -753,7 +762,7 @@ input[type="range"] { width: 100%; accent-color: var(--teal); }
           </div>
           <div class="chart-box">
             <${Chart} refDeposit=${refDeposit} refLabel=${ref.period}
-              rows=${[{ key: "c", label: "Current", ...cur }, { key: "e", label: "Expanded", ...exp }, { key: "t", label: "Target", ...tgt }]} />
+              rows=${[{ key: "e", label: "Original", ...exp }, { key: "c", label: "Current", ...cur }, { key: "t", label: "Target", ...tgt }]} />
           </div>
         </div>
         <div class="panel" style=${{ padding: "12px" }}>
