@@ -2,7 +2,19 @@
 
 **Need:** ~1,000 sq ft 90/10 tall fescue sod, delivered **Friday 10/16/2026** to 460 Fifth Ave, Redwood City 94063
 **Owner:** Marieflor · **Crew:** Juan & Cesar
-**Status (10/12, end of day):** 2 written quotes received; **approval needed**; nothing ordered yet.
+**Status (10/14):** ✅ **ORDERED – A-G Sod Farms, Order #719 5888, delivery Friday 10/16/2026.**
+
+## Order confirmation
+
+| | |
+|---|---|
+| Supplier | A-G Sod Farms of Stockton (12750 Guard Rd, Lodi) · 800-588-6882 · Jorge |
+| **Order #** | **719 5888** |
+| Product | Elite Plus Fescue (90/10 tall fescue / bluegrass), 1,000 sq ft – 125 rolls × 8 sq ft |
+| **Delivery** | **Friday 10/16/2026** – 460 Fifth Ave, Redwood City 94063 (cross st. Middlefield Rd) |
+| Delivery window | TBD – confirm with A-G |
+| Total | $900.98 ($790 sod + $30 fuel + $80.98 tax) – paid by card (per quote #999999) |
+| Site notes | 1 hour to unload (extra $180/hr, needs dispatcher pre-approval); report damage/shortage within 24 hours |
 
 ## Call log – Mon 10/12
 
@@ -39,9 +51,8 @@
 > Backup: Delta Bluegrass $1,148.19 (Friday not confirmed). Ewing, Green Fashion, The Sod Shop and West Coast Turf have the grass but haven't confirmed Friday. Lyngso and Ogawa did not answer.
 > Approve A-G so I can place the order at 7:30 am tomorrow?
 
-## Next steps (Tue 10/13)
-1. Get approval.
-2. 7:30 am – call A-G (Jorge): place order, get order # and delivery window, ask about discount, fix billing name.
-3. Send Cesar: delivery date/window, 125 rolls on pallets, 1-hour unload limit, 24-hour damage-claim rule; confirm ground is sod-ready.
-4. Call back Ewing, Green Fashion, The Sod Shop and West Coast Turf for Friday availability only if A-G falls through.
-5. Tell the other suppliers no longer needed once A-G is confirmed.
+## Next steps (from 10/14)
+1. Get delivery window from A-G (800-588-6882) and the emailed receipt for Order #719 5888.
+2. Send Cesar: Order #719 5888, Fri 10/16 delivery + window, 125 rolls on pallets, 1-hour unload limit, 24-hour damage-claim rule; confirm ground is sod-ready.
+3. Tell Delta, Lyngso, Ogawa, Ewing, Green Fashion, The Sod Shop and West Coast Turf the order is no longer needed.
+4. Mark sod as ordered in the 460 app.
