@@ -990,9 +990,10 @@
       h('li', { class: rec.dob ? 'check-ok' : 'check-bad', text: rec.dob ? 'Birthdate on file.' : 'Birthdate missing. Required before issuing.' }));
 
     const frame = h('div', { class: 'doc-frame' }, spinner('Loading contract…'));
-    const shownSig = (rec.employeeSig && rec.employeeSig.sha === rec.sha) ? rec.employeeSig : sigFor(rec);
-    getVersionBytes(rec.currentVid, rec.sha)
-      .then(async ({ bytes }) => renderPdf(frame, shownSig && rec.status !== 'fully_signed' ? await employeeSignedPdf(bytes, { anchors: rec.anchors, contractId: rec.contractId, version: rec.versionNo, sha: rec.sha, name: rec.name }, shownSig) : bytes))
+    previewBytes(rec).then(async (bytes) => {
+      await renderPdf(frame, bytes);
+      if (rec.status === 'fully_signed') frame.prepend(h('p', { class: 'small muted', text: 'Showing the signed PDF with both signatures (integrity check passed).' }));
+    })
       .catch((e) => frame.replaceChildren(h('p', { class: 'note bad', text: errText(e) })));
 
     const actions = h('div', { class: 'row' });
@@ -1219,6 +1220,21 @@
       h('p', { class: 'small muted', text: 'Juan signs from his own view of this page, signed in with his own Claude account. HR cannot sign for him.' }));
   }
 
+  // What a preview shows: the stored signed PDF once both have signed; otherwise the contract
+  // with the employee's signature stamped on it if they have signed. The signature is read
+  // straight from the database when the live subscription has not delivered it yet.
+  async function previewBytes(rec) {
+    if (rec.status === 'fully_signed') return (await getFinal(rec)).bytes;
+    let sig = (rec.employeeSig && rec.employeeSig.sha === rec.sha) ? rec.employeeSig : sigFor(rec);
+    if (!sig && rec.vault && rec.status === 'issued') {
+      const d = await S.db.doc(P.sign(rec.vault)).get().catch(() => null);
+      const v = d && d.exists ? d.data().signature : null;
+      if (v && v.sha === rec.sha && v.contractId === rec.contractId && v.sigPng) sig = v;
+    }
+    const { bytes } = await getVersionBytes(rec.currentVid, rec.sha);
+    return sig ? employeeSignedPdf(bytes, { anchors: rec.anchors, contractId: rec.contractId, version: rec.versionNo, sha: rec.sha, name: rec.name }, sig) : bytes;
+  }
+
   async function getFinal(rec) {
     const f = await S.db.doc('hr/data/finals/' + rec.key).get();
     if (!f.exists) throw new Error('Signed PDF not found for ' + rec.name);
@@ -1419,7 +1435,7 @@
     const signBtn = h('button', { class: 'btn big', text: `Review and Sign Selected Contracts (${J.selected.size})`, disabled: !J.selected.size, onclick: batchReview });
     mount(h('div', { class: 'stack', style: 'gap:18px' },
       h('div', {}, h('div', { class: 'eyebrow', text: 'Authorized company signatory' }), h('h1', { class: 'title', text: 'Contracts waiting for your signature' }),
-        h('p', { class: 'lede', text: 'Employees have signed the contracts below. Select the ones you have reviewed, then sign them together in one step.' })),
+        h('p', { class: 'lede', text: 'Employees have signed the contracts below. Press Sign on any row to sign that one contract, or select several and sign them together.' })),
       statusBoard(recs, (k) => { J.filter = k; renderJuan(); }, J.filter),
       h('div', { class: 'table-wrap' }, h('table', {},
         h('thead', {}, h('tr', {}, h('th', {}, allBox), ['Employee', 'Position', 'Monthly salary', 'Contract', 'Employee signed', 'Status', ''].map((t, i) => h('th', { class: i === 2 ? 'num' : '', text: t })))),
@@ -1430,7 +1446,9 @@
             h('td', {}, st === 'awaiting_company' ? h('input', { type: 'checkbox', 'aria-label': 'Select ' + r.name, checked: J.selected.has(r.key), onchange: (e) => { e.target.checked ? J.selected.add(r.key) : J.selected.delete(r.key); renderJuan(); } }) : null),
             h('td', {}, h('strong', { text: r.name })), h('td', { class: 'small', text: r.position }), h('td', { class: 'num', text: ET.peso(r.monthly) }),
             h('td', { class: 'code', text: `${r.contractId} v${r.versionNo}` }), h('td', { class: 'small', text: sig ? ET.phDateTime(sig.signedAt) : '—' }), h('td', {}, pill(st)),
-            h('td', {}, h('button', { class: 'btn secondary sm', text: 'Preview', onclick: () => previewForJuan(r) })));
+            h('td', {}, h('div', { class: 'row', style: 'gap:6px;flex-wrap:nowrap' },
+              h('button', { class: 'btn secondary sm', text: 'Preview', onclick: () => previewForJuan(r) }),
+              st === 'awaiting_company' ? h('button', { class: 'btn sm', text: 'Sign', 'aria-label': 'Sign ' + r.name + "'s contract", onclick: () => signSingle(r.key) }) : null)));
         }) : h('tr', {}, h('td', { colspan: 8, class: 'muted', text: J.filter === 'awaiting_company' ? 'No contracts are waiting for your signature.' : 'Nothing here.' }))))),
       h('div', { class: 'row end' }, signBtn)));
   }
@@ -1438,13 +1456,21 @@
   async function previewForJuan(r) {
     const sig = (r.employeeSig && r.employeeSig.sha === r.sha) ? r.employeeSig : sigFor(r);
     const frame = h('div', { class: 'doc-frame' }, spinner('Loading…'));
-    modal(`${r.name} — ${r.contractId} v${r.versionNo}`, h('div', { class: 'stack' }, factsFromRec(r),
+    const canSign = statusOf(r) === 'awaiting_company';
+    let closePrev = null;
+    const signHere = canSign ? h('div', { class: 'row end' }, h('button', { class: 'btn big', text: `Sign ${r.name}'s contract`, onclick: () => { if (closePrev) closePrev(); signSingle(r.key); } })) : null;
+    closePrev = modal(`${r.name} — ${r.contractId} v${r.versionNo}`, h('div', { class: 'stack' }, signHere, factsFromRec(r),
       sig ? h('div', { class: 'stack' }, h('span', { class: 'small muted', text: `Employee signature (${sig.method}), ${ET.phDateTime(sig.signedAt)}` }), h('div', { class: 'sig-preview' }, h('img', { src: 'data:image/png;base64,' + sig.sigPng, alt: 'Employee signature' }))) : null,
       frame), { wide: true });
     try {
-      const { bytes } = await getVersionBytes(r.currentVid, r.sha);
-      renderPdf(frame, sig ? await employeeSignedPdf(bytes, { anchors: r.anchors, contractId: r.contractId, version: r.versionNo, sha: r.sha, name: r.name }, sig) : bytes);
+      renderPdf(frame, await previewBytes(r));
     } catch (e) { frame.replaceChildren(h('p', { class: 'note bad', text: errText(e) })); }
+  }
+
+  function signSingle(key) {
+    if (!S.employees[key] || statusOf(S.employees[key]) !== 'awaiting_company') { toast('This contract is not waiting for your signature.', 'error'); return; }
+    J.selected = new Set([key]);
+    batchReview();
   }
 
   function batchReview() {
@@ -1469,7 +1495,7 @@
       h('label', { class: 'f', for: 'juan-name' }, 'Type your full name to confirm it is you', nameConfirm),
       h('label', { class: 'check', for: 'juan-consent' }, consent, h('span', { text: consentTxt })),
       h('div', { class: 'row end' }, go));
-    const close = modal('Review and sign selected contracts', body, { wide: true, sticky: true, onClose: () => { J.busy = false; renderJuan(); } });
+    const close = modal(list.length === 1 ? `Sign ${list[0].name}'s contract` : 'Review and sign selected contracts', body, { wide: true, sticky: true, onClose: () => { J.busy = false; renderJuan(); } });
     go.onclick = async () => {
       go.disabled = true;
       const batchId = 'B' + Date.now().toString(36).toUpperCase() + ET.randomId(2);

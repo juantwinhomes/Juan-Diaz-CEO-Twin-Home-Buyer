@@ -249,6 +249,12 @@ function mockClaude() {
   for (let i = 0; i < 40 && downloads.length < 4; i++) await new Promise((r) => setTimeout(r, 250));
   const csv = downloads[3] ? downloads[3].bytes.toString() : '';
   step('Activity history exported (' + (csv.split('\n').length - 1) + ' events)');
+  // Once both have signed, HR's preview must show the stored signed PDF, not the unsigned contract.
+  await hr.getByRole('tab', { name: /^Contracts/ }).click();
+  await hr.getByRole('button', { name: 'Open' }).first().click();
+  await hr.getByText('Showing the signed PDF with both signatures').waitFor({ timeout: T });
+  await hr.locator('.doc-frame canvas').first().waitFor({ timeout: T });
+  step('HR preview of the fully signed contract shows the signed PDF with both signatures');
 
   downloads.forEach((d) => fs.writeFileSync(path.join(outDir, d.name), d.bytes));
   fs.writeFileSync(path.join(outDir, 'pay-page.txt'), payText);
