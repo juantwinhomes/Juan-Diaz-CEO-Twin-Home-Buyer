@@ -164,8 +164,13 @@
       if (sig && !(rec.employeeSig && rec.employeeSig.sha === rec.sha)) {
         ingesting.add(rec.key);
         try {
+          // Another open window may already have moved this contract on (e.g. Juan just signed it): re-read before writing.
+          const now = await S.db.doc('hr/data/employees/' + rec.key).get();
+          const cur = now.exists ? now.data() : null;
+          if (!cur || cur.status !== 'issued' || (cur.employeeSig && cur.employeeSig.sha === cur.sha)) { ingesting.delete(rec.key); continue; }
           await S.db.doc('hr/data/employees/' + rec.key).update({ employeeSig: sig });
-          await S.db.doc(P.record(rec.vault)).update({ status: 'awaiting_company', employeeSignedAt: sig.signedAt });
+          const vr = await S.db.doc(P.record(rec.vault)).get();
+          if (vr.exists && vr.data().status !== 'fully_signed') await S.db.doc(P.record(rec.vault)).update({ status: 'awaiting_company', employeeSignedAt: sig.signedAt });
           await logEvent({ action: 'Employee signature locked; contract placed in Juan’s signing queue', contractId: rec.contractId, version: rec.versionNo, employeeKey: rec.key });
         } catch (err) { console.warn(err); }
         ingesting.delete(rec.key);
@@ -373,7 +378,7 @@
 
   function employeeState() {
     const i = E.issued;
-    if (i.status === 'fully_signed') return 'complete';
+    if (i.status === 'fully_signed' || (i.finalSha && i.companySignedAt)) return 'complete';
     if (i.status === 'returned') return 'returned';
     const sig = E.esign && E.esign.signature;
     if (i.status === 'awaiting_company' || (sig && sig.sha === i.sha && sig.contractId === i.contractId)) return 'awaiting';
@@ -694,7 +699,8 @@
         const d = await S.db.doc(P.record(r.vault)).get();
         const src = await S.db.doc(P.source(r.vault)).get();
         const cur = d.exists ? d.data() : null;
-        if (!cur || !cur.anchors || cur.sha !== r.sha || !src.exists) { await publishToEmployee(r); fixed++; }
+        const stale = r.status === 'fully_signed' && (cur && (cur.status !== 'fully_signed' || cur.finalSha !== r.finalSha));
+        if (!cur || !cur.anchors || cur.sha !== r.sha || !src.exists || stale) { await publishToEmployee(r); fixed++; }
       } catch (e) { console.warn('repair failed for', r.key, e); }
     }
     repairing = false; repairedOnce = true;
