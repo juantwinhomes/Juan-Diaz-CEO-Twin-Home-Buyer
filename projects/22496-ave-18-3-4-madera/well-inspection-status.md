@@ -231,3 +231,8 @@ Report **26I2065** (Dellavalle). Sampled 9/24/26 14:05 by Jose L. Fernandez. Rep
 - **Foundation cracks are NOT in the SOW.** Flag this.
 
 **10/13 private home inspection report:** not in Drive. The "02 – Home Inspections" folder only has a photos doc.
+
+**Pool (team update, 2026-10-17):** the pool exists. It has been emptied and is planned for replastering. It is not filled yet.
+- **Budget gap:** the SOW has $0 for Pool/Spa.
+- **Fill risk:** a typical pool holds 15–30K gal. The well pump is rated about 10–16 GPM, so filling from the well means roughly 16–50 hrs of continuous pumping. Truck the water in, or fill in stages.
+- **Empty pool:** it is a fall hazard. Keep it fenced or covered.
