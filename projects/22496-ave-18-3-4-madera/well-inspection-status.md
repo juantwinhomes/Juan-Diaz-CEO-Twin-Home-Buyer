@@ -188,3 +188,46 @@ Report **26I2065** (Dellavalle). Sampled 9/24/26 14:05 by Jose L. Fernandez. Rep
 **Open caveats:**
 - Confirm "no open permit" by phone with County Building, (559) 675-7821, using the APN. An online search can miss permits.
 - Confirm the rehab scope had no permit-required work (electrical, plumbing, water heater, structural, HVAC). If it did and there was no permit, that is a disclosure risk.
+
+---
+
+# Site facts from Drive (logged 2026-10-17), for Jonathan's site-plan questions
+
+**Septic: repaired and county-approved**
+- Permit **26-0135-SEPTIC**, issued 10/12/26.
+  - Contractor: Big Bore Drilling, CSLB 579423, (559) 264-4601.
+  - The permit is sized for **2 bedrooms**.
+  - County inspection 10/13. County approval / yellow tag 10/14.
+  - Big Bore Notice of Compliance dated 10/14/26, with a 60-day warranty.
+- **System:**
+  - Existing **1,800-gal two-compartment concrete tank**. The 1983 record said 1,500 gal; the 2026 inspections show 1,800.
+  - Existing 3 ft dia × 50 ft gravel drain well (seepage pit). It failed inspection on 9/2 because it was root-bound (Bass & Sons, who pumped the tank).
+  - **New** 3 ft dia × 55 ft rock-filled seepage pit, with RV diversion valves.
+  - **No leach field.**
+- **As-built** (Big Bore, 10/12). Offsets are measured west from the east house wall and north from the front (north) house wall:
+  - Tank T1: 15 ft W, 15 ft N.
+  - Existing pit E1: 28 ft W, 28 ft N.
+  - New pit N1: 50 ft W, 36 ft N.
+  - Pits are 20.4 ft apart, wall to wall.
+  - **The whole septic system is in the FRONT (north) yard, between the house and Ave 18 3/4.**
+- Bass & Sons map: tree stumps around the drain well.
+- Service every 2 yrs.
+
+**Well location**
+- GPS on permit 22-0433-WELL: **N 37°01.347′ W 120°08.296′** (≈ 37.022412, −120.138130).
+- 171 ft from the septic tank.
+- **Flood Zone AO** (permit condition): the casing must sit above the base flood elevation, and electrical must be 3 ft above it.
+
+**Lot**
+- 2.33 ac per county (101,494 sf). The well application says 2.49 ac.
+- Legal description: JI Gordon Berenda Tr #2277.
+
+**SOW (lender budget $120,500)**
+- Septic $35K, landscape $15K, fence/gates $10K, exterior paint $12.5K, interior paint $12.5K, electrical finish $5.5K, flooring $15K, final clean $15K.
+- **$0 budgeted for:** roof, pool, permits, framing, foundation, plumbing, HVAC.
+- Current: 2 bd / 1 ba / 1,728 sf. The final counts are blank.
+
+**Seller TDS (8/25):** "septic needs work. Foundation – need cracks repair."
+- **Foundation cracks are NOT in the SOW.** Flag this.
+
+**10/13 private home inspection report:** not in Drive. The "02 – Home Inspections" folder only has a photos doc.
