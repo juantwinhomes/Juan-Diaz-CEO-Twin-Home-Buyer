@@ -56,7 +56,7 @@ h1{font-size:28px;font-weight:700;letter-spacing:-.02em;margin:4px 0 2px}
 .badge-live .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
 .badge-live.off{background:var(--warn-soft);color:var(--warn)} .badge-live.off .dot{background:var(--warn)}
 
-nav.sections{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
+nav.sections{display:flex;flex-wrap:wrap;gap:2px 4px;border-bottom:1px solid var(--line);margin-bottom:20px}
 nav.sections a{padding:10px 14px;text-decoration:none;color:var(--muted);font-weight:600;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
 nav.sections a:hover{color:var(--ink)}
 nav.sections a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
@@ -216,7 +216,549 @@ fieldset.ro{border:0;margin:0;padding:0;min-width:0}
 </div>
 <div id="toast" hidden></div>
 <div id="modal" hidden></div>
+<script>
+
+/* ===== Card payments: record a payment and pick exactly which charges it pays ===== */
+const CP={card:'',sel:new Set(),bucket:'all',open:null,confirm:null,busy:false};
+const PAY_ACCOUNTS_DEF=['Wells Fargo 8251 (Equity Track)','Relay 4444 Opex Checking','Relay 5776 Rehab & Holding','Relay Paramount','Relay 1760 Marketing','WF 0002 (820 28th)','PPS Relay','Prescott Relay','Other'];
+const cpAccounts=()=>(S.L.payAccounts&&S.L.payAccounts.length?S.L.payAccounts:PAY_ACCOUNTS_DEF);
+function cpHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(36);}
+/* Give every card-sheet charge a stable key, then apply payment marks so the
+   Card Tracker, Marketing and Properties all show the same paid status. */
+function cpApply(){
+  const marks=S.pmarks||new Map(), pays=S.cpays||new Map(), seen={};
+  for(const r of S.sheetRows){
+    if(r.paid0===undefined) r.paid0=!!r.paid;
+    if(r.prop0===undefined) r.prop0=r.prop||''; if(r.prop0&&S.props&&S.props.size){ const pid=propIdFromText(r.prop0); if(pid){ r.propertyId=pid; r.prop=S.props.get(pid).address; } }
+    const base=[r.card,r.date,Math.round((r.amount||0)*100),(r.vendor||r.desc||'').slice(0,30).toLowerCase()].join('|');
+    seen[base]=(seen[base]||0)+1; r.key=base+'#'+seen[base]; r.mid='m'+cpHash(r.key);
+    const m=marks.get(r.mid), p=m?pays.get(m.pay):null;
+    r.payId=p?p.id:null; r.scheduled=!!(p&&p.sent===false); r.paid=r.paid0||!!(p&&p.sent!==false);
+    const fx=(S.sheetfix||new Map()).get(r.mid); r.dupe=!!(fx&&fx.dupe);
+  }
+  if(S.sheetRows.some(r=>r.dupe)){ S.hiddenRows=S.sheetRows.filter(r=>r.dupe); S.sheetRows=S.sheetRows.filter(r=>!r.dupe); }
+  else if(!(S.sheetfix&&S.sheetfix.size)) S.hiddenRows=[];
+}
+/* Sheet rows set aside as duplicates (the Drive sheet is untouched; undo brings them back) */
+function cpDupNotice(card){
+  const fixes=[...(S.sheetfix||new Map()).values()].filter(x=>x.dupe&&(card==='all'||x.card===card));
+  if(!fixes.length) return '';
+  return `<div class="note info"><span><b>${fixes.length} duplicate${fixes.length>1?'s':''} set aside</b> (not counted in totals; the Drive sheet is unchanged): ${fixes.map(x=>`${esc(x.label||'')} — kept ${esc(x.kept||'')}${S.isOwner!==false?` <button class="btn sm ghost" data-cp="undup" data-id="${esc(x.id)}">Undo</button>`:''}`).join(' · ')}</span></div>`;
+}
+const cpRowsFor=card=>mergedRows(card).map(r=>r.src==='sheet'?{...r,led:r.ledger||null,pid:r.payId||r.ledger?.payId||null,isPaid:!!r.paid,selKey:'s:'+r.mid}:{...r,led:r,pid:r.payId||null,isPaid:!!r.paid,selKey:'t:'+r.id});
+function cpUnpaid(card){return cpRowsFor(card).filter(r=>!r.isPaid&&!r.pid&&r.amount>0).sort((a,b)=>(a.date||'').localeCompare(b.date||''));}
+function cpCovered(pid){const p=S.cpays.get(pid);if(!p)return[];return cpRowsFor(p.card).filter(r=>r.pid===pid);}
+function viewPayments(){
+  const cs=cards(); if(!CP.card) CP.card=cs[0]?.k||'';
+  const k=CP.card, b=cardBalance(k);
+  const grpOf=r=>r.bucket==='property'?(r.prop||'No property'):((r.cat||'')+(r.sub?' · '+r.sub:'')||'Not categorized');
+  const bOf=r=>['overhead','property','marketing'].includes(r.bucket)?r.bucket:'uncat';
+  const all=CP.view==='paid'?cpRowsFor(k).filter(r=>(r.isPaid||r.pid)&&r.amount>0).sort((a,b)=>(b.date||'').localeCompare(a.date||'')):cpUnpaid(k);
+  const list=all.filter(r=>(CP.bucket==='all'||bOf(r)===CP.bucket)&&(!CP.grp||grpOf(r)===CP.grp));
+  const selRows=cpUnpaid(k).filter(r=>CP.sel.has(r.selKey)), selTot=r2(sum(selRows)), amt=num(D('cp2-amt')||'')||0, left=r2(amt-selTot);
+  let h=`<div class="note info"><span><b>How it works:</b> type the payment, then tick the charges it pays. Ticked charges show as paid everywhere: Card Tracker, Marketing and Properties. Untick “Payment sent” if the payment is only scheduled.</span></div>`;
+  h+=cardTabs(k,null,'cp-card');
+  h+=`<div class="summary"><div class="tile"><div class="label">${esc(cardName(k))} unpaid charges</div><div class="big bad">${money(b.balance)}</div><div class="foot">${cpUnpaid(k).length} charges not covered by a payment</div></div><div class="tile"><div class="label">This payment</div><div class="big">${money(amt)}</div><div class="foot">${selRows.length} charge${selRows.length===1?'':'s'} ticked = ${money(selTot)}</div></div><div class="tile"><div class="label">${left>=0?'Left to apply':'Over the payment by'}</div><div class="big ${left<-0.005?'bad':''}">${money(Math.abs(left))}</div><div class="foot">${left>0.005?'leave it, or tick more charges':left<-0.005?'untick some charges':'matches exactly'}</div></div></div>`;
+  { const B=[['all','All'],['overhead','Overhead'],['property','Property'],['marketing','Marketing'],['uncat','Not categorized']];
+    const tot=x=>r2(sum(all.filter(r=>x==='all'||bOf(r)===x))), cnt=x=>all.filter(r=>x==='all'||bOf(r)===x).length, tk=x=>r2(sum(selRows.filter(r=>x==='all'||bOf(r)===x)));
+    const groups={}; for(const r of all.filter(r=>CP.bucket==='all'||bOf(r)===CP.bucket)){const g=CP.bucket==='all'?({overhead:'Overhead',property:'Property',marketing:'Marketing',uncat:'Not categorized'}[bOf(r)]):grpOf(r); (groups[g]=groups[g]||{n:0,a:0,t:0}); groups[g].n++; groups[g].a+=r.amount; if(CP.sel.has(r.selKey)) groups[g].t+=r.amount;}
+    h+=`<div class="panel panel-pad cp-bd" style="margin-bottom:14px"><div class="cp-view" role="group" aria-label="Show"><button data-cp="view" data-v="unpaid" aria-pressed="${CP.view!=='paid'}">Unpaid charges</button><button data-cp="view" data-v="paid" aria-pressed="${CP.view==='paid'}">Paid charges</button></div><div class="cp-tiles">${B.filter(([x])=>x==='all'||cnt(x)).map(([x,n])=>`<button class="cp-tile" data-cp="bucket" data-v="${x}" aria-pressed="${CP.bucket===x&&!CP.grp}"><span class="cp-tn">${n}</span><span class="cp-ta">${money(tot(x))}</span><span class="cp-tc">${cnt(x)} charge${cnt(x)===1?'':'s'}${tk(x)?` · ticked ${money(tk(x))}`:''}</span></button>`).join('')}</div>
+    <div class="cp-bdh">Breakdown${CP.bucket==='all'?' by type':' · '+esc({overhead:'Overhead',property:'Property',marketing:'Marketing',uncat:'Not categorized'}[CP.bucket])}${CP.bucket!=='all'?' (click one to show only those charges)':''}</div>
+    <div class="cp-grid">${Object.entries(groups).sort((a,b)=>b[1].a-a[1].a).map(([g,o])=>CP.bucket==='all'?`<div class="cp-row"><span>${esc(g)} <i>(${o.n})</i></span><b>${money(r2(o.a))}</b></div>`:`<button class="cp-row${CP.grp===g?' on':''}" data-cp="grp" data-v="${esc(g)}"><span>${esc(g)} <i>(${o.n})</i>${o.t?` <em>ticked ${money(r2(o.t))}</em>`:''}</span><b>${money(r2(o.a))}</b></button>`).join('')||'<div class="faint">Nothing unpaid.</div>'}</div></div>`; }
+  h+=`<div class="panel" style="margin-bottom:14px"><div class="panel-pad" style="padding-bottom:6px"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h3 style="font-size:16px">${CP.view==='paid'?'Charges already paid':'1. Tick the charges this payment covers'}</h3>
+    <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn sm" data-cp="auto">Tick oldest up to the amount</button><button class="btn sm ghost" data-cp="clear">Clear</button></div></div>
+    <div class="faint" style="font-size:12.5px;margin-top:4px">Oldest first. ${list.length} unpaid charge${list.length===1?'':'s'} shown${CP.bucket!=='all'||CP.grp?` · <b>${esc({overhead:'Overhead',property:'Property',marketing:'Marketing',uncat:'Not categorized'}[CP.bucket]||'All')}${CP.grp?' › '+esc(CP.grp):''}</b> <button class="btn sm ghost" data-cp="bucket" data-v="all">Show all</button>`:''}.</div></div>
+    <div class="tbl cp-scroll"><table style="min-width:860px"><thead><tr><th><input type="checkbox" data-cp="all" aria-label="Tick all shown" ${list.length&&list.every(r=>CP.sel.has(r.selKey))?'checked':''}></th><th>Date</th><th>Payee</th><th>Type</th><th>Category</th><th>Property</th><th class="amt">Amount</th></tr></thead><tbody>
+    ${list.map(r=>`<tr class="${CP.sel.has(r.selKey)?'sel':''}"><td>${CP.view==='paid'?(()=>{const p=r.pid&&S.cpays.get(r.pid);return `<span class="cp-paid">✓ Paid${p?` ${shortDate(p.date)}`:''}</span>`;})():`<input type="checkbox" data-cp="tick" data-k="${esc(r.selKey)}" ${CP.sel.has(r.selKey)?'checked':''} aria-label="Pay this charge">`}</td><td class="d">${shortDate(r.date)}</td><td class="payee">${esc(r.src==='sheet'?(r.vendor||r.desc):r.desc)}</td><td>${esc({overhead:'Overhead',property:'Property',marketing:'Marketing'}[r.bucket]||'Not categorized')}</td><td>${esc([r.cat,r.sub].filter(Boolean).join(' · ')||'—')}</td><td>${esc(r.prop||'—')}</td><td class="amt">${money(r.amount)}</td></tr>`).join('')||'<tr><td colspan="7" class="faint">Nothing unpaid here.</td></tr>'}
+    </tbody></table></div></div>`;
+  h+=`<div class="panel panel-pad" style="margin-bottom:14px"><h3 style="font-size:16px;margin-bottom:10px">2. The payment</h3><div class="form-grid">
+    <label class="field">Payment date<input type="date" data-draft="cp2-date" value="${esc(D('cp2-date',today()))}"></label>
+    <label class="field">Amount paid<input type="text" inputmode="decimal" data-draft="cp2-amt" value="${esc(D('cp2-amt'))}" placeholder="e.g. 40,000"></label>
+    <label class="field">Paid from (bank account)<select data-draft="cp2-bank"><option value="">Choose…</option>${cpAccounts().map(a=>`<option${D('cp2-bank')===a?' selected':''}>${esc(a)}</option>`).join('')}</select></label>
+    <label class="field" style="grid-column:1/-1">What is this payment for? Write the full breakdown<textarea data-draft="cp2-note" rows="7" style="width:100%;min-height:150px;font-size:14px;line-height:1.5;resize:vertical" placeholder="Example:&#10;September statement payment — $40,000&#10;• 460 5th Ave materials (Home Depot, Golden State Lumber): $18,200&#10;• 52 Paramount windows: $19,130.82&#10;• Marketing (Google Ads): $2,669.18&#10;Approved by Juan on 10/3">${esc(D('cp2-note'))}</textarea></label>
+    <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" data-draft-check="cp2-sent" ${D('cp2-sent','1')==='1'?'checked':''}> Payment sent (paid)</label>
+  </div></div>`;
+  h+=`<div class="row" style="margin-bottom:24px"><button class="btn primary" data-cp="save" ${CP.busy?'disabled':''}>${CP.busy?'Saving…':`Save payment${selRows.length?` and mark ${selRows.length} charge${selRows.length===1?'':'s'} ${D('cp2-sent','1')==='1'?'paid':'scheduled'}`:''}`}</button></div>`;
+  const pays=[...S.cpays.values()].filter(p=>p.card===k).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  h+=`<h3 style="font-size:16px;margin:6px 0 8px">Payments on ${esc(cardName(k))}</h3><div class="panel tbl"><table style="min-width:900px"><thead><tr><th>Sent?</th><th>Date</th><th class="amt">Amount</th><th>Paid from</th><th>What it’s for</th><th>Charges covered</th><th>Entered by</th><th></th></tr></thead><tbody>
+  ${pays.map(p=>{const cov=cpCovered(p.id),ct=r2(sum(cov)),sent=p.sent!==false;return `<tr><td><input type="checkbox" data-cp="sent" data-id="${esc(p.id)}" ${sent?'checked':''} aria-label="Payment sent"></td><td class="d">${shortDate(p.date)}</td><td class="amt">${money(p.amount)}</td><td>${esc(p.bank||'—')}</td><td style="max-width:280px"><div style="white-space:pre-wrap;max-height:3.2em;overflow:hidden">${esc(p.note||p.desc||'')}</div></td><td>${cov.length||p.note?`<button class="btn sm ghost" data-cp="open" data-id="${esc(p.id)}">${cov.length?`${cov.length} charge${cov.length===1?'':'s'} · ${money0(ct)}`:'Details'}</button>`:'<span class="faint">none picked</span>'}</td><td class="muted" style="font-size:12px">${p.by?esc(personName(p.by)):(p.source&&p.source!=='manual'?'Imported':'—')}</td><td>${CP.confirm===p.id?`<button class="btn sm danger" data-cp="del-yes" data-id="${esc(p.id)}">Remove & unmark</button> <button class="btn sm ghost" data-cp="cancel">Keep</button>`:(S.isOwner!==false||p.by===S.uid?`<button class="btn sm ghost" data-cp="del" data-id="${esc(p.id)}">Remove</button>`:'')}</td></tr>${CP.open===p.id?`<tr><td colspan="8" style="background:var(--surface-2)">${p.note?`<div style="white-space:pre-wrap;font-size:13.5px;margin-bottom:8px;padding:8px 10px;border-left:3px solid var(--accent);background:var(--surface)">${esc(p.note)}</div>`:''}${cov.map(r=>`<div style="display:flex;gap:12px;font-size:13px;padding:2px 0"><span class="d">${shortDate(r.date)}</span><span style="flex:1">${esc(r.src==='sheet'?(r.vendor||r.desc):r.desc)}${r.prop?' · '+esc(r.prop):''}</span><span class="amt">${money(r.amount)}</span></div>`).join('')}</td></tr>`:''}`;}).join('')||'<tr><td colspan="8" class="faint">No payments yet.</td></tr>'}
+  </tbody></table></div>`;
+  return h;
+}
+async function cpSave(){
+  const k=CP.card, amt=r2(num(D('cp2-amt')||'')), date=D('cp2-date',today()), bank=D('cp2-bank'), note=(D('cp2-note')||'').trim(), sent=D('cp2-sent','1')==='1';
+  if(!amt){toast('Type the amount paid.');return;} if(!bank){toast('Pick the bank account it was paid from.');return;}
+  const rows=cpUnpaid(k).filter(r=>CP.sel.has(r.selKey)), tot=r2(sum(rows));
+  if(tot>amt+0.005){toast(`The ticked charges (${money(tot)}) are more than the payment. Untick some.`);return;}
+  CP.busy=true;render();
+  const ref=db.collection('cardpays').doc();
+  const ok=await write(()=>ref.set({card:k,date,amount:amt,bank,note,desc:note||'Card payment',sent,source:'manual',by:S.uid||'',at:new Date().toISOString(),charges:rows.length,chargesTotal:tot}));
+  if(ok){ for(const r of rows){ if(r.src==='sheet') await write(()=>db.doc('pmarks/'+r.mid).set({key:r.key,pay:ref.id,card:k,amount:r.amount,date:r.date}));
+      if(r.led) await write(()=>db.doc('txns/'+r.led.id).update({payId:ref.id,paid:sent})); }
+    CP.sel.clear(); ['cp2-amt','cp2-note'].forEach(x=>delete S.draft[x]); toast(`Payment saved${rows.length?` · ${rows.length} charge${rows.length===1?'':'s'} marked ${sent?'paid':'scheduled'}`:''}`); }
+  CP.busy=false;render();
+}
+async function cpSetSent(pid,sent){
+  if(!await write(()=>db.doc('cardpays/'+pid).update({sent}))) return;
+  for(const t of S.txns.values()) if(t.payId===pid) await write(()=>db.doc('txns/'+t.id).update({paid:sent}));
+}
+async function cpDelete(pid){
+  for(const t of S.txns.values()) if(t.payId===pid) await write(()=>db.doc('txns/'+t.id).update({payId:null,paid:false}));
+  for(const m of (S.pmarks||new Map()).values()) if(m.pay===pid) await write(()=>db.doc('pmarks/'+m.id).delete());
+  await write(()=>db.doc('cardpays/'+pid).delete());
+}
+document.addEventListener('click',async e=>{
+  const ct=e.target.closest('[data-act="cp-card"]'); if(ct){CP.card=ct.dataset.k;CP.sel.clear();CP.open=null;CP.grp=null;render();return;}
+  const b=e.target.closest('[data-cp]'); if(!b) return; const a=b.dataset.cp;
+  if(a==='tick'){const k=b.dataset.k;CP.sel.has(k)?CP.sel.delete(k):CP.sel.add(k);render();return;}
+  if(a==='all'){const _b=r=>['overhead','property','marketing'].includes(r.bucket)?r.bucket:'uncat', _g=r=>r.bucket==='property'?(r.prop||'No property'):((r.cat||'')+(r.sub?' · '+r.sub:'')||'Not categorized');const list=cpUnpaid(CP.card).filter(r=>(CP.bucket==='all'||_b(r)===CP.bucket)&&(!CP.grp||_g(r)===CP.grp));const on=!list.every(r=>CP.sel.has(r.selKey));list.forEach(r=>on?CP.sel.add(r.selKey):CP.sel.delete(r.selKey));render();return;}
+  if(a==='bucket'){CP.bucket=b.dataset.v;CP.grp=null;render();return;}
+  if(a==='view'){CP.view=b.dataset.v;CP.grp=null;render();return;}
+  if(a==='grp'){CP.grp=CP.grp===b.dataset.v?null:b.dataset.v;render();return;}
+  if(a==='clear'){CP.sel.clear();render();return;}
+  if(a==='auto'){const amt=num(D('cp2-amt')||'')||0;if(!amt){toast('Type the amount first.');return;}CP.sel.clear();let t=0;const _b=r=>['overhead','property','marketing'].includes(r.bucket)?r.bucket:'uncat', _g=r=>r.bucket==='property'?(r.prop||'No property'):((r.cat||'')+(r.sub?' · '+r.sub:'')||'Not categorized');for(const r of cpUnpaid(CP.card).filter(r=>(CP.bucket==='all'||_b(r)===CP.bucket)&&(!CP.grp||_g(r)===CP.grp))){if(t+r.amount<=amt+0.005){CP.sel.add(r.selKey);t+=r.amount;}}render();return;}
+  if(a==='save'){await cpSave();return;}
+  if(a==='undup'){await write(()=>db.doc('sheetfix/'+b.dataset.id).delete());toast('Row restored');return;}
+  if(a==='sent'){await cpSetSent(b.dataset.id,b.checked);return;}
+  if(a==='open'){CP.open=CP.open===b.dataset.id?null:b.dataset.id;render();return;}
+  if(a==='del'){CP.confirm=b.dataset.id;render();return;}
+  if(a==='cancel'){CP.confirm=null;render();return;}
+  if(a==='del-yes'){const id=b.dataset.id;CP.confirm=null;await cpDelete(id);toast('Payment removed; its charges are unpaid again.');return;}
+});
+document.addEventListener('change',e=>{const t=e.target; if(t.dataset?.draftCheck){S.draft[t.dataset.draftCheck]=t.checked?'1':'0';render();} if(t.dataset?.draft==='cp2-amt'){S.draft['cp2-amt']=t.value;render();}});
+/* ===== Data-entry role (e.g. Darlyn): can add expenses, bills and card payments; cannot approve, delete bills or mark them paid ===== */
+const myView=()=>S.isOwner!==false?'owner':((S.L.viewers||{})[S.uid]?.view||'report');
+const ENTRY_BLOCK=['ap-dec','ap-all','ap-all-yes','ap-del','ap-del-yes','ap-paid'];
+document.addEventListener('click',e=>{ if(myView()!=='entry'&&myView()!=='accounting') return; const b=e.target.closest('[data-act]'); if(b&&ENTRY_BLOCK.includes(b.dataset.act)){e.stopImmediatePropagation();e.preventDefault();toast('Juan or Kristine handles approvals and payments.');} },true);
+/* Property trackers: a card-sheet charge paid here also lowers that property's unpaid total */
+function cpPropPaidAdj(p){
+  const asOf=p.prior?.asOf; if(!asOf) return 0;
+  const key=String(p.address||'').toLowerCase().split(',')[0].split(' ').slice(0,2).join(' ');
+  if(!key) return 0;
+  return r2(sum(S.sheetRows.filter(r=>r.bucket==='property'&&!r.paid0&&r.paid&&(r.date||'')<=asOf&&String(r.prop||'').toLowerCase().includes(key))));
+}
+
+
+
+/* ===== Payroll: Matrix weekly payroll + office payroll (5th & 20th), split by property ===== */
+const PR={mode:'matrix',preview:null,busy:'',open:null,confirm:null};
+const PR_OVER=['Office (Equity Track)','Owner salary (Juan & Mariaelena)','Commission / allowance (Cesar)','Marketing','Construction support','Other payroll'];
+const prMonths={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12,jan:1,feb:2,mar:3,apr:4,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};
+const pad2=n=>String(n).padStart(2,'0');
+function prParsePeriod(s){
+  const m=String(s||'').match(/([A-Za-z]+)\.?\s+(\d{1,2})\s*(?:-|–|to)\s*(?:([A-Za-z]+)\.?\s+)?(\d{1,2}),?\s*(\d{4})/i);
+  if(!m) return null; const m1=prMonths[m[1].toLowerCase()], m2=m[3]?prMonths[m[3].toLowerCase()]:m1; if(!m1||!m2) return null;
+  const y=Number(m[5]), y1=m2<m1?y-1:y;
+  return {start:`${y1}-${pad2(m1)}-${pad2(m[2])}`,end:`${y}-${pad2(m2)}-${pad2(m[4])}`};
+}
+// One property name everywhere: matches "22496 Ave 18 3/4, Madera", "460 5th Avenue", "Madera" etc. to the Properties list
+const PROP_ABBR={avenue:'ave',street:'st',drive:'dr',terrace:'ter',court:'ct',parkway:'pkwy',boulevard:'blvd',place:'pl',road:'rd',lane:'ln',circle:'cir',highway:'hwy'};
+const propNorm=s=>String(s||'').toLowerCase().replace(/[.,#()]/g,' ').split(/\s+/).filter(Boolean).map(w=>PROP_ABBR[w]||w);
+function propIdFromText(text){
+  const w=propNorm(text); if(!w.length) return null;
+  const ps=[...S.props.values()].map(p=>({id:p.id,w:propNorm(p.address)}));
+  if(/^\d/.test(w[0])){
+    for(const n of [4,3,2]){ const key=w.slice(0,n).join(' '); if(w.length<n) continue; const hit=ps.filter(p=>p.w.slice(0,n).join(' ')===key); if(hit.length===1) return hit[0].id; if(hit.length>1&&n===2) return hit[0].id; }
+    const num=ps.filter(p=>p.w[0]===w[0]); if(num.length===1) return num[0].id;
+  }
+  // a city or street name on its own ("Madera", "Paramount"), only if one property has it
+  const words=w.filter(x=>x.length>3&&!/^\d/.test(x)&&!['ave','st','dr','ca','california','suite'].includes(x));
+  for(const x of words){ const hit=ps.filter(p=>p.w.includes(x)); if(hit.length===1) return hit[0].id; }
+  return null;
+}
+function prMatchProp(label){ return propIdFromText(label);
+}
+function prOverheadOf(label){
+  const s=String(label||'').toLowerCase();
+  return /juan|mariaelena|salary/.test(s)?PR_OVER[1]:/cesar|commission|allowance/.test(s)?PR_OVER[2]:/office|equity track/.test(s)?PR_OVER[0]:/market|advertis/.test(s)?PR_OVER[3]:/construction/.test(s)?PR_OVER[4]:PR_OVER[5];
+}
+const prNum=v=>{const n=Number(v);return isFinite(n)?r2(n):0;};
+function prParseMatrix(wb,fileName){
+  const name=wb.SheetNames.find(n=>/summary by propert/i.test(n)); if(!name) throw new Error('No “Summary by Properties” tab in this file.');
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
+  let label=''; for(const r of rows) for(const c of r) if(typeof c==='string'&&/week ending/i.test(c)){label=c.replace(/.*week ending:?\s*/i,'').trim();}
+  const hi=rows.findIndex(r=>r.some(c=>String(c||'').trim().toUpperCase()==='PROPERTY')&&r.some(c=>/total deposit/i.test(String(c||''))));
+  if(hi<0) throw new Error('Couldn’t find the PROPERTY / TOTAL DEPOSIT header.');
+  const H=rows[hi].map(c=>String(c||'').trim().toLowerCase()), ix=re=>H.findIndex(h=>re.test(h));
+  const cP=ix(/^property$/),cG=ix(/gross/),cL=ix(/liabil/),cF=ix(/fee/),cC=ix(/total cost/),cM=ix(/markup/),cD=ix(/total deposit/);
+  const lines=[];
+  for(let i=hi+1;i<rows.length;i++){const r=rows[i], lab=String(r[cP]??'').trim(); if(!lab) break;
+    const dep=prNum(r[cD]); if(!dep&&!prNum(r[cG])) continue;
+    const pid=prMatchProp(lab);
+    lines.push({label:lab,propertyId:pid||'',over:pid?'':prOverheadOf(lab),gross:prNum(r[cG]),liability:cL>=0?prNum(r[cL]):0,fee:cF>=0?prNum(r[cF]):0,cost:cC>=0?prNum(r[cC]):0,markup:cM>=0?prNum(r[cM]):0,amount:dep});}
+  const per=prParsePeriod(label)||prParsePeriod(fileName);
+  return {type:'Matrix',label:label||fileName,start:per?.start||'',end:per?.end||'',lines,total:r2(sum(lines,l=>l.amount)),gross:r2(sum(lines,l=>l.gross)),fileName};
+}
+function prParseOffice(wb,fileName){
+  const name=wb.SheetNames.find(n=>/employee summary/i.test(n))||wb.SheetNames[0];
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
+  const ti=rows.findIndex(r=>/total payroll per department/i.test(String(r[0]||'')));
+  if(ti<1) throw new Error('Couldn’t find “Total Payroll Per Department” on the Employee Summary tab.');
+  const H=rows[ti-1], V=rows[ti], lines=[]; let overall=null;
+  for(let c=1;c<H.length;c++){const h=String(H[c]||'').replace(/\s+/g,' ').trim(); if(!h) continue;
+    if(/overall payroll cost/i.test(h)){overall=prNum(V[c]);break;}
+    const v=prNum(V[c]); if(v) lines.push({label:h,propertyId:'',over:/market|advertis/i.test(h)?PR_OVER[3]:/construction/i.test(h)?PR_OVER[4]:PR_OVER[0],amount:v});}
+  const per=prParsePeriod(fileName);
+  return {type:'Office',label:fileName.replace(/\.xlsx$/i,''),start:per?.start||'',end:per?.end||'',lines,total:overall??r2(sum(lines,l=>l.amount)),fileName};
+}
+async function prRead(){
+  const link=(S.draft['pr-link']||'').trim(); const fid=link.match(/\/d\/([\w-]{20,})/)?.[1]||link.match(/[?&]id=([\w-]{20,})/)?.[1]||(/^[\w-]{20,}$/.test(link)?link:'');
+  if(!fid){toast('Paste the Drive link to the payroll file.');return;}
+  if(!mcp||!window.XLSX){toast('Reading from Drive needs this page open on claude.ai with Google Drive connected.');return;}
+  PR.busy='Reading the payroll file from Drive…';PR.preview=null;render();
+  try{
+    let fileName='';
+    const r=await mcp.callTool(DRIVE,'download_file_content',{fileId:fid,exportMimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},{cache:false});
+    fileName=r.payload?.title||'';
+    const wb=XLSX.read(r.payload?.content||'',{type:'base64',cellDates:true});
+    const pv=PR.mode==='matrix'?prParseMatrix(wb,fileName):prParseOffice(wb,fileName);
+    pv.fileId=fid; pv.link=link; pv.payDate=PR.mode==='matrix'?(pv.end?fxAddDaysPR(pv.end,3):today()):prNextOfficeDate(pv.end);
+    PR.preview=pv;
+  }catch(e){toast(e?.message&&!e.code?e.message:driveErr(e));}
+  PR.busy='';render();
+}
+const fxAddDaysPR=(d,n)=>{const t=new Date(d+'T12:00');t.setDate(t.getDate()+n);return t.toISOString().slice(0,10);};
+function prNextOfficeDate(end){ if(!end) return today(); const [y,m,d]=end.split('-').map(Number); return d<=15?`${y}-${pad2(m)}-20`:(m===12?`${y+1}-01-05`:`${y}-${pad2(m+1)}-05`); }
+function prLineSelect(i,l){
+  return `<select data-pr-line="${i}" aria-label="Where this goes"><optgroup label="Property">${[...S.props.values()].filter(p=>groupOf(p)!=='sold'||p.id===l.propertyId).sort((a,b)=>(a.address||'').localeCompare(b.address||'')).map(p=>`<option value="p:${esc(p.id)}"${l.propertyId===p.id?' selected':''}>${esc(shortAddr(p.address))}</option>`).join('')}</optgroup><optgroup label="Not a property (stays in payroll)">${PR_OVER.map(o=>`<option value="o:${esc(o)}"${!l.propertyId&&l.over===o?' selected':''}>${esc(o)}</option>`).join('')}</optgroup></select>`;
+}
+function prRuns(){return [...(S.payroll||new Map()).values()].sort((a,b)=>(b.end||b.payDate||'').localeCompare(a.end||a.payDate||''));}
+function prPropLines(pid){const out=[];for(const r of prRuns()) for(const l of (r.lines||[])) if(l.propertyId===pid) out.push({date:r.payDate||r.end,amount:Number(l.amount)||0,paid:r.paid!==false,sub:r.type==='Matrix'?'Matrix Payroll':'Office Payroll',payee:`${r.type} payroll · ${r.label||''}`,run:r.id});return out;}
+const apPropLines=pid=>[...(S.ap||new Map()).values()].filter(x=>x.propertyId===pid&&x.status!=='Draft').map(x=>({date:x.paidDate||x.dueDate||'',amount:Number(x.amount)||0,paid:x.status==='Paid',sub:x.category||'Contractor Service',payee:x.vendor||'',status:x.status,ap:x.id}));
+function viewPayroll(){
+  let h=`<div class="note info"><span>Paste the Drive link to the payroll file. The tool reads it, splits the cost by property, and adds each property’s share to that property’s expenses. Lines that aren’t a property (office, Juan & Mariaelena’s salary, Cesar’s commission) stay here in the payroll only.</span></div>
+  <div class="seg" role="group" aria-label="Payroll type" style="margin-bottom:12px">${[['matrix','Matrix weekly payroll'],['office','Office payroll (5th & 20th)']].map(([k,n])=>`<button data-pr="mode" data-v="${k}" aria-pressed="${PR.mode===k}">${n}</button>`).join('')}</div>
+  <div class="panel panel-pad" style="margin-bottom:14px"><div class="row" style="gap:8px;flex-wrap:wrap"><input type="text" style="flex:1;min-width:260px" data-draft="pr-link" value="${esc(D('pr-link'))}" placeholder="${PR.mode==='matrix'?'https://drive.google.com/file/d/… (Matrix Payroll … .xlsx)':'https://drive.google.com/file/d/… (Iriga Office … Payroll.xlsx)'}"><button class="btn primary" data-pr="read" ${PR.busy?'disabled':''}>${PR.busy?'Reading…':'Read payroll'}</button><button class="btn" data-pr="manual" title="No spreadsheet? Type the payroll in">＋ Enter payroll by hand</button></div>
+  <div class="faint" style="font-size:12.5px;margin-top:6px">${PR.mode==='matrix'?'Reads the “Summary by Properties” tab: each property’s TOTAL DEPOSIT (gross pay + employer liability + Paychex fee + markup).':'Reads “Total Payroll Per Department” on the Employee Summary tab (USD).'}</div></div>`;
+  const pv=PR.preview;
+  if(pv){const toProp=r2(sum(pv.lines.filter(l=>l.propertyId),l=>l.amount)),over=r2(pv.total-toProp), exists=S.payroll?.get(prId(pv));
+    h+=`<div class="panel" style="margin-bottom:16px"><div class="panel-pad"><div class="row" style="justify-content:space-between;flex-wrap:wrap"><h3 style="font-size:16px">${esc(pv.type)} payroll · ${esc(pv.label)}</h3><span class="muted" style="font-size:13px">${esc(pv.fileName||'')}</span></div>
+    <div class="summary" style="margin-top:10px"><div class="tile"><div class="label">Total paid</div><div class="big">${money(pv.total)}</div></div><div class="tile"><div class="label">To properties</div><div class="big good">${money(toProp)}</div></div><div class="tile"><div class="label">Not a property (stays in payroll)</div><div class="big">${money(over)}</div></div></div>
+    ${exists?`<div class="note" style="margin-top:8px">This period is already saved. Saving again replaces it.</div>`:''}</div>
+    <div class="tbl"><table style="min-width:720px"><thead><tr><th>Line in the file</th><th>Goes to</th><th>Paid from</th>${pv.type==='Matrix'?'<th class="amt">Gross pay</th><th class="amt">Markup</th>':''}<th class="amt">Amount</th><th class="amt">%</th></tr></thead><tbody>
+    ${pv.lines.map((l,i)=>`<tr><td>${pv.manual?`<input type="text" data-pr-ml="${i}" value="${esc(l.label)}" placeholder="e.g. Madera crew" style="min-width:160px">`:esc(l.label)}<div style="margin-top:4px"><button class="btn sm ghost" data-pr="splitline" data-i="${i}" title="Split this line between properties">Split</button>${pv.lines.length>1&&(pv.manual||l.splitFrom)?`<button class="btn sm ghost" data-pr="rmline" data-i="${i}" aria-label="Remove line">✕</button>`:''}</div></td><td>${prLineSelect(i,l)}</td><td>${prPaidFromSelect(`data-pr-pf="${i}"`,l.paidFrom||(pv.bank?'bank:'+pv.bank:''))}</td>${pv.type==='Matrix'?`<td class="amt">${money(l.gross)}</td><td class="amt">${money(l.markup)}</td>`:''}<td class="amt">${pv.manual||l.splitFrom!=null?`<input type="text" inputmode="decimal" data-pr-ma="${i}" value="${l.amount?Number(l.amount).toFixed(2):''}" placeholder="0.00" style="width:110px;text-align:right">`:`<b>${money(l.amount)}</b>`}</td><td class="amt muted">${pv.total?Math.round(l.amount/pv.total*1000)/10:0}%</td></tr>`).join('')}
+    ${pv.manual?`<tr><td colspan="8"><button class="btn sm" data-pr="addline">＋ Add a line</button></td></tr>`:''}
+    </tbody></table></div>
+    <div class="panel-pad"><div class="form-grid">
+      <label class="field">Period start<input type="date" data-pr-f="start" value="${esc(pv.start)}"></label>
+      <label class="field">Period end<input type="date" data-pr-f="end" value="${esc(pv.end)}"></label>
+      <label class="field">Date paid<input type="date" data-pr-f="payDate" value="${esc(pv.payDate)}"></label>
+      <label class="field">Paid from (all lines)<select data-pr-f="bank"><option value="">Choose…</option>${PR_BANKS().map(a=>`<option${pv.bank===a?' selected':''}>${esc(a)}</option>`).join('')}</select></label>
+      <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" data-pr-f="paid" ${pv.paid!==false?'checked':''}> Paid</label>
+      <div style="align-self:end" class="row"><button class="btn primary" data-pr="save">Save & add to properties</button><button class="btn ghost" data-pr="cancel">Cancel</button></div></div></div></div>`;}
+  const runs=prRuns();
+  const byProp={}; for(const r of runs) for(const l of (r.lines||[])) if(l.propertyId){byProp[l.propertyId]=(byProp[l.propertyId]||0)+(Number(l.amount)||0);}
+  if(Object.keys(byProp).length){const mx=Math.max(...Object.values(byProp));h+=`<div class="panel panel-pad" style="margin-bottom:14px"><h3 style="font-size:16px;margin-bottom:8px">Payroll by property (all saved periods)</h3><div class="bd">${Object.entries(byProp).sort((a,b)=>b[1]-a[1]).map(([pid,v])=>`<div class="bd-row"><span>${esc(shortAddr(propName(pid)))}</span><b>${money0(v)}</b><div class="track"><div class="fill" style="width:${(v/mx*100).toFixed(1)}%"></div></div></div>`).join('')}</div></div>`;}
+  h+=`<h3 style="font-size:16px;margin:6px 0 8px">Saved payroll</h3><div class="panel tbl"><table style="min-width:860px"><thead><tr><th>Paid?</th><th>Type</th><th>Period</th><th>Date paid</th><th>Paid from</th><th class="amt">Total</th><th class="amt">To properties</th><th></th></tr></thead><tbody>
+  ${runs.map(r=>{const tp=r2(sum((r.lines||[]).filter(l=>l.propertyId),l=>l.amount));return `<tr><td><input type="checkbox" data-pr="paid" data-id="${esc(r.id)}" ${r.paid!==false?'checked':''} aria-label="Paid"></td><td>${esc(r.type)}</td><td>${esc(r.label||'')}${r.link?` <a href="${esc(r.link)}" target="_blank" rel="noopener" style="font-size:12px">file</a>`:''}</td><td class="d">${shortDate(r.payDate)}</td><td>${esc(r.bank||'—')}</td><td class="amt">${money(r.total)}</td><td class="amt">${money(tp)}</td><td style="white-space:nowrap"><button class="btn sm ghost" data-pr="open" data-id="${esc(r.id)}">${PR.open===r.id?'Hide':'Split'}</button>${S.isOwner!==false?(PR.confirm===r.id?` <button class="btn sm danger" data-pr="del-yes" data-id="${esc(r.id)}">Delete</button>`:` <button class="btn sm ghost" data-pr="del" data-id="${esc(r.id)}">✕</button>`):''}</td></tr>${PR.open===r.id?`<tr><td colspan="8" style="background:var(--surface-2)"><table style="min-width:640px"><thead><tr><th>Line</th><th>Goes to</th><th>Paid from</th><th class="amt">Amount</th></tr></thead><tbody>${(r.lines||[]).map((l,i)=>`<tr><td>${esc(l.label)}</td><td class="muted">${esc(l.propertyId?shortAddr(propName(l.propertyId)):l.over)}</td><td>${prPaidFromSelect(`data-pr-spf="${esc(r.id)}|${i}"`,l.paidFrom||(r.bank?'bank:'+r.bank:''))}</td><td class="amt">${money(l.amount)}</td></tr>`).join('')}</tbody></table></td></tr>`:''}`;}).join('')||'<tr><td colspan="8" class="faint">No payroll saved yet. Paste a payroll file link above.</td></tr>'}
+  </tbody></table></div>`;
+  return h;
+}
+function drawUses(d){
+  const out=[...(d.uses||[])];
+  for(const r of [...(S.payroll||new Map()).values()]) for(const l of (r.lines||[])) if(l.paidFrom==='draw:'+d.id) out.push({date:r.payDate||r.end,to:`${r.type} payroll · ${l.label}`,category:r.type==='Matrix'?'Matrix Payroll':'Virtual Team Payroll',amount:Number(l.amount)||0,auto:true});
+  return out;
+}
+const PR_BANKS=()=>{const pref=['Wells Fargo 8251 (Equity Track)','Relay 5776 Rehab & Holding','Relay Paramount'];return [...pref,...cpAccounts().filter(a=>!pref.includes(a))];};
+function prPaidFromSelect(attr,cur){
+  const draws=[...(S.drawsMap||new Map()).values()].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  return `<select ${attr} aria-label="Paid from"><option value="">Choose…</option><optgroup label="Bank account">${PR_BANKS().map(a=>`<option value="bank:${esc(a)}"${cur==='bank:'+a?' selected':''}>${esc(a)}</option>`).join('')}</optgroup>${draws.length?`<optgroup label="Holdback / draw">${draws.map(d=>{const left=r2(dAmt(d)-sum(drawUses(d)));return `<option value="draw:${esc(d.id)}"${cur==='draw:'+d.id?' selected':''}>Draw · ${esc(shortAddr(propName(d.propertyId)))} · ${shortDate(d.date)} · ${money0(dAmt(d))} (${money0(left)} left)</option>`;}).join('')}</optgroup>`:''}</select>`;
+}
+const prPaidFromLabel=v=>!v?'—':v.startsWith('bank:')?v.slice(5):v.startsWith('draw:')?(()=>{const d=S.drawsMap.get(v.slice(5));return d?`Draw · ${shortAddr(propName(d.propertyId))} · ${shortDate(d.date)}`:'Draw (removed)';})():v;
+const prId=pv=>`${pv.type.toLowerCase()}-${pv.end||pv.payDate||today()}`;
+function prTotal(pv){ if(pv.manual) pv.total=r2(sum(pv.lines,l=>Number(l.amount)||0)); }
+async function prSave(){
+  const pv=PR.preview; if(!pv) return; if(!pv.end&&!pv.payDate){toast('Add the period end date.');return;}
+  if(pv.manual){ prTotal(pv); if(!pv.total){toast('Type at least one amount.');return;} if(!pv.label) pv.label=`${pv.start||''}${pv.start&&pv.end?' – ':''}${pv.end||''} (entered by hand)`; }
+  if(!pv.manual){ const diff=r2(pv.total-sum(pv.lines,l=>Number(l.amount)||0)); if(Math.abs(diff)>0.01){toast(`The lines add up to ${money(sum(pv.lines,l=>Number(l.amount)||0))}, not ${money(pv.total)}. Fix the split amounts first.`);return;} }
+  const doc={type:pv.type,label:pv.label,start:pv.start||'',end:pv.end||'',payDate:pv.payDate||'',bank:pv.bank||'',paid:pv.paid!==false,total:pv.total,gross:pv.gross||null,
+    lines:pv.lines.map(l=>({label:l.label,propertyId:l.propertyId||'',over:l.propertyId?'':(l.over||PR_OVER[5]),amount:l.amount,gross:l.gross??null,markup:l.markup??null,paidFrom:l.paidFrom||(pv.bank?'bank:'+pv.bank:'')})),
+    fileId:pv.fileId||'',fileName:pv.fileName||'',link:pv.link||'',by:S.uid||'',at:new Date().toISOString()};
+  if(await write(()=>db.doc('payroll/'+prId(pv)).set(doc))){toast('Payroll saved and added to the properties');PR.preview=null;delete S.draft['pr-link'];render();}
+}
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-pr]'); if(!b||b.tagName==='SELECT') return; const a=b.dataset.pr;
+  if(a==='mode'){PR.mode=b.dataset.v;PR.preview=null;render();return;}
+  if(a==='read'){await prRead();return;}
+  if(a==='save'){await prSave();return;}
+  if(a==='cancel'){PR.preview=null;render();return;}
+  if(a==='manual'){PR.preview={manual:true,type:PR.mode==='matrix'?'Matrix':'Office',label:'',start:'',end:'',payDate:today(),bank:'',paid:true,fileName:'Entered by hand',lines:[{label:'',propertyId:'',over:'',amount:0}],total:0};render();return;}
+  if(a==='addline'&&PR.preview){PR.preview.lines.push({label:'',propertyId:'',over:'',amount:0});render();return;}
+  if(a==='rmline'&&PR.preview){const pv=PR.preview,i=+b.dataset.i,l=pv.lines[i]; pv.lines.splice(i,1); if(!pv.manual&&l.splitFrom!=null){const src=pv.lines.find(x=>x.label===l.label&&x.splitFrom==null)||pv.lines.find(x=>x.label===l.label); if(src) src.amount=r2((Number(src.amount)||0)+(Number(l.amount)||0));} prTotal(pv); render(); return;}
+  if(a==='splitline'&&PR.preview){const pv=PR.preview,i=+b.dataset.i,l=pv.lines[i],c=Math.round((Number(l.amount)||0)*100),h=Math.floor(c/2); l.amount=h/100; l.splitFrom=l.splitFrom??(c/100); pv.lines.splice(i+1,0,{label:l.label,propertyId:'',over:'',amount:(c-h)/100,gross:null,markup:null,paidFrom:l.paidFrom||'',splitFrom:l.splitFrom}); render(); return;}
+  if(a==='open'){PR.open=PR.open===b.dataset.id?null:b.dataset.id;render();return;}
+  if(a==='paid'){await write(()=>db.doc('payroll/'+b.dataset.id).update({paid:b.checked}));return;}
+  if(a==='del'){PR.confirm=b.dataset.id;render();return;}
+  if(a==='del-yes'){const id=b.dataset.id;PR.confirm=null;await write(()=>db.doc('payroll/'+id).delete());return;}
+});
+document.addEventListener('change',async e=>{const t=e.target;
+  if(PR.preview&&t.dataset?.prMl!=null){PR.preview.lines[+t.dataset.prMl].label=t.value;return;}
+  if(PR.preview&&t.dataset?.prMa!=null){PR.preview.lines[+t.dataset.prMa].amount=r2(parseFloat(String(t.value).replace(/[$,]/g,''))||0); prTotal(PR.preview); scheduleRender(); return;}
+  if(t.dataset?.prSpf){const [rid,i]=t.dataset.prSpf.split('|'),r=S.payroll.get(rid);if(!r)return;const lines=(r.lines||[]).map((l,j)=>j===Number(i)?{...l,paidFrom:t.value}:l);await write(()=>db.doc('payroll/'+rid).update({lines}));return;}
+  const pv=PR.preview; if(!pv) return;
+  if(t.dataset?.prPf!=null){pv.lines[Number(t.dataset.prPf)].paidFrom=t.value;scheduleRender();return;}
+  if(t.dataset?.prLine!=null){const l=pv.lines[Number(t.dataset.prLine)],v=t.value; if(v.startsWith('p:')){l.propertyId=v.slice(2);l.over='';}else{l.propertyId='';l.over=v.slice(2);} scheduleRender(); return;}
+  if(t.dataset?.prF){const f=t.dataset.prF; pv[f]=t.type==='checkbox'?t.checked:t.value; if(f==='bank') pv.lines.forEach(l=>{if(!l.paidFrom||l.paidFrom.startsWith('bank:'))l.paidFrom='bank:'+t.value;}); if(f==='end'||f==='paid'||f==='bank') scheduleRender();}
+});
+/* Contractors list for Payables (independent contractors) */
+const CONTRACTORS_DEF=['Gonzalo','Remote Homes','Yuri','Monica Cleaning'];
+const contractorList=()=>(S.L.contractors&&S.L.contractors.length?S.L.contractors:CONTRACTORS_DEF);
+function contractorPanel(){
+  const ap=[...(S.ap||new Map()).values()].filter(x=>x.status!=='Draft');
+  const isC=v=>contractorList().some(c=>String(v||'').toLowerCase().includes(c.toLowerCase()));
+  const rows=contractorList().map(c=>{const mine=ap.filter(x=>String(x.vendor||'').toLowerCase().includes(c.toLowerCase()));const props=[...new Set(mine.map(x=>x.propertyId?shortAddr(propName(x.propertyId)):'Overhead'))];
+    return {c,open:r2(sum(mine.filter(x=>x.status!=='Paid'))),paid:r2(sum(mine.filter(x=>x.status==='Paid'))),n:mine.length,props};});
+  return `<div class="panel" style="margin:10px 0 14px"><div class="panel-pad" style="padding-bottom:4px"><h3 style="font-size:16px">Independent contractors</h3><div class="faint" style="font-size:12.5px">Bills for these contractors that are linked to a property also show in that property’s expenses (paid or not yet paid).</div></div>
+  <div class="tbl"><table style="min-width:640px"><thead><tr><th>Contractor</th><th>Bills</th><th class="amt">Not paid yet</th><th class="amt">Paid</th><th>Properties</th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${esc(r.c)}</b></td><td>${r.n}</td><td class="amt" style="color:${r.open?'var(--bad)':''}">${money(r.open)}</td><td class="amt">${money(r.paid)}</td><td class="muted" style="font-size:12.5px">${esc(r.props.join(', ')||'—')}</td></tr>`).join('')}</tbody></table></div>
+  <datalist id="contractor-list">${contractorList().map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>`;
+}
+
+
+
+/* ===== Bank accounts (Wells Fargo 8251, Relay 5776, Relay Paramount) from screenshots ===== */
+const BK={acct:'',month:'',files:null,busy:'',preview:null,filter:'all'};
+const BANK_ACCTS_DEF=['Wells Fargo 8251','Relay 5776 Rehab & Holding','Relay Paramount'];
+const bankAccts=()=>(S.L.bankAccounts&&S.L.bankAccounts.length?S.L.bankAccounts:BANK_ACCTS_DEF);
+const BK_KINDS=['Property','Marketing','Overhead'];
+let SAMPLE=null; let SAMPLE_IMG=null;
+let BK_TRIED=null;
+function bkSample(){ if(BK_TRIED) return BK_TRIED; let done; BK_TRIED=new Promise(r=>done=r);
+  setTimeout(async()=>{try{SAMPLE=window.claude?.use?await window.claude.use('sample'):null; const lim=SAMPLE?await SAMPLE.limits().catch(()=>null):null; SAMPLE_IMG=lim?.images||null;}catch{SAMPLE=null;} done(SAMPLE); scheduleRender();},0);
+  return BK_TRIED; }
+const bkList=()=>[...(S.banktx||new Map()).values()];
+function bkKey(x){return [x.account,x.date,Math.round((Number(x.amount)||0)*100),String(x.desc||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,18)].join('|');}
+async function bkRead(textMode){
+  const sm=await bkSample(); if(!sm){toast('Reading screenshots needs this page open on claude.ai.');return;}
+  const acct=BK.acct||bankAccts()[0], yr=today().slice(0,4);
+  const files=BK.files; const txt=(S.draft['bk-paste']||'').trim();
+  if(!textMode&&(!files||!files.length)){toast('Choose one or more screenshots first.');return;}
+  if(textMode&&!txt){toast('Paste the transactions first.');return;}
+  if(!textMode&&!SAMPLE_IMG){toast('This view can’t send images. Paste the transactions as text instead.');return;}
+  BK.busy=textMode?'Reading the pasted text…':`Reading ${files.length} screenshot${files.length>1?'s':''}…`;BK.preview=null;render();
+  const prompt=`You are reading ${textMode?'text copied from':'screenshots of'} the online banking page for the bank account "${acct}".
+Extract every transaction row you can see. Return JSON only, no other text:
+{"transactions":[{"date":"YYYY-MM-DD","description":"exact description as shown","amount":-123.45,"pending":false}]}
+Rules: money OUT of the account (debits, withdrawals, payments, transfers out, checks) is NEGATIVE; money IN (deposits, credits, transfers in) is POSITIVE. If a year is not shown, use ${yr}. Ignore running balances, headers, totals and ads. Never invent rows; if a value is unreadable, skip the row.${textMode?'\n\nTEXT:\n'+txt.slice(0,60000):''}`;
+  try{
+    const out=await sm.json(prompt,textMode?{modelTier:'default'}:{images:[...files].slice(0,SAMPLE_IMG.maxCount),modelTier:'default'});
+    const rows=(out?.transactions||[]).filter(r=>r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')&&isFinite(Number(r.amount))&&Number(r.amount)!==0)
+      .map(r=>({account:acct,date:r.date,desc:String(r.description||'').trim().slice(0,200),amount:r2(Number(r.amount)),pending:!!r.pending}));
+    const have=new Set(bkList().map(bkKey)); const seen=new Set();
+    rows.forEach(r=>{const k=bkKey(r); r.dupe=have.has(k)||seen.has(k); seen.add(k); r.keep=!r.dupe;});
+    BK.preview={acct,rows};
+    if(!rows.length) toast('No transactions found. Try a clearer screenshot or paste the text.');
+  }catch(e){toast(e?.code==='not_granted'?'Allow Claude to read the screenshots (the prompt above), then try again.':e?.code==='rate_limited'?'Too many reads right now. Wait a minute and try again.':e?.code==='image_rejected'?'One image couldn’t be read. Use PNG or JPG screenshots.':'Couldn’t read that. Try again or paste the text.');}
+  BK.busy='';render();
+}
+async function bkSave(){
+  const pv=BK.preview; if(!pv) return; const keep=pv.rows.filter(r=>r.keep); if(!keep.length){toast('Nothing ticked to save.');return;}
+  let n=0; for(const r of keep){ const id=('bk-'+cpHash(bkKey(r))+'-'+r.date).replace(/[^A-Za-z0-9_\-]/g,'_');
+    const guide=bkGuideFor(r.desc);
+    if(await write(()=>db.doc('banktx/'+id).set({account:r.account,date:r.date,desc:r.desc,amount:r.amount,pending:r.pending,kind:guide?.kind||'',propertyId:guide?.propertyId||'',note:guide?`Juan’s guideline: ${guide.label}`:'',source:'screenshot',by:S.uid||'',at:new Date().toISOString()}))) n++; }
+  toast(`${n} transaction${n===1?'':'s'} saved`); BK.preview=null; BK.files=null; render();
+}
+/* Juan's guidelines: answers he marked “do this every time” */
+function bkGuides(){return [...(S.asks||new Map()).values()].filter(a=>a.answer?.rule&&a.answer.choice).map(a=>({key:payeeKey(a.desc),kind:choiceKind(a.answer.choice),propertyId:a.answer.propertyId||'',label:`${a.answer.choice}${a.answer.propertyId?' · '+shortAddr(propName(a.answer.propertyId)):''}${a.answer.note?' — '+a.answer.note:''}`,desc:a.desc,at:a.answer.at})).filter(g=>g.key);}
+const payeeKey=s=>String(s||'').toLowerCase().replace(/[^a-z ]/g,' ').split(/\s+/).filter(w=>w.length>2&&!['the','inc','llc','pos','purchase','debit','card','payment','online','transfer','from','des','ach'].includes(w)).slice(0,2).join(' ');
+const bkGuideFor=desc=>{const k=payeeKey(desc);return k?bkGuides().find(g=>g.key===k):null;};
+function guidesPanel(){const g=bkGuides(); if(!g.length) return ''; return `<details class="grp" style="margin-bottom:12px"><summary><span class="gname">Juan’s guidelines<small>${g.length} saved answer${g.length===1?'':'s'} he said to use every time</small></span></summary><div class="gbody"><table style="min-width:520px"><tbody>${g.map(x=>`<tr><td><b>${esc(x.desc)}</b></td><td>${esc(x.label)}</td><td class="faint" style="font-size:12px">${x.at?shortDate(x.at.slice(0,10)):''}</td></tr>`).join('')}</tbody></table></div></details>`;}
+function viewBank(){
+  const accts=bankAccts(); if(!BK.acct||!accts.includes(BK.acct)) BK.acct=accts[0];
+  bkSample();
+  const all=bkList().filter(x=>x.account===BK.acct), months=[...new Set(all.map(x=>(x.date||'').slice(0,7)))].sort().reverse();
+  if(!BK.month) BK.month=months[0]||today().slice(0,7);
+  const rows=all.filter(x=>BK.month==='all'||(x.date||'').startsWith(BK.month)).filter(x=>BK.filter==='all'||(BK.filter==='todo'&&!BK_KINDS.includes(x.kind))||(BK.filter==='asked'&&askFor('bank',x.id))).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const inn=r2(sum(rows.filter(x=>x.amount>0))), out=r2(-sum(rows.filter(x=>x.amount<0))), todo=rows.filter(x=>!BK_KINDS.includes(x.kind)).length;
+  let h=`<div class="note info"><span>A tracker for the bank accounts (not the credit cards). Upload screenshots of the transactions page and Claude reads the rows. Tag each one Property, Marketing or Overhead, and press <b>Ask Juan</b> on anything you’re not sure about. He answers in his Snapshot.</span></div>`;
+  h+=`<div class="cardtabs" role="group" aria-label="Account">${accts.map((a,i)=>`<button data-bk="acct" data-v="${esc(a)}" aria-pressed="${BK.acct===a}" style="--c:var(--k${i%10})"><i></i>${esc(a)}</button>`).join('')}</div>`;
+  h+=`<div class="panel panel-pad" style="margin-bottom:14px"><h3 style="font-size:16px;margin-bottom:8px">Add transactions to ${esc(BK.acct)}</h3>
+    <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><span class="btn file-btn">${BK.files?.length?`${BK.files.length} screenshot${BK.files.length>1?'s':''} chosen`:'Choose screenshots'}<input type="file" data-bk-files="1" accept="${esc(SAMPLE_IMG?.mediaTypes?.join(',')||'image/png,image/jpeg,image/webp')}" multiple aria-label="Choose screenshots"></span>
+    <button class="btn primary" data-bk="read" ${BK.busy?'disabled':''}>${BK.busy||'Read screenshots'}</button>${!SAMPLE?'':!SAMPLE_IMG?'<span class="faint" style="font-size:12.5px">Images aren’t available in this view: paste the text below.</span>':''}</div>
+    <details style="margin-top:10px"><summary class="muted" style="cursor:pointer;font-size:13px">Or paste the transactions as text</summary><textarea data-draft="bk-paste" rows="5" style="width:100%;margin-top:6px" placeholder="Copy the rows from the bank website and paste here">${esc(D('bk-paste'))}</textarea><button class="btn" data-bk="readtext" style="margin-top:6px" ${BK.busy?'disabled':''}>Read pasted text</button></details>
+    <details style="margin-top:6px"><summary class="muted" style="cursor:pointer;font-size:13px">Or add one by hand</summary><div class="form-grid" style="margin-top:6px"><label class="field">Date<input type="date" data-draft="bk-d" value="${esc(D('bk-d',today()))}"></label><label class="field">Description<input type="text" data-draft="bk-s" value="${esc(D('bk-s'))}"></label><label class="field">Amount (− for money out)<input type="text" inputmode="decimal" data-draft="bk-a" value="${esc(D('bk-a'))}" placeholder="-1,250.00"></label><div style="align-self:end"><button class="btn" data-bk="add">Add</button></div></div></details></div>`;
+  const pv=BK.preview;
+  if(pv) h+=`<div class="panel" style="margin-bottom:16px"><div class="panel-pad"><h3 style="font-size:16px">Check before saving · ${esc(pv.acct)}</h3><div class="faint" style="font-size:12.5px">Compare with the screenshot. Untick anything wrong. Rows already saved are unticked.</div></div><div class="tbl"><table style="min-width:640px"><thead><tr><th>Save</th><th>Date</th><th>Description</th><th class="amt">Amount</th><th></th></tr></thead><tbody>${pv.rows.map((r,i)=>`<tr><td><input type="checkbox" data-bk-keep="${i}" ${r.keep?'checked':''}></td><td class="d">${shortDate(r.date)}</td><td>${esc(r.desc)}</td><td class="amt${r.amount<0?' neg':''}">${money(r.amount)}</td><td>${r.dupe?'<span class="pill plain">Already saved</span>':''}${r.pending?' <span class="pill warn">Pending</span>':''}${bkGuideFor(r.desc)?' <span class="pill acc">Juan’s guideline</span>':''}</td></tr>`).join('')}</tbody></table></div><div class="panel-pad row"><button class="btn primary" data-bk="save">Save ${pv.rows.filter(r=>r.keep).length} transactions</button><button class="btn ghost" data-bk="cancel">Cancel</button></div></div>`;
+  h+=guidesPanel();
+  h+=`<div class="toolbar"><span class="lbl">Month</span><select data-bk-month="1">${['all',...new Set([today().slice(0,7),...months])].sort().reverse().map(m=>`<option value="${m}"${BK.month===m?' selected':''}>${m==='all'?'All months':monthLabel(m)}</option>`).join('')}</select><div class="seg" role="group">${[['all','All'],['todo','Not sorted'],['asked','Asked Juan']].map(([k,n])=>`<button data-bk="filter" data-v="${k}" aria-pressed="${BK.filter===k}">${n}</button>`).join('')}</div></div>
+  <div class="summary"><div class="tile"><div class="label">Money in</div><div class="big good">${money(inn)}</div></div><div class="tile"><div class="label">Money out</div><div class="big">${money(out)}</div></div><div class="tile"><div class="label">Not sorted yet</div><div class="big ${todo?'warn':''}">${todo}</div><div class="foot">pick Property, Marketing or Overhead</div></div></div>`;
+  h+=`<div class="panel tbl"><table style="min-width:1050px"><thead><tr><th>Ask Juan</th><th>Date</th><th>Description</th><th class="amt">In</th><th class="amt">Out</th><th>Property / Marketing / Overhead</th><th>Property</th><th>Note</th><th></th></tr></thead><tbody>${rows.map(x=>{const a=askFor('bank',x.id);return `<tr data-bkid="${esc(x.id)}"><td>${askCell('bank',x)}</td><td class="d">${shortDate(x.date)}${x.pending?'<div class="faint" style="font-size:11px">pending</div>':''}</td><td class="payee">${esc(x.desc)}</td><td class="amt" style="color:var(--good)">${x.amount>0?money(x.amount):''}</td><td class="amt">${x.amount<0?money(-x.amount):''}</td>
+    <td><select data-bk-f="kind" aria-label="Property, Marketing or Overhead">${opts(BK_KINDS,BK_KINDS.includes(x.kind)?x.kind:'','Choose…')}</select></td><td>${x.kind==='Property'?`<select data-bk-f="propertyId" aria-label="Property">${propOpts(x.propertyId||'').replace('<option value="__new">＋ New property…</option>','')}</select>`:'<span class="faint">—</span>'}</td>
+    <td><input class="notes" type="text" data-bk-f="note" value="${esc(x.note||'')}" placeholder="What is this for?"></td><td>${S.isOwner!==false?`<button class="btn sm ghost" data-bk="del" data-id="${esc(x.id)}" aria-label="Delete">✕</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="9" class="faint">No transactions for this month yet. Upload screenshots above.</td></tr>'}</tbody></table></div>
+  <p class="faint" style="font-size:12px;margin-top:6px">This is a tracker only: tagging a transaction as Property, Marketing or Overhead doesn’t add it to the Properties, Marketing or other tabs’ totals.</p>`;
+  return h;
+}
+const bkPropLines=pid=>bkList().filter(x=>x.kind==='Property expense'&&x.propertyId===pid&&x.amount<0).map(x=>({date:x.date,amount:-x.amount,paid:true,sub:'Bank payment',payee:`${x.desc} (${x.account})`}));
+
+/* ===== Ask Juan: flag a card charge or bank transaction; Juan answers in his Snapshot ===== */
+const askFor=(src,id)=>[...(S.asks||new Map()).values()].find(a=>a.src===src&&a.refId===id)||null;
+function askCell(src,x){const a=askFor(src,x.id);
+  if(!a) return `<button class="btn sm ghost" data-ask="open" data-src="${src}" data-id="${esc(x.id)}" title="Flag this for Juan">Ask Juan</button>`;
+  if(a.answer?.choice) return `<span class="pill good" title="${esc(a.answer.note||'')}">Juan: ${esc(a.answer.choice)}${a.answer.propertyId?' · '+esc(shortAddr(propName(a.answer.propertyId))):''}</span>`;
+  return `<span class="pill warn" title="${esc(a.question||'')}">Asked Juan</span>`;}
+const ASK={open:null};
+function askBox(){ if(!ASK.open) return ''; const {src,id}=ASK.open; const x=src==='bank'?S.banktx?.get(id):S.txns.get(id); if(!x){ASK.open=null;return '';}
+  return `<div class="panel panel-pad" style="margin-bottom:14px;border:2px solid var(--warn)"><h3 style="font-size:16px">Ask Juan about this</h3><div style="margin:6px 0 10px"><b>${esc(x.desc)}</b> · ${shortDate(x.date)} · ${money(src==='bank'?x.amount:x.amount)} · ${esc(src==='bank'?x.account:cardName(x.card))}</div>
+  <label class="field">Your question<textarea data-draft="ask-q" rows="3" style="width:100%" placeholder="e.g. What was this for? Which property should it go to? Is it personal?">${esc(D('ask-q'))}</textarea></label>
+  <div class="row" style="margin-top:8px"><button class="btn primary" data-ask="send">Send to Juan</button><button class="btn ghost" data-ask="close">Cancel</button></div></div>`;}
+const ASK_CHOICES=['Property expense','Overhead (business)','Marketing','Personal (owner draw)','Not business — refund/dispute','Call me about it'];
+function choiceKind(c){return {'Property expense':'Property','Overhead (business)':'Overhead','Marketing':'Marketing'}[c]||'';}
+function asksPanel(){
+  const all=[...(S.asks||new Map()).values()].sort((a,b)=>(b.at||'').localeCompare(a.at||'')), open=all.filter(a=>!a.answer?.choice), done=all.filter(a=>a.answer?.choice).slice(0,8);
+  const isJuanView=S.isOwner===false;
+  return `<div class="panel panel-pad stack" style="margin-bottom:14px"><h3 style="font-size:16px">Transactions we need you to explain (${open.length})</h3>
+  ${open.length?open.map(a=>`<div class="fx-flag" data-askid="${esc(a.id)}"><div><b>${esc(a.desc)}</b> · ${money(a.amount)} · ${shortDate(a.date)} · ${esc(a.account||'')}</div><div class="muted" style="font-size:13px;margin:2px 0 6px">“${esc(a.question||'What is this for?')}” — ${esc(personName(a.by)||'Kristine')}</div>
+    <div class="row" style="gap:6px;flex-wrap:wrap"><select data-draft="ans-c-${esc(a.id)}" aria-label="Your answer"><option value="">Your answer…</option>${ASK_CHOICES.map(c=>`<option${D('ans-c-'+a.id)===c?' selected':''}>${esc(c)}</option>`).join('')}</select>
+    <select data-draft="ans-p-${esc(a.id)}" aria-label="Property"><option value="">Property (if any)</option>${[...S.props.values()].filter(p=>groupOf(p)!=='sold').map(p=>`<option value="${esc(p.id)}"${D('ans-p-'+a.id)===p.id?' selected':''}>${esc(shortAddr(p.address))}</option>`).join('')}</select>
+    <input type="text" data-draft="ans-n-${esc(a.id)}" value="${esc(D('ans-n-'+a.id))}" placeholder="How to handle it (optional)" style="min-width:220px;flex:1">
+    <label class="check" style="font-size:13px"><input type="checkbox" data-draft="ans-r-${esc(a.id)}" ${D('ans-r-'+a.id)?'checked':''}> Do this every time for this payee</label>
+    <button class="btn sm primary" data-ask="answer" data-id="${esc(a.id)}">Send answer</button></div></div>`).join(''):'<span class="faint">Nothing to explain right now.</span>'}
+  ${done.length?`<details style="margin-top:6px"><summary class="muted" style="cursor:pointer;font-size:13px">Recently answered (${done.length})</summary>${done.map(a=>`<div style="font-size:13px;padding:3px 0">${esc(a.desc)} · ${money(a.amount)} → <b>${esc(a.answer.choice)}</b>${a.answer.propertyId?' · '+esc(shortAddr(propName(a.answer.propertyId))):''}${a.answer.note?' — '+esc(a.answer.note):''}${a.answer.rule?' <span class="pill acc">every time</span>':''}</div>`).join('')}</details>`:''}</div>`;
+}
+async function askAnswer(id){
+  const a=S.asks.get(id); if(!a) return; const choice=D('ans-c-'+id); if(!choice){toast('Pick an answer.');return;}
+  const pid=D('ans-p-'+id)||'', note=(D('ans-n-'+id)||'').trim(), rule=!!D('ans-r-'+id);
+  if(choice==='Property expense'&&!pid){toast('Pick the property.');return;}
+  const answer={choice,propertyId:pid,note,rule,by:S.uid||'',at:new Date().toISOString()};
+  if(!await write(()=>db.doc('asks/'+id).update({answer,status:'Answered'}))) return;
+  const tag=`Juan: ${choice}${pid?' · '+shortAddr(propName(pid)):''}${note?' — '+note:''}`;
+  if(a.src==='bank'){const x=S.banktx?.get(a.refId); if(x) await write(()=>db.doc('banktx/'+a.refId).update({kind:choiceKind(choice),propertyId:pid||x.propertyId||'',note:[x.note,tag].filter(Boolean).join(' · ')}));}
+  else {const t=S.txns.get(a.refId); if(t){const patch={notes:[t.notes,tag].filter(Boolean).join(' · ')}; const ty={'Property expense':'Property Expense','Overhead (business)':'Overhead Expense','Marketing':'Marketing Expense'}[choice]; if(ty&&t.status!=='Transferred'){patch.type=ty; if(pid) patch.propertyId=pid;} await write(()=>db.doc('txns/'+a.refId).update(patch));}}
+  ['ans-c-','ans-p-','ans-n-','ans-r-'].forEach(k=>delete S.draft[k+id]); toast('Answer sent');
+}
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-bk],[data-ask]'); if(!b) return;
+  if(b.dataset.ask){const a=b.dataset.ask;
+    if(a==='open'){ASK.open={src:b.dataset.src,id:b.dataset.id};S.draft['ask-q']='';render();window.scrollTo(0,0);return;}
+    if(a==='close'){ASK.open=null;render();return;}
+    if(a==='send'){const {src,id}=ASK.open||{}; const x=src==='bank'?S.banktx?.get(id):S.txns.get(id); if(!x)return;
+      const ok=await write(()=>db.collection('asks').doc().set({src,refId:id,desc:x.desc,amount:Number(x.amount)||0,date:x.date,account:src==='bank'?x.account:cardName(x.card),question:(S.draft['ask-q']||'').trim()||'What is this for, and how should we record it?',status:'Open',by:S.uid||'',at:new Date().toISOString()}));
+      if(ok){ASK.open=null;toast('Sent to Juan. It shows in his Snapshot.');render();} return;}
+    if(a==='answer'){await askAnswer(b.dataset.id);return;}
+    return;}
+  const a=b.dataset.bk;
+  if(a==='acct'){BK.acct=b.dataset.v;BK.preview=null;BK.month='';render();return;}
+  if(a==='filter'){BK.filter=b.dataset.v;render();return;}
+  if(a==='read'){await bkRead(false);return;}
+  if(a==='readtext'){await bkRead(true);return;}
+  if(a==='save'){await bkSave();return;}
+  if(a==='cancel'){BK.preview=null;render();return;}
+  if(a==='add'){const amt=r2(num(D('bk-a')||'')),desc=(D('bk-s')||'').trim(),date=D('bk-d',today()); if(!amt||!desc){toast('Fill in the description and amount.');return;}
+    const r={account:BK.acct,date,desc,amount:amt}; const id=('bk-'+cpHash(bkKey(r))+'-'+date).replace(/[^A-Za-z0-9_\-]/g,'_');
+    if(await write(()=>db.doc('banktx/'+id).set({...r,pending:false,kind:'',propertyId:'',note:'',source:'manual',by:S.uid||'',at:new Date().toISOString()}))){delete S.draft['bk-a'];delete S.draft['bk-s'];} return;}
+  if(a==='del'){await write(()=>db.doc('banktx/'+b.dataset.id).delete());return;}
+});
+document.addEventListener('change',async e=>{const t=e.target;
+  if(t.dataset?.bkFiles){BK.files=t.files&&t.files.length?t.files:null;render();return;}
+  if(t.dataset?.bkMonth){BK.month=t.value;render();return;}
+  if(t.dataset?.bkKeep!=null&&BK.preview){BK.preview.rows[Number(t.dataset.bkKeep)].keep=t.checked;render();return;}
+  if(t.dataset?.bkF){const id=t.closest('tr')?.dataset.bkid; if(!id) return; await write(()=>db.doc('banktx/'+id).update({[t.dataset.bkF]:t.value})); return;}
+});
+
+
+
+/* ===== Card Control: Juan's approvals, statement details per card, payoff plan, team tasks ===== */
+const CC={busy:false};
+const CC_AUTOPAY=['Not checked','Off','Minimum','Full statement balance','Fixed amount','Pay Over Time / Plan It ON'];
+const CC_RECON=['Not started','In progress','Reconciled through Sep','Difference to explain'];
+const CC_OWNERS=['Kristine','Darlyn','Cherry / Sales','Cesar','Juan'];
+const CC_STATUS=['Not started','In progress','Waiting on someone','Done'];
+const ccCards=()=>cards().map(c=>({...c,ctl:(S.cardctl||new Map()).get(c.k)||{}}));
+const ccAppr=()=>[...(S.cardappr||new Map()).values()].sort((a,b)=>(a.paidAt?1:0)-(b.paidAt?1:0)||(a.dueDate||'').localeCompare(b.dueDate||''));
+const ccTasks=()=>[...(S.ctltasks||new Map()).values()].sort((a,b)=>(a.status==='Done')-(b.status==='Done')||(a.deadline||'9').localeCompare(b.deadline||'9'));
+const daysTo=d=>d?Math.round((Date.parse(d+'T12:00')-Date.parse(today()+'T12:00'))/864e5):null;
+function ccFlags(c){const x=c.ctl,f=[],dd=daysTo(x.dueDate),bal=fxNumCC(x.stmtBal),min=fxNumCC(x.minDue);
+  if(fxNumCC(x.pastDue)>0) f.push(['bad',`Past due ${money(fxNumCC(x.pastDue))}`]);
+  else if(dd!=null&&dd<0&&!x.paidThisCycle) f.push(['bad',`Due date passed ${shortDate(x.dueDate)}`]);
+  else if(dd!=null&&dd<=7) f.push(['warn',`Due in ${dd} day${dd===1?'':'s'}`]);
+  if(fxNumCC(x.interest)>0) f.push(['warn',`Interest ${money(fxNumCC(x.interest))}`]);
+  if(fxNumCC(x.lateFee)>0) f.push(['bad',`Late fee ${money(fxNumCC(x.lateFee))}`]);
+  if(x.autopay==='Pay Over Time / Plan It ON') f.push(['bad','Pay Over Time is on']);
+  if(x.qboBal!=null&&x.qboBal!==''&&bal!=null&&Math.abs(Math.abs(fxNumCC(x.qboBal))-bal)>1) f.push(['warn','QuickBooks ≠ statement']);
+  return f;}
+const fxNumCC=v=>{if(v==null||v==='')return null;const n=num(v);return isFinite(n)?n:null;};
+function ccField(c,f,type,ph){const v=c.ctl[f];
+  if(type==='sel') return `<select data-cc-card="${esc(c.k)}" data-cc-f="${f}" aria-label="${esc(f)}">${ph.map(o=>`<option${(v||ph[0])===o?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  return `<input class="fx-in" type="${type==='date'?'date':'text'}" ${type==='num'?'inputmode="decimal"':''} data-cc-card="${esc(c.k)}" data-cc-f="${f}" value="${esc(type==='num'&&v!=null&&v!==''?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):v??'')}" placeholder="${esc(ph||'')}" style="min-width:${type==='date'?130:96}px">`;}
+function ccJuanUpdate(){
+  const lines=['Hi Juan,',''];
+  for(const a of ccAppr()){ if(a.paidAt) lines.push(`• ${cardName(a.card)} ${a.type.toLowerCase()} ${money(a.amount)}: PAID${a.paidFrom?' from '+a.paidFrom:''}. Confirmation #${a.confirmation}, posting ${shortDate(a.postDate||a.paidAt.slice(0,10))}.`);
+    else lines.push(`• ${cardName(a.card)} ${a.type.toLowerCase()} ${money(a.amount)}: approved ${shortDate(a.approvedOn)}, not paid yet.`);
+    if(a.waiver) lines.push(`  ${cardName(a.card)} call about the late fee/interest: ${a.waiver}`);}
+  for(const k of ['cap1b','hd5253']){const c=ccCards().find(x=>x.k===k); if(!c) continue; const x=c.ctl;
+    lines.push(`• ${c.n}: ${fxNumCC(x.pastDue)>0?`past due ${money(fxNumCC(x.pastDue))}, `:''}${x.minDue!=null&&x.minDue!==''?`minimum ${money(fxNumCC(x.minDue))}, `:''}statement balance ${x.stmtBal!=null&&x.stmtBal!==''?money(fxNumCC(x.stmtBal)):'(confirm)'}, due ${x.dueDate?shortDate(x.dueDate):'(confirm due date)'}.`);}
+  lines.push('','Thanks,','Kristine'); return lines.join('\n');}
+function viewCardCtl(){
+  const owner=S.isOwner!==false, appr=ccAppr(), open=appr.filter(a=>!a.paidAt), tasks=ccTasks(), cc=ccCards();
+  let h=`<div class="note info"><span><b>Rules:</b> the page never pays anything. A payment counts as approved only when Juan approved it. It counts as paid only after a confirmation number is entered. Minimum, statement balance and current balance are kept separate.</span></div>`;
+  // 1. approvals
+  h+=`<h3 style="font-size:16px;margin:4px 0 8px">Payments Juan approved</h3>`;
+  h+=appr.map(a=>{const dd=daysTo(a.dueDate),late=!a.paidAt&&dd!=null&&dd<0;return `<div class="panel panel-pad" style="margin-bottom:10px;border-left:6px solid ${a.paidAt?'var(--good)':late?'var(--bad)':'var(--warn)'}">
+    <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><div><b style="font-size:16px">${esc(cardName(a.card))} · ${esc(a.type)} · ${money(a.amount)}</b><div class="muted" style="font-size:13px">Approved by ${esc(a.approvedBy||'Juan')} on ${shortDate(a.approvedOn)} (${esc(a.source||'')}) · Due ${shortDate(a.dueDate)}${late?' · <b style="color:var(--bad)">LATE</b>':''} · Assigned to ${esc(a.assignee||'—')}</div></div>
+    <span class="pill ${a.paidAt?'good':late?'bad':'warn'}">${a.paidAt?'Paid · #'+esc(a.confirmation):'Approved, not paid yet'}</span></div>
+    ${a.note?`<div style="font-size:13.5px;margin-top:6px;white-space:pre-wrap">${esc(a.note)}</div>`:''}
+    <div class="form-grid" style="margin-top:10px">
+      <label class="field">Paid from<select data-cca="${esc(a.id)}" data-f="paidFrom" ${a.paidAt?'disabled':''}><option value="">Choose…</option>${cpAccounts().map(x=>`<option${a.paidFrom===x?' selected':''}>${esc(x)}</option>`).join('')}</select></label>
+      <label class="field">Confirmation number<input type="text" data-cca="${esc(a.id)}" data-f="confirmation" value="${esc(a.confirmation||'')}" ${a.paidAt?'disabled':''}></label>
+      <label class="field">Date it posts<input type="date" data-cca="${esc(a.id)}" data-f="postDate" value="${esc(a.postDate||'')}" ${a.paidAt?'disabled':''}></label>
+      <div style="align-self:end">${a.paidAt?`<span class="faint" style="font-size:12.5px">Recorded ${shortDate(a.paidAt.slice(0,10))} in Card Payments</span>`:`<button class="btn primary" data-cc="paid" data-id="${esc(a.id)}">Mark paid</button>`}</div>
+      <label class="field" style="grid-column:1/-1">Late fee / interest waiver call: what did they say?<textarea data-cca="${esc(a.id)}" data-f="waiver" rows="2" style="width:100%" placeholder="e.g. Spoke with Amex rep Maria 10/9 2:30pm: late fee $39 waived; interest credit of $412 will post in 1–2 cycles. Ref #12345">${esc(a.waiver||'')}</textarea></label></div></div>`;}).join('')||'<div class="faint" style="margin-bottom:10px">No approvals recorded.</div>';
+  if(owner) h+=`<details style="margin-bottom:16px"><summary class="muted" style="cursor:pointer;font-size:13px">Record a new approval from Juan</summary><div class="form-grid" style="margin-top:8px">
+    <label class="field">Card<select data-draft="cca-card">${cards().map(c=>`<option value="${esc(c.k)}"${D('cca-card')===c.k?' selected':''}>${esc(c.n)}</option>`).join('')}</select></label>
+    <label class="field">Type<select data-draft="cca-type">${['Minimum','Statement balance','Past-due amount','Other amount'].map(o=>`<option${D('cca-type')===o?' selected':''}>${o}</option>`).join('')}</select></label>
+    <label class="field">Amount<input type="text" inputmode="decimal" data-draft="cca-amt" value="${esc(D('cca-amt'))}"></label>
+    <label class="field">Approved on<input type="date" data-draft="cca-on" value="${esc(D('cca-on',today()))}"></label>
+    <label class="field">Due date<input type="date" data-draft="cca-due" value="${esc(D('cca-due'))}"></label>
+    <label class="field">Who pays it<select data-draft="cca-who">${CC_OWNERS.map(o=>`<option${D('cca-who','Darlyn')===o?' selected':''}>${o}</option>`).join('')}</select></label>
+    <label class="field" style="grid-column:1/-1">Juan’s exact words / source<input type="text" data-draft="cca-src" value="${esc(D('cca-src'))}" placeholder="e.g. Email 10/9: “APPROVED: Pay the American Express minimum…”"></label>
+    <div><button class="btn" data-cc="add-appr">Save approval</button></div></div></details>`;
+  // 2. reply helper
+  h+=`<div class="panel panel-pad" style="margin-bottom:16px"><div class="row" style="justify-content:space-between"><h3 style="font-size:16px">Update for Juan (fills in as you go)</h3><button class="btn sm" data-cc="copy">Copy</button></div><textarea id="cc-upd" rows="8" style="width:100%;margin-top:8px;font-size:13.5px" readonly>${esc(ccJuanUpdate())}</textarea></div>`;
+  // 3. card board
+  const totStmt=r2(sum(cc,c=>fxNumCC(c.ctl.stmtBal)||0)), totMin=r2(sum(cc,c=>fxNumCC(c.ctl.minDue)||0)), totInt=r2(sum(cc,c=>fxNumCC(c.ctl.interest)||0)), late=cc.filter(c=>ccFlags(c).some(f=>f[0]==='bad')).length;
+  h+=`<h3 style="font-size:16px;margin:4px 0 8px">Every card, from the latest statement</h3>
+  <div class="summary"><div class="tile"><div class="label">Statement balances entered</div><div class="big">${money0(totStmt)}</div><div class="foot">${cc.filter(c=>c.ctl.stmtBal!=null&&c.ctl.stmtBal!=='').length} of ${cc.length} cards filled in</div></div><div class="tile"><div class="label">Minimums due</div><div class="big">${money0(totMin)}</div></div><div class="tile"><div class="label">Interest on last statements</div><div class="big ${totInt?'bad':''}">${money0(totInt)}</div><div class="foot">Juan’s figure: $5,155 May–Sep</div></div><div class="tile"><div class="label">Cards needing action</div><div class="big ${late?'bad':''}">${late}</div></div></div>
+  <div class="panel tbl fx-tbl"><table style="min-width:1700px"><thead><tr><th>Card</th><th>Last 4</th><th class="amt">Statement balance</th><th class="amt">Current balance (tracker)</th><th class="amt">Minimum</th><th class="amt">Past due</th><th>Due date</th><th class="amt">APR %</th><th class="amt">Interest</th><th class="amt">Late fees</th><th>Autopay</th><th class="amt">QuickBooks balance</th><th>Reconciled</th><th>Needs attention</th></tr></thead><tbody>
+  ${cc.map(c=>`<tr><td><b>${esc(c.n)}</b>${c.ctl.note?`<div class="faint" style="font-size:11.5px;max-width:180px">${esc(c.ctl.note)}</div>`:''}</td><td>${ccField(c,'last4','text','')}</td><td>${ccField(c,'stmtBal','num','')}</td><td class="amt">${money(cardBalance(c.k).balance)}</td><td>${ccField(c,'minDue','num','')}</td><td>${ccField(c,'pastDue','num','')}</td><td>${ccField(c,'dueDate','date')}</td><td>${ccField(c,'apr','num','')}</td><td>${ccField(c,'interest','num','')}</td><td>${ccField(c,'lateFee','num','')}</td><td>${ccField(c,'autopay','sel',CC_AUTOPAY)}</td><td>${ccField(c,'qboBal','num','')}</td><td>${ccField(c,'recon','sel',CC_RECON)}</td><td>${ccFlags(c).map(([k,t])=>`<span class="pill ${k}" style="margin:1px">${esc(t)}</span>`).join(' ')||'<span class="faint">—</span>'}</td></tr>`).join('')}</tbody></table></div>
+  <p class="faint" style="font-size:12px;margin-top:6px">Statement balance = what the last statement says is owed (pay this by the due date to avoid interest). Current balance = everything charged so far, including new charges not billed yet. Minimum = the least you can pay to not be late; interest keeps growing on the rest.</p>`;
+  // 4. payoff plan
+  const ranked=cc.filter(c=>(fxNumCC(c.ctl.stmtBal)||0)>0).sort((a,b)=>(fxNumCC(b.ctl.apr)||0)-(fxNumCC(a.ctl.apr)||0));
+  h+=`<h3 style="font-size:16px;margin:16px 0 8px">Payoff plan: highest interest rate first (draft for Juan’s approval)</h3><div class="panel tbl"><table style="min-width:700px"><thead><tr><th>#</th><th>Card</th><th class="amt">APR</th><th class="amt">Statement balance</th><th class="amt">Interest per month at this balance</th><th>Due</th></tr></thead><tbody>${ranked.map((c,i)=>{const apr=fxNumCC(c.ctl.apr),b=fxNumCC(c.ctl.stmtBal);return `<tr><td>${i+1}</td><td>${esc(c.n)}</td><td class="amt">${apr!=null?apr+'%':'<span class="faint">enter APR</span>'}</td><td class="amt">${money(b)}</td><td class="amt">${apr!=null?money(b*apr/100/12):'—'}</td><td>${shortDate(c.ctl.dueDate)}</td></tr>`;}).join('')||'<tr><td colspan="6" class="faint">Enter statement balances and APRs above to build the plan.</td></tr>'}</tbody></table><div class="panel-pad faint" style="font-size:12.5px">Check free cash on the Controller tab before paying more than the minimums. Payroll, lenders and construction come first.</div></div>`;
+  // 5. tasks
+  h+=`<h3 style="font-size:16px;margin:16px 0 8px">Team tasks (one owner, one deadline, one deliverable)</h3><div class="panel tbl fx-tbl"><table style="min-width:1100px"><thead><tr><th>Task</th><th>Owner</th><th>Assigned</th><th>Deadline</th><th>Status</th><th>Deliverable</th><th>Notes</th></tr></thead><tbody>
+  ${tasks.map(t=>{const late=t.status!=='Done'&&t.deadline&&t.deadline<today();return `<tr${t.status==='Done'?' style="opacity:.6"':''}><td style="min-width:240px"><b>${esc(t.task)}</b></td><td><select data-cct="${esc(t.id)}" data-f="owner">${CC_OWNERS.map(o=>`<option${t.owner===o?' selected':''}>${o}</option>`).join('')}</select></td><td class="d">${shortDate(t.assigned)}</td><td><input type="date" data-cct="${esc(t.id)}" data-f="deadline" value="${esc(t.deadline||'')}">${late?' <span class="pill bad">Late</span>':''}</td><td><select data-cct="${esc(t.id)}" data-f="status">${CC_STATUS.map(o=>`<option${(t.status||'Not started')===o?' selected':''}>${o}</option>`).join('')}</select></td><td style="font-size:13px;min-width:200px">${esc(t.deliverable||'')}</td><td><input type="text" data-cct="${esc(t.id)}" data-f="notes" value="${esc(t.notes||'')}" style="min-width:180px"></td></tr>`;}).join('')}</tbody></table>
+  <div class="panel-pad"><div class="form-grid"><label class="field" style="grid-column:span 2">New task<input type="text" data-draft="cct-task" value="${esc(D('cct-task'))}"></label><label class="field">Owner<select data-draft="cct-owner">${CC_OWNERS.map(o=>`<option${D('cct-owner','Darlyn')===o?' selected':''}>${o}</option>`).join('')}</select></label><label class="field">Deadline<input type="date" data-draft="cct-dl" value="${esc(D('cct-dl'))}"></label><label class="field" style="grid-column:span 2">Deliverable<input type="text" data-draft="cct-del" value="${esc(D('cct-del'))}"></label><div style="align-self:end"><button class="btn" data-cc="add-task">Add task</button></div></div></div></div>`;
+  return h;
+}
+async function ccMarkPaid(id){
+  const a=S.cardappr.get(id); if(!a) return;
+  if(!(a.confirmation||'').trim()){toast('Enter the confirmation number first. A payment isn’t paid without it.');return;}
+  if(!a.paidFrom){toast('Pick the bank account it was paid from.');return;}
+  const at=new Date().toISOString();
+  if(!await write(()=>db.doc('cardappr/'+id).update({paidAt:at,paidBy:S.uid||''}))) return;
+  await write(()=>db.doc('cardpays/'+id).set({card:a.card,date:a.postDate||today(),amount:a.amount,bank:a.paidFrom,note:`${a.type} payment approved by Juan on ${a.approvedOn}. Confirmation #${a.confirmation}.${a.waiver?' Waiver call: '+a.waiver:''}`,desc:`${a.type} payment`,sent:true,source:'manual',by:S.uid||'',at,charges:0,chargesTotal:0}));
+  toast('Marked paid and added to Card Payments. Pick the charges it covers there.');
+}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-cc]'); if(!b) return; const a=b.dataset.cc;
+  if(a==='paid'){await ccMarkPaid(b.dataset.id);return;}
+  if(a==='copy'){const ta=document.getElementById('cc-upd');ta.select();try{await navigator.clipboard.writeText(ta.value);toast('Copied');}catch{document.execCommand('copy');toast('Copied');}return;}
+  if(a==='add-appr'){const amt=r2(num(D('cca-amt')||''));if(!amt){toast('Enter the amount.');return;}
+    await write(()=>db.collection('cardappr').doc().set({card:D('cca-card',cards()[0]?.k),type:D('cca-type','Minimum'),amount:amt,approvedBy:'Juan',approvedOn:D('cca-on',today()),dueDate:D('cca-due')||'',assignee:D('cca-who','Darlyn'),source:D('cca-src')||'',note:'',paidFrom:'',confirmation:'',postDate:'',waiver:'',by:S.uid||'',at:new Date().toISOString()}));
+    ['cca-amt','cca-src','cca-due'].forEach(k=>delete S.draft[k]);return;}
+  if(a==='add-task'){const task=(D('cct-task')||'').trim();if(!task){toast('Type the task.');return;}
+    await write(()=>db.collection('ctltasks').doc().set({task,owner:D('cct-owner','Darlyn'),assigned:today(),deadline:D('cct-dl')||'',status:'Not started',deliverable:D('cct-del')||'',notes:'',by:S.uid||''}));
+    ['cct-task','cct-dl','cct-del'].forEach(k=>delete S.draft[k]);return;}
+});
+document.addEventListener('change',async e=>{const t=e.target;
+  if(t.dataset?.ccCard){const k=t.dataset.ccCard,f=t.dataset.ccF,cur=(S.cardctl||new Map()).get(k)||{};const {id:_,...rest}=cur;let v=t.value;if(['stmtBal','minDue','pastDue','apr','interest','lateFee','qboBal'].includes(f))v=t.value.trim()===''?null:num(t.value);
+    await write(()=>db.doc('cardctl/'+k).set({...rest,[f]:v,updatedAt:new Date().toISOString(),updatedBy:S.uid||''}));return;}
+  if(t.dataset?.cca){await write(()=>db.doc('cardappr/'+t.dataset.cca).update({[t.dataset.f]:t.value}));return;}
+  if(t.dataset?.cct){await write(()=>db.doc('ctltasks/'+t.dataset.cct).update({[t.dataset.f]:t.value}));return;}
+});
+
+</script>
 <style>
+tr.sel td{background:color-mix(in srgb,var(--accent) 9%,transparent)}
+body.role-entry [data-act="ap-dec"],body.role-entry [data-act="ap-all"],body.role-entry [data-act="ap-del"],body.role-entry [data-act="ap-paid"]{display:none!important}
 .fx-vd{display:grid;grid-template-columns:10px 1fr;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow-sm)}
 .fx-vd>i{background:var(--faint)}.fx-vd.go>i{background:var(--good)}.fx-vd.wait>i{background:var(--warn)}.fx-vd.stop>i{background:var(--bad)}
 .fx-vd .b{padding:16px 20px;min-width:0}
@@ -261,6 +803,47 @@ fieldset.ro{border:0;margin:0;padding:0;min-width:0}
 .fx-rline{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
 .fx-rline .dot{width:12px;height:12px;border-radius:50%;margin-top:4px;flex:0 0 auto;background:var(--faint)}
 .fx-rline .dot.go{background:var(--good)}.fx-rline .dot.wait{background:var(--warn)}.fx-rline .dot.stop{background:var(--bad)}
+
+.cp-tiles{display:flex;gap:8px;flex-wrap:wrap}
+.cp-tile{flex:1 1 150px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border:1px solid var(--line,#d9dee2);border-radius:10px;background:var(--surface,#fff);color:inherit;cursor:pointer;font:inherit}
+.cp-tile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.cp-tn{font-weight:700;font-size:13px}.cp-ta{font-size:20px;font-weight:800}.cp-tc{font-size:12px;opacity:.75}
+.cp-bdh{margin:12px 0 6px;font-size:12.5px;font-weight:700;opacity:.8}
+.cp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px}
+.cp-row{display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border:1px solid var(--line,#d9dee2);border-radius:8px;background:var(--surface,#fff);color:inherit;font:inherit;font-size:13px;text-align:left;cursor:pointer}
+div.cp-row{cursor:default}.cp-row.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.cp-row i{font-style:normal;opacity:.65}.cp-row em{font-style:normal;color:var(--accent);font-size:12px}.cp-row b{white-space:nowrap}
+.cp-scroll{max-height:60vh;overflow:auto}.cp-scroll thead th{position:sticky;top:0;z-index:1;background:var(--surface,#fff)}
+
+.cp-view{display:inline-flex;gap:0;margin-bottom:10px;border:1px solid var(--line,#d9dee2);border-radius:999px;overflow:hidden}
+.cp-view button{font:inherit;font-size:13px;font-weight:700;padding:6px 14px;border:0;background:transparent;color:inherit;cursor:pointer}
+.cp-view button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.cp-paid{font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap}
+
+.dx-table{width:100%;table-layout:auto}
+.dx-table td{vertical-align:top}
+.dx-main{min-width:170px;max-width:320px}.dx-main .payee{font-weight:600;margin-bottom:6px;white-space:normal}
+.dx-main .notes{width:100%;min-width:0}
+.dx-cat{min-width:300px}
+.dx-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px}
+.dx-grid label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted);font-weight:600;min-width:0}
+.dx-grid select{width:100%;min-width:0;font-size:13px;padding:5px 6px}
+.dx-grid em{font-size:12px;padding:6px 0}
+.dx-st{min-width:120px}.dx-rc{margin-top:6px}
+@media (min-width:1100px){.dx-wrap{overflow-x:visible}}
+
+.dx-stsel{display:block;margin-top:4px;font-size:12px;padding:2px 4px;width:auto}
+
+.desk-ok{font-size:12px;font-weight:700;color:var(--accent);margin:-2px 0 6px}
+
+.sp-tag{font-size:12px;font-weight:700;color:var(--accent);margin:-2px 0 6px}
+.sp-row td{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.sp-box{padding:6px 2px}.sp-h{font-size:13px;margin-bottom:8px}
+.sp-line{display:grid;grid-template-columns:110px repeat(4,minmax(120px,1fr)) minmax(160px,1.3fr) auto;gap:6px 8px;align-items:end;margin-bottom:8px}
+.sp-line label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted);font-weight:600;min-width:0}
+.sp-line input,.sp-line select{width:100%;min-width:0;font-size:13px;padding:5px 6px}
+.sp-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp-ok{color:var(--accent);font-weight:700;font-size:13px}.sp-bad{color:#b45309;font-weight:700;font-size:13px}
+@media (max-width:900px){.sp-line{grid-template-columns:1fr 1fr}}
 </style>
 <script>
 /* ===== Controller section: one tab with sub-pages. Reads this ledger + the QuickBooks snapshot. ===== */
@@ -826,7 +1409,7 @@ async function fxSavePDF(title,blocks,fname){
 const DEFAULTS = {
   cards:[
     {k:'amex',n:'AmEx'},{k:'cap1p',n:'Capital One Personal'},{k:'cap1b',n:'Capital One Business'},{k:'disc2645',n:'Discover 2645'},
-    {k:'hd5253',n:'Home Depot 5253'},{k:'hd1511',n:'Home Depot 1511'},{k:'hd5880',n:'Home Depot 5880'},{k:'hd8087',n:'Home Depot 8087'},{k:'boa0475',n:'BOA 0475'},{k:'citi2149',n:'Citi 2149'}
+    {k:'hd5253',n:'Home Depot 5253'},{k:'hd1511',n:'Home Depot 1511'},{k:'hd5880',n:'Home Depot 5880'},{k:'hd8087',n:'Home Depot 8087'},{k:'boa0475',n:'BOA 0475'},{k:'citi2149',n:'Citi 2149'},{k:'wf7413',n:'Wells Fargo 7413'}
   ],
   types:['Overhead Expense','Property Expense','Marketing Expense','Overhead - Peninsula','Overhead - Prescott','Overhead - Daliaz','Overhead - Equity Track Inc','Overhead - Matrix Group One'],
   categories:['Office & Administrative Expense','Technology Expense','Marketing Tools','Sales Acquisition - Real Estate','PPS - Sales Acquisition','Direct Mail','Direct Mail - Checks (Real Estate)','Direct Mail - Postcards (Real Estate)','PPS - Postcards','PPC - Real Estate','PPC - PPS','Real Estate - Facebook Ads','PPS - Facebook Ads','Iriga Office - Facebook','PPS - Nextdoor Ads','PPS - Bing Ads','PPS - Yelp','PPS - Smarter Contact','PPS - QR Code','TV','Motivated Leads','Property Leads','LeadGeeks','Reddit','Peninsula Plumbing','Personal Expense'],
@@ -837,7 +1420,7 @@ const DEFAULTS = {
   receiptFolder:'https://drive.google.com/drive/folders/1Ps4suRRPe33QgBj35QEZt6smAj0sScoe',
   propertyFolder:''
 };
-const SECTIONS = [{k:'daily',n:'Daily Expenses'},{k:'tracker',n:'Card Tracker'},{k:'marketing',n:'Marketing'},{k:'properties',n:'Properties'},{k:'draws',n:'Draws'},{k:'payables',n:'Payables'},{k:'cash',n:'Cash & Maturities'},{k:'close',n:'Month-End Close'},{k:'snapshot',n:'Juan Snapshot'},{k:'controller',n:'Controller'},{k:'settings',n:'Settings'}];
+const SECTIONS = [{k:'daily',n:'Daily Expenses'},{k:'tracker',n:'Card Tracker'},{k:'cardctl',n:'Card Control'},{k:'bank',n:'Bank Accounts'},{k:'marketing',n:'Marketing'},{k:'properties',n:'Properties'},{k:'draws',n:'Draws'},{k:'payments',n:'Card Payments'},{k:'payroll',n:'Payroll'},{k:'payables',n:'Payables'},{k:'cash',n:'Cash & Maturities'},{k:'close',n:'Month-End Close'},{k:'snapshot',n:'Juan Snapshot'},{k:'controller',n:'Controller'},{k:'settings',n:'Settings'}];
 const BUCKETS = {overhead:'Overhead',property:'Property',marketing:'Marketing'};
 const DRIVE='Google Drive';
 
@@ -904,7 +1487,8 @@ async function write(fn){
   if(!db){toast('The ledger is offline. Open it on claude.ai while signed in.');return false;}
   try{await fn();return true;}
   catch(e){
-    if(e?.code==='invalid_argument'){S.readOnly=true;render();toast('You have view-only access, so changes are not saved.');}
+    if(S.isOwner===false&&!S.readOnly){toast('Only Kristine can change this part. Your change was not saved.');}
+    else if(e?.code==='invalid_argument'){S.readOnly=true;render();toast('You have view-only access, so changes are not saved.');}
     else if(e?.code==='quota_exceeded') toast('The ledger is full. Delete old rows, then try again.');
     else toast('Could not save. Check your connection and try again.');
     return false;
@@ -989,7 +1573,68 @@ function normDate(s){s=String(s||'').trim();let m;
   const d=new Date(s);return isNaN(d)?'':d.toISOString().slice(0,10);}
 function hash(s){let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return(h>>>0).toString(36);}
 const isCardPayment=d=>/\b(payment|autopay|auto pay|thank you|pymt|online pmt)\b/i.test(d);
+// ----- approved charges coming from THB Card Desk (file hand-off: the two pages don't share a database) -----
+// ----- send charges to THB Card Desk: copy them, then paste in the Card Desk (Setup & import) -----
+const DESK_START='2026-10-13'; // Juan's 24-hour explain rule starts with charges from this date
+function deskQueue(k){ return [...S.txns.values()].filter(t=>(!k||t.card===k)&&!t.deskSentAt&&(t.amount||0)>0&&(t.date||'')>=DESK_START&&!isCardPayment(t.desc||'')); }
+async function copyForDesk(){
+  const k=null, list=deskQueue(null).sort((a,b)=>(a.card||'').localeCompare(b.card||'')||(a.date||'').localeCompare(b.date||''));
+  if(!list.length){ toast('Nothing new to send to the Card Desk.'); return; }
+  const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const head=['Transaction ID','Ledger card','Date','Description','Amount','Status','Cardholder','Property','Type','Category','Business purpose','Receipt'];
+  const csv=[head.map(q).join(',')].concat(list.map(t=>[t.id,t.card,t.date,t.desc,(+t.amount).toFixed(2),t.status||'Posted',t.cardholder||'',(S.props.get(t.propertyId)||{}).address||'',t.type||'',t.category||'',t.notes||'',t.receiptUrl||''].map(q).join(','))).join('\n');
+  let copied=false; try{ await navigator.clipboard.writeText(csv); copied=true; }catch(e){}
+  S.deskCopy={csv,n:list.length,copied,ids:list.map(t=>t.id),card:k}; render();
+}
+async function markDeskSent(){
+  const p=S.deskCopy; if(!p) return; const at=new Date().toISOString();
+  for(const id of p.ids) await write(()=>db.doc('txns/'+id).update({deskSentAt:at}));
+  S.deskCopy=null; toast(`${p.n} charges marked as sent to the Card Desk.`); render();
+}
+function deskCopyPanel(){
+  const p=S.deskCopy; if(!p) return '';
+  return `<div class="panel panel-pad" style="margin-bottom:14px;border:2px solid var(--accent)"><h3 style="font-size:16px;margin-bottom:6px">${p.n} new charges from all cards ${p.copied?'copied':'ready to copy'} for the Card Desk</h3>
+   <ol style="margin:0 0 10px 18px;padding:0;font-size:13.5px"><li>${p.copied?'They are already copied.':'Click in the box below, press Ctrl+A, then Ctrl+C to copy.'}</li><li>Open THB Card Desk → <b>Daily charges</b> → <b>Setup &amp; import</b>.</li><li>Click in <b>“Or paste the CSV text”</b>, press <b>Ctrl+V</b>, then <b>Preview</b> and <b>Add</b>. The card is read from the file.</li><li>Come back here and press <b>Done, mark as sent</b>.</li></ol>
+   <textarea readonly style="width:100%;min-height:90px;font-size:12px" onclick="this.select()">${esc(p.csv)}</textarea>
+   <div class="row" style="margin-top:8px;gap:8px"><button class="btn primary" data-act="desk-sent">Done, mark as sent</button><button class="btn ghost" data-act="desk-close">Cancel</button></div></div>`;
+}
+function deskPreview(rows,fileName){
+  const h=rows[0].map(x=>x.toLowerCase().trim()); const c=n=>h.indexOf(n);
+  const ix={tx:c('txid'),card:c('ledger card'),date:c('date'),post:c('posting date'),m:c('merchant'),a:c('amount'),ch:c('cardholder'),dept:c('department'),prop:c('property'),purp:c('business purpose'),rc:c('receipt'),exb:c('explained by'),exa:c('explained at'),apb:c('approved by'),apa:c('approved at'),st:c('card desk status')};
+  const mk=s=>String(s||'').toLowerCase().replace(/^(aplpay|tst\*|sq \*|py \*|in \*|sp |dd \*)\s*/,'').replace(/[^a-z0-9]/g,'').slice(0,6);
+  const claimed=new Set(), items=[];
+  for(const r of rows.slice(1)){
+    const it={txId:r[ix.tx]||'',card:r[ix.card]||'',date:normDate(r[ix.date]),postDate:normDate(r[ix.post]||''),merchant:r[ix.m]||'',amount:num(r[ix.a]),cardholder:r[ix.ch]||'',dept:r[ix.dept]||'',property:r[ix.prop]||'',purpose:r[ix.purp]||'',receipt:r[ix.rc]||'',explainedBy:r[ix.exb]||'',explainedAt:r[ix.exa]||'',approvedBy:r[ix.apb]||'',approvedAt:r[ix.apa]||'',deskStatus:r[ix.st]||''};
+    if(!it.date||!it.card||!isFinite(it.amount)) continue;
+    const cands=[...S.txns.values()].filter(t=>t.card===it.card&&!claimed.has(t.id)&&Math.abs((t.amount||0)-it.amount)<0.005&&Math.abs(dayNum(t.date)-dayNum(it.date))<=3);
+    const hit=cands.find(t=>t.deskTxId===it.txId)||cands.find(t=>mk(t.desc)===mk(it.merchant))||cands[0]||null;
+    if(hit) claimed.add(hit.id);
+    it.match=hit?hit.id:null; it.already=!!(hit&&hit.deskTxId===it.txId&&hit.deskApprovedBy);
+    items.push(it);
+  }
+  return {desk:true,fileName,items};
+}
+function deskPanel(p){
+  const m=p.items.filter(x=>x.match&&!x.already), n=p.items.filter(x=>!x.match), a=p.items.filter(x=>x.already);
+  return `<div class="panel panel-pad" style="margin-bottom:14px;border:2px solid var(--accent)"><h3 style="font-size:16px;margin-bottom:6px">Approved charges from THB Card Desk</h3>
+   <p class="faint" style="font-size:13px;margin:0 0 10px">${esc(p.fileName||'')}: ${p.items.length} charges. Nothing is entered twice: a charge already in the ledger gets the approval added to it.</p>
+   <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px"><span class="pill good">${m.length} matched: approval added</span><span class="pill acc">${n.length} not in the ledger yet: will be added</span>${a.length?`<span class="pill plain">${a.length} already done</span>`:''}</div>
+   <div class="tbl" style="max-height:320px;overflow:auto"><table><thead><tr><th>What happens</th><th>Card</th><th>Date</th><th>Merchant</th><th class="amt">Amount</th><th>Approved by</th><th>Purpose</th></tr></thead><tbody>
+   ${p.items.map(x=>`<tr style="${x.already?'opacity:.55':''}"><td>${x.already?'Already done':x.match?'Add approval':'Add to ledger'}</td><td>${esc(cardName(x.card))}</td><td class="d">${shortDate(x.date)}</td><td>${esc(x.merchant)}</td><td class="amt">${money(x.amount)}</td><td>${esc(x.approvedBy)}</td><td>${esc(x.purpose)}</td></tr>`).join('')}</tbody></table></div>
+   <div class="row" style="margin-top:10px;gap:8px"><button class="btn primary" data-act="do-import"${m.length+n.length?'':' disabled'}>Apply ${m.length+n.length}</button><button class="btn ghost" data-act="cancel-import">Cancel</button></div></div>`;
+}
+async function doDeskImport(){
+  const p=S.preview; S.importing=true; render(); const now=new Date().toISOString(); let ok=0, add=0;
+  const propId=name=>propIdFromText(name)||'';
+  for(const x of p.items.filter(x=>!x.already)){
+    const desk={deskTxId:x.txId,deskStatus:'Approved',deskCardholder:x.cardholder,deskDept:x.dept,deskPurpose:x.purpose,deskReceipt:x.receipt,deskExplainedBy:x.explainedBy,deskExplainedAt:x.explainedAt,deskApprovedBy:x.approvedBy,deskApprovedAt:x.approvedAt,deskImportedAt:now};
+    if(x.match){ const t=S.txns.get(x.match)||{}; const patch={...desk}; if(!t.notes&&x.purpose) patch.notes=x.purpose; if(!t.propertyId&&x.property){const pid=propId(x.property); if(pid) patch.propertyId=pid;} if(await write(()=>db.doc('txns/'+x.match).update(patch))) ok++; }
+    else { const id=`${x.card}-${x.date}-${Math.round(x.amount*100)}-desk-${hash(x.txId||x.merchant)}`; if(await write(()=>db.doc('txns/'+id).set({card:x.card,date:x.date,desc:x.merchant,amount:x.amount,status:'Posted',type:'',category:'',sub:'',propertyId:propId(x.property),notes:x.purpose||'',receiptUrl:'',receiptName:'',paid:false,importedAt:now,source:'THB Card Desk: '+(p.fileName||''),...desk}))) add++; }
+  }
+  S.importing=false; S.preview=null; toast(`Card Desk approvals: ${ok} added to existing charges, ${add} new charges added.`); render();
+}
 function buildPreview(text,fileName,card){
+  { const r0=parseCSV(text); const h0=(r0[0]||[]).map(x=>x.toLowerCase().trim()); if(h0.includes('txid')&&h0.includes('approved by')) return deskPreview(r0,fileName); }
   const rows=parseCSV(text); let hi=-1,cols=null;
   for(let i=0;i<Math.min(rows.length,15);i++){
     const h=rows[i].map(x=>x.toLowerCase());
@@ -1000,7 +1645,9 @@ function buildPreview(text,fileName,card){
     const status=find([/^status/]);
     if(date>=0&&desc>=0&&(amount>=0||debit>=0)){hi=i;cols={date,desc,amount,debit,credit,status};break;}
   }
-  if(hi<0) return {card,error:'Could not find Date, Description and Amount columns. Export the activity as CSV from the card website, or paste rows that include the header line.'};
+  // Wells Fargo exports have no header row: "date","amount","*","","description"
+  if(hi<0&&rows.length&&rows.slice(0,5).every(r=>r.length>=5&&normDate(r[0])&&/^-?\$?[\d,]+(\.\d+)?$/.test((r[1]||'').replace(/\s/g,'')))){hi=-1;cols={date:0,desc:4,amount:1,debit:-1,credit:-1,status:-1};}
+  if(hi<0&&!cols) return {card,error:'Could not find Date, Description and Amount columns. Export the activity as CSV from the card website, or paste rows that include the header line.'};
   const parsed=[];
   for(const r of rows.slice(hi+1)){
     const date=normDate(r[cols.date]); if(!date) continue;
@@ -1021,7 +1668,13 @@ function previewRows(p){
   // so two real identical charges in the file still come in as two.
   const seen={},rows=[],pays=[];let payments=0;
   const near=(a,b)=>Math.abs(dayNum(a)-dayNum(b))<=3;
-  const ledger=[...S.txns.values()].filter(t=>t.card===p.card), sheet=S.sheetRows.filter(r=>r.card===p.card);
+  const all=[...S.txns.values()].filter(t=>t.card===p.card), sheet=S.sheetRows.filter(r=>r.card===p.card);
+  const groups={}; for(const t of all) if(t.splitOf) (groups[t.splitOf]=groups[t.splitOf]||[]).push(t);
+  const ledger=all.filter(t=>!t.splitOf).concat(Object.entries(groups).map(([pid,ps])=>({id:'split:'+pid,amount:ps[0].splitTotal,date:ps[0].date,desc:ps[0].desc,status:ps.every(x=>x.status==='Pending')?'Pending':'Posted',members:ps.map(x=>x.id)})));
+  const vk=s=>String(s||'').toLowerCase().replace(/[^a-z]/g,'').slice(0,5);
+  // a charge someone already split across rows of the tracker sheet: 2-4 rows, same day (±1), same vendor, adding up to it
+  const sheetSplit=(cents,date,desc)=>{ const c=sheet.filter(x=>!claimedS.has(x.id)&&Math.abs(dayNum(x.date)-dayNum(date))<=1&&vk(x.vendor||x.desc)===vk(desc)).slice(0,8);
+    const n=c.length; for(let m=1;m<(1<<n);m++){ const pick=c.filter((_,i)=>m&(1<<i)); if(pick.length<2||pick.length>4) continue; if(pick.reduce((a,x)=>a+Math.round(x.amount*100),0)===cents) return pick; } return null; };
   const claimedL=new Set(), claimedS=new Set();
   for(const r of p.parsed){
     const amount=r2(p.flip?-r.raw:r.raw);
@@ -1034,16 +1687,17 @@ function previewRows(p){
     if(!ex) ex=ledger.find(t=>!claimedL.has(t.id)&&Math.round(t.amount*100)===cents&&near(t.date,r.date))||null;
     let why='';
     if(ex){ claimedL.add(ex.id); why='Already here'; }
-    else { const sr=sheet.find(x=>!claimedS.has(x.id)&&Math.round(x.amount*100)===cents&&near(x.date,r.date)); if(sr){ claimedS.add(sr.id); why='In card sheet'; } }
-    rows.push({...r,amount,id,matchId:ex?.id||'',dupe:!!why,why,statusChange:!!(ex&&ex.status==='Pending'&&r.status==='Posted')});
+    else { const sr=sheet.find(x=>!claimedS.has(x.id)&&Math.round(x.amount*100)===cents&&near(x.date,r.date)); if(sr){ claimedS.add(sr.id); why='In card sheet'; } else { const ss=sheetSplit(cents,r.date,r.desc); if(ss){ ss.forEach(x=>claimedS.add(x.id)); why='Already split in card sheet'; } } }
+    if(ex&&ex.members&&why==='Already here') why='Already here (split)';
+    rows.push({...r,amount,id,matchId:ex?.id||'',matchIds:ex?.members||(ex?[ex.id]:[]),dupe:!!why,why,statusChange:!!(ex&&ex.status==='Pending'&&r.status==='Posted')});
   }
   const dates=rows.map(r=>r.date).sort(); const lo=dates[0],hi=dates[dates.length-1];
   const csvSource=t=>t.source&&!['manual','example','Daily Expense Tracker'].includes(t.source)&&!/^Daily Expense Tracker/.test(t.source);
-  const gone=lo?ledger.filter(t=>t.status!=='Transferred'&&csvSource(t)&&!t.example&&t.date>=lo&&t.date<=hi&&!claimedL.has(t.id)):[];
+  const gone=lo?ledger.filter(t=>!t.members&&t.status!=='Transferred'&&csvSource(t)&&!t.example&&t.date>=lo&&t.date<=hi&&!claimedL.has(t.id)):[];
   return {rows,payments,pays,gone,lo,hi};
 }
 async function doImport(){
-  const p=S.preview; if(!p) return;
+  const p=S.preview; if(!p) return; if(p.desk) return doDeskImport();
   const {rows,gone,pays}=previewRows(p); const fresh=rows.filter(r=>!r.dupe), upd=rows.filter(r=>r.statusChange), newPays=pays.filter(x=>!x.dupe);
   S.importing=true; render();
   const now=new Date().toISOString(); let failed=0, carried=0;
@@ -1056,7 +1710,7 @@ async function doImport(){
       if(prev) carried++;
       await db.doc('txns/'+r.id).set({card:p.card,date:r.date,desc:r.desc,amount:r.amount,status:r.status,type:'',category:'',sub:'',propertyId:'',notes:'',receiptUrl:'',receiptName:'',paid:false,importedAt:now,source:p.fileName||'paste',...carry});
     }),
-    ...upd.map(r=>async()=>{ await db.doc('txns/'+r.matchId).update({status:'Posted'}); }),
+    ...upd.flatMap(r=>(r.matchIds&&r.matchIds.length?r.matchIds:[r.matchId]).map(mid=>async()=>{ await db.doc('txns/'+mid).update({status:'Posted'}); })),
     ...(p.removeGone?gone.map(g=>async()=>db.doc('txns/'+g.id).delete()):[]),
     ...newPays.map(x=>async()=>db.doc('cardpays/'+x.id).set({card:p.card,date:x.date,amount:x.amount,desc:x.desc,source:p.fileName||'paste'}))
   ];
@@ -1154,14 +1808,21 @@ function renderTabs(){
 }
 function render(){
   {const al=allowedTabs(); if(!al.includes(S.tab)) S.tab=al[0];}
+  document.body.classList.toggle('role-entry',myView()==='entry'||myView()==='accounting');
+  cpApply();
   renderTabs();
   let h='';
   if(S.dbState==='off') h+=`<div class="note">The ledger could not connect. Open this page on claude.ai while signed in.</div>`;
   const ex=[...S.txns.values(),...S.pays.values()].filter(x=>x.example).length;
   if(ex&&!S.readOnly&&S.isOwner) h+=`<div class="note info"><span>Rows marked <span class="tag">example</span> show how the ledger works. They are not real expenses.</span>${S.confirm==='clear-ex'?`<span class="row"><button class="btn sm danger" data-act="clear-ex-yes">Remove ${ex} example rows</button><button class="btn sm ghost" data-act="cancel">Keep</button></span>`:`<button class="btn sm" data-act="clear-ex">Remove examples</button>`}</div>`;
   if(S.isOwner) h+=riskBanner();
-  h+=S.tab==='daily'?viewDaily():S.tab==='tracker'?viewTracker():S.tab==='marketing'?viewMarketing():S.tab==='draws'?viewDraws():S.tab==='properties'?viewProperties():S.tab==='controller'?viewController():S.tab==='payables'?viewPayables():S.tab==='close'?viewClose():S.tab==='snapshot'?viewSnapshot():S.tab==='cash'?viewCash():viewSettings();
+  h+=askBox(); if(S.tab==='daily') h+=guidesPanel();
+  h+=S.tab==='cardctl'?viewCardCtl():S.tab==='bank'?viewBank():S.tab==='daily'?viewDaily():S.tab==='tracker'?viewTracker():S.tab==='marketing'?viewMarketing():S.tab==='draws'?viewDraws():S.tab==='properties'?viewProperties():S.tab==='payments'?viewPayments():S.tab==='payroll'?viewPayroll():S.tab==='controller'?viewController():S.tab==='payables'?viewPayables():S.tab==='close'?viewClose():S.tab==='snapshot'?viewSnapshot():S.tab==='cash'?viewCash():viewSettings();
+  const _y=window.scrollY, _fx=[...document.querySelectorAll('#app .tbl')].map(e=>[e.scrollLeft,e.scrollTop]), _ae=document.activeElement, _aid=_ae&&_ae.id, _row=_ae&&_ae.closest&&_ae.closest('tr[data-id]')?.dataset.id, _f=_ae&&_ae.dataset&&_ae.dataset.f;
   $('#app').innerHTML=`<fieldset class="ro"${S.readOnly?' disabled':''}>${h}</fieldset>`;
+  [...document.querySelectorAll('#app .tbl')].forEach((e,i)=>{if(_fx[i]){e.scrollLeft=_fx[i][0];e.scrollTop=_fx[i][1];}});
+  if(S._keepScroll!==false) window.scrollTo(0,_y);
+  try{ let el=_aid?document.getElementById(_aid):null; if(!el&&_row&&_f) el=document.querySelector(`tr[data-id="${CSS.escape(_row)}"] [data-f="${_f}"]`); if(el&&el!==document.activeElement&&el.tagName!=='BUTTON') el.focus({preventScroll:true}); }catch(e){}
 }
 function cardTabs(cur,counts,act){
   return `<div class="cardtabs" role="group" aria-label="Card">${act==='tcard'?`<button data-act="tcard" data-k="all" aria-pressed="${cur==='all'}">All cards</button>`:''}${cards().map((c,i)=>`<button data-act="${act}" data-k="${esc(c.k)}" aria-pressed="${cur===c.k}" style="--c:var(--k${i%10})"><i></i>${esc(c.n)}${counts&&counts[c.k]?`<span class="count">${counts[c.k]}</span>`:''}</button>`).join('')}</div>`;
@@ -1174,10 +1835,13 @@ function viewDaily(){
   const k=S.dCard, counts={}; for(const t of todo()) counts[t.card]=(counts[t.card]||0)+1;
   const mine=[...S.txns.values()].filter(t=>t.card===k);
   const months=[...new Set(mine.map(t=>(t.date||'').slice(0,7)))].filter(Boolean).sort().reverse();
+  if(S.dMonth&&S.dMonth!=='all'&&!mine.some(t=>(t.date||'').startsWith(S.dMonth))) S.dMonth='all';
   const inM=t=>S.dMonth==='all'||(t.date||'').startsWith(S.dMonth);
   const scoped=mine.filter(inM);
   const open=scoped.filter(t=>t.status!=='Transferred'), done=scoped.filter(t=>t.status==='Transferred');
   let h=cardTabs(k,counts,'dcard');
+  if(S.preview&&S.preview.desk) h+=deskPanel(S.preview);
+  h+=deskCopyPanel();
   h+=`<div class="summary">
     <div class="tile"><div class="label">${esc(cardName(k))} · ${S.dMonth==='all'?'all months':monthLabel(S.dMonth)}</div><div class="big">${money(sum(scoped))}</div><div class="foot">${scoped.length} transactions</div></div>
     <div class="tile"><div class="label">To categorize</div><div class="big ${open.length?'warn':'good'}">${open.length}</div><div class="foot">${money(sum(open))}</div></div>
@@ -1185,11 +1849,18 @@ function viewDaily(){
     <div class="tile"><div class="label">Pending</div><div class="big">${scoped.filter(t=>t.status==='Pending').length}</div><div class="foot">waits until it posts</div></div>
   </div>`;
   h+=importPanel(k);
-  const rows=(S.dView==='todo'?open:S.dView==='done'?done:scoped).sort(byDate);
+  if(S.dView==='todo'&&!open.length&&done.length) S.dView='all';
+  S.dStat=S.dStat||'all'; S.dSort=S.dSort||'new';
+  const stOk=t=>S.dStat==='all'||(S.dStat==='posted'?t.status!=='Pending':t.status==='Pending');
+  const base=(S.dView==='todo'?open:S.dView==='done'?done:scoped);
+  const nPosted=base.filter(t=>t.status!=='Pending').length, nPend=base.filter(t=>t.status==='Pending').length;
+  const rows=base.filter(stOk).sort((a,b)=>{const c=(a.date||'').localeCompare(b.date||''); return (S.dSort==='old'?c:-c)||(a.desc||'').localeCompare(b.desc||'');});
   h+=`<div class="toolbar"><div class="seg" role="group" aria-label="Show"><button data-act="dview" data-v="todo" aria-pressed="${S.dView==='todo'}">To categorize (${open.length})</button><button data-act="dview" data-v="done" aria-pressed="${S.dView==='done'}">Transferred (${done.length})</button><button data-act="dview" data-v="all" aria-pressed="${S.dView==='all'}">All</button></div>
-    <span class="spacer"></span>${(()=>{const rdy=open.filter(ready);const n=[...S.sel].filter(id=>open.some(t=>t.id===id&&ready(t))).length;return S.dView==='done'?'':`<span class="muted" style="font-size:13px">${rdy.length} ready</span><button class="btn primary" data-act="transfer"${n?'':' disabled'}>Transfer selected${n?` (${n})`:''}</button>`;})()}<select id="d-month" data-act="dmonth" aria-label="Month"><option value="all">All months</option>${months.map(m=>`<option value="${m}"${S.dMonth===m?' selected':''}>${monthLabel(m)}</option>`).join('')}</select></div>`;
+    <div class="seg" role="group" aria-label="Status"><button data-act="dstat" data-v="all" aria-pressed="${S.dStat==='all'}">Posted + pending</button><button data-act="dstat" data-v="posted" aria-pressed="${S.dStat==='posted'}">Posted only (${nPosted})</button><button data-act="dstat" data-v="pending" aria-pressed="${S.dStat==='pending'}">Pending only (${nPend})</button></div>
+    <div class="seg" role="group" aria-label="Order"><button data-act="dsort" data-v="new" aria-pressed="${S.dSort==='new'}">Newest first</button><button data-act="dsort" data-v="old" aria-pressed="${S.dSort==='old'}">Oldest first</button></div>
+    <span class="spacer"></span>${(()=>{const dq=deskQueue(null).length;return `<button class="btn${dq?' primary':''}" data-act="to-desk" title="Copy all new charges, every card, from ${shortDate(DESK_START)}, for THB Card Desk"${dq?'':' disabled'}>Send to Card Desk${dq?` (${dq} new, all cards)`:''}</button>`;})()}${(()=>{const rdy=open.filter(ready);const n=[...S.sel].filter(id=>open.some(t=>t.id===id&&ready(t))).length;return S.dView==='done'?'':`<span class="muted" style="font-size:13px">${rdy.length} ready</span><button class="btn primary" data-act="transfer"${n?'':' disabled'}>Transfer selected${n?` (${n})`:''}</button>`;})()}<select id="d-month" data-act="dmonth" aria-label="Month"><option value="all">All months</option>${months.map(m=>`<option value="${m}"${S.dMonth===m?' selected':''}>${monthLabel(m)}</option>`).join('')}</select></div>`;
   if(!rows.length) return h+`<div class="panel"><div class="empty"><b>${!S.ready.txns?'Loading…':S.dView==='todo'?'Nothing left to categorize on '+esc(cardName(k)):'No transactions here yet'}</b>${S.ready.txns?'Upload this card’s CSV above. New rows land here until they have a type, category, sub category and receipt.':''}</div></div>`;
-  return h+`<div class="panel tbl"><table><thead><tr><th>${S.dView==='done'?'':`<input type="checkbox" data-act="sel-all" aria-label="Select all ready rows"${rows.some(t=>t.status!=='Transferred'&&ready(t))&&rows.filter(t=>t.status!=='Transferred'&&ready(t)).every(t=>S.sel.has(t.id))?' checked':''}>`}</th><th>Date</th><th>Receipt</th><th>Payee</th><th class="amt">Amount</th><th>What is this for?</th><th>Expense type</th><th>Category</th><th>Sub category</th><th>Property</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(dailyRow).join('')}</tbody>
+  return h+`<div class="panel tbl dx-wrap"><table class="dx-table"><thead><tr><th>${S.dView==='done'?'':`<input type="checkbox" data-act="sel-all" aria-label="Select all ready rows"${rows.some(t=>t.status!=='Transferred'&&ready(t))&&rows.filter(t=>t.status!=='Transferred'&&ready(t)).every(t=>S.sel.has(t.id))?' checked':''}>`}</th><th>Date</th><th>Payee · what it’s for</th><th class="amt">Amount</th><th>Categorize</th><th>Status · receipt</th><th></th></tr></thead><tbody>${rows.map(dailyRow).join('')}</tbody>
     <tfoot><tr><td colspan="4">${rows.length} rows</td><td class="amt">${money(sum(rows))}</td><td colspan="7"></td></tr></tfoot></table></div>
     <p class="faint" style="font-size:12.5px">Tick the rows marked Ready, then press Transfer selected. They move to the card’s tracker, and property expenses also show on that property. A row is ready once it has an expense type, a category (optional for property), a sub category${S.L.requireReceipt?', a receipt':''} and, for property expenses, the address. Pending rows wait until a later import shows them posted.</p>`;
 }
@@ -1198,21 +1869,59 @@ function receiptCell(t){
   return t.receiptUrl?`<span class="row" style="gap:4px;flex-wrap:nowrap"><a href="${esc(t.receiptUrl)}" target="_blank" rel="noopener" title="${esc(t.receiptName||'')}">Receipt</a><button class="btn sm ghost" data-act="rcpt-clear" aria-label="Remove receipt link">✕</button></span>`
     :`<button class="btn sm" data-act="rcpt">Add</button>`;
 }
+// ----- split one charge into parts (e.g. one Home Depot charge for two properties) -----
+// The parts replace the charge; each part keeps splitOf (the original id) and splitTotal, so imports still see one charge.
+function splitStart(id){ const t=S.txns.get(id); if(!t) return; const a=Math.round(t.amount*100), h=Math.floor(a/2);
+  const base={type:t.type||'',category:t.category||'',sub:t.sub||'',propertyId:t.propertyId||'',notes:t.notes||''};
+  S.split={id,lines:[{...base,amount:(h/100).toFixed(2)},{...base,amount:((a-h)/100).toFixed(2)}]}; }
+function splitEditor(t){
+  const sp=S.split; if(!sp||sp.id!==t.id) return '';
+  const tot=Math.round(t.amount*100), cur=sp.lines.reduce((a,l)=>a+Math.round((parseFloat(String(l.amount).replace(/[$,]/g,''))||0)*100),0), left=tot-cur;
+  return `<tr class="sp-row"><td colspan="7"><div class="sp-box"><div class="sp-h"><b>Split ${esc(t.desc)} · ${money(t.amount)}</b> into parts. Each part gets its own type, category, sub category and property.</div>
+   ${sp.lines.map((l,i)=>`<div class="sp-line"><label><span>Amount</span><input type="text" inputmode="decimal" data-act="sp" data-i="${i}" data-f="amount" value="${esc(l.amount)}"></label>
+     <label><span>Type</span><select data-act="sp" data-i="${i}" data-f="type">${opts(S.L.types,l.type,'Choose…')}</select></label>
+     <label><span>Category</span><select data-act="sp" data-i="${i}" data-f="category">${opts(S.L.categories,l.category,'Choose…')}</select></label>
+     <label><span>Sub category</span><select data-act="sp" data-i="${i}" data-f="sub">${opts(S.L.subcategories,l.sub,'Choose…')}</select></label>
+     <label><span>Property</span><select data-act="sp" data-i="${i}" data-f="propertyId">${propOpts(l.propertyId,'(none)').replace('<option value="__new">＋ New property…</option>','')}</select></label>
+     <label class="sp-n"><span>What is this part for?</span><input type="text" data-act="sp" data-i="${i}" data-f="notes" value="${esc(l.notes)}"></label>
+     ${sp.lines.length>2?`<button class="btn sm ghost" data-act="sp-rm" data-i="${i}" aria-label="Remove this part">✕</button>`:''}</div>`).join('')}
+   <div class="sp-foot"><button class="btn sm" data-act="sp-add">＋ Add a part</button><span class="${left===0?'sp-ok':'sp-bad'}">${left===0?'✓ Parts add up to '+money(t.amount):(left>0?money(left/100)+' left to assign':money(-left/100)+' too much')}</span><span class="spacer"></span><button class="btn primary" data-act="sp-save"${left===0?'':' disabled'}>Save split</button><button class="btn ghost" data-act="sp-cancel">Cancel</button></div></div></td></tr>`;
+}
+async function splitSave(){
+  const sp=S.split, t=S.txns.get(sp?.id); if(!t) return;
+  const parts=sp.lines.map(l=>({...l,amount:r2(parseFloat(String(l.amount).replace(/[$,]/g,''))||0)}));
+  if(Math.round(parts.reduce((a,l)=>a+l.amount,0)*100)!==Math.round(t.amount*100)){ toast('The parts must add up to the charge.'); return; }
+  const {id:_x,...orig}=t; const n=parts.length; let ok=0;
+  for(let i=0;i<n;i++){ const p=parts[i]; const cid=`${t.id}~${i+1}`;
+    const doc={...orig,amount:p.amount,type:p.type,category:p.category,sub:p.sub,propertyId:p.propertyId,notes:p.notes,splitOf:t.id,splitTotal:t.amount,splitPart:i+1,splitParts:n,splitAt:new Date().toISOString()};
+    if(i===0) doc.splitOriginal=orig; delete doc.deskSentAt;
+    if(await write(()=>db.doc('txns/'+cid).set(doc))) ok++; }
+  if(ok===n){ await write(()=>db.doc('txns/'+t.id).delete()); toast(`Split into ${n} parts.`); } else toast('The split did not finish. Nothing was removed; try again.');
+  S.split=null; render();
+}
+async function splitUndo(id){
+  const t=S.txns.get(id); if(!t||!t.splitOf) return; const parts=[...S.txns.values()].filter(x=>x.splitOf===t.splitOf);
+  if(parts.some(x=>x.status==='Transferred')){ toast('A part was already transferred. Undo the transfer first.'); return; }
+  const first=parts.find(x=>x.splitPart===1)||t; const orig=first.splitOriginal||{...first,amount:t.splitTotal};
+  if(await write(()=>db.doc('txns/'+t.splitOf).set({...orig}))){ for(const x of parts) await write(()=>db.doc('txns/'+x.id).delete()); toast('Split undone. The charge is back in one piece.'); }
+  render();
+}
 function dailyRow(t){
   const b=bucketOf(t.type), need=t.status==='Transferred'?[]:missing(t);
   const rdy=t.status!=='Transferred'&&ready(t);
   return `<tr data-id="${esc(t.id)}">
   <td>${t.status==='Transferred'?'':`<input type="checkbox" data-act="sel"${S.sel.has(t.id)&&rdy?' checked':''}${rdy?'':' disabled title="Fill in the missing fields first"'} aria-label="Select to transfer">`}</td>
-  <td class="d">${shortDate(t.date)}</td><td>${receiptCell(t)}</td>
-  <td class="payee">${esc(t.desc)}${t.example?' <span class="tag">example</span>':''}</td>
+  <td class="d">${shortDate(t.date)}</td>
+  <td class="dx-main"><div class="payee">${esc(t.desc)}${t.example?' <span class="tag">example</span>':''}</div>${t.splitOf?`<div class="sp-tag">Split · part ${t.splitPart} of ${t.splitParts} of ${money(t.splitTotal)}</div>`:''}${t.deskApprovedBy?`<div class="desk-ok">✓ Approved in Card Desk by ${esc(t.deskApprovedBy)}${t.deskDept?' · '+esc(t.deskDept):''}</div>`:''}<input class="notes" type="text" id="n-${esc(t.id)}" data-act="tf" data-f="notes" value="${esc(t.notes||'')}" placeholder="What is this for?" aria-label="What is this for?"></td>
   <td class="amt${t.amount<0?' neg':''}">${money(t.amount)}</td>
-  <td><input class="notes" type="text" id="n-${esc(t.id)}" data-act="tf" data-f="notes" value="${esc(t.notes||'')}" placeholder="Add a note" aria-label="What is this for?"></td>
-  <td><select data-act="tf" data-f="type" aria-label="Expense type">${opts(S.L.types,t.type,'Choose…')}</select></td>
-  <td><select data-act="tf" data-f="category" aria-label="Category">${opts(S.L.categories,t.category,b==='property'?'(optional)':'Choose…')}</select></td>
-  <td><select data-act="tf" data-f="sub" aria-label="Sub category">${opts(S.L.subcategories,t.sub,'Choose…')}</select></td>
-  <td>${b==='property'?`<select data-act="tf" data-f="propertyId" aria-label="Property">${propOpts(t.propertyId)}</select>`:'<span class="faint">—</span>'}</td>
-  <td>${statusPill(t)}${need.length?`<div class="needs">needs ${need.join(', ')}</div>`:''}</td>
-  <td>${t.status==='Transferred'?`<button class="btn sm ghost" data-act="untransfer" title="Bring back to edit">Undo</button>`:S.confirm===t.id?`<button class="btn sm danger" data-act="del-yes">Delete</button>`:`<button class="btn sm ghost" data-act="del" aria-label="Delete">✕</button>`}</td></tr>`;
+  <td class="dx-cat"><div class="dx-grid">
+    <label><span>Type</span><select data-act="tf" data-f="type" aria-label="Expense type">${opts(S.L.types,t.type,'Choose…')}</select></label>
+    <label><span>Category</span><select data-act="tf" data-f="category" aria-label="Category">${opts(S.L.categories,t.category,b==='property'?'(optional)':'Choose…')}</select></label>
+    <label><span>Sub category</span><select data-act="tf" data-f="sub" aria-label="Sub category">${opts(S.L.subcategories,t.sub,'Choose…')}</select></label>
+    <label><span>Property</span>${b==='property'?`<select data-act="tf" data-f="propertyId" aria-label="Property">${propOpts(t.propertyId)}</select>`:'<em class="faint">only for property</em>'}</label>
+  </div></td>
+  <td class="dx-st">${statusPill(t)}${t.status!=='Transferred'?`<select class="dx-stsel" data-act="tf" data-f="status" aria-label="Posted or pending"><option value="Posted"${t.status!=='Pending'?' selected':''}>Posted</option><option value="Pending"${t.status==='Pending'?' selected':''}>Pending</option></select>`:''}${need.length?`<div class="needs">needs ${need.join(', ')}</div>`:''}<div class="dx-rc">${receiptCell(t)}</div></td>
+  <td style="white-space:nowrap">${askCell('card',t)} ${t.status!=='Transferred'?(t.splitOf?`<button class="btn sm ghost" data-act="sp-undo" title="Put the parts back into one charge">Undo split</button>`:`<button class="btn sm ghost" data-act="sp-open" title="Split this charge into parts">Split</button>`):''} ${t.status==='Transferred'?`<button class="btn sm ghost" data-act="untransfer" title="Bring back to edit">Undo</button>`:S.confirm===t.id?`<button class="btn sm danger" data-act="del-yes">Delete</button>`:`<button class="btn sm ghost" data-act="del" aria-label="Delete">✕</button>`}</td></tr>${splitEditor(t)}`;
 }
 function importPanel(k){
   const p=S.preview&&S.preview.card===k?S.preview:null;
@@ -1367,6 +2076,7 @@ const propKey=r=>{ if(r.src==='ledger') return r.prop||'No property chosen'; con
 function viewTracker(){
   let h=cardTabs(S.tCard,null,'tcard')+`<div class="toolbar" style="margin-top:-6px">${csFreshness()}</div>`;
   if(S.csErr) h+=`<div class="note">${esc(S.csErr)}</div>`;
+  h+=cpDupNotice(S.tCard);
   if(S.tCard==='all'){
     const list=cards().map((c,i)=>({...c,i,b:cardBalance(c.k)}));
     h+=`<div class="summary"><div class="tile"><div class="label">Balance owed · all cards</div><div class="big bad">${money(sum(list,c=>c.b.balance))}</div><div class="foot">unpaid charges</div></div><div class="tile"><div class="label">Cards matching the website</div><div class="big">${list.filter(c=>c.b.diff!=null&&Math.abs(c.b.diff)<0.01).length} of ${list.length}</div></div></div>
@@ -1450,18 +2160,27 @@ const dAmt=d=>Number(d.amount)||0, dFee=d=>Number(d.fee)||0, dRecv=d=>Math.min(N
 const drawStatus=d=>dRecv(d)>=dAmt(d)&&dAmt(d)>0?'Disbursed':dRecv(d)>0?'Partly disbursed':'Pending';
 function drawStats(p){
   const list=[...S.drawsMap.values()].filter(d=>d.propertyId===p.id).sort(byDate);
-  const holdback=Number(p.holdback)||0, drawn=sum(list,dAmt), fees=sum(list,dFee), disbursed=sum(list,dRecv);
-  const pending=r2(drawn-disbursed), used=r2(list.reduce((a,d)=>a+sum(d.uses||[]),0));
+  const holdback=Number(p.holdback)||0, fees=sum(list,dFee), drawsRecv=sum(list,dRecv);
+  // "Received from holdback so far" typed by hand wins over the sum of the draws
+  const typed=p.holdbackGot==null||p.holdbackGot===''?null:Number(p.holdbackGot);
+  const disbursed=typed!=null?typed:(p.holdbackReceived&&!list.length?holdback:drawsRecv), drawn=Math.max(sum(list,dAmt),disbursed);
+  const pending=r2(Math.max(0,drawn-disbursed)), used=r2(list.reduce((a,d)=>a+sum(drawUses(d)),0));
   const lender=p.lenderRemaining==null||p.lenderRemaining===''?null:Number(p.lenderRemaining);
   const calc=holdback?r2(holdback-drawn-fees):null;
   // what is left: the lender's own "remaining to fund" when entered, else holdback − draws − fees
   const remaining=lender!=null?lender:(calc??0);
-  return {list,holdback,drawn,fees,disbursed,pending,remaining,calc,lender,diff:lender!=null&&calc!=null?r2(calc-lender):null,impliedHoldback:lender!=null?r2(lender+drawn+fees):null,used,unassigned:r2(drawn-used)};
+  return {list,holdback,drawn,fees,disbursed,typed,drawsRecv,pending,remaining,calc,lender,diff:lender!=null&&calc!=null?r2(calc-lender):null,impliedHoldback:lender!=null?r2(lender+drawn+fees):null,used,unassigned:r2(drawn-used)};
 }
-const drawProps=()=>[...S.props.values()].filter(p=>Number(p.holdback)>0||(p.lenderRemaining!=null&&p.lenderRemaining!=='')||[...S.drawsMap.values()].some(d=>d.propertyId===p.id)).sort((a,b)=>(a.address||'').localeCompare(b.address||''));
+const drawProps=()=>[...S.props.values()].filter(p=>Number(p.holdback)>0||(p.holdbackGot!=null&&p.holdbackGot!=='')||(p.lenderRemaining!=null&&p.lenderRemaining!=='')||[...S.drawsMap.values()].some(d=>d.propertyId===p.id)).sort((a,b)=>(a.address||'').localeCompare(b.address||''));
 function viewDraws(){
   const ps=drawProps();
-  if(!ps.length) return `<div class="panel"><div class="empty"><b>No properties with a holdback yet</b>Open a property in Properties and add its holdback.</div></div>`;
+  const hbAdd=()=>{const free=[...S.props.values()].filter(p=>!ps.includes(p)&&groupOf(p)!=='sold').sort((a,b)=>(a.address||'').localeCompare(b.address||''));
+    return `<div class="panel panel-pad" style="margin-top:14px"><h3 style="font-size:15px;margin-bottom:8px">Add a property’s holdback</h3><div class="form-grid">
+      <label class="field">Property<select id="hbn-p" data-draft="hbn-p"><option value="">Choose…</option>${free.map(p=>`<option value="${esc(p.id)}"${D('hbn-p')===p.id?' selected':''}>${esc(p.address)}</option>`).join('')}</select></label>
+      <label class="field">Holdback amount<input type="text" inputmode="decimal" id="hbn-h" data-draft="hbn-h" value="${esc(D('hbn-h'))}" placeholder="e.g. 267,435"></label>
+      <label class="field">Received from holdback so far<input type="text" inputmode="decimal" id="hbn-r" data-draft="hbn-r" value="${esc(D('hbn-r'))}" placeholder="0"></label>
+      <div style="align-self:end"><button class="btn primary" data-act="hb-new">Add</button></div></div></div>`;};
+  if(!ps.length) return `<div class="panel"><div class="empty"><b>No properties with a holdback yet</b>Add one below.</div></div>`+hbAdd();
   if(S.drawProp!=='all'&&!ps.some(p=>p.id===S.drawProp)) S.drawProp='all';
   let h=`<div class="cardtabs" role="group" aria-label="Property"><button data-act="dprop" data-k="all" aria-pressed="${S.drawProp==='all'}">All properties</button>${ps.map(p=>{const s=drawStats(p);return `<button data-act="dprop" data-k="${esc(p.id)}" aria-pressed="${S.drawProp===p.id}">${esc(shortAddr(p.address))}${s.pending>0?`<span class="count">${money0(s.pending)}</span>`:''}</button>`;}).join('')}</div>`;
   if(S.drawProp==='all'){
@@ -1477,11 +2196,13 @@ function viewDraws(){
       <div class="tile"><div class="label">Disbursed, not assigned</div><div class="big ${T('unassigned')>0?'warn':''}">${money0(T('unassigned'))}</div><div class="foot">no “where it went” yet</div></div>
     </div>
     <div class="panel panel-pad stack" style="margin-bottom:14px"><div class="track" style="height:14px;display:flex"><div class="fill" style="width:${pcT(T('disbursed'))}%"></div><div class="fill warn" style="width:${pcT(T('pending'))}%"></div><div class="fill over" style="width:${pcT(T('fees'))}%"></div></div><span class="faint" style="font-size:12px">Green: disbursed · Amber: pending · Red: inspection fees · Grey: left to fund</span></div>
-    <div class="panel tbl"><table style="min-width:900px"><thead><tr><th>Property</th><th>Lender</th><th class="amt">Holdback</th><th class="amt">Disbursed</th><th class="amt">Pending</th><th class="amt">Fees</th><th class="amt">Left to fund</th><th class="amt">Not assigned</th><th style="width:16%"></th></tr></thead><tbody>
+    <div class="panel tbl"><table style="min-width:900px"><thead><tr><th>Property</th><th>Lender</th><th class="amt">Holdback</th><th class="amt">Received</th><th class="amt">Pending</th><th class="amt">Fees</th><th class="amt">Left to fund</th><th class="amt">Not assigned</th><th style="width:16%"></th></tr></thead><tbody>
     ${st.map(({p,s})=>{const H=hb({s});return `<tr style="cursor:pointer" data-act="dprop" data-k="${esc(p.id)}"><td><a href="#draws">${esc(p.address)}</a><div class="faint" style="font-size:12px">${esc(p.status||'')} · ${s.list.length} draw${s.list.length===1?'':'s'}</div></td><td>${esc(p.lender||'—')}</td>
-      <td class="amt">${H?money0(H):'—'}${!s.holdback&&s.impliedHoldback!=null?'<div class="faint" style="font-size:11px">from lender figure</div>':''}</td><td class="amt" style="color:var(--good)">${money0(s.disbursed)}</td><td class="amt" style="color:${s.pending?'var(--warn)':'inherit'}">${money0(s.pending)}</td><td class="amt">${money0(s.fees)}</td><td class="amt" style="font-weight:600">${money0(s.remaining)}</td><td class="amt" style="color:${s.unassigned>0?'var(--warn)':'inherit'}">${money0(s.unassigned)}</td>
+      <td class="amt"><input type="text" inputmode="decimal" class="mono" style="width:110px;text-align:right" id="hbo-${esc(p.id)}" data-act="hb" data-f="holdback" data-pid="${esc(p.id)}" value="${s.holdback?s.holdback.toLocaleString('en-US'):''}" placeholder="${!s.holdback&&s.impliedHoldback!=null?money0(s.impliedHoldback).slice(1):'0'}" aria-label="Holdback for ${esc(shortAddr(p.address))}">${!s.holdback&&s.impliedHoldback!=null?'<div class="faint" style="font-size:11px">from lender figure</div>':''}</td>
+      <td class="amt"><input type="text" inputmode="decimal" class="mono" style="width:110px;text-align:right;color:var(--good)" id="hgo-${esc(p.id)}" data-act="hb" data-f="holdbackGot" data-pid="${esc(p.id)}" value="${s.typed!=null?s.typed.toLocaleString('en-US'):''}" placeholder="${money0(s.drawsRecv).slice(1)}" aria-label="Received from holdback for ${esc(shortAddr(p.address))}"><div class="faint" style="font-size:11px">${s.typed!=null?'typed in':'from draws'}</div></td><td class="amt" style="color:${s.pending?'var(--warn)':'inherit'}">${money0(s.pending)}</td><td class="amt">${money0(s.fees)}</td><td class="amt" style="font-weight:600">${money0(s.remaining)}</td><td class="amt" style="color:${s.unassigned>0?'var(--warn)':'inherit'}">${money0(s.unassigned)}</td>
       <td><div class="track" style="display:flex"><div class="fill" style="width:${H?Math.min(100,s.disbursed/H*100):0}%"></div><div class="fill warn" style="width:${H?Math.min(100,s.pending/H*100):0}%"></div></div></td></tr>`;}).join('')}
-    </tbody><tfoot><tr><td colspan="2">Total</td><td class="amt">${money0(totalHb)}</td><td class="amt">${money0(T('disbursed'))}</td><td class="amt">${money0(T('pending'))}</td><td class="amt">${money0(T('fees'))}</td><td class="amt">${money0(T('remaining'))}</td><td class="amt">${money0(T('unassigned'))}</td><td></td></tr></tfoot></table></div>`;
+    </tbody><tfoot><tr><td colspan="2">Total</td><td class="amt">${money0(totalHb)}</td><td class="amt">${money0(T('disbursed'))}</td><td class="amt">${money0(T('pending'))}</td><td class="amt">${money0(T('fees'))}</td><td class="amt">${money0(T('remaining'))}</td><td class="amt">${money0(T('unassigned'))}</td><td></td></tr></tfoot></table></div>
+    <p class="faint" style="font-size:12.5px;margin-top:6px">Type the holdback and what you have received from it right in the table. Received, when typed, replaces the total of the draws below; leave it blank to add up the draws instead.</p>`+hbAdd();
     return h;
   }
   const p=S.props.get(S.drawProp), s=drawStats(p);
@@ -1489,7 +2210,7 @@ function viewDraws(){
   h+=`<div class="row" style="margin-bottom:12px"><h2 style="font-size:20px">${esc(p.address)}</h2><span class="pill acc">${esc(p.status||'—')}</span>${p.lender?`<span class="muted">Lender: ${esc(p.lender)}</span>`:''}${p.pageUrl?`<a href="${esc(p.pageUrl)}" target="_blank" rel="noopener">Property page</a>`:''}</div>
   <div class="summary">
     <div class="tile"><div class="label">Holdback</div><div class="big">${s.holdback?money0(s.holdback):'—'}</div><div class="foot">${s.holdback?'total at the lender':'enter it below'}</div></div>
-    <div class="tile"><div class="label">Disbursed to us</div><div class="big good">${money0(s.disbursed)}</div></div>
+    <div class="tile"><div class="label">Received from holdback</div><div class="big good">${money0(s.disbursed)}</div><div class="foot">${s.typed!=null?'typed in'+(s.list.length&&Math.abs(s.typed-s.drawsRecv)>=1?` · draws add up to ${money0(s.drawsRecv)}`:''):'total of the draws'}</div></div>
     <div class="tile"><div class="label">Pending</div><div class="big warn">${money0(s.pending)}</div><div class="foot">drawn, not received yet</div></div>
     <div class="tile"><div class="label">Inspection fees</div><div class="big">${money0(s.fees)}</div><div class="foot">taken from the holdback</div></div>
     <div class="tile"><div class="label">Left to fund</div><div class="big">${s.lender!=null||s.holdback?money0(s.remaining):'—'}</div><div class="foot">${s.lender!=null?`lender’s figure${p.lenderRemainingAsOf?' as of '+shortDate(p.lenderRemainingAsOf):''}`:'holdback − draws − fees'}</div></div>
@@ -1499,6 +2220,7 @@ function viewDraws(){
   ${s.holdback?`<div class="panel panel-pad stack" style="margin-bottom:14px"><div class="track" style="height:14px;display:flex"><div class="fill" style="width:${pc(s.disbursed)}%"></div><div class="fill warn" style="width:${pc(s.pending)}%"></div><div class="fill over" style="width:${pc(s.fees)}%"></div></div><span class="faint" style="font-size:12px">Green: disbursed ${money0(s.disbursed)} · Amber: pending ${money0(s.pending)} · Red: inspection fees ${money0(s.fees)} · Grey: left in holdback ${money0(s.remaining)}</span></div>`:''}
   <div class="stack">`;
   h+=sec('dr-set','Holdback & new draw',s.holdback?money0(s.holdback):'set the holdback',`<div class="form-grid"><label class="field">Holdback amount at lender<input type="text" inputmode="decimal" id="hb-${esc(p.id)}" data-act="hb" data-f="holdback" data-pid="${esc(p.id)}" value="${s.holdback?s.holdback.toLocaleString('en-US'):''}" placeholder="0"></label>
+      <label class="field">Received from holdback so far <span class="faint" style="font-weight:400">blank = add up the draws</span><input type="text" inputmode="decimal" id="hg-${esc(p.id)}" data-act="hb" data-f="holdbackGot" data-pid="${esc(p.id)}" value="${s.typed!=null?s.typed.toLocaleString('en-US'):''}" placeholder="${money0(s.drawsRecv).slice(1)}"></label>
       <label class="field">Remaining to fund <span class="faint" style="font-weight:400">from the lender’s statement</span><input type="text" inputmode="decimal" id="lr-${esc(p.id)}" data-act="hb" data-f="lenderRemaining" data-pid="${esc(p.id)}" value="${s.lender!=null?s.lender.toLocaleString('en-US'):''}" placeholder="optional"></label>
       <label class="field">As of<input type="date" id="la-${esc(p.id)}" data-act="hb" data-f="lenderRemainingAsOf" data-text="1" data-pid="${esc(p.id)}" value="${esc(p.lenderRemainingAsOf||'')}"></label></div>
     <div class="form-grid">
@@ -1509,13 +2231,13 @@ function viewDraws(){
       <label class="field">Note<input type="text" id="dn-${esc(p.id)}" data-draft="dn-${esc(p.id)}" value="${esc(D('dn-'+p.id))}" placeholder="Draw 2, inspection 9/30…"></label>
       <div style="align-self:end"><button class="btn primary" data-act="add-draw" data-pid="${esc(p.id)}">Add draw</button></div></div>`);
   h+=sec('dr-list','Draws',`${s.list.length} draw${s.list.length===1?'':'s'} · ${money0(s.drawn)}`,s.list.length?`<div>${s.list.map(drawRow).join('')}</div>`:'<span class="faint">No draws yet. Add one above.</span>');
-  const allUses=s.list.flatMap(d=>(d.uses||[]).map(u=>({...u,draw:d.note||shortDate(d.date)})));
+  const allUses=s.list.flatMap(d=>drawUses(d).map(u=>({...u,draw:d.note||shortDate(d.date)})));
   const byCat={}; for(const u of allUses) byCat[u.category||'Other']=(byCat[u.category||'Other']||0)+(Number(u.amount)||0);
   h+=sec('dr-where','Where the draw money went',`${money0(s.used)} of ${money0(s.drawn)}`,allUses.length?`<div class="bd">${Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="bd-row"><span>${esc(k)}</span><b>${money0(v)}</b><div class="track"><div class="fill" style="width:${Math.max(1.5,v/Math.max(1,s.drawn)*100)}%"></div></div></div>`).join('')}${s.unassigned>0?`<div class="bd-row"><span class="muted">Not assigned yet</span><b>${money0(s.unassigned)}</b><div class="track"><div class="fill warn" style="width:${s.unassigned/Math.max(1,s.drawn)*100}%"></div></div></div>`:''}</div>`:'<span class="faint">Open a draw and record where its money went.</span>');
   return h+'</div>';
 }
 function drawRow(d){
-  const uses=d.uses||[], used=sum(uses), left=r2(dAmt(d)-used), key='dw-'+d.id, st=drawStatus(d);
+  const uses=drawUses(d), used=sum(uses), left=r2(dAmt(d)-used), key='dw-'+d.id, st=drawStatus(d);
   const nf=(f,label,v,ph)=>`<label class="field">${label}<input type="text" inputmode="decimal" id="de-${f}-${esc(d.id)}" data-act="draw-f" data-f="${f}" data-did="${esc(d.id)}" value="${v?Number(v).toLocaleString('en-US',{maximumFractionDigits:2}):''}" placeholder="${ph||'0'}"></label>`;
   return `<details class="grp" data-sec="${esc(key)}"${S.open[key]?' open':''}><summary><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M9 6l6 6-6 6"/></svg>
     <span class="gname">${shortDate(d.date)} · ${esc(d.note||'Draw')}<small>${money0(dRecv(d))} disbursed · ${money0(dAmt(d)-dRecv(d))} pending${dFee(d)?` · fee ${money0(dFee(d))}`:''} · ${left>0?money0(left)+' not assigned':'fully assigned'}</small></span>
@@ -1528,7 +2250,7 @@ function drawRow(d){
         <label class="field">Note<input type="text" id="de-note-${esc(d.id)}" data-act="draw-f" data-f="note" data-text="1" data-did="${esc(d.id)}" value="${esc(d.note||'')}"></label>
         <div style="align-self:end">${S.confirm==='dw-'+d.id?`<button class="btn sm danger" data-act="del-draw-yes" data-did="${esc(d.id)}">Delete draw</button> <button class="btn sm ghost" data-act="cancel">Keep</button>`:`<button class="btn sm ghost" data-act="del-draw" data-did="${esc(d.id)}">Delete draw</button>`}</div></div>
       <b style="font-size:13px">Where the ${money0(dAmt(d))} went</b>
-      ${uses.length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:520px"><thead><tr><th>Date</th><th>Paid to / used for</th><th>Category</th><th class="amt">Amount</th><th></th></tr></thead><tbody>${uses.map((u,i)=>`<tr><td class="d">${shortDate(u.date)}</td><td>${esc(u.to)}</td><td>${esc(u.category||'')}</td><td class="amt">${money(u.amount)}</td><td><button class="btn sm ghost" data-act="del-use" data-did="${esc(d.id)}" data-i="${i}" aria-label="Remove">✕</button></td></tr>`).join('')}</tbody>
+      ${uses.length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:520px"><thead><tr><th>Date</th><th>Paid to / used for</th><th>Category</th><th class="amt">Amount</th><th></th></tr></thead><tbody>${uses.map((u,i)=>`<tr><td class="d">${shortDate(u.date)}</td><td>${esc(u.to)}</td><td>${esc(u.category||'')}</td><td class="amt">${money(u.amount)}</td><td>${u.auto?'<span class="pill acc" title="Change it in the Payroll tab">From Payroll</span>':`<button class="btn sm ghost" data-act="del-use" data-did="${esc(d.id)}" data-i="${i}" aria-label="Remove">✕</button>`}</td></tr>`).join('')}</tbody>
         <tfoot><tr><td colspan="3">${left>0?`Not assigned yet: ${money(left)}`:left<0?`Over-assigned by ${money(-left)}`:'Fully assigned'}</td><td class="amt">${money(used)}</td><td></td></tr></tfoot></table></div>`:''}
       <div class="form-grid">
         <label class="field">Date<input type="date" id="ud-${esc(d.id)}" data-draft="ud-${esc(d.id)}" value="${esc(D('ud-'+d.id,today()))}"></label>
@@ -1567,10 +2289,10 @@ function viewPayables(){
     <div class="tile"><div class="label">Due in 7 days</div><div class="big">${money0(sum(week))}</div><div class="foot">${week.length} bills</div></div>
     <div class="tile"><div class="label">Open payables</div><div class="big">${money0(sum(open))}</div><div class="foot">everything not paid</div></div>
   </div>
-  <div class="note info"><span>Card balances go through <a href="https://claude.ai/artifact/987gv2Gy7howGRiAwvSD2T" target="_blank" rel="noopener">THB Card Approvals</a>. Use this page for vendor bills, contractor invoices, payroll and anything paid by check or ACH. Payment is made by a person outside this page; no bank or wire details are kept here.</span></div>
+  ${contractorPanel()}<div class="note info"><span>Card balances go through <a href="https://claude.ai/artifact/987gv2Gy7howGRiAwvSD2T" target="_blank" rel="noopener">THB Card Approvals</a>. Use this page for vendor bills, contractor invoices, payroll and anything paid by check or ACH. Payment is made by a person outside this page; no bank or wire details are kept here.</span></div>
   <div class="stack">`;
   h+=sec('ap-new','Add a bill','',`<div class="form-grid">
-    <label class="field">Vendor / payee<input type="text" id="ap-v" data-draft="ap-v" value="${esc(D('ap-v'))}" placeholder="Contractor, supplier…"></label>
+    <label class="field">Vendor / payee<input type="text" id="ap-v" list="contractor-list" data-draft="ap-v" value="${esc(D('ap-v'))}" placeholder="Contractor, supplier…"></label>
     <label class="field">Property<select id="ap-p" data-draft="ap-p">${propOpts(D('ap-p'),'Overhead / none').replace('<option value="__new">＋ New property…</option>','')}</select></label>
     <label class="field">Entity<select id="ap-e" data-draft="ap-e">${opts(ENTITIES,D('ap-e','Equity Track Inc'))}</select></label>
     <label class="field">Category<select id="ap-c" data-draft="ap-c">${opts(['Contractor Service','Materials','Local Team Labor','Matrix Payroll','Virtual Team Payroll','Permits & Fees','Utilities','Insurance','Legal & Professional Fees','Marketing','Card payment','Other'],D('ap-c','Contractor Service'))}</select></label>
@@ -2031,6 +2753,7 @@ function viewSnapshot(){
   </div>`;
   h+=`<div class="panel panel-pad stack" style="margin-bottom:14px"><h3 style="font-size:16px">Decisions I need from you</h3>${dec.length?dec.map(d=>d.kind==='ap'?`<div class="fx-flag" data-ap="${esc(d.x.id)}"><div class="row" style="justify-content:space-between"><span><b>${esc(d.t)}</b><div class="muted" style="font-size:12.5px">${esc([d.x.notes,propName(d.x.propertyId),(()=>{const v=apReview(d.x);return v.done===v.total?'All payment checks done':'Open checks: '+v.missing.join(', ');})()].filter(Boolean).join(' · '))}${apFiles(d.x).length?' · '+apFiles(d.x).map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a>`).join(', '):''}</div></span>
       <span class="seg" role="group" aria-label="Decision">${['Approve','Hold'].map(v=>{const st={Approve:'Approved',Hold:'On hold'}[v];return `<button data-act="snap-dec" data-v="${st}">${v}</button>`;}).join('')}</span></div></div>`:`<div class="fx-flag"><b>${esc(d.t)}</b>${d.d?`<div class="muted" style="font-size:12.5px">${esc(d.d)}</div>`:''}</div>`).join(''):'<span class="faint">Nothing needs a decision right now.</span>'}</div>`;
+  h+=asksPanel();
   h+=`<div class="panel tbl" style="margin-bottom:14px"><table style="min-width:760px"><thead><tr><th>Property</th><th>Status</th><th class="amt">Budget used</th><th>% complete</th><th class="amt">Carrying / mo</th><th class="amt">Projected gross profit</th></tr></thead><tbody>
     ${X.props.map(x=>`<tr><td><b>${esc(shortAddr(x.p.address))}</b></td><td>${esc(x.p.status)}${x.p.onHold?' <span class="pill warn">Standby</span>':''}</td><td class="amt" style="color:${x.s.budget&&x.s.total>x.s.budget?'var(--bad)':''}">${x.s.budget?`${money0(x.s.total)} of ${money0(x.s.budget)}`:'no budget'}</td><td>${x.p.pctComplete!=null&&x.p.pctComplete!==''?x.p.pctComplete+'%':'—'}${x.v?.ahead?' <span class="pill warn">spend ahead</span>':''}</td><td class="amt">${x.c?money0(x.c):'—'}</td><td class="amt" style="color:${x.g!=null&&x.g<0?'var(--bad)':''}">${x.g==null?'—':money0(x.g)}</td></tr>`).join('')}</tbody></table></div>
   <p class="faint" style="font-size:12px">Gross profit is projected from each property’s calculator, not the closing check. Funding, refinance, extension and deal decisions are yours; tax questions go to the CPA.</p>`;
@@ -2048,11 +2771,11 @@ function snapBlocks(){ const X=snapData(), lv={healthy:'go',watch:'wait',action:
     {t:'h',x:'Decisions I need from you'},{t:'p',x:dec.length?dec.map((d,i)=>`${i+1}. ${d.t}${d.d?' - '+d.d:''}`).join('\n'):'None right now.'},
     {t:'tbl',head:['Property','Budget used','% complete','Projected GP'],right:[3],rows:X.props.map(x=>[shortAddr(x.p.address),x.s.budget?`${money0(x.s.total)} of ${money0(x.s.budget)}`:'no budget',x.p.pctComplete!=null&&x.p.pctComplete!==''?x.p.pctComplete+'%':'-',x.g==null?'-':money0(x.g)])}]; }
 /* ----- who sees what ----- */
-const VIEW_OPTS={report:'Snapshot only',juan:'Snapshot + Payables',tracker:'Snapshot + Card Tracker',full:'All tabs (view only)'};
+const VIEW_OPTS={accounting:'Accounting: everything except the Controller',entry:'Data entry: expenses, bills, card payments, payroll',report:'Snapshot only',juan:'Snapshot + Payables',tracker:'Snapshot + Card Tracker',full:'All tabs (view only)'};
 function allowedTabs(){ if(S.isOwner!==false) return SECTIONS.map(s=>s.k); const v=(S.L.viewers||{})[S.uid]?.view||'report';
-  return v==='full'?SECTIONS.map(s=>s.k).filter(k=>k!=='settings'):v==='juan'?['snapshot','payables']:v==='tracker'?['snapshot','tracker']:['snapshot']; }
+  return v==='accounting'?SECTIONS.map(s=>s.k).filter(k=>k!=='controller'&&k!=='settings'):v==='entry'?['daily','tracker','cardctl','bank','marketing','properties','draws','payables','payments','payroll']:v==='full'?SECTIONS.map(s=>s.k).filter(k=>k!=='settings'):v==='juan'?['snapshot','payables']:v==='tracker'?['snapshot','tracker']:['snapshot']; }
 function viewersPanel(){ const vs=S.L.viewers||{};
-  return `<div class="panel panel-pad stack"><h3 style="font-size:16px">Who sees what</h3><span class="muted" style="font-size:13px">Only you can change the books. Anyone else you share with sees just the tabs you pick here; someone not listed sees the Snapshot only. Juan can approve bills (share with him as Contributor); Darlene can type card website balances (Contributor). Everything else is locked to you.</span>
+  return `<div class="panel panel-pad stack"><h3 style="font-size:16px">Who sees what</h3><span class="muted" style="font-size:13px">Only you can change the books. Anyone else you share with sees just the tabs you pick here; someone not listed sees the Snapshot only. Juan can approve bills (share with him as Contributor); Darlyn (Data entry, share as Contributor) can add expenses, receipts, bills and card payments, but can’t approve, delete or mark bills paid, and never sees the Controller, Snapshot or Settings. Everything else is locked to you.</span>
     ${Object.keys(vs).length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:480px"><tbody>${Object.entries(vs).map(([id,v])=>`<tr data-vid="${esc(id)}"><td><b>${esc(personName(id))}</b></td><td><select data-act="vw-set" aria-label="What they see">${Object.entries(VIEW_OPTS).map(([k,n])=>`<option value="${k}"${v.view===k?' selected':''}>${n}</option>`).join('')}</select></td><td><button class="btn sm ghost" data-act="vw-del" aria-label="Remove">✕</button></td></tr>`).join('')}</tbody></table></div>`:''}
     <div class="row"><input type="text" id="vw-q" data-draft="vw-q" value="${esc(D('vw-q'))}" placeholder="Search a teammate by name"><button class="btn sm" data-act="vw-search">Find</button>${(S.vwHits||[]).map(p=>`<button class="btn sm" data-act="vw-add" data-id="${esc(p.id)}">＋ ${esc(p.name||'Someone')}</button>`).join('')}</div></div>`; }
 function riskBanner(){
@@ -2111,15 +2834,17 @@ function propStats(p){
   const payRows=[...S.pays.values()].filter(x=>x.propertyId===p.id);
   const prior=p.prior||null, after=d=>!prior?.asOf||(d||'')>prior.asOf; // the Drive tracker already counts anything on or before its date
   const all=[...cardRows.filter(t=>after(t.date)).map(t=>({amount:t.amount,paid:!!t.paid,sub:t.sub})),...payRows.filter(x=>after(x.date)).map(x=>({amount:Number(x.amount)||0,paid:!!x.paid,sub:x.sub}))];
+  const prRows=prPropLines(p.id).filter(x=>after(x.date)), apRows=apPropLines(p.id).filter(x=>after(x.date)); all.push(...prRows,...apRows);
   const priorTotal=prior?r2(Object.values(prior.byCat||{}).reduce((a,b)=>a+(Number(b)||0),0)):0;
   const byCat={}; for(const x of all){const k=x.sub||'Uncategorized'; byCat[k]=r2((byCat[k]||0)+x.amount);}
   if(prior) for(const [k,v] of Object.entries(prior.byCat||{})) byCat[k]=r2((byCat[k]||0)+(Number(v)||0));
-  const priorUnpaid=prior?Number(prior.unpaid)||0:0;
+  const priorUnpaid=prior?Math.max(0,(Number(prior.unpaid)||0)-cpPropPaidAdj(p)):0;
   const total=r2(sum(all)+priorTotal), unpaid=r2(sum(all.filter(x=>!x.paid))+priorUnpaid), paid=r2(total-unpaid);
   const budget=r2(Object.values(p.budgets||{}).reduce((a,b)=>a+(Number(b)||0),0));
   const g=k=>Number(p[k])||0, carrying=r2(g('mortgageMonthly')*g('monthsHeld'));
-  const cashIn=r2(g('emd')+g('fundsToClose')+total+carrying-(p.holdbackReceived?g('holdback'):0));
-  const st={cardRows,payRows,byCat,total,paid,unpaid,priorTotal,cardTotal:sum(cardRows.filter(t=>after(t.date))),otherTotal:sum(payRows.filter(x=>after(x.date)),x=>x.amount),budget,carrying,cashIn,over:budget>0&&total>budget,holdPending:p.holdbackReceived?0:g('holdback')};
+  const hbGot=drawStats(p).disbursed;
+  const cashIn=r2(g('emd')+g('fundsToClose')+total+carrying-hbGot);
+  const st={cardRows,payRows,byCat,total,paid,unpaid,priorTotal,cardTotal:sum(cardRows.filter(t=>after(t.date))),otherTotal:r2(sum(payRows.filter(x=>after(x.date)),x=>x.amount)+sum(prRows)+sum(apRows)),prRows,apRows,budget,carrying,cashIn,over:budget>0&&total>budget,holdPending:Math.max(0,r2(g('holdback')-hbGot))};
   const c=calcInputs(p,st); st.calc=c; st.profit=c.sale?r2(twin(c,c.sale).net):null;
   return st;
 }
@@ -2200,9 +2925,9 @@ function viewProperty(p){
   h+=sec('fin','Purchase & financing',`cash in deal ${money0(s.cashIn)}`,`<div class="form-grid">
     ${pfield(p,'address','Address',false)}${pfield(p,'purchasePrice','Purchase price')}${pfield(p,'salePrice','Estimated sale (ARV)')}${pfield(p,'emd','EMD')}${pfield(p,'fundsToClose','Funds to close (after EMD)')}
     ${pfield(p,'loanAmount','Loan amount')}${pfield(p,'lender','Lender',false)}${pfield(p,'mortgageMonthly','Mortgage payment / month')}${pfield(p,'monthsHeld','Months held so far')}
-    ${pfield(p,'holdback','Lender holdback')}<label class="field">Holdback<span class="check" style="padding-block:6px;color:var(--ink);font-weight:400"><input type="checkbox" data-act="pf" data-f="holdbackReceived"${p.holdbackReceived?' checked':''}> Received from lender</span></label>
+    ${pfield(p,'holdback','Lender holdback')}<label class="field">Received from holdback so far<input type="text" inputmode="decimal" id="pf-hg" data-act="hb" data-f="holdbackGot" data-pid="${esc(p.id)}" value="${p.holdbackGot!=null&&p.holdbackGot!==''?Number(p.holdbackGot).toLocaleString('en-US'):''}" placeholder="${money0(drawStats(p).disbursed).slice(1)}"></label>
     ${pfield(p,'sheetUrl','Drive tracker link',false)}</div>
-    <div class="pl"><div class="line"><span>EMD + funds to close</span><b>${money0((Number(p.emd)||0)+(Number(p.fundsToClose)||0))}</b></div><div class="line"><span>+ Property expenses</span><b>${money0(s.total)}</b></div><div class="line"><span>+ Mortgage paid (${Number(p.monthsHeld)||0} mo × ${money0(p.mortgageMonthly)})</span><b>${money0(s.carrying)}</b></div><div class="line"><span>− Holdback received</span><b>${money0(p.holdbackReceived?p.holdback:0)}</b></div><div class="line total"><span>Cash in deal</span><b>${money0(s.cashIn)}</b></div></div>`);
+    <div class="pl"><div class="line"><span>EMD + funds to close</span><b>${money0((Number(p.emd)||0)+(Number(p.fundsToClose)||0))}</b></div><div class="line"><span>+ Property expenses</span><b>${money0(s.total)}</b></div><div class="line"><span>+ Mortgage paid (${Number(p.monthsHeld)||0} mo × ${money0(p.mortgageMonthly)})</span><b>${money0(s.carrying)}</b></div><div class="line"><span>− Holdback received</span><b>${money0(drawStats(p).disbursed)}</b></div><div class="line total"><span>Cash in deal</span><b>${money0(s.cashIn)}</b></div></div>`);
   const bcats=[...new Set([...Object.keys(p.budgets||{}),...cats.map(c=>c[0]),'Materials','Local Team Labor','Virtual Team Payroll','Contractor Service'])];
   h+=sec('budget','Budget by category',s.budget?`${money0(s.total)} of ${money0(s.budget)}`:'no budget yet',`<div class="tbl"><table style="min-width:520px"><thead><tr><th>Category</th><th class="amt">Budget</th><th class="amt">Spent</th><th class="amt">Left</th><th style="width:28%"></th></tr></thead><tbody>
     ${bcats.map(c=>{const b=Number((p.budgets||{})[c])||0,sp=s.byCat[c]||0,over=b>0&&sp>b;return `<tr><td>${esc(c)}</td><td class="amt"><input type="text" inputmode="decimal" class="mono" style="width:110px;text-align:right" id="pb-${hash(c)}" data-act="pb" data-cat="${esc(c)}" value="${b?b.toLocaleString('en-US'):''}" placeholder="0" aria-label="Budget for ${esc(c)}"></td><td class="amt">${money0(sp)}</td><td class="amt" style="color:${over?'var(--bad)':'inherit'}">${b?money0(b-sp):'—'}</td><td><div class="track"><div class="fill${over?' over':''}" style="width:${b?Math.min(100,sp/b*100):0}%"></div></div></td></tr>`;}).join('')}
@@ -2226,7 +2951,8 @@ function paymentsBody(p,s){
   ${rows.length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:820px"><thead><tr><th>Paid</th><th>Date</th><th>Receipt</th><th>Paid to</th><th>Category</th><th>Paid with</th><th>Note</th><th class="amt">Amount</th><th></th></tr></thead><tbody>
   ${rows.map(r=>`<tr data-pid="${esc(r.id)}" data-kind="${r.kind}"><td><input type="checkbox" data-act="payf"${r.paid?' checked':''} aria-label="Paid"></td><td class="d">${shortDate(r.date)}</td><td>${receiptCell(r)}</td><td class="payee">${esc(r.payee)}${r.example?' <span class="tag">example</span>':''}</td><td>${esc(r.sub||'—')}</td><td>${r.kind==='card'?chip(r.method):esc(r.method)}</td><td class="muted">${esc(r.notes||'')}</td><td class="amt">${money(r.amount)}</td>
     <td>${r.kind==='pay'?(S.confirm==='pay-'+r.id?`<button class="btn sm danger" data-act="del-pay-yes">Delete</button>`:`<button class="btn sm ghost" data-act="del-pay" aria-label="Delete">✕</button>`):''}</td></tr>`).join('')}
-  </tbody><tfoot><tr><td colspan="7">Paid ${money(s.paid)} · Unpaid ${money(s.unpaid)}</td><td class="amt">${money(s.total)}</td><td></td></tr></tfoot></table></div>`:`<div class="faint">No payments yet. File a card charge as Property Expense → this address, or add a check, wire or draw above.</div>`}`;
+  </tbody><tfoot><tr><td colspan="7">Paid ${money(s.paid)} · Unpaid ${money(s.unpaid)}</td><td class="amt">${money(s.total)}</td><td></td></tr></tfoot></table></div>`:`<div class="faint">No payments yet. File a card charge as Property Expense → this address, or add a check, wire or draw above.</div>`}
+  ${(s.prRows||[]).length+(s.apRows||[]).length?`<h4 style="font-size:14px;margin:14px 0 6px">From Payroll and Payables</h4><div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:640px"><thead><tr><th>Status</th><th>Date</th><th>Paid to</th><th>Category</th><th class="amt">Amount</th></tr></thead><tbody>${[...s.prRows,...s.apRows].sort(byDate).map(r=>`<tr><td>${r.paid?'<span class="pill good">Paid</span>':`<span class="pill warn">${esc(r.status||'Not paid')}</span>`}</td><td class="d">${shortDate(r.date)}</td><td class="payee">${esc(r.payee)}</td><td>${esc(r.sub)}</td><td class="amt">${money(r.amount)}</td></tr>`).join('')}</tbody></table></div><div class="faint" style="font-size:12px;margin-top:4px">Change these in the Payroll or Payables tab.</div>`:''}`;
 }
 function filesBody(p){
   return `<label class="field">Notes<textarea id="pf-notes" rows="3" data-act="pf" data-f="notes" data-num="0" placeholder="Scope, contractor contacts, draw schedule…">${esc(p.notes||'')}</textarea></label>
@@ -2324,6 +3050,7 @@ document.addEventListener('change',async e=>{
   const t=e.target, act=t.dataset.act; if(t.dataset.draft) S.draft[t.dataset.draft]=t.type==='checkbox'?t.checked:t.value;
   if(!act) return;
   const tr=t.closest('tr'), id=tr?.dataset.id;
+  if(act==='sp'&&S.split){S.split.lines[+t.dataset.i][t.dataset.f]=t.value;scheduleRender();return;}
   if(act==='tf'&&id){await setTxn(id,{[t.dataset.f]:t.type==='checkbox'?t.checked:t.value});return;}
   if(act==='sel'&&id){if(t.checked)S.sel.add(id);else S.sel.delete(id);render();return;}
   if(act==='sel-all'){const rows=todo().filter(x=>x.card===S.dCard&&(S.dMonth==='all'||(x.date||'').startsWith(S.dMonth))&&ready(x));for(const x of rows){if(t.checked)S.sel.add(x.id);else S.sel.delete(x.id);}render();return;}
@@ -2382,6 +3109,11 @@ document.addEventListener('click',async e=>{
   switch(act){
     case 'dcard': S.dCard=b.dataset.k; S.dMonth='all'; S.sel.clear(); break;
     case 'dview': S.dView=b.dataset.v; break;
+    case 'dstat': S.dStat=b.dataset.v; break;
+    case 'dsort': S.dSort=b.dataset.v; break;
+    case 'to-desk': await copyForDesk(); return;
+    case 'desk-sent': await markDeskSent(); return;
+    case 'desk-close': S.deskCopy=null; break;
     case 'toggle': S.draft[b.dataset.k]=!S.draft[b.dataset.k]; break;
     case 'parse-paste': if(!(S.draft.paste||'').trim()){toast('Paste rows from the statement first.');return;} S.preview=buildPreview(S.draft.paste,'Pasted rows',S.dCard); break;
     case 'cancel-import': S.preview=null; break;
@@ -2393,6 +3125,12 @@ document.addEventListener('click',async e=>{
       break;
     }
     case 'del': S.confirm=id; break;
+    case 'sp-open': splitStart(id); break;
+    case 'sp-add': S.split.lines.push({type:'',category:'',sub:'',propertyId:'',notes:'',amount:'0.00'}); break;
+    case 'sp-rm': S.split.lines.splice(+b.dataset.i,1); break;
+    case 'sp-cancel': S.split=null; break;
+    case 'sp-save': await splitSave(); return;
+    case 'sp-undo': await splitUndo(id); return;
     case 'del-yes': {const c=S.confirm;S.confirm=null;await write(()=>db.doc('txns/'+c).delete());break;}
     case 'transfer': await transferSelected(); return;
     case 'untransfer': await write(()=>db.doc('txns/'+id).update({status:'Posted'})); toast('Back in Daily Expenses to edit'); break;
@@ -2496,6 +3234,8 @@ document.addEventListener('click',async e=>{
     case 'ci2-del': await write(()=>db.doc('cashitems/'+tr.dataset.cid).delete()); break;
     case 'rk-flag': await write(()=>db.doc('properties/'+b.dataset.pid).update({flaggedAt:new Date().toISOString(),flaggedBy:S.uid||'',riskStatus:'Raised with Juan'})); toast('Recorded: flagged to Juan'); break;
     case 'rk-add': {const pid=S.draft['rk-add'];if(!pid)return;await write(()=>db.doc('properties/'+pid).update({inRegister:true}));S.draft['rk-add']='';break;}
+    case 'hb-new': {const pid=S.draft['hbn-p'],h=num(S.draft['hbn-h']||''),r=(S.draft['hbn-r']||'').trim();if(!pid||!h){toast('Pick the property and type the holdback.');return;}
+      if(await write(()=>db.doc('properties/'+pid).update({holdback:r2(h),...(r?{holdbackGot:r2(num(r))}:{})}))){for(const k of ['hbn-p','hbn-h','hbn-r'])S.draft[k]='';S.drawProp=pid;toast('Holdback added');}break;}
     case 'add-draw': {const pid=b.dataset.pid;const amount=r2(num(S.draft['da-'+pid]));if(!amount){toast('Type the draw amount.');return;}
       if(await write(()=>db.collection('draws').add({propertyId:pid,date:S.draft['dd-'+pid]||today(),amount,fee:r2(num(S.draft['df-'+pid])),received:r2(num(S.draft['dr-'+pid])),note:(S.draft['dn-'+pid]||'').trim(),uses:[],createdAt:new Date().toISOString()}))){for(const k of ['da-','df-','dr-','dn-'])S.draft[k+pid]='';toast('Draw added');}break;}
     case 'del-draw': S.confirm='dw-'+b.dataset.did; break;
@@ -2533,9 +3273,17 @@ render();
   const onErr=e=>{if(e?.code==='revoked'){S.dbState='off';render();}};
   const toMap=s=>new Map(s.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
   db.collection('txns').onSnapshot(s=>{S.txns=toMap(s);S.ready.txns=true;scheduleRender();},onErr);
-  db.collection('properties').onSnapshot(s=>{S.props=toMap(s);S.ready.props=true;scheduleRender();},onErr);
+  db.collection('properties').onSnapshot(s=>{S.props=toMap(s);S.ready.props=true;try{cpApply();}catch(e){} scheduleRender();},onErr);
   db.collection('payments').onSnapshot(s=>{S.pays=toMap(s);scheduleRender();},onErr);
   db.collection('cardpays').onSnapshot(s=>{S.cpays=toMap(s);scheduleRender();},onErr);
+  db.collection('pmarks').onSnapshot(s=>{S.pmarks=toMap(s);scheduleRender();},onErr);
+  db.collection('payroll').onSnapshot(s=>{S.payroll=toMap(s);scheduleRender();},onErr);
+  db.collection('banktx').onSnapshot(s=>{S.banktx=toMap(s);scheduleRender();},onErr);
+  db.collection('cardctl').onSnapshot(s=>{S.cardctl=toMap(s);scheduleRender();},onErr);
+  db.collection('cardappr').onSnapshot(s=>{S.cardappr=toMap(s);scheduleRender();},onErr);
+  db.collection('ctltasks').onSnapshot(s=>{S.ctltasks=toMap(s);scheduleRender();},onErr);
+  db.collection('asks').onSnapshot(s=>{S.asks=toMap(s);scheduleRender();},onErr);
+  db.collection('sheetfix').onSnapshot(s=>{S.sheetfix=toMap(s);rebuildSheetRows();scheduleRender();},onErr);
   db.collection('cardinfo').onSnapshot(s=>{S.cinfo=toMap(s);scheduleRender();},onErr);
   db.collection('draws').onSnapshot(s=>{S.drawsMap=toMap(s);scheduleRender();},onErr);
   db.collection('ap').onSnapshot(s=>{S.ap=toMap(s);scheduleRender();},onErr);
@@ -2554,3 +3302,5 @@ render();
 })();
 </script>
 
+
+</body></html>
