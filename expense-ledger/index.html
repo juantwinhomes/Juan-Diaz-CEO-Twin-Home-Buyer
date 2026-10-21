@@ -884,6 +884,7 @@ div.cp-row{cursor:default}.cp-row.on{border-color:var(--accent);background:color
 .ceo-cols table{min-width:0}.ceo-cols th{background:transparent;padding:0 0 6px}.ceo-cols td{padding:7px 0;font-size:13.5px}
 .ceo-note{background:var(--warn-soft);border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:10px 14px;font-size:13.5px}.ceo-note b{color:var(--warn)}
 .ceo-say{font-size:17px;line-height:1.55;margin:0}.ceo-say b{font-family:var(--f-mono);font-weight:600}
+.ceo-ch{border-top:1px solid var(--line);padding-top:10px}.ceo-ch>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
 .ceo-sep{border:0;border-top:3px solid var(--ink);margin:4px 0;width:100%}
 .ceo-note.good{background:var(--good-soft,transparent);border-left-color:var(--good)}.ceo-note.good b{color:var(--good)}
 @media (max-width:640px){.ceo-tot,.ceo-cols{grid-template-columns:1fr}.ceo-tot>div+div{border-left:0;border-top:1px solid var(--line)}.ceo-figs{grid-template-columns:1fr 1fr}}
@@ -2829,6 +2830,26 @@ function ceoBreakdown(byCat){ const g={}; for(const [k,v] of Object.entries(byCa
   return Object.entries(g).filter(([,v])=>Math.abs(v)>=0.5).sort((a,b)=>b[1]-a[1]); }
 function ceoData(p){ const s=propStats(p), d=drawStats(p), hb=d.holdback||d.impliedHoldback||0, ahead=r2(s.total-d.disbursed);
   return {p,s,d,hb,released:d.disbursed,left:hb?d.remaining:0,ahead,pct:hb?Math.round(d.disbursed/hb*100):0,budget:s.budget,bPct:s.budget?Math.round(s.total/s.budget*100):null,rows:ceoBreakdown(s.byCat)}; }
+/* every charge behind a property's total, with its receipt (same rows propStats adds up) */
+const CEOF={};
+function ceoChargeRows(p){
+  const s=propStats(p), out=[], prior=p.prior||null, after=d=>!prior?.asOf||(d||'')>prior.asOf;
+  for(const t of s.cardRows.filter(t=>after(t.date))) out.push({date:t.date,payee:t.desc,cat:t.sub||'Uncategorized',how:cardName(t.card),amount:t.amount,paid:!!t.paid,rc:t.receiptUrl||'',rcName:'Receipt'});
+  for(const x of s.payRows.filter(x=>after(x.date))) out.push({date:x.date,payee:x.payee||'',cat:x.sub||'Uncategorized',how:x.method||'',amount:Number(x.amount)||0,paid:!!x.paid,rc:x.receiptUrl||'',rcName:'Receipt'});
+  for(const x of s.prRows){ const run=(S.payroll||new Map()).get(x.run); out.push({date:x.date,payee:x.payee,cat:x.sub,how:'Payroll',amount:x.amount,paid:x.paid,rc:run?.link||'',rcName:'Payroll file'}); }
+  for(const x of s.apRows){ const b=S.ap.get(x.ap), f=b?apFiles(b)[0]:null; out.push({date:x.date,payee:x.payee,cat:x.sub,how:'Bill · '+(x.status||''),amount:x.amount,paid:x.paid,rc:f?.url||'',rcName:'Invoice'}); }
+  if(prior) for(const [k,v] of Object.entries(prior.byCat||{})) if(Number(v)) out.push({date:prior.asOf,payee:`Drive tracker, through ${shortDate(prior.asOf)}`,cat:k,how:'Property tracker',amount:Number(v),paid:null,rc:p.sheetUrl||'',rcName:'Tracker sheet',tracker:true});
+  return out.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+}
+function ceoCharges(x){
+  const p=x.p, all=ceoChargeRows(p), key='ceo-ch-'+p.id, cats=[...new Set(all.map(r=>r.cat))].sort();
+  const f=CEOF[p.id]||'all', rows=all.filter(r=>f==='all'||r.cat===f), noRc=all.filter(r=>!r.rc&&!r.tracker);
+  return `<details class="ceo-ch" data-sec="${esc(key)}"${S.open[key]?' open':''}><summary><b>See every charge</b> <span class="muted">${all.length} lines · ${money0(sum(all))}</span>${noRc.length?` <span class="pill warn">${noRc.length} without a receipt</span>`:' <span class="pill good">All receipts attached</span>'}</summary>
+    <div class="row" style="margin:10px 0"><label class="field" style="flex-direction:row;align-items:center;gap:8px">Category<select data-act="ceo-cat" data-pid="${esc(p.id)}" aria-label="Category">${['all',...cats].map(c=>`<option value="${esc(c)}"${f===c?' selected':''}>${c==='all'?'All categories':esc(c)}</option>`).join('')}</select></label><span class="muted" style="font-size:13px">${rows.length} line${rows.length===1?'':'s'} · ${money(sum(rows))}</span></div>
+    <div class="tbl" style="border:1px solid var(--line);border-radius:10px;max-height:60vh;overflow:auto"><table style="min-width:760px"><thead><tr><th>Date</th><th>Paid to</th><th>Category</th><th>Paid with</th><th class="amt">Amount</th><th>Status</th><th>Receipt</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td class="d">${shortDate(r.date)}</td><td class="payee">${esc(r.payee)}</td><td>${esc(r.cat)}</td><td class="muted" style="font-size:12.5px">${esc(r.how)}</td><td class="amt">${money(r.amount)}</td><td>${r.paid==null?'<span class="pill plain">Summary</span>':r.paid?'<span class="pill good">Paid</span>':'<span class="pill bad">Not paid</span>'}</td><td>${r.rc?`<a href="${esc(r.rc)}" target="_blank" rel="noopener">${esc(r.rcName)}</a>`:'<span class="pill warn">Missing</span>'}</td></tr>`).join('')}
+    </tbody></table></div>${all.some(r=>r.tracker)?'<div class="faint" style="font-size:12px;margin-top:6px">“Drive tracker” lines are totals from the property’s tracker sheet before the ledger started; the receipts for those are in that sheet.</div>':''}</details>`;
+}
 function viewCeo(){
   const list=ceoProps().map(ceoData), owner=S.isOwner!==false;
   const T=k=>r2(list.reduce((a,x)=>a+(x[k]||0),0)), spent=r2(list.reduce((a,x)=>a+x.s.total,0));
@@ -2853,6 +2874,7 @@ function viewCeo(){
       <table><thead><tr><th>Draws received</th><th class="amt">Amount</th></tr></thead><tbody>${d.list.length?[...d.list].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(w=>`<tr><td>${esc(w.note||'Draw')} · ${shortDate(w.date)}</td><td class="amt">${money0(dRecv(w))}</td></tr>`).join('')+`<tr><td><b>Total released</b></td><td class="amt"><b>${money0(x.released)}</b></td></tr>`:(x.released?`<tr><td>Received from holdback (total entered)</td><td class="amt"><b>${money0(x.released)}</b></td></tr>`:`<tr><td>None yet</td><td class="amt">$0</td></tr>`)}</tbody></table></div>
       ${x.hb&&x.ahead<0?`<div class="ceo-note good"><b>Holdback received covers spending so far.</b> ${money0(x.released)} received vs ${money0(x.s.total)} spent, ${money0(-x.ahead)} not yet spent on the rehab.</div>`:x.hb?`<div class="ceo-note"><b>Spent ahead of draws: ${money0(x.ahead)}.</b> ${money0(x.s.total)} spent vs ${money0(x.released)} released, covered by company cash and cards until the next draw.</div>`
       :`<div class="ceo-note"><b>All ${money0(x.s.total)} came from company cash and cards.</b> No lender holdback is recorded for this property${x.budget?`; ${x.bPct}% of the ${money0(x.budget)} rehab budget is used`:''}.</div>`}
+      ${ceoCharges(x)}
     </section>`; }
   h+=`<p class="faint" style="font-size:12.5px;max-width:80ch">Expenses are rehab and holding costs charged to each property: card charges, payroll, bills and the property trackers in Drive. They leave out the purchase price, earnest money and loan interest. “Not paid yet” is card and bill balances still open. Holdback figures use the lender’s remaining-to-fund amount where it is entered. Prepared by Kristine, Controller.</p></div>`;
   return h;
@@ -3157,6 +3179,7 @@ document.addEventListener('change',async e=>{
   if(act==='cl-st'||act==='cl-note'){const m=S.closeMonth,n=tr.dataset.step,c=closeDoc(m),st={...((c.steps||{})[n]||{})};if(act==='cl-st'){st.status=t.value;st.by=S.uid||'';st.at=new Date().toISOString();}else{if(bankBlocked(t.value)){render();return;}st.note=t.value;}await saveClose(m,{steps:{...(c.steps||{}),[n]:st}});return;}
   if(act==='ic'){const m=S.closeMonth,e=tr.dataset.ent,c=closeDoc(m),f=t.dataset.f;if(t.dataset.text&&bankBlocked(t.value)){render();return;}const v=t.dataset.text?t.value:(t.value.trim()===''?null:num(t.value));await saveClose(m,{interco:{...(c.interco||{}),[e]:{...((c.interco||{})[e]||{}),[f]:v}}});return;}
   if(act==='ex-f'){const id=tr.dataset.ex,f=t.dataset.f;if(f==='resolution'&&bankBlocked(t.value)){render();return;}await write(()=>db.doc('exceptions/'+id).update({[f]:t.value,...(f==='status'?{statusBy:S.uid||'',statusAt:new Date().toISOString()}:{})}));return;}
+  if(act==='ceo-cat'){CEOF[t.dataset.pid]=t.value;render();return;}
   if(act==='ceo-pick'){const cur=new Set((S.L.ceoProps&&S.L.ceoProps.length?S.L.ceoProps:CEO_DEF));if(t.checked)cur.add(t.dataset.pid);else cur.delete(t.dataset.pid);await write(()=>db.doc('settings/lists').set({...S.L,ceoProps:[...cur]}));return;}
   if(act==='rk-hold'){await write(()=>db.doc('properties/'+t.dataset.pid).update({onHold:t.checked}));return;}
   if(act==='pol-ok'){const pk={...(S.L.policyOk||{})};if(t.checked)pk[t.dataset.k]={by:S.uid||'',at:new Date().toISOString()};else delete pk[t.dataset.k];await write(()=>db.doc('settings/lists').set({...S.L,policyOk:pk}));return;}
