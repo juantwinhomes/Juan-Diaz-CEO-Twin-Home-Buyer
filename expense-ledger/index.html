@@ -234,6 +234,9 @@ function cpApply(){
     seen[base]=(seen[base]||0)+1; r.key=base+'#'+seen[base]; r.mid='m'+cpHash(r.key);
     const m=marks.get(r.mid), p=m?pays.get(m.pay):null;
     r.payId=p?p.id:null; r.scheduled=!!(p&&p.sent===false); r.paid=r.paid0||!!(p&&p.sent!==false);
+    // part of this charge paid (e.g. paid $3,000 against $3,050 ticked): the rest stays unpaid until another payment covers it
+    r.partPaid=(m&&m.paidPart!=null&&m.paidPart<(r.amount||0)-0.005)?Math.round(m.paidPart*100)/100:null;
+    if(r.partPaid!=null&&!r.paid0){ const mr=marks.get(r.mid+'r'), pr=mr?pays.get(mr.pay):null; r.restPayId=pr?pr.id:null; r.paid=!!(pr&&pr.sent!==false); }
     const fx=(S.sheetfix||new Map()).get(r.mid); r.dupe=!!(fx&&fx.dupe);
   }
   if(S.sheetRows.some(r=>r.dupe)){ S.hiddenRows=S.sheetRows.filter(r=>r.dupe); S.sheetRows=S.sheetRows.filter(r=>!r.dupe); }
@@ -245,7 +248,11 @@ function cpDupNotice(card){
   if(!fixes.length) return '';
   return `<div class="note info"><span><b>${fixes.length} duplicate${fixes.length>1?'s':''} set aside</b> (not counted in totals; the Drive sheet is unchanged): ${fixes.map(x=>`${esc(x.label||'')} — kept ${esc(x.kept||'')}${S.isOwner!==false?` <button class="btn sm ghost" data-cp="undup" data-id="${esc(x.id)}">Undo</button>`:''}`).join(' · ')}</span></div>`;
 }
-const cpRowsFor=card=>mergedRows(card).map(r=>r.src==='sheet'?{...r,led:r.ledger||null,pid:r.payId||r.ledger?.payId||null,isPaid:!!r.paid,selKey:'s:'+r.mid}:{...r,led:r,pid:r.payId||null,isPaid:!!r.paid,selKey:'t:'+r.id});
+const cpRowsFor=card=>mergedRows(card).flatMap(r=>{
+  if(r.src==='sheet'&&r.partPaid!=null){ const rest=Math.round((r.amount-r.partPaid)*100)/100;
+    return [{...r,amount:r.partPaid,led:r.ledger||null,pid:r.payId,isPaid:true,selKey:'s:'+r.mid,partOf:r.amount},
+            {...r,amount:rest,led:null,pid:r.restPayId||null,isPaid:!!r.restPayId,selKey:'s:'+r.mid+'r',restOf:r.amount,mid:r.mid+'r',key:r.key+'#rest',desc:(r.desc||'')}]; }
+  return [r.src==='sheet'?{...r,led:r.ledger||null,pid:r.payId||r.ledger?.payId||null,isPaid:!!r.paid,selKey:'s:'+r.mid}:{...r,led:r,pid:r.payId||null,isPaid:!!r.paid,selKey:'t:'+r.id}]; });
 function cpUnpaid(card){return cpRowsFor(card).filter(r=>!r.isPaid&&!r.pid&&r.amount>0).sort((a,b)=>(a.date||'').localeCompare(b.date||''));}
 function cpCovered(pid){const p=S.cpays.get(pid);if(!p)return[];return cpRowsFor(p.card).filter(r=>r.pid===pid);}
 function viewPayments(){
@@ -258,7 +265,7 @@ function viewPayments(){
   const selRows=cpUnpaid(k).filter(r=>CP.sel.has(r.selKey)), selTot=r2(sum(selRows)), amt=num(D('cp2-amt')||'')||0, left=r2(amt-selTot);
   let h=`<div class="note info"><span><b>How it works:</b> type the payment, then tick the charges it pays. Ticked charges show as paid everywhere: Card Tracker, Marketing and Properties. Untick “Payment sent” if the payment is only scheduled.</span></div>`;
   h+=cardTabs(k,null,'cp-card');
-  h+=`<div class="summary"><div class="tile"><div class="label">${esc(cardName(k))} unpaid charges</div><div class="big bad">${money(b.balance)}</div><div class="foot">${cpUnpaid(k).length} charges not covered by a payment</div></div><div class="tile"><div class="label">This payment</div><div class="big">${money(amt)}</div><div class="foot">${selRows.length} charge${selRows.length===1?'':'s'} ticked = ${money(selTot)}</div></div><div class="tile"><div class="label">${left>=0?'Left to apply':'Over the payment by'}</div><div class="big ${left<-0.005?'bad':''}">${money(Math.abs(left))}</div><div class="foot">${left>0.005?'leave it, or tick more charges':left<-0.005?'untick some charges':'matches exactly'}</div></div></div>`;
+  h+=`<div class="summary"><div class="tile"><div class="label">${esc(cardName(k))} unpaid charges</div><div class="big bad">${money(b.balance)}</div><div class="foot">${cpUnpaid(k).length} charges not covered by a payment</div></div><div class="tile"><div class="label">You ticked (planned to pay)</div><div class="big">${money(selTot)}</div><div class="foot">${selRows.length} charge${selRows.length===1?'':'s'} ticked</div></div><div class="tile"><div class="label">Amount paid</div><div class="big">${amt?money(amt):'—'}</div><div class="foot">${!amt?'type it in “2. The payment”':left>0.005?`${money(left)} more than ticked: tick more charges, or leave it`:left<-0.005?`${money(-left)} short: stays unpaid`:'matches what you ticked'}</div></div></div>${(()=>{ if(!amt||left>=-0.005||!selRows.length) return ''; const al=cpAllocate(selRows,amt); return `<div class="note info" style="margin-bottom:12px;border-color:#b45309"><span><b>Paid ${money(amt)} of the ${money(selTot)} ticked.</b> Oldest charges are paid first. ${al.part?`<b>${esc(al.part.r.vendor||al.part.r.desc||'')}</b> (${shortDate(al.part.r.date)}, ${money(al.part.r.amount)}) gets split: <b>${money(al.part.paid)} paid</b>, <b>${money(al.part.rest)} stays unpaid</b>.`:''}${al.skip.length?` ${al.skip.length} ticked charge${al.skip.length===1?'':'s'} (${money(sum(al.skip))}) stay unpaid.`:''}</span></div>`; })()}`;
   { const B=[['all','All'],['overhead','Overhead'],['property','Property'],['marketing','Marketing'],['uncat','Not categorized']];
     const tot=x=>r2(sum(all.filter(r=>x==='all'||bOf(r)===x))), cnt=x=>all.filter(r=>x==='all'||bOf(r)===x).length, tk=x=>r2(sum(selRows.filter(r=>x==='all'||bOf(r)===x)));
     const groups={}; for(const r of all.filter(r=>CP.bucket==='all'||bOf(r)===CP.bucket)){const g=CP.bucket==='all'?({overhead:'Overhead',property:'Property',marketing:'Marketing',uncat:'Not categorized'}[bOf(r)]):grpOf(r); (groups[g]=groups[g]||{n:0,a:0,t:0}); groups[g].n++; groups[g].a+=r.amount; if(CP.sel.has(r.selKey)) groups[g].t+=r.amount;}
@@ -269,11 +276,11 @@ function viewPayments(){
     <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn sm" data-cp="auto">Tick oldest up to the amount</button><button class="btn sm ghost" data-cp="clear">Clear</button></div></div>
     <div class="faint" style="font-size:12.5px;margin-top:4px">Oldest first. ${list.length} unpaid charge${list.length===1?'':'s'} shown${CP.bucket!=='all'||CP.grp?` · <b>${esc({overhead:'Overhead',property:'Property',marketing:'Marketing',uncat:'Not categorized'}[CP.bucket]||'All')}${CP.grp?' › '+esc(CP.grp):''}</b> <button class="btn sm ghost" data-cp="bucket" data-v="all">Show all</button>`:''}.</div></div>
     <div class="tbl cp-scroll"><table style="min-width:860px"><thead><tr><th><input type="checkbox" data-cp="all" aria-label="Tick all shown" ${list.length&&list.every(r=>CP.sel.has(r.selKey))?'checked':''}></th><th>Date</th><th>Payee</th><th>Type</th><th>Category</th><th>Property</th><th class="amt">Amount</th></tr></thead><tbody>
-    ${list.map(r=>`<tr class="${CP.sel.has(r.selKey)?'sel':''}"><td>${CP.view==='paid'?(()=>{const p=r.pid&&S.cpays.get(r.pid);return `<span class="cp-paid">✓ Paid${p?` ${shortDate(p.date)}`:''}</span>`;})():`<input type="checkbox" data-cp="tick" data-k="${esc(r.selKey)}" ${CP.sel.has(r.selKey)?'checked':''} aria-label="Pay this charge">`}</td><td class="d">${shortDate(r.date)}</td><td class="payee">${esc(r.src==='sheet'?(r.vendor||r.desc):r.desc)}</td><td>${esc({overhead:'Overhead',property:'Property',marketing:'Marketing'}[r.bucket]||'Not categorized')}</td><td>${esc([r.cat,r.sub].filter(Boolean).join(' · ')||'—')}</td><td>${esc(r.prop||'—')}</td><td class="amt">${money(r.amount)}</td></tr>`).join('')||'<tr><td colspan="7" class="faint">Nothing unpaid here.</td></tr>'}
+    ${list.map(r=>`<tr class="${CP.sel.has(r.selKey)?'sel':''}"><td>${CP.view==='paid'?(()=>{const p=r.pid&&S.cpays.get(r.pid);return `<span class="cp-paid">✓ Paid${p?` ${shortDate(p.date)}`:''}</span>`;})():`<input type="checkbox" data-cp="tick" data-k="${esc(r.selKey)}" ${CP.sel.has(r.selKey)?'checked':''} aria-label="Pay this charge">`}</td><td class="d">${shortDate(r.date)}</td><td class="payee">${esc(r.src==='sheet'?(r.vendor||r.desc):r.desc)}${r.restOf?` <span class="cp-part">unpaid rest of ${money(r.restOf)}</span>`:r.partOf?` <span class="cp-part">paid part of ${money(r.partOf)}</span>`:(r.splitOf&&r.partialPay&&r.splitPart===2)?` <span class="cp-part">unpaid rest of ${money(r.splitTotal)}</span>`:''}</td><td>${esc({overhead:'Overhead',property:'Property',marketing:'Marketing'}[r.bucket]||'Not categorized')}</td><td>${esc([r.cat,r.sub].filter(Boolean).join(' · ')||'—')}</td><td>${esc(r.prop||'—')}</td><td class="amt">${money(r.amount)}</td></tr>`).join('')||'<tr><td colspan="7" class="faint">Nothing unpaid here.</td></tr>'}
     </tbody></table></div></div>`;
   h+=`<div class="panel panel-pad" style="margin-bottom:14px"><h3 style="font-size:16px;margin-bottom:10px">2. The payment</h3><div class="form-grid">
     <label class="field">Payment date<input type="date" data-draft="cp2-date" value="${esc(D('cp2-date',today()))}"></label>
-    <label class="field">Amount paid<input type="text" inputmode="decimal" data-draft="cp2-amt" value="${esc(D('cp2-amt'))}" placeholder="e.g. 40,000"></label>
+    <label class="field">Amount paid<input type="text" inputmode="decimal" data-draft="cp2-amt" value="${esc(D('cp2-amt'))}" placeholder="${selTot?money(selTot).replace('$',''):'e.g. 40,000'}">${selTot?`<button class="btn sm ghost" type="button" data-cp="useticked" style="margin-top:4px">Use what I ticked (${money(selTot)})</button>`:''}</label>
     <label class="field">Paid from (bank account)<select data-draft="cp2-bank"><option value="">Choose…</option>${cpAccounts().map(a=>`<option${D('cp2-bank')===a?' selected':''}>${esc(a)}</option>`).join('')}</select></label>
     <label class="field" style="grid-column:1/-1">What is this payment for? Write the full breakdown<textarea data-draft="cp2-note" rows="7" style="width:100%;min-height:150px;font-size:14px;line-height:1.5;resize:vertical" placeholder="Example:&#10;September statement payment — $40,000&#10;• 460 5th Ave materials (Home Depot, Golden State Lumber): $18,200&#10;• 52 Paramount windows: $19,130.82&#10;• Marketing (Google Ads): $2,669.18&#10;Approved by Juan on 10/3">${esc(D('cp2-note'))}</textarea></label>
     <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" data-draft-check="cp2-sent" ${D('cp2-sent','1')==='1'?'checked':''}> Payment sent (paid)</label>
@@ -285,17 +292,27 @@ function viewPayments(){
   </tbody></table></div>`;
   return h;
 }
+// oldest ticked charges first; if the payment runs out mid-charge, that charge is split: paid part + unpaid rest
+function cpAllocate(rows,amt){ let left=Math.round(amt*100); const full=[],skip=[]; let part=null;
+  for(const r of rows){ const c=Math.round(r.amount*100); if(part||left<=0){ skip.push(r); continue; } if(c<=left){ full.push(r); left-=c; } else { part={r,paid:left/100,rest:(c-left)/100}; left=0; } }
+  return {full,part,skip}; }
 async function cpSave(){
   const k=CP.card, amt=r2(num(D('cp2-amt')||'')), date=D('cp2-date',today()), bank=D('cp2-bank'), note=(D('cp2-note')||'').trim(), sent=D('cp2-sent','1')==='1';
   if(!amt){toast('Type the amount paid.');return;} if(!bank){toast('Pick the bank account it was paid from.');return;}
   const rows=cpUnpaid(k).filter(r=>CP.sel.has(r.selKey)), tot=r2(sum(rows));
-  if(tot>amt+0.005){toast(`The ticked charges (${money(tot)}) are more than the payment. Untick some.`);return;}
+  const al=tot>amt+0.005?cpAllocate(rows,amt):{full:rows,part:null,skip:[]};
   CP.busy=true;render();
   const ref=db.collection('cardpays').doc();
-  const ok=await write(()=>ref.set({card:k,date,amount:amt,bank,note,desc:note||'Card payment',sent,source:'manual',by:S.uid||'',at:new Date().toISOString(),charges:rows.length,chargesTotal:tot}));
-  if(ok){ for(const r of rows){ if(r.src==='sheet') await write(()=>db.doc('pmarks/'+r.mid).set({key:r.key,pay:ref.id,card:k,amount:r.amount,date:r.date}));
+  const ok=await write(()=>ref.set({card:k,date,amount:amt,bank,note,desc:note||'Card payment',sent,source:'manual',by:S.uid||'',at:new Date().toISOString(),charges:al.full.length+(al.part?1:0),chargesTotal:r2(Math.min(tot,amt)),planned:tot,shortBy:al.part||al.skip.length?r2(tot-amt):0}));
+  if(ok){ for(const r of al.full){ if(r.src==='sheet') await write(()=>db.doc('pmarks/'+r.mid).set({key:r.key,pay:ref.id,card:k,amount:r.amount,date:r.date}));
       if(r.led) await write(()=>db.doc('txns/'+r.led.id).update({payId:ref.id,paid:sent})); }
-    CP.sel.clear(); ['cp2-amt','cp2-note'].forEach(x=>delete S.draft[x]); toast(`Payment saved${rows.length?` · ${rows.length} charge${rows.length===1?'':'s'} marked ${sent?'paid':'scheduled'}`:''}`); }
+    if(al.part){ const {r,paid,rest}=al.part;
+      if(r.src==='sheet') await write(()=>db.doc('pmarks/'+r.mid).set({key:r.key,pay:ref.id,card:k,amount:r.amount,date:r.date,paidPart:paid}));
+      else if(r.led){ const t=S.txns.get(r.led.id)||r.led; const {id:_i,...orig}=t; const base={...orig,splitOf:t.splitOf||t.id,splitTotal:t.splitTotal||t.amount,splitAt:new Date().toISOString(),partialPay:true};
+        if(await write(()=>db.doc('txns/'+t.id+'~paid').set({...base,amount:paid,payId:ref.id,paid:sent,splitPart:1,splitParts:2,splitOriginal:orig})) && await write(()=>db.doc('txns/'+t.id+'~rest').set({...base,amount:rest,payId:null,paid:false,splitPart:2,splitParts:2,notes:(t.notes?t.notes+' · ':'')+'unpaid rest'})))
+          await write(()=>db.doc('txns/'+t.id).delete()); } }
+    CP.sel.clear(); ['cp2-amt','cp2-note'].forEach(x=>delete S.draft[x]);
+    toast(`Payment saved · ${al.full.length} charge${al.full.length===1?'':'s'} ${sent?'paid':'scheduled'}${al.part?` · ${money(al.part.paid)} paid of ${al.part.r.vendor||al.part.r.desc||'one charge'}, ${money(al.part.rest)} still unpaid`:''}${al.skip.length?` · ${al.skip.length} not reached, still unpaid`:''}`); }
   CP.busy=false;render();
 }
 async function cpSetSent(pid,sent){
@@ -311,6 +328,7 @@ document.addEventListener('click',async e=>{
   const ct=e.target.closest('[data-act="cp-card"]'); if(ct){CP.card=ct.dataset.k;CP.sel.clear();CP.open=null;CP.grp=null;render();return;}
   const b=e.target.closest('[data-cp]'); if(!b) return; const a=b.dataset.cp;
   if(a==='tick'){const k=b.dataset.k;CP.sel.has(k)?CP.sel.delete(k):CP.sel.add(k);render();return;}
+  if(a==='useticked'){S.draft['cp2-amt']=String(r2(sum(cpUnpaid(CP.card).filter(r=>CP.sel.has(r.selKey)))));render();return;}
   if(a==='all'){const _b=r=>['overhead','property','marketing'].includes(r.bucket)?r.bucket:'uncat', _g=r=>r.bucket==='property'?(r.prop||'No property'):((r.cat||'')+(r.sub?' · '+r.sub:'')||'Not categorized');const list=cpUnpaid(CP.card).filter(r=>(CP.bucket==='all'||_b(r)===CP.bucket)&&(!CP.grp||_g(r)===CP.grp));const on=!list.every(r=>CP.sel.has(r.selKey));list.forEach(r=>on?CP.sel.add(r.selKey):CP.sel.delete(r.selKey));render();return;}
   if(a==='bucket'){CP.bucket=b.dataset.v;CP.grp=null;render();return;}
   if(a==='view'){CP.view=b.dataset.v;CP.grp=null;render();return;}
@@ -844,6 +862,29 @@ div.cp-row{cursor:default}.cp-row.on{border-color:var(--accent);background:color
 .sp-line input,.sp-line select{width:100%;min-width:0;font-size:13px;padding:5px 6px}
 .sp-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp-ok{color:var(--accent);font-weight:700;font-size:13px}.sp-bad{color:#b45309;font-weight:700;font-size:13px}
 @media (max-width:900px){.sp-line{grid-template-columns:1fr 1fr}}
+.cp-part{font-size:11.5px;font-weight:700;color:#b45309}
+.ceo{display:flex;flex-direction:column;gap:18px;max-width:920px}
+.ceo-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:10px 16px}
+.ceo-head h2{font-size:24px;font-weight:700;letter-spacing:-.01em;margin:2px 0}
+.ceo-pick{position:relative}.ceo-pick>summary{list-style:none}.ceo-pick>summary::-webkit-details-marker{display:none}
+.ceo-pickbox{position:absolute;right:0;top:calc(100% + 6px);z-index:5;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow-sm);min-width:220px}
+.ceo .k{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.ceo-tot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.ceo-tot>div,.ceo-figs>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ceo-tot>div{padding:14px 18px}.ceo-tot>div+div{border-left:1px solid var(--line)}
+.ceo-tot b{font-size:26px;line-height:1.2;font-weight:600}
+.ceo-tot .faint,.ceo-figs .faint{font-size:13px}
+.c-good{color:var(--good)}.c-acc{color:var(--accent-ink)}
+.ceo-prop{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.ceo-ph{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 14px}.ceo-ph h3{font-size:19px;font-weight:700}
+.ceo-figs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.ceo-figs b{font-size:22px;line-height:1.2;font-weight:600}
+.ceo-bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--line)}.ceo-bar span{background:var(--good)}.ceo-bar.budget span{background:var(--accent)}
+.ceo-cap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:6px}
+.ceo-cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px}
+.ceo-cols table{min-width:0}.ceo-cols th{background:transparent;padding:0 0 6px}.ceo-cols td{padding:7px 0;font-size:13.5px}
+.ceo-note{background:var(--warn-soft);border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:10px 14px;font-size:13.5px}.ceo-note b{color:var(--warn)}
+.ceo-note.good{background:var(--good-soft,transparent);border-left-color:var(--good)}.ceo-note.good b{color:var(--good)}
+@media (max-width:640px){.ceo-tot,.ceo-cols{grid-template-columns:1fr}.ceo-tot>div+div{border-left:0;border-top:1px solid var(--line)}.ceo-figs{grid-template-columns:1fr 1fr}}
 </style>
 <script>
 /* ===== Controller section: one tab with sub-pages. Reads this ledger + the QuickBooks snapshot. ===== */
@@ -1420,7 +1461,7 @@ const DEFAULTS = {
   receiptFolder:'https://drive.google.com/drive/folders/1Ps4suRRPe33QgBj35QEZt6smAj0sScoe',
   propertyFolder:''
 };
-const SECTIONS = [{k:'daily',n:'Daily Expenses'},{k:'tracker',n:'Card Tracker'},{k:'cardctl',n:'Card Control'},{k:'bank',n:'Bank Accounts'},{k:'marketing',n:'Marketing'},{k:'properties',n:'Properties'},{k:'draws',n:'Draws'},{k:'payments',n:'Card Payments'},{k:'payroll',n:'Payroll'},{k:'payables',n:'Payables'},{k:'cash',n:'Cash & Maturities'},{k:'close',n:'Month-End Close'},{k:'snapshot',n:'Juan Snapshot'},{k:'controller',n:'Controller'},{k:'settings',n:'Settings'}];
+const SECTIONS = [{k:'daily',n:'Daily Expenses'},{k:'tracker',n:'Card Tracker'},{k:'cardctl',n:'Card Control'},{k:'bank',n:'Bank Accounts'},{k:'marketing',n:'Marketing'},{k:'properties',n:'Properties'},{k:'draws',n:'Draws'},{k:'payments',n:'Card Payments'},{k:'payroll',n:'Payroll'},{k:'payables',n:'Payables'},{k:'cash',n:'Cash & Maturities'},{k:'close',n:'Month-End Close'},{k:'snapshot',n:'Juan Snapshot'},{k:'ceo',n:'CEO Summary'},{k:'controller',n:'Controller'},{k:'settings',n:'Settings'}];
 const BUCKETS = {overhead:'Overhead',property:'Property',marketing:'Marketing'};
 const DRIVE='Google Drive';
 
@@ -1817,7 +1858,7 @@ function render(){
   if(ex&&!S.readOnly&&S.isOwner) h+=`<div class="note info"><span>Rows marked <span class="tag">example</span> show how the ledger works. They are not real expenses.</span>${S.confirm==='clear-ex'?`<span class="row"><button class="btn sm danger" data-act="clear-ex-yes">Remove ${ex} example rows</button><button class="btn sm ghost" data-act="cancel">Keep</button></span>`:`<button class="btn sm" data-act="clear-ex">Remove examples</button>`}</div>`;
   if(S.isOwner) h+=riskBanner();
   h+=askBox(); if(S.tab==='daily') h+=guidesPanel();
-  h+=S.tab==='cardctl'?viewCardCtl():S.tab==='bank'?viewBank():S.tab==='daily'?viewDaily():S.tab==='tracker'?viewTracker():S.tab==='marketing'?viewMarketing():S.tab==='draws'?viewDraws():S.tab==='properties'?viewProperties():S.tab==='payments'?viewPayments():S.tab==='payroll'?viewPayroll():S.tab==='controller'?viewController():S.tab==='payables'?viewPayables():S.tab==='close'?viewClose():S.tab==='snapshot'?viewSnapshot():S.tab==='cash'?viewCash():viewSettings();
+  h+=S.tab==='cardctl'?viewCardCtl():S.tab==='bank'?viewBank():S.tab==='daily'?viewDaily():S.tab==='tracker'?viewTracker():S.tab==='marketing'?viewMarketing():S.tab==='draws'?viewDraws():S.tab==='properties'?viewProperties():S.tab==='payments'?viewPayments():S.tab==='payroll'?viewPayroll():S.tab==='controller'?viewController():S.tab==='payables'?viewPayables():S.tab==='close'?viewClose():S.tab==='snapshot'?viewSnapshot():S.tab==='ceo'?viewCeo():S.tab==='cash'?viewCash():viewSettings();
   const _y=window.scrollY, _fx=[...document.querySelectorAll('#app .tbl')].map(e=>[e.scrollLeft,e.scrollTop]), _ae=document.activeElement, _aid=_ae&&_ae.id, _row=_ae&&_ae.closest&&_ae.closest('tr[data-id]')?.dataset.id, _f=_ae&&_ae.dataset&&_ae.dataset.f;
   $('#app').innerHTML=`<fieldset class="ro"${S.readOnly?' disabled':''}>${h}</fieldset>`;
   [...document.querySelectorAll('#app .tbl')].forEach((e,i)=>{if(_fx[i]){e.scrollLeft=_fx[i][0];e.scrollTop=_fx[i][1];}});
@@ -2059,7 +2100,7 @@ function rowTable(list,opts={}){
     <td>${r.src==='ledger'?`<input type="checkbox" data-act="tf" data-f="paid"${r.paid?' checked':''} aria-label="Paid">`:(r.paid?'<span class="pill good">Paid</span>':'<span class="pill bad">Unpaid</span>')}</td>
     <td class="d">${shortDate(r.date)}</td>${opts.card?`<td>${chip(r.card)}</td>`:''}
     <td>${led?receiptCell({...led,receiptUrl:led.receiptUrl||r.rc}):(r.rc?`<a href="${esc(r.rc)}" target="_blank" rel="noopener">Receipt</a>`:'<span class="faint">—</span>')}</td>
-    <td class="payee">${esc(r.src==='sheet'?(r.vendor||r.desc):r.desc)}</td>
+    <td class="payee">${esc(r.src==='sheet'?(r.vendor||r.desc):r.desc)}${r.restOf?` <span class="cp-part">unpaid rest of ${money(r.restOf)}</span>`:r.partOf?` <span class="cp-part">paid part of ${money(r.partOf)}</span>`:(r.splitOf&&r.partialPay&&r.splitPart===2)?` <span class="cp-part">unpaid rest of ${money(r.splitTotal)}</span>`:''}</td>
     <td>${led?`<input class="notes" type="text" id="tn-${esc(led.id)}" data-act="tf" data-f="notes" value="${esc(led.notes||'')}" placeholder="Add a note" aria-label="What is this for?">`:`<span class="muted">${esc(r.vendor&&r.desc&&r.desc!==r.vendor?r.desc:'')}</span>`}</td>
     <td>${esc([r.cat,r.sub].filter(Boolean).join(' · ')||'—')}</td>${opts.prop?`<td>${esc(r.prop||'—')}</td>`:''}
     <td>${r.src==='sheet'?`<span class="pill plain" title="${esc(r.tab)}">Card sheet</span>`:`<span class="pill ${r.status==='Transferred'?'good':'warn'}">${esc(r.status||'Posted')}</span>`}</td>
@@ -2773,11 +2814,46 @@ function snapBlocks(){ const X=snapData(), lv={healthy:'go',watch:'wait',action:
 /* ----- who sees what ----- */
 const VIEW_OPTS={accounting:'Accounting: everything except the Controller',entry:'Data entry: expenses, bills, card payments, payroll',report:'Snapshot only',juan:'Snapshot + Payables',tracker:'Snapshot + Card Tracker',full:'All tabs (view only)'};
 function allowedTabs(){ if(S.isOwner!==false) return SECTIONS.map(s=>s.k); const v=(S.L.viewers||{})[S.uid]?.view||'report';
-  return v==='accounting'?SECTIONS.map(s=>s.k).filter(k=>k!=='controller'&&k!=='settings'):v==='entry'?['daily','tracker','cardctl','bank','marketing','properties','draws','payables','payments','payroll']:v==='full'?SECTIONS.map(s=>s.k).filter(k=>k!=='settings'):v==='juan'?['snapshot','payables']:v==='tracker'?['snapshot','tracker']:['snapshot']; }
+  return v==='accounting'?SECTIONS.map(s=>s.k).filter(k=>k!=='controller'&&k!=='settings'):v==='entry'?['daily','tracker','cardctl','bank','marketing','properties','draws','payables','payments','payroll']:v==='full'?SECTIONS.map(s=>s.k).filter(k=>k!=='settings'):v==='juan'?['snapshot','ceo','payables']:v==='tracker'?['snapshot','ceo','tracker']:['snapshot','ceo']; }
 function viewersPanel(){ const vs=S.L.viewers||{};
   return `<div class="panel panel-pad stack"><h3 style="font-size:16px">Who sees what</h3><span class="muted" style="font-size:13px">Only you can change the books. Anyone else you share with sees just the tabs you pick here; someone not listed sees the Snapshot only. Juan can approve bills (share with him as Contributor); Darlyn (Data entry, share as Contributor) can add expenses, receipts, bills and card payments, but can’t approve, delete or mark bills paid, and never sees the Controller, Snapshot or Settings. Everything else is locked to you.</span>
     ${Object.keys(vs).length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:480px"><tbody>${Object.entries(vs).map(([id,v])=>`<tr data-vid="${esc(id)}"><td><b>${esc(personName(id))}</b></td><td><select data-act="vw-set" aria-label="What they see">${Object.entries(VIEW_OPTS).map(([k,n])=>`<option value="${k}"${v.view===k?' selected':''}>${n}</option>`).join('')}</select></td><td><button class="btn sm ghost" data-act="vw-del" aria-label="Remove">✕</button></td></tr>`).join('')}</tbody></table></div>`:''}
     <div class="row"><input type="text" id="vw-q" data-draft="vw-q" value="${esc(D('vw-q'))}" placeholder="Search a teammate by name"><button class="btn sm" data-act="vw-search">Find</button>${(S.vwHits||[]).map(p=>`<button class="btn sm" data-act="vw-add" data-id="${esc(p.id)}">＋ ${esc(p.name||'Someone')}</button>`).join('')}</div></div>`; }
+/* ===== CEO Summary: live per-property spending and holdback, for Juan ===== */
+const CEO_DEF=['p-460-5th-avenue','p-22496-avenue-18-3-4'];
+const ceoProps=()=>(S.L.ceoProps&&S.L.ceoProps.length?S.L.ceoProps:CEO_DEF).map(id=>S.props.get(id)).filter(Boolean);
+const CEO_GROUPS=[['Labor (Matrix crew, local team, contractors)',/payroll|labor|contractor/i],['Materials & supplies',/material|appliance|tool|suppl|equipment/i],['Permits & fees',/permit/i],['Waste disposal & storage',/waste|storage|moving/i]];
+function ceoBreakdown(byCat){ const g={}; for(const [k,v] of Object.entries(byCat)){ const hit=CEO_GROUPS.find(([,re])=>re.test(k)); const n=hit?hit[0]:'Fuel, meals, travel & other'; g[n]=r2((g[n]||0)+v); }
+  return Object.entries(g).filter(([,v])=>Math.abs(v)>=0.5).sort((a,b)=>b[1]-a[1]); }
+function ceoData(p){ const s=propStats(p), d=drawStats(p), hb=d.holdback||d.impliedHoldback||0, ahead=r2(s.total-d.disbursed);
+  return {p,s,d,hb,released:d.disbursed,left:hb?d.remaining:0,ahead,pct:hb?Math.round(d.disbursed/hb*100):0,budget:s.budget,bPct:s.budget?Math.round(s.total/s.budget*100):null,rows:ceoBreakdown(s.byCat)}; }
+function viewCeo(){
+  const list=ceoProps().map(ceoData), owner=S.isOwner!==false;
+  const T=k=>r2(list.reduce((a,x)=>a+(x[k]||0),0)), spent=r2(list.reduce((a,x)=>a+x.s.total,0));
+  const last=[...S.txns.values()].filter(t=>list.some(x=>x.p.id===t.propertyId)).map(t=>t.date||'').sort().pop()||'';
+  let h=`<div class="ceo"><div class="ceo-head"><div><div class="eyebrow">Twin Home Buyer · Construction status for Juan</div><h2>${list.map(x=>esc(shortAddr(x.p.address))).join(' &amp; ')||'Pick properties'}</h2>
+    <div class="muted" style="font-size:13.5px">Rehab spending and lender holdback · updates live from this ledger · ${shortDate(today())}${last?` · latest charge ${shortDate(last)}`:''}</div></div>
+    ${owner?`<details class="ceo-pick"><summary class="btn sm">Choose properties</summary><div class="ceo-pickbox">${[...S.props.values()].filter(p=>groupOf(p)==='active').sort((a,b)=>(a.address||'').localeCompare(b.address||'')).map(p=>`<label class="check"><input type="checkbox" data-act="ceo-pick" data-pid="${esc(p.id)}"${list.some(x=>x.p.id===p.id)?' checked':''}> ${esc(shortAddr(p.address))}</label>`).join('')}</div></details>`:''}</div>`;
+  h+=`<div class="ceo-tot"><div><span class="k">Spent so far</span><b class="mono">${money0(spent)}</b><span class="faint">${list.length} propert${list.length===1?'y':'ies'}</span></div>
+    <div><span class="k">Holdback released</span><b class="mono c-good">${money0(T('released'))}</b><span class="faint">of ${money0(T('hb'))} total</span></div>
+    <div><span class="k">Still to receive</span><b class="mono c-acc">${money0(T('left'))}</b><span class="faint">held by the lender${list.length>1?'s':''}</span></div></div>`;
+  for(const x of list){ const p=x.p, d=x.d;
+    h+=`<section class="ceo-prop"><div class="ceo-ph"><h3>${esc(p.address)}</h3><span class="muted" style="font-size:13px">${esc(p.status||'')}${p.lender?' · Lender: '+esc(p.lender):''}</span></div>
+      <div class="ceo-figs"><div><span class="k">Expenses to date</span><b class="mono">${money0(x.s.total)}</b><span class="faint">${money0(x.s.unpaid)} not paid yet</span></div>
+      ${x.hb?`<div><span class="k">Holdback released</span><b class="mono c-good">${money0(x.released)}</b><span class="faint">${d.list.length?`${d.list.length} draw${d.list.length===1?'':'s'} · `:''}${x.pct}% received</span></div>
+      <div><span class="k">Still to receive</span><b class="mono c-acc">${money0(x.left)}</b><span class="faint">of ${money0(x.hb)} holdback</span></div>`
+      :`<div><span class="k">Holdback</span><b class="mono faint">Not entered</b><span class="faint">${owner?'add it in the Draws tab':'not set up yet'}</span></div>
+      <div><span class="k">Rehab budget</span><b class="mono">${x.budget?money0(x.budget):'—'}</b><span class="faint">${x.budget?`${x.bPct}% used · ${money0(r2(x.budget-x.s.total))} left`:'no budget yet'}</span></div>`}</div>
+      ${x.hb?`<div><div class="ceo-bar" role="img" aria-label="${x.pct}% of the holdback released"><span style="width:${Math.min(100,x.pct)}%"></span></div><div class="ceo-cap"><span>Released ${money0(x.released)}</span><span>Remaining ${money0(x.left)}</span></div></div>`
+      :x.budget?`<div><div class="ceo-bar budget" role="img" aria-label="${x.bPct}% of the budget used"><span style="width:${Math.min(100,x.bPct)}%"></span></div><div class="ceo-cap"><span>Spent ${money0(x.s.total)}</span><span>Budget ${money0(x.budget)}</span></div></div>`:''}
+      <div class="ceo-cols"><table><thead><tr><th>Where the money went</th><th class="amt">Amount</th></tr></thead><tbody>${x.rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="amt">${money0(v)}</td></tr>`).join('')||'<tr><td class="faint">No expenses yet</td><td></td></tr>'}</tbody></table>
+      <table><thead><tr><th>Draws received</th><th class="amt">Amount</th></tr></thead><tbody>${d.list.length?[...d.list].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(w=>`<tr><td>${esc(w.note||'Draw')} · ${shortDate(w.date)}</td><td class="amt">${money0(dRecv(w))}</td></tr>`).join('')+`<tr><td><b>Total released</b></td><td class="amt"><b>${money0(x.released)}</b></td></tr>`:(x.released?`<tr><td>Received from holdback (total entered)</td><td class="amt"><b>${money0(x.released)}</b></td></tr>`:`<tr><td>None yet</td><td class="amt">$0</td></tr>`)}</tbody></table></div>
+      ${x.hb&&x.ahead<0?`<div class="ceo-note good"><b>Holdback received covers spending so far.</b> ${money0(x.released)} received vs ${money0(x.s.total)} spent, ${money0(-x.ahead)} not yet spent on the rehab.</div>`:x.hb?`<div class="ceo-note"><b>Spent ahead of draws: ${money0(x.ahead)}.</b> ${money0(x.s.total)} spent vs ${money0(x.released)} released, covered by company cash and cards until the next draw.</div>`
+      :`<div class="ceo-note"><b>All ${money0(x.s.total)} came from company cash and cards.</b> No lender holdback is recorded for this property${x.budget?`; ${x.bPct}% of the ${money0(x.budget)} rehab budget is used`:''}.</div>`}
+    </section>`; }
+  h+=`<p class="faint" style="font-size:12.5px;max-width:80ch">Expenses are rehab and holding costs charged to each property: card charges, payroll, bills and the property trackers in Drive. They leave out the purchase price, earnest money and loan interest. “Not paid yet” is card and bill balances still open. Holdback figures use the lender’s remaining-to-fund amount where it is entered. Prepared by Kristine, Controller.</p></div>`;
+  return h;
+}
 function riskBanner(){
   if(S.tab==='cash') return '';
   const fc=forecast(); const reds=regProps().map(p=>({p,r:riskOf(p,fc)})).filter(x=>x.r.level==='red');
@@ -3078,6 +3154,7 @@ document.addEventListener('change',async e=>{
   if(act==='cl-st'||act==='cl-note'){const m=S.closeMonth,n=tr.dataset.step,c=closeDoc(m),st={...((c.steps||{})[n]||{})};if(act==='cl-st'){st.status=t.value;st.by=S.uid||'';st.at=new Date().toISOString();}else{if(bankBlocked(t.value)){render();return;}st.note=t.value;}await saveClose(m,{steps:{...(c.steps||{}),[n]:st}});return;}
   if(act==='ic'){const m=S.closeMonth,e=tr.dataset.ent,c=closeDoc(m),f=t.dataset.f;if(t.dataset.text&&bankBlocked(t.value)){render();return;}const v=t.dataset.text?t.value:(t.value.trim()===''?null:num(t.value));await saveClose(m,{interco:{...(c.interco||{}),[e]:{...((c.interco||{})[e]||{}),[f]:v}}});return;}
   if(act==='ex-f'){const id=tr.dataset.ex,f=t.dataset.f;if(f==='resolution'&&bankBlocked(t.value)){render();return;}await write(()=>db.doc('exceptions/'+id).update({[f]:t.value,...(f==='status'?{statusBy:S.uid||'',statusAt:new Date().toISOString()}:{})}));return;}
+  if(act==='ceo-pick'){const cur=new Set((S.L.ceoProps&&S.L.ceoProps.length?S.L.ceoProps:CEO_DEF));if(t.checked)cur.add(t.dataset.pid);else cur.delete(t.dataset.pid);await write(()=>db.doc('settings/lists').set({...S.L,ceoProps:[...cur]}));return;}
   if(act==='rk-hold'){await write(()=>db.doc('properties/'+t.dataset.pid).update({onHold:t.checked}));return;}
   if(act==='pol-ok'){const pk={...(S.L.policyOk||{})};if(t.checked)pk[t.dataset.k]={by:S.uid||'',at:new Date().toISOString()};else delete pk[t.dataset.k];await write(()=>db.doc('settings/lists').set({...S.L,policyOk:pk}));return;}
   if(act==='pol-juan'){await write(()=>db.doc('settings/lists').set({...S.L,alwaysJuan:t.checked}));return;}
@@ -3303,4 +3380,5 @@ render();
 </script>
 
 
+</body></html>
 </body></html>
