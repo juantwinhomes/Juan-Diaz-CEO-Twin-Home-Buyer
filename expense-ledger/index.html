@@ -883,6 +883,8 @@ div.cp-row{cursor:default}.cp-row.on{border-color:var(--accent);background:color
 .ceo-cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px}
 .ceo-cols table{min-width:0}.ceo-cols th{background:transparent;padding:0 0 6px}.ceo-cols td{padding:7px 0;font-size:13.5px}
 .ceo-note{background:var(--warn-soft);border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:10px 14px;font-size:13.5px}.ceo-note b{color:var(--warn)}
+.ceo-say{font-size:17px;line-height:1.55;margin:0}.ceo-say b{font-family:var(--f-mono);font-weight:600}
+.ceo-sep{border:0;border-top:3px solid var(--ink);margin:4px 0;width:100%}
 .ceo-note.good{background:var(--good-soft,transparent);border-left-color:var(--good)}.ceo-note.good b{color:var(--good)}
 @media (max-width:640px){.ceo-tot,.ceo-cols{grid-template-columns:1fr}.ceo-tot>div+div{border-left:0;border-top:1px solid var(--line)}.ceo-figs{grid-template-columns:1fr 1fr}}
 </style>
@@ -2812,9 +2814,9 @@ function snapBlocks(){ const X=snapData(), lv={healthy:'go',watch:'wait',action:
     {t:'h',x:'Decisions I need from you'},{t:'p',x:dec.length?dec.map((d,i)=>`${i+1}. ${d.t}${d.d?' - '+d.d:''}`).join('\n'):'None right now.'},
     {t:'tbl',head:['Property','Budget used','% complete','Projected GP'],right:[3],rows:X.props.map(x=>[shortAddr(x.p.address),x.s.budget?`${money0(x.s.total)} of ${money0(x.s.budget)}`:'no budget',x.p.pctComplete!=null&&x.p.pctComplete!==''?x.p.pctComplete+'%':'-',x.g==null?'-':money0(x.g)])}]; }
 /* ----- who sees what ----- */
-const VIEW_OPTS={accounting:'Accounting: everything except the Controller',entry:'Data entry: expenses, bills, card payments, payroll',report:'Snapshot only',juan:'Snapshot + Payables',tracker:'Snapshot + Card Tracker',full:'All tabs (view only)'};
+const VIEW_OPTS={ceo:'CEO Summary only (Redwood & Madera, live)',accounting:'Accounting: everything except the Controller',entry:'Data entry: expenses, bills, card payments, payroll',report:'Snapshot only',juan:'Snapshot + Payables',tracker:'Snapshot + Card Tracker',full:'All tabs (view only)'};
 function allowedTabs(){ if(S.isOwner!==false) return SECTIONS.map(s=>s.k); const v=(S.L.viewers||{})[S.uid]?.view||'report';
-  return v==='accounting'?SECTIONS.map(s=>s.k).filter(k=>k!=='controller'&&k!=='settings'):v==='entry'?['daily','tracker','cardctl','bank','marketing','properties','draws','payables','payments','payroll']:v==='full'?SECTIONS.map(s=>s.k).filter(k=>k!=='settings'):v==='juan'?['snapshot','ceo','payables']:v==='tracker'?['snapshot','ceo','tracker']:['snapshot','ceo']; }
+  return v==='accounting'?SECTIONS.map(s=>s.k).filter(k=>k!=='controller'&&k!=='settings'):v==='entry'?['daily','tracker','cardctl','bank','marketing','properties','draws','payables','payments','payroll']:v==='full'?SECTIONS.map(s=>s.k).filter(k=>k!=='settings'):v==='ceo'?['ceo']:v==='juan'?['snapshot','ceo','payables']:v==='tracker'?['snapshot','ceo','tracker']:['snapshot','ceo']; }
 function viewersPanel(){ const vs=S.L.viewers||{};
   return `<div class="panel panel-pad stack"><h3 style="font-size:16px">Who sees what</h3><span class="muted" style="font-size:13px">Only you can change the books. Anyone else you share with sees just the tabs you pick here; someone not listed sees the Snapshot only. Juan can approve bills (share with him as Contributor); Darlyn (Data entry, share as Contributor) can add expenses, receipts, bills and card payments, but can’t approve, delete or mark bills paid, and never sees the Controller, Snapshot or Settings. Everything else is locked to you.</span>
     ${Object.keys(vs).length?`<div class="tbl" style="border:1px solid var(--line);border-radius:10px"><table style="min-width:480px"><tbody>${Object.entries(vs).map(([id,v])=>`<tr data-vid="${esc(id)}"><td><b>${esc(personName(id))}</b></td><td><select data-act="vw-set" aria-label="What they see">${Object.entries(VIEW_OPTS).map(([k,n])=>`<option value="${k}"${v.view===k?' selected':''}>${n}</option>`).join('')}</select></td><td><button class="btn sm ghost" data-act="vw-del" aria-label="Remove">✕</button></td></tr>`).join('')}</tbody></table></div>`:''}
@@ -2837,9 +2839,10 @@ function viewCeo(){
   h+=`<div class="ceo-tot"><div><span class="k">Spent so far</span><b class="mono">${money0(spent)}</b><span class="faint">${list.length} propert${list.length===1?'y':'ies'}</span></div>
     <div><span class="k">Holdback released</span><b class="mono c-good">${money0(T('released'))}</b><span class="faint">of ${money0(T('hb'))} total</span></div>
     <div><span class="k">Still to receive</span><b class="mono c-acc">${money0(T('left'))}</b><span class="faint">held by the lender${list.length>1?'s':''}</span></div></div>`;
-  for(const x of list){ const p=x.p, d=x.d;
-    h+=`<section class="ceo-prop"><div class="ceo-ph"><h3>${esc(p.address)}</h3><span class="muted" style="font-size:13px">${esc(p.status||'')}${p.lender?' · Lender: '+esc(p.lender):''}</span></div>
-      <div class="ceo-figs"><div><span class="k">Expenses to date</span><b class="mono">${money0(x.s.total)}</b><span class="faint">${money0(x.s.unpaid)} not paid yet</span></div>
+  for(const [i,x] of list.entries()){ const p=x.p, d=x.d; if(i) h+='<hr class="ceo-sep">';
+    h+=`<section class="ceo-prop"><div class="ceo-ph"><div><div class="k">Property ${i+1}</div><h3>${esc(p.address)}</h3></div><span class="muted" style="font-size:13px">${esc(p.status||'')}${p.lender?' · Lender: '+esc(p.lender):''}</span></div>
+      <p class="ceo-say">${x.hb?`We have spent <b>${money0(x.s.total)}</b>. ${esc(p.lender||'The lender')} has released <b>${money0(x.released)}</b> of the <b>${money0(x.hb)}</b> holdback, so <b>${money0(x.left)}</b> is still to come.`:`We have spent <b>${money0(x.s.total)}</b>. No holdback is entered for this property yet.`}</p>
+      <div class="ceo-figs"><div><span class="k">Spent so far</span><b class="mono">${money0(x.s.total)}</b><span class="faint">${money0(x.s.unpaid)} not paid yet</span></div>
       ${x.hb?`<div><span class="k">Holdback released</span><b class="mono c-good">${money0(x.released)}</b><span class="faint">${d.list.length?`${d.list.length} draw${d.list.length===1?'':'s'} · `:''}${x.pct}% received</span></div>
       <div><span class="k">Still to receive</span><b class="mono c-acc">${money0(x.left)}</b><span class="faint">of ${money0(x.hb)} holdback</span></div>`
       :`<div><span class="k">Holdback</span><b class="mono faint">Not entered</b><span class="faint">${owner?'add it in the Draws tab':'not set up yet'}</span></div>
