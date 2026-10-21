@@ -1,0 +1,149 @@
+<title>Redwood &amp; Madera Summary</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one column, answer first. Totals strip, then one sheet per property: holdback bar, spend breakdown, one-line note. */
+:root{
+  --paper:#F5F7F8; --sheet:#FFFFFF; --ink:#14212B; --muted:#56656F; --rule:#D9E0E4;
+  --steel:#1F4E6E; --released:#2E7D5B; --left:#C9D5DC; --flag:#9A5A12; --flag-bg:#FBF1E2;
+  --f-head:"Libre Franklin","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0F161B; --sheet:#172129; --ink:#E6ECEF; --muted:#9AA9B2; --rule:#2A3740;
+  --steel:#7FB2D6; --released:#5FC198; --left:#33434E; --flag:#E2A85E; --flag-bg:#2E2414; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0F161B; --sheet:#172129; --ink:#E6ECEF; --muted:#9AA9B2; --rule:#2A3740;
+  --steel:#7FB2D6; --released:#5FC198; --left:#33434E; --flag:#E2A85E; --flag-bg:#2E2414; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto;padding-block:32px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--f-head);margin:0;text-wrap:balance}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-weight:600}
+.eyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);font-weight:600}
+header{display:flex;flex-direction:column;gap:6px}
+header h1{font-size:30px;font-weight:700;letter-spacing:-.01em}
+header p{margin:0;color:var(--muted)}
+.totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--rule);background:var(--sheet);border-radius:10px}
+.totals>div{padding:16px 18px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.totals>div+div{border-left:1px solid var(--rule)}
+.k{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.big{font-size:26px;line-height:1.2}
+.sub{font-size:13px;color:var(--muted)}
+.prop{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:22px 22px 20px;display:flex;flex-direction:column;gap:18px}
+.prop-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 16px}
+.prop-head h2{font-size:21px;font-weight:700}
+.meta{font-size:13px;color:var(--muted)}
+.figs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.figs>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.figs .big{font-size:22px}
+.c-rel{color:var(--released)} .c-steel{color:var(--steel)}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--left)}
+.bar span{background:var(--released)}
+.barcap{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:6px;gap:12px;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:0 0 6px;border-bottom:1px solid var(--rule)}
+td{padding:7px 0;border-bottom:1px solid var(--rule)}
+tr:last-child td{border-bottom:0}
+td.amt,th.amt{text-align:right}
+.cols{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px}
+.draws td{font-size:13.5px}
+.note{background:var(--flag-bg);color:var(--ink);border-left:3px solid var(--flag);padding:10px 14px;border-radius:0 6px 6px 0;font-size:14px}
+.note b{color:var(--flag)}
+.note.good{background:color-mix(in srgb,var(--released) 12%,var(--sheet));border-left-color:var(--released)} .note.good b{color:var(--released)}
+footer{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+@media (max-width:640px){
+  .totals{grid-template-columns:1fr}
+  .totals>div+div{border-left:0;border-top:1px solid var(--rule)}
+  .figs{grid-template-columns:1fr 1fr}
+  .cols{grid-template-columns:1fr}
+  header h1{font-size:25px}
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Twin Home Buyer · Construction status for Juan</div>
+    <h1>460 5th Ave &amp; 22496 Avenue 18 3/4</h1>
+    <p>Rehab spending and Anchor holdback, as of October 21, 2026.</p>
+  </header>
+
+  <section class="totals" aria-label="Both properties combined">
+    <div><span class="k">Spent so far</span><span class="big num">$170,357</span><span class="sub">both properties</span></div>
+    <div><span class="k">Holdback released</span><span class="big num c-rel">$165,100</span><span class="sub">of $306,665 total</span></div>
+    <div><span class="k">Still to receive</span><span class="big num c-steel">$141,565</span><span class="sub">held by Anchor</span></div>
+  </section>
+
+  <section class="prop" aria-labelledby="p460">
+    <div class="prop-head"><h2 id="p460">460 5th Avenue, Redwood City</h2><span class="meta">Under construction · Lender: Anchor</span></div>
+    <div class="figs">
+      <div><span class="k">Expenses to date</span><span class="big num">$75,524</span><span class="sub">$41,132 not paid yet</span></div>
+      <div><span class="k">Holdback released</span><span class="big num c-rel">$59,600</span><span class="sub">2 draws · 32% received</span></div>
+      <div><span class="k">Still to receive</span><span class="big num c-steel">$126,565</span><span class="sub">of $186,165 holdback</span></div>
+    </div>
+    <div>
+      <div class="bar" role="img" aria-label="32% of the holdback released"><span style="width:32%"></span></div>
+      <div class="barcap"><span>Released $59,600</span><span>Remaining $126,565</span></div>
+    </div>
+    <div class="cols">
+      <table>
+        <thead><tr><th>Where the money went</th><th class="amt">Amount</th></tr></thead>
+        <tbody>
+          <tr><td>Labor (Matrix crew, local team, contractors)</td><td class="amt num">$38,687</td></tr>
+          <tr><td>Materials &amp; supplies</td><td class="amt num">$30,878</td></tr>
+          <tr><td>Waste disposal &amp; storage</td><td class="amt num">$3,241</td></tr>
+          <tr><td>Fuel, meals, travel &amp; other</td><td class="amt num">$2,430</td></tr>
+          <tr><td>Permits &amp; fees (net of refund)</td><td class="amt num">$288</td></tr>
+        </tbody>
+      </table>
+      <table class="draws">
+        <thead><tr><th>Draws received</th><th class="amt">Amount</th></tr></thead>
+        <tbody>
+          <tr><td>Draw 1 · Sep 8, 2026</td><td class="amt num">$32,025</td></tr>
+          <tr><td>Draw 2 · Sep 16, 2026</td><td class="amt num">$27,575</td></tr>
+          <tr><td><b>Total released</b></td><td class="amt num">$59,600</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note"><b>Spent ahead of draws: $15,924.</b> $75,524 spent vs $59,600 released, covered by company cash and cards until the next draw.</div>
+  </section>
+
+  <section class="prop" aria-labelledby="pmad">
+    <div class="prop-head"><h2 id="pmad">22496 Avenue 18 3/4, Madera</h2><span class="meta">Upcoming construction · Lender: Anchor</span></div>
+    <div class="figs">
+      <div><span class="k">Expenses to date</span><span class="big num">$94,834</span><span class="sub">$69,713 not paid yet</span></div>
+      <div><span class="k">Holdback released</span><span class="big num c-rel">$105,500</span><span class="sub">88% received</span></div>
+      <div><span class="k">Still to receive</span><span class="big num c-steel">$15,000</span><span class="sub">of $120,500 holdback</span></div>
+    </div>
+    <div>
+      <div class="bar" role="img" aria-label="88% of the holdback released"><span style="width:88%"></span></div>
+      <div class="barcap"><span>Released $105,500</span><span>Remaining $15,000</span></div>
+    </div>
+    <div class="cols">
+      <table>
+        <thead><tr><th>Where the money went</th><th class="amt">Amount</th></tr></thead>
+        <tbody>
+          <tr><td>Materials &amp; supplies</td><td class="amt num">$77,274</td></tr>
+          <tr><td>Labor (Matrix crew, local team, contractors)</td><td class="amt num">$12,745</td></tr>
+          <tr><td>Fuel, meals, travel &amp; other</td><td class="amt num">$4,114</td></tr>
+          <tr><td>Waste disposal</td><td class="amt num">$700</td></tr>
+        </tbody>
+      </table>
+      <table class="draws">
+        <thead><tr><th>Draws received</th><th class="amt">Amount</th></tr></thead>
+        <tbody>
+          <tr><td>Received from holdback (total entered)</td><td class="amt num">$105,500</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note good"><b>Holdback received covers spending so far.</b> $105,500 received vs $94,834 spent, $10,666 not yet spent on the rehab.</div>
+  </section>
+
+  <footer>
+    <span>Expenses are rehab and holding costs charged to each property: card charges, Matrix payroll, bills and the property trackers in Drive. They exclude the purchase price, earnest money and loan interest. “Not paid yet” is card and bill balances still open.</span>
+    <span>Holdback figures are Anchor’s remaining-to-fund amount where entered, as recorded in the Twin Home Expense Ledger. Prepared by Kristine, Controller.</span>
+  </footer>
+</div>
