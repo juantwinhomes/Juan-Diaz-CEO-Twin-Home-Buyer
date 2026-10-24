@@ -59,6 +59,52 @@ San Carlos, Walnut Creek).
 | **AMBER** | Premium Peninsula / over $1.5M — **only** with a fat margin AND a hard rehab cap. |
 | **RED** | Rehab over ~30% of purchase, OR a high-price buy with a thin spread. |
 
+## Channel-Specific Buy-Box — PropertyLeads ONLY (effective July 8, 2026)
+
+> Decided in a team meeting; confirmed by Seth 2026-07-21 with a screenshot of
+> the live PropertyLeads territory config. **This applies to the PropertyLeads
+> lead-buy channel only** — it does NOT replace the flip buy-box above, which
+> still governs what we actually purchase.
+
+The PropertyLeads targeting was deliberately changed to these 7 counties
+(all "Motivated Seller Leads"; PropertyLeads filter set IDs in parens):
+
+| County | Filter Set ID | Flip buy-box status |
+|---|---|---|
+| Alameda | 965275 | ✅ CORE — the proven engine |
+| San Francisco | 998173 | ⚠️ AMBER — premium; barbell wins/losses |
+| San Mateo | 998177 | ⚠️ AMBER — premium Peninsula loss pattern |
+| Solano | 998181 | ✅ Proven smaller market (Vallejo) |
+| Sonoma | 998185 | ⚠️ One known loss (Petaluma −$210K) |
+| Marin | 998193 | ⚠️ Premium, no deal history in records |
+| Santa Cruz | 999915 | ➖ No deal history in records |
+
+**How to reconcile the two buy-boxes:** lead-gen geography ≠ purchase
+geography. Premium-county leads are in scope for the channel, but any
+*purchase* there still goes through the flip buy-box gate (AMBER = fat margin
++ hard rehab cap + Juan's personal approval; losses cluster at >$1.5M buys
+with >25–30% rehab). Premium-county leads default to wholesale/assignment
+exits unless the flip math clears the gate.
+
+**Rationale (per Seth, 2026-07-21):** the 7 counties were selected on
+**PropertyLeads channel performance** — counties whose PropertyLeads leads
+were not performing were removed **from this channel's targeting only**.
+That is why Contra Costa is out: as a PropertyLeads source it consumed
+~$10,475 for 42 leads on the old set without producing, so it was cut from
+the lead buy. **This does NOT change the company flip buy-box** — West
+CC/Richmond remains flip-engine core and stays fully in play for deals from
+every other channel (postcards, referrals, etc.). Channel targeting and
+purchase criteria are separate decisions.
+
+**Open items to close (Twin to chase):**
+- Meeting notes/date/attendees still not in the repo — capture them so the
+  decision trail is written, not remembered.
+- Intended exit strategy for premium-county leads (SF, San Mateo, Marin,
+  Sonoma): default wholesale/assignment, with any purchase still gated by
+  the flip buy-box (fat margin + rehab cap + Juan approval).
+- Re-verdict on the 7-county set: **Sept 6, 2026**, judged on cost per
+  contract vs the old-set benchmark (~$20.3K/contract).
+
 ## Data Hygiene / Confidence
 
 - **Strongest records** (both settlement statement + expense sheet): 255 Amber,
