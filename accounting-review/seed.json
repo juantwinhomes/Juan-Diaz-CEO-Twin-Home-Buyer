@@ -613,5 +613,79 @@
       }
     ],
     "source": "Facts from Prescott Financial Statement, 751 27th Ave Closeout, Investor Payout Approval, Cost Reconciliation and Juan Diaz Records Desk. Sale figures are from the estimated settlement statement; confirm against the final one."
+  },
+  "briefs": {
+    "contractors": {
+      "topic": "Contractor payments",
+      "status": "warn",
+      "headline": "$17,900 approved for 5 contractors, not sent yet.",
+      "now": "Madera jobs are paid from Relay ••5776 ($12,100). Everything else is paid from WF ••8251 ($5,800). Gonzalo's $2,000 for 460 5th Ave is on hold until Cherry confirms the work is done.",
+      "you": "Decide whether to release Gonzalo's $2,000 or keep holding it.",
+      "youShort": "Release or hold Gonzalo's $2,000",
+      "next": "Kristine sends the 5 transfers and marks each one sent."
+    },
+    "tax": {
+      "topic": "PPS taxes",
+      "status": "warn",
+      "headline": "PPS owes $0 for 2025. Two things to approve.",
+      "now": "Both 2025 returns are ready. PPS lost money in its first year, so no tax is due. PPS will be closed, like Prescott.",
+      "you": "Approve $230 to file the returns online, and approve closing PPS so 2026 is its last tax return.",
+      "youShort": "Approve $230 to file; approve closing PPS",
+      "next": "Kristine files both returns by Oct 31, then works the PPS close-out checklist."
+    },
+    "honda": {
+      "topic": "Honda Accord",
+      "status": "info",
+      "headline": "Car is paid off ($17,683.90). Waiting for the title in the mail.",
+      "now": "The DMV mailed the title in Juan's name.",
+      "you": "When the title arrives, sign it over to Equity Track Inc.",
+      "youShort": "Sign title over to Equity Track when it arrives",
+      "next": "Kristine checks the title has no lienholder, then files the transfer to Equity Track Inc. at the DMV."
+    },
+    "cards": {
+      "topic": "Credit cards",
+      "status": "info",
+      "headline": "Card balances are not entered yet.",
+      "now": "Kristine is collecting each card's balance, limit and due date.",
+      "you": "Nothing yet. Once the numbers are in, approve the paydown amount and autopay.",
+      "youShort": "Nothing yet",
+      "next": "Kristine fills in the card table, then the paydown amount appears here automatically."
+    },
+    "rental": {
+      "topic": "8715 D St",
+      "status": "info",
+      "headline": "September and October rent is being checked.",
+      "now": "Kristine is matching the rent each unit paid to the bank and QuickBooks.",
+      "you": "Approve sending notices to any unit that hasn't paid, and covering any monthly shortfall.",
+      "youShort": "Approve collection notices and shortfall",
+      "next": "Unit balances are filled in once they are verified."
+    },
+    "payroll": {
+      "topic": "Payroll",
+      "status": "info",
+      "headline": "This period's payroll is waiting for Kristine's check.",
+      "now": "Marieflor prepares payroll from Deputy hours. Kristine checks the hours and any timesheet changes.",
+      "you": "Approve the payroll once Kristine confirms the hours match Deputy.",
+      "youShort": "Approve after Kristine's check",
+      "next": "Payroll is released to Paychex after approval."
+    },
+    "time": {
+      "topic": "Clock-in / clock-out",
+      "status": "ok",
+      "headline": "Working well. For your information only.",
+      "now": "Everyone clocks in and out with a photo, and only within 100 yards of the job site. Marieflor runs it; Kristine checks payroll every week.",
+      "you": "Nothing.",
+      "youShort": "Nothing (FYI)",
+      "next": "Fixed-rate employees are adjusted by hand in Paychex, under 30 minutes a week."
+    },
+    "other": {
+      "topic": "Prescott",
+      "status": "bad",
+      "headline": "Prescott is closing. Its 2024 and 2025 tax returns are overdue.",
+      "now": "751 27th Ave sold for $2.9M and payouts were approved. The company is being shut down.",
+      "you": "Nothing to decide. Sign the late returns, the final return and the closing papers when they are ready.",
+      "youShort": "Sign returns and closing papers when ready",
+      "next": "The CPA files the late 2024 and 2025 returns first; the final return is due Mar 15, 2027."
+    }
   }
 }

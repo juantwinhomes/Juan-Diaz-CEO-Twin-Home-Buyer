@@ -166,6 +166,22 @@ textarea.f{resize:vertical;min-height:56px;line-height:1.4}
 .taxopt:hover{border-color:var(--accent)}
 .taxopt.sel{border-color:var(--accent);background:var(--accent-soft)}
 .taxopt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.brief{border:1px solid var(--line);border-left:5px solid var(--info);border-radius:var(--r);padding:14px 16px;display:grid;gap:8px;background:var(--bg)}
+.brief.b-ok{border-left-color:var(--ok)} .brief.b-warn{border-left-color:var(--warn)} .brief.b-bad{border-left-color:var(--bad)}
+.brief-head{font-size:1.08rem;font-weight:700}
+.brief-row{display:grid;grid-template-columns:170px minmax(0,1fr);gap:12px;align-items:baseline}
+.brief-row .lbl{margin:0}
+.glance{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.glance-row{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:12px 150px minmax(0,1.3fr) minmax(0,1fr);gap:12px;align-items:baseline;padding:11px 14px;border-bottom:1px solid var(--line)}
+.glance-row:last-child{border-bottom:0}
+.glance-row:hover{background:var(--panel)}
+.glance-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.glance-row i{width:10px;height:10px;border-radius:50%;align-self:center}
+.g-topic{font-weight:700}
+.g-you{font-size:.84rem;color:var(--muted)} .g-you b{color:var(--fg);font-weight:600}
+.qd-sit{margin-top:3px;font-size:.88rem}
+@media (max-width:760px){.glance-row{grid-template-columns:12px minmax(0,1fr)}.g-head,.g-you{grid-column:2}.brief-row{grid-template-columns:minmax(0,1fr);gap:2px}}
 /* live status */
 .live{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;font-weight:600;color:var(--muted)}
 .live i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
@@ -401,6 +417,28 @@ function Decisions({section,title}){
 }
 
 /* ---------- sections ---------- */
+const BRIEF_ORDER=['contractors','tax','honda','cards','rental','payroll','time','other'];
+const BRIEF_CLS={ok:'ok',warn:'warn',bad:'bad',info:'info'};
+function Brief({k}){
+  const {S,edit}=useContext(Ctx);const b=S.briefs&&S.briefs[k];if(!b)return null;
+  const row=(label,field)=>html`<div class="brief-row"><div class="lbl">${label}</div><div>${edit?html`<${F} path=${'briefs.'+k+'.'+field} kind="textarea"/>`:b[field]}</div></div>`;
+  return html`<div class=${'brief b-'+(BRIEF_CLS[b.status]||'info')}>
+    <div class="brief-head">${edit?html`<${F} path=${'briefs.'+k+'.headline'}/>`:b.headline}</div>
+    ${row("What's happening",'now')}${row('What Juan needs to do','you')}${row("What's next",'next')}
+  </div>`;
+}
+function Glance(){
+  const {S,go}=useContext(Ctx);if(!S.briefs)return null;
+  const dot={ok:'var(--ok)',warn:'var(--warn)',bad:'var(--bad)',info:'var(--info)'};
+  return html`<section><h3 class="grp">Everything at a glance</h3>
+    <div class="glance">${BRIEF_ORDER.filter(k=>S.briefs[k]).map(k=>{const b=S.briefs[k];return html`<button key=${k} class="glance-row" onClick=${()=>go(k)}>
+      <i style=${{background:dot[b.status]||dot.info}}></i>
+      <span class="g-topic">${b.topic||SEC_NAME[k]}</span>
+      <span class="g-head">${b.headline}</span>
+      <span class="g-you"><b>Your part:</b> ${b.youShort||b.you}</span>
+    </button>`})}</div></section>`;
+}
+
 function QuickDecision({d}){
   const {S,K,set,setDecision,go,flash}=useContext(Ctx);
   const [open,setOpen]=useState(false);
@@ -410,6 +448,7 @@ function QuickDecision({d}){
     <div class="qd-row">
       <div class="qd-main">
         <div class="qd-title">${d.title}</div>
+        <div class="qd-sit">${d.situation}</div>
         <div class="qd-rec"><b>Kristine recommends:</b> ${d.rec}</div>
       </div>
       <div class="qd-amt">${a!==null?html`<span class="num">${money(a)}</span>`:d.amountNote?html`<span class="qd-note">${d.amountNote}</span>`:html`<span class="qd-note">Amount to verify</span>`}</div>
@@ -433,7 +472,7 @@ function QuickDecision({d}){
 function Overview(){
   const {S,K,go,counts}=useContext(Ctx);
   const R=risks(S,K);const D=deadlines(S,K).slice(0,6);
-  const groups=[['Pending','Waiting on you'],['Hold','On hold'],['Approved','Approved']];
+  const groups=[['Pending','Decisions waiting on you'],['Hold','On hold'],['Approved','Approved']];
   const pendingAmt=S.decisions.filter(d=>d.status==='Pending').reduce((a,d)=>a+(decisionAmount(d,K)||0),0);
   const toVerify=S.decisions.filter(d=>decisionAmount(d,K)===null&&!d.amountNote).length;
   return html`<div class="stack">
@@ -442,6 +481,7 @@ function Overview(){
       <div class="muted">Read Kristine's recommendation, then tap <b>Approve</b> or <b>Hold</b>. Tap again to undo. These buttons only record your decision; nothing is paid or sent.</div>
       ${toVerify>0&&html`<div class="hero-note">${toVerify} amount${toVerify===1?' is':'s are'} still being verified by Kristine.</div>`}
     </div>
+    <${Glance}/>
     ${groups.map(([st,label])=>{const list=S.decisions.filter(d=>d.status===st);if(!list.length)return null;
       return html`<section key=${st}><h3 class="grp">${label} <span class="muted num">${list.length}</span></h3><div class="qlist">${list.map(d=>html`<${QuickDecision} key=${d.id} d=${d}/>`)}</div></section>`})}
     <div class="grid2">
@@ -470,6 +510,7 @@ function Cards(){
   const shown=K.cards.map((x,i)=>({...x,i})).filter(x=>edit||!blankCard(x.c));
   return html`<div class="stack">
     <${SecHead} title="Credit Cards & Paydown Plan" k="cards" sub="First priority. Utilization is calculated automatically for cards with a credit limit."/>
+    <${Brief} k="cards"/>
     ${!hasData&&html`<div class="banner warn"><span class="grow">No card data has been entered yet. Turn on <b>Edit numbers</b> and enter each business and personal card from its latest statement. Only the last four digits are stored.</span></div>`}
     <div class="facts panel">
       <${Fact} label="Total card balances" big><${Money} v=${K.totBal}/><//>
@@ -554,6 +595,7 @@ function Contractors(){
   const cleared=S.contractors.approved.filter(p=>p.status==='Cleared').length;
   return html`<div class="stack">
     <${SecHead} title="Contractor Payments" k="contractors"/>
+    <${Brief} k="contractors"/>
     <${TransferPlan}/>
     <div class="panel"><div class="sec-head" style=${{marginBottom:'10px'}}><div><h3>Already approved · ${money(K.contractorsApproved)}</h3><div class="muted" style=${{fontSize:'.8rem'}}>Approved in review. Not a new decision. Kristine verifies each payment was sent and cleared.</div></div><${Pill} cls=${cleared===S.contractors.approved.length?'ok':'info'}>${cleared} of ${S.contractors.approved.length} verified cleared<//></div>
       <${PayTable} rows=${S.contractors.approved} base="contractors.approved" showTotal=${true}/></div>
@@ -572,6 +614,7 @@ function Tax(){
   const {S,set}=useContext(Ctx);const choice=S.tax&&S.tax.choice;
   return html`<div class="stack">
     <${SecHead} title="PPS 2025 Tax Returns" k="tax" sub="Peninsula Plumbing Solutions Inc., first tax year, June 28 – December 31, 2025"/>
+    <${Brief} k="tax"/>
     <div class="banner info"><span class="grow"><b>Nothing is owed. One decision is needed.</b> Both returns are prepared and checked. PPS lost money in its first year, so no tax is due.</span><a class="btn sm" href=${PPS_SRC} target="_blank" rel="noopener">Open the returns</a></div>
     <div class="panel facts">
       <${Fact} label="IRS, Form 1120" big><span class="num">$0</span><//>
@@ -640,6 +683,7 @@ function Honda(){
   const steps=h.steps||[];
   return html`<div class="stack">
     <${SecHead} title="Honda Accord Buyout" k="honda" sub=${h.vehicle+' · VIN ending '+h.vinLast}/>
+    <${Brief} k="honda"/>
     <div class=${'banner '+(outcome.cls==='ok'?'info':outcome.cls==='bad'?'bad':'warn')}><span class="grow"><b>${st}.</b> ${outcome.t}</span></div>
     <div class="panel facts">
       <${Fact} label="Buyout paid" big><span class="num">${money(h.amount,{cents:true})}</span><//>
@@ -684,6 +728,7 @@ function Rental(){
   const shownU=K.units.map((x,i)=>({...x,i})).filter(x=>edit||x.u.unit||x.u.tenant||x.rent!==null);
   return html`<div class="stack">
     <${SecHead} title="8715 D St — Rental Performance" k="rental"/>
+    <${Brief} k="rental"/>
     <div class="panel facts">
       <${Fact} label="Expected monthly rent" big><${Money} v=${K.expected}/><//>
       <${Fact} label="October rent received" big><${Money} v=${K.octRcv}/><//>
@@ -745,6 +790,7 @@ function Time(){
   const rm=i=>set('time.issues',S.time.issues.filter((_,j)=>j!==i));
   return html`<div class="stack">
     <${SecHead} title="Clock-In / Clock-Out Tracking" k="time" sub="Marieflor runs Deputy clock-in and clock-out and prepares payroll. Kristine verifies her work weekly."/>
+    <${Brief} k="time"/>
     ${S.time.proof&&html`<${DeputyProof}/>`}
     <div class="panel"><h3>Who does what · Marieflor runs timekeeping, Kristine verifies</h3>
       <div class=${'tablewrap'+(edit?' editing':'')}><table><thead><tr><th>Control</th><th>How it works today</th><th>Responsible</th><th>Status</th></tr></thead><tbody>
@@ -766,6 +812,7 @@ function Payroll(){
   const cls={'Not yet reviewed':'neutral','Reviewed — awaiting processing':'info','Requires Juan approval':'warn','Processed':'ok'}[p.status]||'neutral';
   return html`<div class="stack">
     <${SecHead} title="Matrix Payroll" k="payroll"/>
+    <${Brief} k="payroll"/>
     <div class="panel" style=${{display:'flex',gap:'12px',alignItems:'center',flexWrap:'wrap'}}><span class="lbl">Payroll status</span><${Pill} cls=${cls}>${p.status}<//><span style=${{marginLeft:'auto'}}><${F} path="payroll.status" kind="select" options=${['Not yet reviewed','Reviewed — awaiting processing','Requires Juan approval','Processed']}/></span></div>
     <div class="panel facts">
       <${Fact} label="Payroll period"><${F} path="payroll.period" ph="e.g. Oct 13 – Oct 26, 2026"/><//>
@@ -803,6 +850,7 @@ function Other(){
   const inp=(k,ph,type)=>html`<input id=${'new-'+k} class="f" type=${type||'text'} placeholder=${ph} value=${f[k]} onChange=${e=>setF({...f,[k]:e.target.value})}/>`;
   return html`<div class="stack">
     <${SecHead} title="Other Pending Decisions" sub="Add any decision that needs Juan. Items Kristine can resolve as Controller do not belong here."/>
+    <${Brief} k="other"/>
     ${S.prescott&&html`<${PrescottCloseout}/>`}
     ${count>=15&&html`<div class="banner warn">The decision list has ${count} items. Keep it to 15 or fewer so the review stays focused.</div>`}
     <form class="panel" onSubmit=${add} style=${{display:'grid',gap:'8px'}}>
