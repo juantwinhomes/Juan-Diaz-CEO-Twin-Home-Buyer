@@ -451,7 +451,7 @@
       "amountSource": "",
       "amount": null,
       "amountNote": "Saves $800 a year in California minimum tax",
-      "situation": "PPS lost money in its first year. Like Prescott, it will be shut down, so its 2026 return would be its last.",
+      "situation": "PPS lost money in its first year and will be shut down, so its 2026 return would be its last.",
       "rec": "Approve closing PPS: stop all PPS business by Dec 31, 2026, file 2026 as the final return, then file the dissolution with the Secretary of State.",
       "required": "Approve closing PPS, with 2026 as its final tax year.",
       "owner": "Kristine",
@@ -531,90 +531,8 @@
       "amount": 17683.9,
       "status": "Title check pending",
       "note": "DMV mailed the title in Juan's name. Once it shows no lienholder, it is transferred to Equity Track Inc."
-    },
-    {
-      "id": "i-prescott",
-      "item": "Prescott Development LLC — closing and shutting down",
-      "amount": null,
-      "status": "Decided",
-      "note": "Confirmed by Juan and Cherry. 2024 and 2025 returns filed. Remaining steps are under Other Pending Decisions."
     }
   ],
-  "prescott": {
-    "title": "Shutting down Prescott Development LLC",
-    "decided": "Decided by Juan and Cherry · no decision needed",
-    "facts": [
-      [
-        "Entity",
-        "California LLC, formed May 2015; Juan signs as Managing Member"
-      ],
-      [
-        "Profit split",
-        "Mike Zabaneh 30% · Issa Shami 30% · Equity Track / Juan 40%"
-      ],
-      [
-        "Last project",
-        "751 27th Ave, San Mateo: bought $2,100,000, sold $2,900,000 (Stewart Title escrow, est. close Oct 14, 2026)"
-      ],
-      [
-        "Bank",
-        "Relay ••4436 (Prescott's only account)"
-      ]
-    ],
-    "risks": [
-      "The 2026 California LLC fee is based on gross receipts, so the $2.9M sale may make it about $6,000. The CPA should confirm when preparing the final return."
-    ],
-    "steps": [
-      {
-        "t": "Get Stewart Title's final closing statement and confirm the sale closed",
-        "who": "Kristine",
-        "by": "Oct 30, 2026"
-      },
-      {
-        "t": "Confirm the approved payouts were sent: Mike $1,338,827.31 · Issa $1,338,827.30 · Juan $17,272.88 · Equity Track $10,157.70",
-        "who": "Kristine",
-        "by": "Oct 30, 2026"
-      },
-      {
-        "t": "Agree one final profit number (the trackers show $43,182 to $136,622)",
-        "who": "Kristine · Juan",
-        "by": "Nov 7, 2026"
-      },
-      {
-        "t": "Match Equity Track's \"Due from Prescott\" ($93,597 to $115,768, including 441 and 449 Vera) to Prescott's books, which show $0 owed",
-        "who": "Kristine",
-        "by": "Nov 7, 2026"
-      },
-      {
-        "t": "Clear open items: 6 Matrix payroll weeks ($13,480.76) and the lien waivers Stewart Title asked for",
-        "who": "Kristine",
-        "by": "Nov 14, 2026"
-      },
-      {
-        "t": "2024 and 2025 Form 1065 and California Form 568 filed",
-        "who": "CPA",
-        "by": "",
-        "done": true
-      },
-      {
-        "t": "Close Relay ••4436 after the last payment; cancel the ZenBusiness registered agent",
-        "who": "Kristine",
-        "by": "Dec 31, 2026"
-      },
-      {
-        "t": "File the 2026 Form 1065 and Form 568 marked FINAL, with final K-1s",
-        "who": "CPA · Juan signs",
-        "by": "Mar 15, 2027"
-      },
-      {
-        "t": "File the LLC cancellation with the California Secretary of State",
-        "who": "Kristine · Juan signs",
-        "by": "Within 12 months of the final return"
-      }
-    ],
-    "source": "Facts from Prescott Financial Statement, 751 27th Ave Closeout, Investor Payout Approval, Cost Reconciliation and Juan Diaz Records Desk. Sale figures are from the estimated settlement statement; confirm against the final one.",
-    "intro": "Prescott was the company that bought, renovated and sold 751 27th Ave. The project is finished, so the company is being closed. Past tax returns are filed; these are the remaining steps."
-  },
   "briefs": {
     "contractors": {
       "topic": "Contractor payments",
@@ -629,7 +547,7 @@
       "topic": "PPS taxes",
       "status": "warn",
       "headline": "PPS owes $0 for 2025. Two things to approve.",
-      "now": "Both 2025 returns are ready. PPS lost money in its first year, so no tax is due. PPS will be closed, like Prescott.",
+      "now": "Both 2025 returns are ready. PPS lost money in its first year, so no tax is due. PPS will be closed.",
       "you": "Approve $230 to file the returns online, and approve closing PPS so 2026 is its last tax return.",
       "youShort": "Approve $230 to file; approve closing PPS",
       "next": "Kristine files both returns by Oct 31, then works the PPS close-out checklist."
@@ -678,15 +596,6 @@
       "you": "Nothing.",
       "youShort": "Nothing (FYI)",
       "next": "Fixed-rate employees are adjusted by hand in Paychex, under 30 minutes a week."
-    },
-    "other": {
-      "topic": "Prescott",
-      "status": "info",
-      "headline": "Prescott is closing. Past tax returns are filed.",
-      "now": "751 27th Ave sold for $2.9M and payouts were approved. The 2024 and 2025 returns are done. The company is being shut down.",
-      "you": "Nothing to decide. Sign the final 2026 return and the closing papers when they are ready.",
-      "youShort": "Sign final return and closing papers when ready",
-      "next": "Kristine confirms the sale closed and payouts went out; the final return is due Mar 15, 2027."
     }
   }
 }
