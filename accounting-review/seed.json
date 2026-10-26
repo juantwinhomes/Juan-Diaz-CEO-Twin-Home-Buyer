@@ -534,10 +534,84 @@
     },
     {
       "id": "i-prescott",
-      "item": "Prescott — closing and shutting down",
+      "item": "Prescott Development LLC — closing and shutting down",
       "amount": null,
       "status": "Decided",
-      "note": "Confirmed by Juan and Cherry. No decision needed."
+      "note": "Confirmed by Juan and Cherry. Close-out checklist is under Other Pending Decisions; 2024 and 2025 returns still need filing."
     }
-  ]
+  ],
+  "prescott": {
+    "title": "Close Prescott Development LLC · 2026 is the final tax year",
+    "decided": "Decided by Juan and Cherry · no decision needed",
+    "facts": [
+      [
+        "Entity",
+        "California LLC, formed May 2015; Juan signs as Managing Member"
+      ],
+      [
+        "Profit split",
+        "Mike Zabaneh 30% · Issa Shami 30% · Equity Track / Juan 40%"
+      ],
+      [
+        "Last project",
+        "751 27th Ave, San Mateo: bought $2,100,000, sold $2,900,000 (Stewart Title escrow, est. close Oct 14, 2026)"
+      ],
+      [
+        "Bank",
+        "Relay ••4436 (Prescott's only account)"
+      ]
+    ],
+    "risks": [
+      "The 2024 and 2025 Prescott tax returns (Form 1065 and California Form 568) have not been started. The IRS charges about $255 per member, per month late, for up to 12 months, and California won't accept the cancellation until every return is filed.",
+      "The 2026 California LLC fee is based on gross receipts, so the $2.9M sale may make it about $6,000; the CPA should confirm."
+    ],
+    "steps": [
+      {
+        "t": "Get Stewart Title's final closing statement and confirm the sale closed",
+        "who": "Kristine",
+        "by": "Oct 30, 2026"
+      },
+      {
+        "t": "Confirm the approved payouts were sent: Mike $1,338,827.31 · Issa $1,338,827.30 · Juan $17,272.88 · Equity Track $10,157.70",
+        "who": "Kristine",
+        "by": "Oct 30, 2026"
+      },
+      {
+        "t": "Agree one final profit number (the trackers show $43,182 to $136,622)",
+        "who": "Kristine · Juan",
+        "by": "Nov 7, 2026"
+      },
+      {
+        "t": "Match Equity Track's \"Due from Prescott\" ($93,597 to $115,768, including 441 and 449 Vera) to Prescott's books, which show $0 owed",
+        "who": "Kristine",
+        "by": "Nov 7, 2026"
+      },
+      {
+        "t": "Clear open items: 6 Matrix payroll weeks ($13,480.76) and the lien waivers Stewart Title asked for",
+        "who": "Kristine",
+        "by": "Nov 14, 2026"
+      },
+      {
+        "t": "CPA files the late 2024 and 2025 Form 1065 and Form 568, with K-1s to Mike, Issa and Equity Track / Juan, and asks for penalty relief",
+        "who": "CPA · Kristine",
+        "by": "As soon as possible"
+      },
+      {
+        "t": "Close Relay ••4436 after the last payment; cancel the ZenBusiness registered agent",
+        "who": "Kristine",
+        "by": "Dec 31, 2026"
+      },
+      {
+        "t": "File the 2026 Form 1065 and Form 568 marked FINAL, with final K-1s",
+        "who": "CPA · Juan signs",
+        "by": "Mar 15, 2027"
+      },
+      {
+        "t": "File the LLC cancellation with the California Secretary of State",
+        "who": "Kristine · Juan signs",
+        "by": "Within 12 months of the final return"
+      }
+    ],
+    "source": "Facts from Prescott Financial Statement, 751 27th Ave Closeout, Investor Payout Approval, Cost Reconciliation and Juan Diaz Records Desk. Sale figures are from the estimated settlement statement; confirm against the final one."
+  }
 }

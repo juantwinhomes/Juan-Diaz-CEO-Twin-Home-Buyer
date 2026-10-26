@@ -760,6 +760,19 @@ function Payroll(){
   </div>`;
 }
 
+function PrescottCloseout(){
+  const {S}=useContext(Ctx);const p=S.prescott;
+  return html`<div class="panel" style=${{borderColor:'var(--accent)'}}>
+    <div style=${{display:'flex',flexWrap:'wrap',gap:'8px',justifyContent:'space-between',alignItems:'baseline'}}><h3>${p.title}</h3><${Pill} cls="ok">${p.decided}<//></div>
+    <div class="facts" style=${{margin:'12px 0'}}>${p.facts.map(f=>html`<${Fact} key=${f[0]} label=${f[0]}>${f[1]}<//>`)}</div>
+    <div class="banner bad" style=${{marginBottom:'12px'}}><span class="grow"><b>Fix first:</b> ${p.risks.join(' ')}</span></div>
+    <div class="tablewrap"><table><thead><tr><th>#</th><th>Step</th><th>Who</th><th>By</th></tr></thead><tbody>
+    ${p.steps.map((x,i)=>html`<tr key=${i}><td class="num">${i+1}</td><td>${x.t}</td><td>${x.who}</td><td style=${{whiteSpace:'nowrap'}}>${x.by}</td></tr>`)}
+    </tbody></table></div>
+    <p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>${p.source}</p>
+  </div>`;
+}
+
 function Other(){
   const {S,set}=useContext(Ctx);
   const [f,setF]=useState({title:'',amount:'',situation:'',rec:'',required:'',owner:'',target:''});
@@ -770,6 +783,7 @@ function Other(){
   const inp=(k,ph,type)=>html`<input id=${'new-'+k} class="f" type=${type||'text'} placeholder=${ph} value=${f[k]} onChange=${e=>setF({...f,[k]:e.target.value})}/>`;
   return html`<div class="stack">
     <${SecHead} title="Other Pending Decisions" sub="Add any decision that needs Juan. Items Kristine can resolve as Controller do not belong here."/>
+    ${S.prescott&&html`<${PrescottCloseout}/>`}
     ${count>=15&&html`<div class="banner warn">The decision list has ${count} items. Keep it to 15 or fewer so the review stays focused.</div>`}
     <form class="panel" onSubmit=${add} style=${{display:'grid',gap:'8px'}}>
       <h3>Add a decision</h3>
