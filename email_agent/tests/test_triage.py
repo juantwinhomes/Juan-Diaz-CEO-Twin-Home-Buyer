@@ -57,3 +57,19 @@ def test_unreplied_and_overdue():
     a, b = sorted(triage_all(data, NOW), key=lambda t: t.thread_id)
     assert a.awaiting_juan and a.overdue          # URGENT waiting 3.75h > 2h limit
     assert not b.awaiting_juan and not b.overdue  # Juan replied last
+
+
+def test_tax_and_district_attorney_matters_are_legal():
+    _, cats, _ = classify("IRS audit reports - signature required", "attached reports", "x@examplelaw.com")
+    assert "legal" in cats
+    p, cats, _ = classify("District attorney matter prep", "", "staff@twinhomebuyer.com")
+    assert p == rules.URGENT and "legal" in cats
+
+
+def test_money_and_construction_words():
+    assert "financial" in classify("Monthly cost review", "revenue and gross profit", "a@twinhomebuyer.com")[1]
+    assert "construction" in classify("Septic work quote received", "three bids", "a@twinhomebuyer.com")[1]
+
+
+def test_newsletters_with_dollar_amounts_are_noise():
+    assert prio("Big company owes $25 billion", "Read online", "crowd@mail.beehiiv.com") == rules.NOISE

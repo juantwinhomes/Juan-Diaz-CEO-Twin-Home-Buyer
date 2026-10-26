@@ -40,6 +40,8 @@ CATEGORIES = {
         "mechanics lien", "notice of default", "foreclosure", "eviction",
         "unlawful detainer", "demand letter", "breach", "cease and desist",
         "court", "summons", "legal", "settlement agreement", "notarize",
+        "irs", "audit", "tax attorney", "district attorney", "da matter",
+        "franchise tax board", "ftb", "deposition", "subpoenaed",
     ]),
     "city_permits": (URGENT, [
         "permit", "permits", "inspection", "inspector", "building department",
@@ -62,13 +64,15 @@ CATEGORIES = {
         "invoice", "payment", "paid", "bill", "billing", "rent", "rents",
         "loan", "lender", "draw", "hard money", "refinance", "appraisal",
         "credits", "budget", "accounting", "quickbooks", "bookkeeping",
-        "tax", "insurance", "$",
+        "tax", "insurance", "$", "payments", "revenue", "profit", "gross profit",
+        "cash flow", "p&l", "assessment", "irs", "invoices", "expenses",
     ]),
     "construction": (ACTION, [
         "contractor", "electrician", "plumber", "plumbing", "roof", "hvac", "kitchen", "bath", "drywall", "paint", "flooring",
         "materials", "delivery", "scope", "change order", "rehab", "repairs",
         "demo", "framing", "electrical", "heaters", "landscaping", "trees",
-        "window install", "new windows", "windows delivery",
+        "window install", "new windows", "windows delivery", "septic", "bid",
+        "bids", "estimate", "foundation", "sewer lateral", "panel",
     ]),
     "billing_alert": (ACTION, [
         "out of usage credits", "payment failed", "past due", "card declined",
@@ -85,6 +89,7 @@ CATEGORIES = {
 NOISE_SENDERS = [
     "listings@redfin.com", "nextdoor.com", "meetings-noreply@google.com",
     "newsletter", "marketing", "no-reply@zillow.com", "notifications@linkedin.com",
+    "beehiiv.com", "substack.com", "mailchimp", "nextdoor.com",
 ]
 
 # Automated senders (alerts, notifications). Capped at ACTION: a robot can't
@@ -96,7 +101,7 @@ AUTOMATED_KEEP = {"account_security", "deal_lead", "escrow", "wire", "legal", "c
 # Text that marks noise unless a URGENT category also matched.
 NOISE_KEYWORDS = [
     "unsubscribe", "webinar", "newsletter", "% off", "coming soon in",
-    "new listing", "price drop",
+    "new listing", "price drop", "read online", "view in browser",
 ]
 
 # Sender patterns that bump a match up one level (e.g. a city .gov address).

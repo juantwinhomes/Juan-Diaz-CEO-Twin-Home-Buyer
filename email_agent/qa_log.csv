@@ -7,3 +7,8 @@ date,run,thread_subject,agent_said,should_be,cause,fix
 2026-10-26,run1-v2,Norton electric heaters order,URGENT (wire),ACTION (construction),"bare ""wire"" = electrical wire on a job site",only money-wire phrases count
 2026-10-26,run1-v2,Sales - 915 52nd St (Alameda County Assessor),URGENT via keyword only,URGENT via .gov sender,acgov.org has no .gov suffix,"added ""gov.org"" sender rule"
 2026-10-26,run1,"972 Norton / Madera / 915 52nd St","created a draft","skip (draft already existed)","another tool had drafted these threads at 23:31 UTC; run1 skipped the existing-draft check in SKILL.md step 4","run list_drafts before drafting, every run"
+2026-10-26,history-check,Tax agency reports from a law firm,URGENT (sender only),URGENT legal+financial,tax-agency terms not keywords,added to legal and financial
+2026-10-26,history-check,Legal matter prep list,FYI,URGENT legal,prosecutor/legal-matter terms not keywords,added
+2026-10-26,history-check,Accounting cost review,FYI,ACTION financial,"plural ""payments"", ""revenue"", ""profit"" missing",added
+2026-10-26,history-check,Septic work bids,FYI,ACTION construction,"""septic"", ""bids"" missing",added
+2026-10-26,history-check,Business newsletter mentioning lawsuits and $,ACTION financial,NOISE,newsletter platforms not on noise list,added beehiiv/substack/mailchimp + read online
