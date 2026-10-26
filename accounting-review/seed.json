@@ -277,20 +277,12 @@
     ],
     "issues": [
       {
-        "id": "i-fixed",
-        "issue": "Fixed-rate employees working over 40 hours",
-        "impact": "Some workers' fixed rate is meant to cover up to 45 hours, but some work 50+. California counts a fixed weekly rate as pay for 40 hours only, so overtime is owed on every hour over 40 a week and over 8 a day.",
-        "owner": "Kristine",
+        "id": "i-paychex",
+        "issue": "Deputy-to-Paychex export or integration blocked by fixed-rate employees",
+        "impact": "Juan wants hours to go from Deputy to Paychex Flex automatically instead of being entered by hand. Hourly employees can be exported now, but some employees are on a fixed rate, so their pay doesn't follow their Deputy hours and they are still entered by hand.",
+        "owner": "Marieflor",
         "due": "2026-11-06",
         "status": "Open"
-      },
-      {
-        "id": "i-paychex",
-        "issue": "Fixed-rate employees entered by hand in Paychex Flex",
-        "impact": "The Deputy export to Paychex works for hourly employees. Fixed-rate employees' hours are re-entered by hand each week, which can cause typing errors. Kristine checks these entries in her weekly review.",
-        "owner": "Marieflor",
-        "due": "",
-        "status": "Working, manual step"
       }
     ],
     "proof": {
@@ -457,12 +449,12 @@
       "amountSource": "",
       "amount": null,
       "amountNote": "Cost to verify",
-      "situation": "Some workers are on a fixed rate meant to cover up to 45 hours, and some work 50+. In California a fixed weekly rate only covers 40 hours.",
-      "rec": "Pay overtime on hours over 40 a week and 8 a day, starting this pay period. Kristine estimates what's owed for past weeks and confirms with Paychex or an employment lawyer.",
-      "required": "Approve paying overtime to fixed-rate workers going forward and reviewing past pay periods.",
+      "situation": "Some workers are on a fixed rate meant to cover up to 45 hours, and some work 50+. This is also what blocks exporting Deputy hours straight to Paychex. In California a fixed weekly rate only covers 40 hours.",
+      "rec": "Set fixed-rate workers up in Paychex as weekly salary plus overtime from their Deputy hours over 40. That pays overtime correctly and lets everyone go through the export.",
+      "required": "Approve the Paychex setup change and a review of overtime owed for past weeks.",
       "owner": "Kristine",
       "target": "2026-11-06",
-      "next": "Kristine lists fixed-rate workers and their weekly hours, and estimates the overtime owed.",
+      "next": "Kristine and Marieflor set up the fixed-rate workers in Paychex, then test one week's export.",
       "status": "Pending",
       "decidedOn": "",
       "notes": "",
