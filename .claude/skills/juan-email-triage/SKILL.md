@@ -5,12 +5,12 @@ description: Triage Juan Diaz's Gmail inbox (juan@twinhomebuyer.com). Flags urge
 
 # Juan Email Triage
 
-Goal: Juan reads one short digest and approves drafts with one click (Gmail's Send
-button on the draft). He should never have to read every thread.
+Goal: Juan reads one short digest and approves drafts with one click on the approval
+page (or Gmail's Send button on the draft). He should never have to read every thread.
 
 ## Hard rules (never break)
 
-1. **Nothing sends.** Use `create_draft` only. Never call `send_message`, `reply`, or `forward`.
+1. **Nothing sends without Juan.** The agent uses `create_draft` only; only Juan's click sends. Never call `send_message`, `reply`, or `forward`.
 2. **Wire safety.** Never draft a reply that confirms, sends, or changes bank, wire,
    routing, or login details. Flag it "🔒 verify by phone using a number on file".
 3. **No invented facts.** A draft only states what is in the thread. When a decision is
@@ -37,12 +37,15 @@ button on the draft). He should never have to read every thread.
    Keep the sender and existing CCs. Juan's style: short, numbered next steps, owner + date
    for each, signed "Juan". External parties (county, escrow, attorneys) get a polite
    holding reply that commits to nothing but a date to follow up.
-6. **Digest.** Reply in chat (or write `email_agent/runs/<date>-digest.md`) with:
+6. **Approval link.** End every digest with Juan's one-button approval page:
+   https://claude.ai/artifact/RF4V6ycTRRX69CUfH9Zjbp (loads Gmail drafts live; Approve & send
+   with 5-second undo; flags wire/bank text and duplicate drafts on one thread).
+7. **Digest.** Reply in chat (or write `email_agent/runs/<date>-digest.md`) with:
    - URGENT awaiting Juan: one line each, why it matters, link
    - Drafts ready: one line each, "open → Send" link
    - 🔒 Verify by phone: wire/bank items
    - Overdue (past `UNREPLIED_HOURS` in rules.py)
    - Waiting on others (Juan replied last)
-7. **Log misses.** Add a row to `email_agent/qa_log.csv` for anything Juan says was
+8. **Log misses.** Add a row to `email_agent/qa_log.csv` for anything Juan says was
    wrongly flagged or missed. Fix `rules.py`, add a test in
    `email_agent/tests/test_triage.py`, and run the tests.
