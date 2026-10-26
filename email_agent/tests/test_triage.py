@@ -47,7 +47,7 @@ def _thread(tid, msgs):
 
 def test_unreplied_and_overdue():
     data = {"threads": [
-        _thread("a", [{"date": "2026-10-26T20:00:00Z", "sender": "title@escrowco.com",
+        _thread("a", [{"date": "2026-10-26T20:00:00Z", "sender": "title@escrowco.com", "toRecipients": [rules.JUAN],
                        "subject": "Close of escrow docs", "snippet": ""}]),
         _thread("b", [{"date": "2026-10-26T20:00:00Z", "sender": "title@escrowco.com",
                        "subject": "Close of escrow docs", "snippet": ""},
@@ -73,3 +73,19 @@ def test_money_and_construction_words():
 
 def test_newsletters_with_dollar_amounts_are_noise():
     assert prio("Big company owes $25 billion", "Read online", "crowd@mail.beehiiv.com") == rules.NOISE
+
+
+def test_robots_and_cc_only_threads_are_not_waiting_on_juan():
+    data = {"threads": [
+        _thread("robot", [{"date": "2026-10-26T20:00:00Z", "sender": "no-reply@accounts.google.com",
+                           "toRecipients": [rules.JUAN], "subject": "Security alert", "snippet": ""}]),
+        _thread("cc", [{"date": "2026-10-26T20:00:00Z", "sender": "a@twinhomebuyer.com",
+                        "toRecipients": ["b@twinhomebuyer.com"], "ccRecipients": [rules.JUAN],
+                        "subject": "Trees delivery date", "snippet": ""}]),
+        _thread("to", [{"date": "2026-10-26T20:00:00Z", "sender": "a@twinhomebuyer.com",
+                        "toRecipients": [rules.JUAN], "subject": "Invoice for 27 Prague", "snippet": ""}]),
+    ]}
+    r = {t.thread_id: t for t in triage_all(data, NOW)}
+    assert not r["robot"].awaiting_juan
+    assert not r["cc"].awaiting_juan and r["cc"].cc_only
+    assert r["to"].awaiting_juan

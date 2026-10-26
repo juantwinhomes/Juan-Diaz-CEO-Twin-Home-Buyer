@@ -12,3 +12,4 @@ date,run,thread_subject,agent_said,should_be,cause,fix
 2026-10-26,history-check,Accounting cost review,FYI,ACTION financial,"plural ""payments"", ""revenue"", ""profit"" missing",added
 2026-10-26,history-check,Septic work bids,FYI,ACTION construction,"""septic"", ""bids"" missing",added
 2026-10-26,history-check,Business newsletter mentioning lawsuits and $,ACTION financial,NOISE,newsletter platforms not on noise list,added beehiiv/substack/mailchimp + read online
+2026-10-26,run2-verify,Security alerts / missed calls / reply-all team threads,awaiting Juan,not awaiting (robot or CC only),reply tracker counted any non-Juan last sender,awaiting = a person wrote last AND Juan is on To; CC-only and Juan-replied-last tracked separately

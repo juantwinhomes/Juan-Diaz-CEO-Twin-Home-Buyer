@@ -29,6 +29,8 @@ class Triage:
     categories: list = field(default_factory=list)
     hits: list = field(default_factory=list)
     awaiting_juan: bool = False
+    cc_only: bool = False
+    juan_replied_last: bool = False
     hours_waiting: float = 0.0
     overdue: bool = False
     needs_full_read: bool = False
@@ -93,8 +95,14 @@ def triage_thread(thread, now):
     sender = (inbound[-1] if inbound else last).get("sender", "")
 
     priority, cats, hits = classify(subject, snippet, sender)
-    # Juan's own outgoing thread with no reply yet is not something to triage.
-    awaiting = rules.JUAN not in (last.get("sender") or "").lower()
+    # Waiting on Juan only when a person wrote last and Juan is on the To line.
+    # Robots never wait for a reply, and reply-all chatter with Juan on CC doesn't either.
+    last_sender = (last.get("sender") or "").lower()
+    to_juan = any(rules.JUAN in (a or "").lower() for a in last.get("toRecipients", []))
+    robot = any(h in last_sender for h in rules.AUTOMATED_SENDER_HINTS)
+    juan_last = rules.JUAN in last_sender
+    awaiting = not juan_last and not robot and to_juan
+    cc_only = not juan_last and not robot and not to_juan
     waited = (now - _parse_date(last["date"])).total_seconds() / 3600
     limit = rules.UNREPLIED_HOURS.get(priority)
 
@@ -108,6 +116,8 @@ def triage_thread(thread, now):
         categories=cats,
         hits=sorted(set(hits)),
         awaiting_juan=awaiting,
+        cc_only=cc_only,
+        juan_replied_last=juan_last,
         hours_waiting=round(waited, 1),
         overdue=bool(awaiting and limit is not None and waited >= limit),
         # search_threads only previews the 5 oldest messages.
@@ -143,9 +153,13 @@ def render_markdown(results, now):
             lines.append(f"- [{r.subject}]({r.url}) — {r.sender} · {', '.join(r.categories)}"
                          f" · waiting {r.hours_waiting}h{flag}{wire}")
         lines.append("")
-    lines += ["## Waiting on others (Juan replied last)", ""]
+    lines += ["## Juan on CC only (team talking to each other)", ""]
     for r in results:
-        if not r.awaiting_juan and r.priority in (rules.URGENT, rules.ACTION):
+        if r.cc_only and r.priority in (rules.URGENT, rules.ACTION):
+            lines.append(f"- {r.priority} · [{r.subject}]({r.url}) — {r.sender}")
+    lines += ["", "## Waiting on others (Juan replied last)", ""]
+    for r in results:
+        if r.juan_replied_last and r.priority in (rules.URGENT, rules.ACTION):
             lines.append(f"- {r.priority} · [{r.subject}]({r.url}) — last reply {r.hours_waiting}h ago")
     lines += ["", f"FYI: {len(by['FYI'])} threads · NOISE: {len(by['NOISE'])} threads (not listed)", ""]
     return "\n".join(lines)
