@@ -1,0 +1,485 @@
+{
+  "version": 1,
+  "meta": {
+    "company": "Twin Home Buyer / Equity Track Inc.",
+    "reviewDate": "2026-10-27",
+    "preparedBy": "Kristine, Controller",
+    "decisionMaker": "Juan Diaz, CEO",
+    "savedAt": null,
+    "savedBy": ""
+  },
+  "verify": {
+    "cards": {
+      "asOf": "",
+      "source": ""
+    },
+    "contractors": {
+      "asOf": "2026-10-26",
+      "source": "Approvals confirmed in accounting review; payment completion not yet verified"
+    },
+    "tax": {
+      "asOf": "",
+      "source": ""
+    },
+    "honda": {
+      "asOf": "",
+      "source": ""
+    },
+    "rental": {
+      "asOf": "",
+      "source": ""
+    },
+    "time": {
+      "asOf": "",
+      "source": "Deputy"
+    },
+    "payroll": {
+      "asOf": "",
+      "source": "Matrix Payroll"
+    }
+  },
+  "cards": [
+    {
+      "id": "c1",
+      "name": "",
+      "last4": "",
+      "kind": "Business",
+      "charge": false,
+      "balance": null,
+      "limit": null,
+      "closeDate": "",
+      "dueDate": "",
+      "minDue": null,
+      "autopay": "Unknown",
+      "late": "",
+      "pastDue": "Unknown",
+      "paydown": null,
+      "payBy": "",
+      "funding": ""
+    },
+    {
+      "id": "c2",
+      "name": "",
+      "last4": "",
+      "kind": "Business",
+      "charge": false,
+      "balance": null,
+      "limit": null,
+      "closeDate": "",
+      "dueDate": "",
+      "minDue": null,
+      "autopay": "Unknown",
+      "late": "",
+      "pastDue": "Unknown",
+      "paydown": null,
+      "payBy": "",
+      "funding": ""
+    },
+    {
+      "id": "c3",
+      "name": "",
+      "last4": "",
+      "kind": "Personal",
+      "charge": false,
+      "balance": null,
+      "limit": null,
+      "closeDate": "",
+      "dueDate": "",
+      "minDue": null,
+      "autopay": "Unknown",
+      "late": "",
+      "pastDue": "Unknown",
+      "paydown": null,
+      "payBy": "",
+      "funding": ""
+    }
+  ],
+  "contractors": {
+    "approved": [
+      {
+        "id": "p1",
+        "payee": "Alvaro",
+        "job": "Madera — drywall",
+        "amount": 1200,
+        "source": "",
+        "status": "Pending verification",
+        "paidOn": "",
+        "action": "Confirm payment was sent and cleared"
+      },
+      {
+        "id": "p2",
+        "payee": "Yuri",
+        "job": "170 Glenn Way — cleaning",
+        "amount": 2700,
+        "source": "",
+        "status": "Pending verification",
+        "paidOn": "",
+        "action": "Confirm payment was sent and cleared"
+      },
+      {
+        "id": "p3",
+        "payee": "Yuri",
+        "job": "27 Prague — cleaning",
+        "amount": 400,
+        "source": "",
+        "status": "Pending verification",
+        "paidOn": "",
+        "action": "Confirm payment was sent and cleared"
+      },
+      {
+        "id": "p4",
+        "payee": "Madera painting",
+        "job": "Madera — painting",
+        "amount": 10000,
+        "source": "",
+        "status": "Pending verification",
+        "paidOn": "",
+        "action": "Confirm payee name, payment sent and cleared"
+      },
+      {
+        "id": "p5",
+        "payee": "Gonzalo",
+        "job": "Madera — demolition / cleanup",
+        "amount": 900,
+        "source": "",
+        "status": "Pending verification",
+        "paidOn": "",
+        "action": "Confirm payment was sent and cleared"
+      },
+      {
+        "id": "p6",
+        "payee": "Stuart Morgan",
+        "job": "1574 Jerrold — invoice 2611",
+        "amount": 2700,
+        "source": "",
+        "status": "Pending verification",
+        "paidOn": "",
+        "action": "Confirm payment was sent and cleared"
+      }
+    ],
+    "hold": [
+      {
+        "id": "h1",
+        "payee": "Gonzalo",
+        "job": "460 5th Ave — interior balance",
+        "amount": 2000,
+        "source": "",
+        "status": "On hold",
+        "paidOn": "",
+        "action": "Cherry to confirm work is complete",
+        "decisionId": "d-gonzalo"
+      }
+    ]
+  },
+  "tax": {
+    "entity": "",
+    "status": "Pending verification",
+    "returns": "Federal and state 2025 business returns for PPS (confirm exact forms with CPA)",
+    "extension": "Unknown",
+    "cpa": "",
+    "deadlineNote": "Extended 2025 federal deadlines have passed: Sept 15, 2026 for partnerships and S corps; Oct 15, 2026 for C corps. Confirm whether PPS filed an extension.",
+    "recommended": "A",
+    "options": [
+      {
+        "key": "A",
+        "name": "File now with current records",
+        "fee": null,
+        "penalty": null,
+        "benefit": "Stops late-filing penalties from growing",
+        "risk": "May require an amended return later"
+      },
+      {
+        "key": "B",
+        "name": "File after records are complete",
+        "fee": null,
+        "penalty": null,
+        "benefit": "Fewer corrections later",
+        "risk": "Penalties keep growing each month"
+      },
+      {
+        "key": "C",
+        "name": "File now, then request first-time penalty relief",
+        "fee": null,
+        "penalty": null,
+        "benefit": "May remove late penalties if PPS has a clean 3-year record",
+        "risk": "Relief is not guaranteed; return must be filed first"
+      }
+    ]
+  },
+  "honda": {
+    "leaseStatus": "",
+    "lender": "",
+    "buyout": null,
+    "fees": null,
+    "salesTax": null,
+    "deadline": "",
+    "payFrom": "",
+    "marketValue": null,
+    "options": [
+      {
+        "name": "Pay cash from operating account",
+        "note": "No interest; reduces cash on hand"
+      },
+      {
+        "name": "Finance the buyout",
+        "note": "Preserves cash; adds interest cost"
+      },
+      {
+        "name": "Return vehicle at lease end",
+        "note": "No buyout cost; possible mileage or wear charges"
+      }
+    ],
+    "recommendedOption": ""
+  },
+  "rental": {
+    "units": [
+      {
+        "id": "u1",
+        "unit": "",
+        "tenant": "",
+        "rent": null,
+        "sep": null,
+        "oct": null,
+        "outstanding": null,
+        "since": "",
+        "status": "Pending verification"
+      },
+      {
+        "id": "u2",
+        "unit": "",
+        "tenant": "",
+        "rent": null,
+        "sep": null,
+        "oct": null,
+        "outstanding": null,
+        "since": "",
+        "status": "Pending verification"
+      }
+    ],
+    "mortgage": null,
+    "expenses": null,
+    "activity": [],
+    "qbMissing": [
+      {
+        "id": "q1",
+        "record": "8715 D St rent deposits and property expenses for September–October (confirm what is missing)",
+        "owner": "",
+        "due": ""
+      }
+    ]
+  },
+  "time": {
+    "process": [
+      {
+        "id": "t1",
+        "area": "Clock-in / clock-out method",
+        "current": "Deputy",
+        "owner": "",
+        "status": "Pending verification"
+      },
+      {
+        "id": "t2",
+        "area": "GPS / geofence verification",
+        "current": "",
+        "owner": "",
+        "status": "Pending verification"
+      },
+      {
+        "id": "t3",
+        "area": "Kiosk verification",
+        "current": "",
+        "owner": "",
+        "status": "Pending verification"
+      },
+      {
+        "id": "t4",
+        "area": "Daily timekeeping review",
+        "current": "",
+        "owner": "",
+        "status": "Pending verification"
+      },
+      {
+        "id": "t5",
+        "area": "Weekly payroll verification",
+        "current": "Deputy hours checked against Matrix Payroll",
+        "owner": "Kristine",
+        "status": "Pending verification"
+      }
+    ],
+    "issues": []
+  },
+  "payroll": {
+    "period": "",
+    "total": null,
+    "regular": null,
+    "overtime": null,
+    "adjustments": "",
+    "payDate": "",
+    "status": "Not yet reviewed"
+  },
+  "decisions": [
+    {
+      "id": "d-cards",
+      "section": "cards",
+      "title": "Fund credit card paydown",
+      "amountSource": "cards",
+      "amount": null,
+      "amountNote": "",
+      "situation": "Card balances, limits, and due dates are being verified. Cards above 30% utilization or without autopay put credit standing at risk.",
+      "rec": "Approve funding to bring every revolving card below 30% before its statement closing date, highest-risk cards first.",
+      "required": "Approve the paydown total and funding account, or hold until card data is verified.",
+      "owner": "Kristine",
+      "target": "2026-10-31",
+      "next": "Kristine completes the card table, then schedules payments after approval.",
+      "status": "Pending",
+      "decidedOn": "",
+      "notes": "",
+      "holdReason": ""
+    },
+    {
+      "id": "d-autopay",
+      "section": "cards",
+      "title": "Turn on autopay for cards without it",
+      "amountSource": "",
+      "amount": null,
+      "amountNote": "No direct cost",
+      "situation": "Any card without autopay can miss a due date and trigger a late fee or credit report mark.",
+      "rec": "Approve minimum-payment autopay on every card; Kristine pays planned paydowns separately.",
+      "required": "Approve autopay setup on all cards listed as Off or Unknown.",
+      "owner": "Kristine",
+      "target": "2026-10-31",
+      "next": "Authorized signer enables autopay at each bank; Kristine confirms.",
+      "status": "Pending",
+      "decidedOn": "",
+      "notes": "",
+      "holdReason": ""
+    },
+    {
+      "id": "d-gonzalo",
+      "section": "contractors",
+      "title": "Gonzalo — 460 5th Ave interior balance",
+      "amountSource": "",
+      "amount": 2000,
+      "amountNote": "",
+      "situation": "Gonzalo is owed a $2,000 interior balance at 460 5th Ave. Cherry has not yet confirmed the work is complete.",
+      "rec": "Keep on hold. Release payment once Cherry confirms completion in writing.",
+      "required": "Release the $2,000 or keep it on hold.",
+      "owner": "Cherry",
+      "target": "2026-10-31",
+      "next": "Cherry confirms completion; Kristine schedules payment after Juan releases it.",
+      "status": "Hold",
+      "decidedOn": "",
+      "notes": "",
+      "holdReason": "Waiting for Cherry to confirm the interior work is complete."
+    },
+    {
+      "id": "d-tax",
+      "section": "tax",
+      "title": "PPS 2025 tax returns — filing approach",
+      "amountSource": "",
+      "amount": null,
+      "amountNote": "",
+      "situation": "PPS 2025 returns are not confirmed as filed, and the extended federal deadlines have passed. Penalties may already apply.",
+      "rec": "File as soon as possible with current records, then request first-time penalty relief if PPS qualifies.",
+      "required": "Choose a filing option and approve CPA fees once quoted.",
+      "owner": "Kristine",
+      "target": "2026-11-06",
+      "next": "Kristine confirms filing status and CPA quote; CPA prepares returns.",
+      "status": "Pending",
+      "decidedOn": "",
+      "notes": "",
+      "holdReason": ""
+    },
+    {
+      "id": "d-honda",
+      "section": "honda",
+      "title": "Honda Accord lease buyout",
+      "amountSource": "honda",
+      "amount": null,
+      "amountNote": "",
+      "situation": "Juan needs to decide whether to buy out the Honda Accord lease. The payoff quote, fees, and deadline are still being confirmed.",
+      "rec": "Get the written payoff quote first. Buy out only if the total is at or below the car's market value.",
+      "required": "Buy out or return the vehicle, and choose how to pay.",
+      "owner": "Kristine",
+      "target": "2026-11-06",
+      "next": "Kristine requests the written payoff quote from the lender.",
+      "status": "Pending",
+      "decidedOn": "",
+      "notes": "",
+      "holdReason": ""
+    },
+    {
+      "id": "d-collect",
+      "section": "rental",
+      "title": "8715 D St — collection steps for unpaid rent",
+      "amountSource": "rentalOutstanding",
+      "amount": null,
+      "amountNote": "",
+      "situation": "September and October rent for 8715 D St is being checked unit by unit against bank deposits and QuickBooks.",
+      "rec": "Approve formal written notices for any unit with unpaid rent, and written payment plans only where the tenant commits to dates.",
+      "required": "Approve the collection approach for units with unpaid rent.",
+      "owner": "Kristine",
+      "target": "2026-11-03",
+      "next": "Kristine confirms balances per unit; notices go out after approval.",
+      "status": "Pending",
+      "decidedOn": "",
+      "notes": "",
+      "holdReason": ""
+    },
+    {
+      "id": "d-shortfall",
+      "section": "rental",
+      "title": "8715 D St — cover monthly cash shortfall",
+      "amountSource": "rentalShortfall",
+      "amount": null,
+      "amountNote": "",
+      "situation": "If rent collected does not cover the mortgage and expenses, the gap must be funded from another account.",
+      "rec": "Fund only the verified shortfall, after this month's rent collections are confirmed.",
+      "required": "Approve funding the shortfall and the source account.",
+      "owner": "Kristine",
+      "target": "2026-11-03",
+      "next": "Kristine enters mortgage, expenses, and rent received to confirm the gap.",
+      "status": "Pending",
+      "decidedOn": "",
+      "notes": "",
+      "holdReason": ""
+    },
+    {
+      "id": "d-deputy",
+      "section": "time",
+      "title": "Require geofenced or kiosk clock-ins in Deputy",
+      "amountSource": "",
+      "amount": null,
+      "amountNote": "No direct cost",
+      "situation": "Clock-ins from outside approved job sites cannot be verified and can inflate paid hours.",
+      "rec": "Approve: require geofenced mobile or kiosk clock-ins for all hourly staff, with manager approval for exceptions.",
+      "required": "Approve the timekeeping policy change.",
+      "owner": "Kristine",
+      "target": "2026-11-07",
+      "next": "Kristine updates Deputy settings and notifies staff after approval.",
+      "status": "Pending",
+      "decidedOn": "",
+      "notes": "",
+      "holdReason": ""
+    },
+    {
+      "id": "d-payroll",
+      "section": "payroll",
+      "title": "Matrix Payroll — current period release",
+      "amountSource": "payroll",
+      "amount": null,
+      "amountNote": "",
+      "situation": "Payroll totals are being matched to Deputy hours before processing.",
+      "rec": "Approve once Deputy hours match Matrix totals and any overtime is explained.",
+      "required": "Approve payroll release, or hold for discrepancies.",
+      "owner": "Kristine",
+      "target": "",
+      "next": "Kristine reconciles Deputy hours to Matrix and confirms the pay date.",
+      "status": "Pending",
+      "decidedOn": "",
+      "notes": "",
+      "holdReason": ""
+    }
+  ],
+  "info": []
+}
