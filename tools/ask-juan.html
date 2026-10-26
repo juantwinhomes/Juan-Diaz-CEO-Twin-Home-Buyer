@@ -71,6 +71,22 @@ button.ghost{font:500 13px/1 var(--body);background:none;color:var(--muted);bord
 .lb.full img{max-width:none;max-height:none;cursor:zoom-out}
 .lb .cap{color:#ddd;font-size:13px;margin-top:10px;text-align:center}
 .lb .x{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;background:#222;color:#fff;border:1px solid #555;border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer}
+.topbar{display:flex;justify-content:flex-end;gap:8px}
+.hist{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;justify-content:flex-end}
+.hist .panel{width:min(380px,100%);height:100%;background:var(--surface);border-left:1px solid var(--rule);display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 16px) 14px calc(env(safe-area-inset-bottom,0px) + 16px)}
+.hist .head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.hist h2{font:700 20px/1.2 var(--display);margin:0}
+.hist .priv{font-size:12px;color:var(--muted);margin:0 0 12px}
+.hist ul{list-style:none;margin:0;padding:0;overflow:auto;flex:1;display:flex;flex-direction:column;gap:6px}
+.hist li{display:flex;align-items:stretch;gap:6px}
+.hist .open{flex:1;min-width:0;text-align:left;background:var(--bg);color:var(--ink);border:1px solid var(--rule);border-radius:10px;padding:9px 11px;cursor:pointer;font:inherit}
+.hist .open:hover,.hist .open.cur{border-color:var(--accent)}
+.hist .t{display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist .d{display:block;font:500 11px/1.4 var(--mono);color:var(--muted)}
+.hist .del{flex:none;background:none;border:1px solid var(--rule);border-radius:10px;color:var(--muted);padding:0 10px;cursor:pointer;font:inherit}
+.hist .del:hover{color:var(--warn);border-color:var(--warn)}
+.hist .empty{color:var(--muted);font-size:14px}
+.q .file.gone{opacity:.7}
 button.icon{flex:none;width:44px;height:44px;display:grid;place-items:center;background:var(--surface);color:var(--muted);border:1px solid var(--rule);border-radius:10px;cursor:pointer}
 button.icon:hover{color:var(--accent);border-color:var(--accent)}
 button.icon svg{width:20px;height:20px}
@@ -82,6 +98,7 @@ button.icon svg{width:20px;height:20px}
   <header>
     <span class="eyebrow">Twin Home Buyer · Team line</span>
     <h1>Ask Juan</h1>
+    <div class="topbar"><button class="ghost" id="histBtn" type="button" hidden>History</button></div>
     <p class="sub">Ask it like you'd text Juan. You'll get the answer the way he'd give it to you: straight, fast, and with a who and a when. Offers, contracts and spending still get his real sign-off.</p>
   </header>
 
@@ -99,7 +116,7 @@ button.icon svg{width:20px;height:20px}
       <button class="primary" id="send" type="button">Ask</button>
       <button class="ghost" id="stop" type="button" hidden>Stop</button>
     </div>
-    <p class="fine">AI version of Juan, trained on how he talks. Not Juan live. Attach photos, PDFs, Word, Excel or text files. Files stay in your browser and aren't saved. Answers use your Claude account. <button class="ghost" id="clear" type="button" style="padding:4px 8px;margin-left:6px">New conversation</button></p>
+    <p class="fine">AI version of Juan, trained on how he talks. Not Juan live. Attach photos, PDFs, Word, Excel or text files. <span id="saveNote">Files stay in your browser and aren't saved.</span> Answers use your Claude account. <button class="ghost" id="clear" type="button" style="padding:4px 8px;margin-left:6px">New conversation</button></p>
   </div>
 </div>
 
@@ -132,6 +149,17 @@ HOW JUAN THINKS ABOUT DEALS AND MONEY
 - Test small, read the numbers, then scale. Spend follows proof. If it can't show a number after one fix, kill it.
 - Anything over $1-2K or with legal or financial exposure: "Run it by the attorney / CPA and bring it to me before we say yes."
 - Sellers: "It's just building a friend." Never a hard sell, never make them feel lowballed or scammed. Get face to face. "How can I be of service?" Never overpromise; overpromising is lying.
+
+JUAN IN HIS OWN WORDS (from his real voice notes; use this voice)
+- To the team he's quick and practical, then teaches: "So this whole deal revolves around the tenant." "I'd like everybody to get more knowledge on rent laws and rent control. It could be the difference between buying something and not buying it." He points people to the SOP and ends with "All right. Thank you guys very much."
+- Fillers he really uses: "right?", "you know what I mean?", "I mean,", "Look,", "Here's my take on it.", "Absolutely.", "For sure.", "Let's go." He thinks out loud and checks: "Make sense?"
+- Honesty is his whole pitch: "I don't want to bullshit you." "Full transparency." "I can sing a song and tell you exactly what you want to hear" (he won't). "Transparency is everything." "We're not for everyone. A cash buyer is not for everyone." "If it works, great, and if it doesn't, it doesn't."
+- No pressure: "I'm not a used car sales guy." "Take your time. Make the right decision for you and your family."
+- With sellers: rapport first (compliments the house, asks where they're moving, tells his own stories), then makes them name the number: "The magical thing is price, right? Where do you need to be on price?" "Something between where you want to be and where we want to be." "What number would make you happy?" "Why don't you roll with us?"
+- How he explains a cash offer: neutral title company; $500 deposit gets the preliminary title report in 2-3 days; then the seller picks the closing date ("within literally seven days, or two years"); no financing contingency, as-is, "the money we give you, that's the money you get" (no commission, we cover closing costs); they can leave stuff behind; we'll even buy the car.
+- Credibility he leans on: 26 years, thousands of homes, licensed General B contractor (not a realtor), 100+ reviews.
+- His rules, his words: "If you can't go see a property within two hours, don't ever buy anything" (from an investor mentor). "I would not do a joint venture. I've had bad experiences with that." Development "is a three, four-year project" and needs real upside because "there's a chance you take half, a chance you break even"; COVID cost him $100-150K to get out of developments. Tenants in a deal: one contingency, an attorney-written move-out agreement, notify the rent board, budget $20-50K cash for keys, handle it respectfully. Keeping a tenant in a resale is "like walking into a casino and dumping all your money on the table." If a buyer promises a seller something risky, protect the seller: "Ask for a $50,000 earnest money deposit."
+- His mindset lines: "Hard times create strong people." "Every time I do it, I always learn something new." "It's not a slam dunk. Economies change."
 
 ATTACHMENTS
 - The team member may attach files: property photos, screenshots, PDFs, contracts, spreadsheets, notes. Their text is included below the message as ATTACHED FILE blocks, and photos are shown to you directly.
@@ -414,7 +442,11 @@ function attachBlock(f, cap){
 function turnText(t, isLast){
   if(t.role!=='user' || !t.files?.length) return t.content;
   const cap = isLast ? Math.floor(TURN_CHARS / Math.max(1,t.files.filter(f=>f.kind==='text').length)) : OLD_CHARS;
-  const blocks = t.files.map(f=> (!isLast && f.kind==='image') ? '[PHOTO SHARED EARLIER: '+f.name+' — you already saw it]' : attachBlock(f,cap));
+  const blocks = t.files.filter(f=> isLast || f.kind!=='image').map(f=>attachBlock(f,cap));
+  if(!isLast){
+    const ims = t.files.filter(f=>f.kind==='image');
+    if(ims.length) blocks.push('[PHOTOS SHARED EARLIER: '+ims.map(f=>f.name).join('; ')+']' + (t.imageNotes ? '\n[YOUR NOTES FROM WHEN YOU SAW THEM]\n'+t.imageNotes+'\n[END NOTES]' : ''));
+  }
   return t.content + '\n\n' + blocks.join('\n\n');
 }
 let ctl = null;
@@ -446,7 +478,8 @@ function addMsg(kind, text, files){
   if(files?.length){
     const fl=document.createElement('div'); fl.className='files';
     for(const f of files){
-      if(f.kind==='image'){ const im=document.createElement('img'); im.className='thumb'; im.alt=f.name; im.title=f.name+' (click to view)'; im.src=URL.createObjectURL(f.blob); im.addEventListener('click',()=>openLightbox(im.src, f.name)); fl.append(im); }
+      if(f.kind==='image' && !f.blob){ const c=document.createElement('span'); c.className='file gone'; const nm=document.createElement('span'); nm.className='nm'; nm.textContent=f.name; const k=document.createElement('span'); k.className='kb'; k.textContent='photo not saved'; c.append(nm,k); fl.append(c); }
+      else if(f.kind==='image'){ const im=document.createElement('img'); im.className='thumb'; im.alt=f.name; im.title=f.name+' (click to view)'; im.src=URL.createObjectURL(f.blob); im.addEventListener('click',()=>openLightbox(im.src, f.name)); fl.append(im); }
       else { const c=document.createElement('span'); c.className='file'; const nm=document.createElement('span'); nm.className='nm'; nm.textContent=f.name; const k=document.createElement('span'); k.className='kb'; k.textContent=kb(f.size); c.append(nm,k); fl.append(c); }
     }
     m.insertBefore(fl,b);
@@ -493,12 +526,20 @@ async function ask(text){
   setBusy(true); ctl=new AbortController();
   try{
     const convo=turns.map((t,i)=>(t.role==='user'?'TEAM: ':'JUAN: ')+turnText(t, i===turns.length-1)).join('\n\n');
-    const imgs=files.filter(f=>f.kind==='image').map(f=>f.blob);
     let lim=null; try{ lim=await sample.limits(); }catch(_){}
+    const curImgs=files.filter(f=>f.kind==='image');
+    const imgs=curImgs.map(f=>f.blob);
+    let imgList='';
+    if(lim?.images){
+      const old = await earlierImages((lim.images.maxCount||0) - imgs.length);
+      imgs.push(...old.blobs);
+      const names=[...curImgs.map(f=>f.name+' (just sent)'), ...old.desc];
+      if(names.length) imgList='\n\nIMAGES ATTACHED TO THIS REQUEST, in order: '+names.map((n,i)=>(i+1)+') '+n).join('; ')+'.'+(old.blobs.length?' Photos from earlier in this chat are re-attached so you can look at them again. Answer the newest message.':'')+(old.skipped?' '+old.skipped:'');
+    }
     const view = lim?.images
       ? '\n\nPDF pages with no text layer (drawings, scans) and PDF pages that contain pictures come to you as photos named like "file.pdf, page 3". Read them as the pages of that PDF. When a photo is named "file.pdf, pages 1, 2, 3", several pages share one image in a grid, left to right then top to bottom, each labeled PAGE N above it. If small print on a shared image is too small to read, say which page and ask for it on its own. For pages that also have text, the same text is in the ATTACHED FILE block, so use the photo for what the pictures show.'
       : "\n\nTHIS TEAM MEMBER'S APP CAN'T SEND PHOTOS OR SCREENSHOTS. Never ask them for photos or screenshots. Image-only PDF pages and photos reach you as OCR text, marked as such, with each line prefixed by (x,y): that text's top-left corner as percent of page width and height. Use the positions to reason about layout: what sits in the header or footer, whether a stamp (LARGE) appears on every page, what is near what, and whether a label is cut off (EDGE). Work from the words: wording, numbers, stamps, labels, names, dates, and compare pages against each other. OCR can garble small print, so if a word looks mangled, say what you think it says. If a read_page tool is available, call it to get a page's complete untrimmed text before saying something is missing. You still cannot see drawings, photos, renderings or colors, so when a check depends on how something looks, say so in one line and tell them anything visual needs eyes on the actual pages.";
-    const prompt=RULES+view+'\n\n---\nTHE CHAT SO FAR. Reply to the last TEAM message only, as Juan, with no name or label in front:\n\n'+convo;
+    const prompt=RULES+view+imgList+'\n\n---\nTHE CHAT SO FAR. Reply to the last TEAM message only, as Juan, with no name or label in front:\n\n'+convo;
     const pageTools = lim?.tools ? [{
       name:'read_page',
       description:'Returns the complete extracted text of one page of a file attached in this conversation, untrimmed. Use it when an attached file was cut short or you need to re-check the exact wording or positions on a page. Returns an error naming the stored pages if the page is not found.',
@@ -512,9 +553,11 @@ async function ask(text){
     bubble.innerHTML=md(answer);
     if(truncated) bubble.insertAdjacentHTML('beforeend','<p class="note">Cut short. Ask for the rest.</p>');
     turns.push({role:'assistant',content:answer});
+    noteImages(turns[turns.length-2]);
+    saveChat();
   }catch(e){
     const partial=e && e.text;
-    if(partial){bubble.innerHTML=md(partial); turns.push({role:'assistant',content:partial});}
+    if(partial){bubble.innerHTML=md(partial); turns.push({role:'assistant',content:partial}); saveChat();}
     else {bubble.closest('.msg').remove(); const lost=turns.pop(); if(lost?.files?.length && !['images_unavailable','image_rejected'].includes(e?.code)){pending=lost.files; renderPending();}}
     if(e && e.code!=='cancelled'){
       console.warn('sample error',e);
@@ -531,7 +574,7 @@ sendBtn.addEventListener('click',()=>ask(box.value));
 stopBtn.addEventListener('click',()=>ctl?.abort());
 box.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault(); if(!sendBtn.disabled) ask(box.value);}});
 box.addEventListener('input',()=>{box.style.height='auto'; box.style.height=Math.min(box.scrollHeight,180)+'px';});
-document.getElementById('clear').addEventListener('click',()=>{ctl?.abort(); turns=[]; pending=[]; renderPending(); log.innerHTML=''; showStatus('');});
+document.getElementById('clear').addEventListener('click',()=>{ctl?.abort(); chatId=null; turns=[]; pending=[]; renderPending(); log.innerHTML=''; showStatus('');});
 document.getElementById('attach').addEventListener('click',()=>fileInput.click());
 fileInput.addEventListener('change',()=>{ const l=[...fileInput.files]; fileInput.value=''; if(l.length) addFiles(l); });
 box.addEventListener('paste',e=>{ const fl=[...(e.clipboardData?.files||[])]; if(fl.length){ e.preventDefault(); addFiles(fl); } });
@@ -543,7 +586,154 @@ samplePromise.then(s=>{ if(!s) showStatus("Live answers need this page open in C
 </script>
 
 <script>
+// ---------- Chat history: private to each person's Claude account ----------
+// Stored under data/users/<their id>/, which nobody else can read, including the page owner.
+let histDb = null, histUid = null, chatId = null, saveChain = Promise.resolve();
+const newChatId = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+function chatsCol(){ return histDb.collection('data/users/' + histUid); }
+(async () => {
+  try{
+    if(!window.claude?.use) return;
+    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    if(!db || !user) return;
+    const uid = await user.id();
+    if(!uid) return;
+    histDb = db; histUid = uid;
+    document.getElementById('histBtn').hidden = false;
+    document.getElementById('saveNote').textContent = 'Chats are saved privately to your Claude account. Photos aren’t saved.';
+  }catch(_){}
+})();
+// Earlier photos ride along in any photo slots this message leaves free, packed several to an image when needed.
+async function blobSheet(items){
+  const side = items.length<=2 ? 1500 : 1200, LBL = 48, GAP = 20, cols = items.length===1 ? 1 : 2;
+  const bms = [];
+  for(const it of items){ const bm = await createImageBitmap(it.blob); const s = Math.min(1, side/Math.max(bm.width, bm.height)); bms.push({bm, w:Math.round(bm.width*s), h:Math.round(bm.height*s)}); }
+  const rows = Math.ceil(bms.length/cols), cw = Math.max(...bms.map(b=>b.w)), ch = Math.max(...bms.map(b=>b.h)) + LBL;
+  const out = document.createElement('canvas'); out.width = cols*cw + (cols-1)*GAP; out.height = rows*ch + (rows-1)*GAP;
+  const ctx = out.getContext('2d'); ctx.fillStyle = '#777'; ctx.fillRect(0, 0, out.width, out.height);
+  bms.forEach((b, k) => {
+    const x = (k%cols)*(cw+GAP), y = Math.floor(k/cols)*(ch+GAP);
+    ctx.fillStyle = '#fff'; ctx.fillRect(x, y, cw, ch);
+    ctx.fillStyle = '#000'; ctx.font = 'bold 34px sans-serif'; ctx.fillText('PHOTO ' + items[k].label, x+14, y+36);
+    ctx.drawImage(b.bm, x, y+LBL, b.w, b.h);
+  });
+  return await new Promise(r => out.toBlob(r, 'image/jpeg', 0.85));
+}
+async function earlierImages(slots){
+  const res = {blobs: [], desc: [], skipped: ''};
+  if(slots <= 0) return res;
+  const earlier = [];
+  for(let i = turns.length-2; i >= 0; i--){ const t = turns[i]; if(t.role !== 'user') continue; for(const f of (t.files || [])) if(f.kind === 'image' && f.blob) earlier.push(f); }
+  if(!earlier.length) return res;
+  if(earlier.length <= slots){ for(const f of earlier){ res.blobs.push(f.blob); res.desc.push(f.name + ' (sent earlier in this chat)'); } return res; }
+  const per = Math.min(4, Math.ceil(earlier.length/slots)), fit = earlier.slice(0, slots*per);
+  for(let k = 0; k < fit.length; k += per){
+    const g = fit.slice(k, k+per).map((f, j) => ({label: String.fromCharCode(65 + k + j), name: f.name, blob: f.blob}));
+    try{ const b = await blobSheet(g); if(b){ res.blobs.push(b); res.desc.push('one image holding earlier photos in a grid, labeled ' + g.map(x => x.label + ' = ' + x.name).join(', ')); } }catch(_){}
+  }
+  if(earlier.length > fit.length) res.skipped = 'Older photos not re-attached this time: ' + earlier.slice(fit.length).map(f => f.name).join('; ') + '. Use your notes on them.';
+  return res;
+}
+// After Juan sees photos, take written notes on them so later messages, and resumed chats, keep what was in them.
+async function noteImages(turn){
+  const ims = (turn?.files || []).filter(f => f.kind === 'image' && f.blob);
+  if(!ims.length || turn.imageNotes) return;
+  const sample = await samplePromise; if(!sample) return;
+  try{
+    const {text} = await sample('You are taking reference notes on images shared in a real-estate team chat, so they can be recalled later without the images. The images are attached in this order: ' + ims.map((f, i) => (i+1) + ') ' + f.name).join('; ') + '.\n\nFor each image, in order, write its name on one line, then a dense factual description: every piece of visible text, numbers, addresses, measurements, dates, labels, names and stamps, plus what it shows and how it is laid out. Plain text, no opinions, no advice. Up to 250 words per image.', {cache: false, images: ims.map(f => f.blob)});
+    turn.imageNotes = String(text || '').slice(0, 8000);
+    if(turns.includes(turn)) saveChat();
+  }catch(_){}
+}
+function packTurns(){
+  const out = turns.map(t => ({
+    role: t.role,
+    content: String(t.content || '').slice(0, 20000),
+    imageNotes: String(t.imageNotes || '').slice(0, 8000),
+    files: (t.files || []).map(f => ({name: f.name, kind: f.kind, size: f.size || 0, text: f.kind === 'text' ? String(f.text || '').slice(0, OLD_CHARS) : ''}))
+  }));
+  while(out.length > 2 && JSON.stringify(out).length > 200000) out.splice(0, 2);
+  return out;
+}
+function chatTitle(){
+  const first = turns.find(t => t.role === 'user');
+  if(!first) return 'Untitled chat';
+  const txt = (first.content || '').replace(/\s+/g, ' ').trim();
+  const useTxt = txt && txt !== 'Take a look at this.';
+  return (useTxt ? txt : (first.files?.[0]?.name || 'Untitled chat')).slice(0, 80);
+}
+function saveChat(){
+  if(!histDb || !turns.length) return;
+  if(!chatId) chatId = newChatId();
+  const id = chatId, data = {title: chatTitle(), updatedAt: Date.now(), turns: packTurns()};
+  saveChain = saveChain.then(async () => {
+    try{ await chatsCol().doc(id).set(data); }
+    catch(e){
+      if(e?.code === 'unavailable'){ await new Promise(r => setTimeout(r, 800 + Math.random()*800)); try{ await chatsCol().doc(id).set(data); return; }catch(_){} }
+      showStatus(e?.code === 'quota_exceeded' ? 'History is full. Delete some old chats in History to keep saving.' : 'This chat couldn’t be saved to your history.');
+    }
+  });
+}
+function fmtWhen(ms){
+  const d = new Date(ms), now = new Date();
+  const time = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  if(d.toDateString() === now.toDateString()) return 'Today, ' + time;
+  return d.toLocaleDateString([], {month:'short', day:'numeric', ...(d.getFullYear() === now.getFullYear() ? {} : {year:'numeric'})}) + ', ' + time;
+}
+async function loadChats(){
+  let snap;
+  try{ snap = await chatsCol().orderBy('updatedAt', 'desc').limit(100).get(); }
+  catch(_){ snap = await chatsCol().get(); }
+  return snap.docs.map(d => ({id: d.id, ...(d.data() || {})})).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+}
+function resumeChat(c){
+  ctl?.abort();
+  chatId = c.id;
+  turns = (c.turns || []).map(t => ({role: t.role, content: t.content, imageNotes: t.imageNotes || '', files: (t.files || []).map(f => ({...f, status: 'ready'}))}));
+  pending = []; renderPending(); log.innerHTML = ''; showStatus('');
+  for(const t of turns){
+    if(t.role === 'user') addMsg('q', t.content === 'Take a look at this.' && t.files?.length ? '' : t.content, t.files);
+    else addMsg('a', md(t.content));
+  }
+  box.focus();
+}
+async function openHistory(){
+  const wrap = document.createElement('div'); wrap.className = 'hist'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-label', 'Chat history');
+  const panel = document.createElement('div'); panel.className = 'panel';
+  panel.innerHTML = '<div class="head"><h2>Your chats</h2><button class="ghost" type="button" data-close>Close</button></div><p class="priv">Only you can see these. They’re tied to the Claude account you’re signed in with.</p><ul><li class="empty">Loading…</li></ul>';
+  wrap.append(panel); document.body.append(wrap);
+  const close = () => { wrap.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if(e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  wrap.addEventListener('click', e => { if(e.target === wrap) close(); });
+  panel.querySelector('[data-close]').addEventListener('click', close);
+  const ul = panel.querySelector('ul');
+  let chats;
+  try{ await saveChain; chats = await loadChats(); }
+  catch(_){ ul.innerHTML = '<li class="empty">Couldn’t load your chats. Try again in a moment.</li>'; return; }
+  ul.innerHTML = '';
+  if(!chats.length){ ul.innerHTML = '<li class="empty">No saved chats yet. Ask Juan something and it shows up here.</li>'; return; }
+  for(const c of chats){
+    const li = document.createElement('li');
+    const open = document.createElement('button'); open.type = 'button'; open.className = 'open' + (c.id === chatId ? ' cur' : '');
+    const t = document.createElement('span'); t.className = 't'; t.textContent = c.title || 'Untitled chat';
+    const d = document.createElement('span'); d.className = 'd'; d.textContent = fmtWhen(c.updatedAt || 0) + ' · ' + Math.ceil((c.turns || []).length / 2) + ' questions';
+    open.append(t, d);
+    open.addEventListener('click', () => { close(); resumeChat(c); });
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = 'Delete'; del.setAttribute('aria-label', 'Delete ' + (c.title || 'chat'));
+    del.addEventListener('click', async () => {
+      if(del.dataset.sure !== '1'){ del.dataset.sure = '1'; del.textContent = 'Sure?'; return; }
+      del.disabled = true;
+      try{ await chatsCol().doc(c.id).delete(); li.remove(); if(c.id === chatId) chatId = null; if(!ul.children.length) ul.innerHTML = '<li class="empty">No saved chats.</li>'; }
+      catch(_){ del.disabled = false; del.textContent = 'Retry'; }
+    });
+    li.append(open, del); ul.append(li);
+  }
+}
+document.getElementById('histBtn').addEventListener('click', openHistory);
+
 function openLightbox(src, name){
+
   const lb = document.createElement('div'); lb.className = 'lb'; lb.setAttribute('role','dialog'); lb.setAttribute('aria-label', name);
   const img = document.createElement('img'); img.src = src; img.alt = name;
   const cap = document.createElement('div'); cap.className = 'cap'; cap.textContent = name + ' · click the image for full size, anywhere else to close';
