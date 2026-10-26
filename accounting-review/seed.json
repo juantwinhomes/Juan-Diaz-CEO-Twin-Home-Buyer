@@ -172,7 +172,7 @@
     ]
   },
   "tax": {
-    "choice": "B",
+    "choice": "A",
     "source": "https://claude.ai/artifact/1eQ4pY7477YdeM12LfvBa9"
   },
   "honda": {
@@ -349,11 +349,11 @@
       "amount": null,
       "amountNote": "",
       "situation": "Both 2025 returns (IRS Form 1120 and California Form 100) are prepared and checked. PPS lost money in its first year, so $0 is owed.",
-      "rec": "File on paper by Certified Mail ($20). Nothing is owed, so there is no payment to rush and no penalty to stop.",
-      "required": "Choose Paper ($20), Online ($230), or Kaden (CPA fee), then sign the two forms.",
+      "rec": "File online with TaxAct (~$230). Same $0 tax, but it avoids California’s $100 paper-filing penalty and confirms acceptance in days.",
+      "required": "Approve ~$230 for TaxAct, then sign Form 8879-CORP and California Form 8453-C.",
       "owner": "Kristine",
       "target": "2026-10-31",
-      "next": "After Juan signs, Kristine and Jairo print and mail both returns by Certified Mail.",
+      "next": "Kristine sets line 15a to No, files both returns in TaxAct, and saves the acceptance emails.",
       "status": "Pending",
       "decidedOn": "",
       "notes": "",

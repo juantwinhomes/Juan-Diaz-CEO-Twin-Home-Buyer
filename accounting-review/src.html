@@ -544,8 +544,8 @@ function Contractors(){
 /* PPS figures copied unchanged from "PPS 2025 Taxes: Juan's Filing Decision" (Kristine, Oct 17, 2026) */
 const PPS_SRC='https://claude.ai/artifact/1eQ4pY7477YdeM12LfvBa9';
 const PPS_OPTS=[
- {key:'B',name:'Paper',cost:20,costText:'$20',rec:true,desc:'Kristine and Jairo print and mail by Certified Mail. You sign two forms.',pro:'Cheapest.',con:'Confirmation takes 8–12 weeks.'},
- {key:'A',name:'Online',cost:230,costText:'$230',desc:'Kristine files with TaxAct. You sign two e-file forms.',pro:'Accepted in 1–3 days.',con:'Pays $230 for a $0 return.'},
+ {key:'A',name:'Online',cost:230,costText:'$230',rec:true,desc:'Kristine files with TaxAct. You sign two e-file forms.',pro:'Accepted in 1–3 days.',con:'Pays $230 for a $0 return.'},
+ {key:'B',name:'Paper',cost:20,costText:'$20',desc:'Kristine and Jairo print and mail by Certified Mail. You sign two forms.',pro:'Cheapest.',con:'Confirmation takes 8–12 weeks.'},
  {key:'C',name:'Kaden, BEC CFO and CPA',cost:null,costText:'CPA fee',desc:'Kaden reviews and e-files. You approve his fee and sign.',pro:'CPA signature.',con:'Extra fee for finished work.'}];
 function Tax(){
   const {S,set}=useContext(Ctx);const choice=S.tax&&S.tax.choice;
@@ -561,7 +561,7 @@ function Tax(){
     <div class="panel"><h3>How should we file? <span class="muted" style=${{fontWeight:400}}>Every option ends at $0 owed. They differ only in cost and speed.</span></h3>
       <div class="grid3">${PPS_OPTS.map(o=>html`<button key=${o.key} type="button" class=${'taxopt'+(choice===o.key?' sel':'')} aria-pressed=${choice===o.key} onClick=${()=>set('tax.choice',o.key)}>
         <div style=${{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'baseline'}}><b style=${{fontSize:'1.02rem'}}>${o.name}</b><span class="num" style=${{fontSize:'1.15rem',fontWeight:600}}>${o.costText}</span></div>
-        ${o.rec&&html`<span class="pill info" style=${{alignSelf:'flex-start'}}>Kristine recommends · ready to print today</span>`}
+        ${o.rec&&html`<span class="pill info" style=${{alignSelf:'flex-start'}}>Recommended · revised Oct 26</span>`}${o.key==='B'&&html`<span class="pill neutral" style=${{alignSelf:'flex-start'}}>Original recommendation, Oct 17</span>`}
         <span style=${{fontSize:'.86rem'}}>${o.desc} <span style=${{color:'var(--ok)'}}>${o.pro}</span> <span style=${{color:'var(--warn)'}}>${o.con}</span></span>
         <span class="lbl" style=${{color:choice===o.key?'var(--accent)':'var(--faint)'}}>${choice===o.key?'✓ Selected':'Select'}</span>
       </button>`)}</div>
@@ -581,11 +581,23 @@ function Tax(){
         <p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>Prepared and double-checked by Kristine. Calculations reviewed with Claude, an AI assistant and not a licensed CPA.</p>
       </div>
     </div>
-    <div class="panel"><h3>Why paper</h3><div class="list">
-      <div class="risk"><div>Nothing is owed, so there’s no payment to rush and no penalty to stop.</div></div>
-      <div class="risk"><div>The paper packet is already filled in, line by line. It only needs printing and your signature.</div></div>
-      <div class="risk"><div>A Certified Mail receipt is legal proof of the filing date.</div></div></div>
-      <p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>Source: “PPS 2025 Taxes: Juan’s Filing Decision,” prepared for Juan Manuel Diaz by Kristine Joy Lomeda, October 17, 2026. The signed returns and downloads are in that page.</p>
+    <div class="panel" style=${{borderColor:'var(--accent)'}}>
+      <div style=${{display:'flex',flexWrap:'wrap',gap:'8px',alignItems:'baseline',justifyContent:'space-between'}}><h3>Revised recommendation: file online</h3><span class="pill info">Changed from Paper on Oct 26, 2026</span></div>
+      <p style=${{margin:'4px 0 12px'}}>Both ways PPS owes $0 and pays no IRS late penalty, because that penalty is a share of tax owed. The ~$210 extra for online buys certainty with California.</p>
+      <div class="tablewrap"><table><thead><tr><th>Why online</th><th>What it protects against</th></tr></thead><tbody>
+        <tr><td><b>California requires e-file for returns prepared with tax software</b></td><td>A $100 penalty on a paper return (then $500 for each later one)</td></tr>
+        <tr><td><b>Acceptance confirmed in 1–3 days</b></td><td>Waiting 8–12 weeks with no proof; the state can suspend a corporation that hasn’t filed</td></tr>
+        <tr><td><b>Software checks the math and missing fields</b></td><td>A paper return sent back for errors, which delays filing again</td></tr>
+        <tr><td><b>The $45,000 loss carries into the 2026 return</b></td><td>Re-entering the loss and tools by hand next year</td></tr>
+      </tbody></table></div>
+      <h3 style=${{margin:'16px 0 8px'}}>Before filing</h3>
+      <div class="list">
+        <div class="risk"><span class="num muted">1</span><div><b>Change line 15a to “No”</b> (Form 1120, Schedule K). PPS has no 1099s: Matrix Group and ETI are corporations, and card payments are reported by the card companies. Line 15b stays blank. <span class="muted">Kristine confirms the $1,376 equipment rental was paid to a company or by card.</span></div></div>
+        <div class="risk"><span class="num muted">2</span><div><b>Buy TaxAct Business 1120 with the California add-on</b> directly at taxact.com and enter the prepared numbers. <span class="muted">Kristine</span></div></div>
+        <div class="risk"><span class="num muted">3</span><div><b>Juan signs two e-file authorizations:</b> IRS Form 8879-CORP and California Form 8453-C. <span class="muted">Juan</span></div></div>
+        <div class="risk"><span class="num muted">4</span><div><b>Transmit, then keep the IRS and California acceptance emails</b> with the returns for 7 years. <span class="muted">Kristine</span></div></div>
+      </div>
+      <p class="muted" style=${{fontSize:'.78rem',margin:'10px 0 0'}}>Original recommendation (Paper) and all figures above are from “PPS 2025 Taxes: Juan’s Filing Decision,” prepared by Kristine Joy Lomeda, Oct 17, 2026; that page is unchanged. Revised after reviewing California’s business e-file rule. Not reviewed by a licensed CPA.</p>
     </div>
     <${Decisions} section="tax"/>
   </div>`;
