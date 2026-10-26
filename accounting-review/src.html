@@ -701,9 +701,9 @@ function Time(){
   const addI=()=>set('time.issues',[...S.time.issues,{id:uid('i'),issue:'',impact:'',owner:'',due:'',status:'Open'}]);
   const rm=i=>set('time.issues',S.time.issues.filter((_,j)=>j!==i));
   return html`<div class="stack">
-    <${SecHead} title="Clock-In / Clock-Out Tracking" k="time" sub="What Deputy captures at every clock-in and clock-out, and the one decision for Juan."/>
+    <${SecHead} title="Clock-In / Clock-Out Tracking" k="time" sub="Marieflor runs Deputy clock-in and clock-out and prepares payroll. Kristine verifies her work."/>
     ${S.time.proof&&html`<${DeputyProof}/>`}
-    <div class="panel"><h3>Routine timekeeping controls · Kristine handles</h3>
+    <div class="panel"><h3>Who does what · Marieflor runs timekeeping, Kristine verifies</h3>
       <div class=${'tablewrap'+(edit?' editing':'')}><table><thead><tr><th>Control</th><th>How it works today</th><th>Responsible</th><th>Status</th></tr></thead><tbody>
       ${S.time.process.map((p,i)=>html`<tr key=${p.id}><td><b>${p.area}</b></td><td><${F} path=${'time.process.'+i+'.current'} width="200px"/></td><td><${F} path=${'time.process.'+i+'.owner'} width="110px"/></td>
       <td>${edit?html`<${F} path=${'time.process.'+i+'.status'} kind="select" options=${['Pending verification','Working','Gap found','Not in place']}/>`:html`<${Pill} cls=${p.status==='Working'?'ok':p.status==='Pending verification'?'neutral':'bad'}>${p.status}<//>`}</td></tr>`)}
