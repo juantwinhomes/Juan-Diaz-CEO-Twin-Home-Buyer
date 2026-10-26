@@ -15,11 +15,11 @@
     },
     "contractors": {
       "asOf": "2026-10-26",
-      "source": "Approvals confirmed in accounting review; payment completion not yet verified"
+      "source": "Independent Contractors · Sep 2026 (Madera → Relay 5776; all other → WF 8251)"
     },
     "tax": {
-      "asOf": "",
-      "source": ""
+      "asOf": "2026-10-17",
+      "source": "PPS 2025 Taxes: Juan's Filing Decision (prepared by Kristine)"
     },
     "honda": {
       "asOf": "",
@@ -99,71 +99,71 @@
       {
         "id": "p1",
         "payee": "Alvaro",
-        "job": "Madera — drywall",
+        "job": "22496 Ave 18¾ Madera — drywall install & texture",
         "amount": 1200,
-        "source": "",
-        "status": "Pending verification",
+        "source": "Relay ••5776",
+        "status": "Not yet sent",
         "paidOn": "",
-        "action": "Confirm payment was sent and cleared"
+        "action": "Send payment to contractor"
       },
       {
         "id": "p2",
-        "payee": "Yuri",
-        "job": "170 Glenn Way — cleaning",
+        "payee": "Yuri Hernandez",
+        "job": "170 Glenn Way — office cleaning (3 weeks × $900)",
         "amount": 2700,
-        "source": "",
-        "status": "Pending verification",
+        "source": "WF ••8251",
+        "status": "Not yet sent",
         "paidOn": "",
-        "action": "Confirm payment was sent and cleared"
+        "action": "Send payment to contractor"
       },
       {
         "id": "p3",
-        "payee": "Yuri",
-        "job": "27 Prague — cleaning",
+        "payee": "Yuri Hernandez",
+        "job": "27 Prague St — cleaning",
         "amount": 400,
-        "source": "",
-        "status": "Pending verification",
+        "source": "WF ••8251",
+        "status": "Not yet sent",
         "paidOn": "",
-        "action": "Confirm payment was sent and cleared"
+        "action": "Send payment to contractor"
       },
       {
         "id": "p4",
-        "payee": "Madera painting",
-        "job": "Madera — painting",
+        "payee": "Gonzalo",
+        "job": "22496 Madera — painting (interior, exterior, roof, pool & cement)",
         "amount": 10000,
-        "source": "",
-        "status": "Pending verification",
+        "source": "Relay ••5776",
+        "status": "Not yet sent",
         "paidOn": "",
-        "action": "Confirm payee name, payment sent and cleared"
+        "action": "Send payment to contractor"
       },
       {
         "id": "p5",
         "payee": "Gonzalo",
-        "job": "Madera — demolition / cleanup",
+        "job": "22496 Madera — demolition / cleanup balance",
         "amount": 900,
-        "source": "",
-        "status": "Pending verification",
+        "source": "Relay ••5776",
+        "status": "Not yet sent",
         "paidOn": "",
-        "action": "Confirm payment was sent and cleared"
+        "action": "Send payment to contractor"
       },
       {
         "id": "p6",
-        "payee": "Stuart Morgan",
-        "job": "1574 Jerrold — invoice 2611",
+        "payee": "Stuart Morgan (RemodHomes)",
+        "job": "1574 Jerrold Ave — invoice 2611",
         "amount": 2700,
-        "source": "",
-        "status": "Pending verification",
+        "source": "WF ••8251",
+        "status": "Not yet sent",
         "paidOn": "",
-        "action": "Confirm payment was sent and cleared"
+        "action": "Send payment to contractor"
       }
     ],
     "hold": [
       {
         "id": "h1",
         "payee": "Gonzalo",
-        "job": "460 5th Ave — interior balance",
+        "job": "460 5th Ave — interior balance (agreed $5,000, paid $3,000)",
         "amount": 2000,
-        "source": "",
+        "source": "WF ••8251",
         "status": "On hold",
         "paidOn": "",
         "action": "Cherry to confirm work is complete",
@@ -172,39 +172,8 @@
     ]
   },
   "tax": {
-    "entity": "",
-    "status": "Pending verification",
-    "returns": "Federal and state 2025 business returns for PPS (confirm exact forms with CPA)",
-    "extension": "Unknown",
-    "cpa": "",
-    "deadlineNote": "Extended 2025 federal deadlines have passed: Sept 15, 2026 for partnerships and S corps; Oct 15, 2026 for C corps. Confirm whether PPS filed an extension.",
-    "recommended": "A",
-    "options": [
-      {
-        "key": "A",
-        "name": "File now with current records",
-        "fee": null,
-        "penalty": null,
-        "benefit": "Stops late-filing penalties from growing",
-        "risk": "May require an amended return later"
-      },
-      {
-        "key": "B",
-        "name": "File after records are complete",
-        "fee": null,
-        "penalty": null,
-        "benefit": "Fewer corrections later",
-        "risk": "Penalties keep growing each month"
-      },
-      {
-        "key": "C",
-        "name": "File now, then request first-time penalty relief",
-        "fee": null,
-        "penalty": null,
-        "benefit": "May remove late penalties if PPS has a clean 3-year record",
-        "risk": "Relief is not guaranteed; return must be filed first"
-      }
-    ]
+    "choice": "B",
+    "source": "https://claude.ai/artifact/1eQ4pY7477YdeM12LfvBa9"
   },
   "honda": {
     "leaseStatus": "",
@@ -375,16 +344,16 @@
     {
       "id": "d-tax",
       "section": "tax",
-      "title": "PPS 2025 tax returns — filing approach",
-      "amountSource": "",
+      "title": "PPS 2025 tax returns — how to file",
+      "amountSource": "tax",
       "amount": null,
       "amountNote": "",
-      "situation": "PPS 2025 returns are not confirmed as filed, and the extended federal deadlines have passed. Penalties may already apply.",
-      "rec": "File as soon as possible with current records, then request first-time penalty relief if PPS qualifies.",
-      "required": "Choose a filing option and approve CPA fees once quoted.",
+      "situation": "Both 2025 returns (IRS Form 1120 and California Form 100) are prepared and checked. PPS lost money in its first year, so $0 is owed.",
+      "rec": "File on paper by Certified Mail ($20). Nothing is owed, so there is no payment to rush and no penalty to stop.",
+      "required": "Choose Paper ($20), Online ($230), or Kaden (CPA fee), then sign the two forms.",
       "owner": "Kristine",
-      "target": "2026-11-06",
-      "next": "Kristine confirms filing status and CPA quote; CPA prepares returns.",
+      "target": "2026-10-31",
+      "next": "After Juan signs, Kristine and Jairo print and mail both returns by Certified Mail.",
       "status": "Pending",
       "decidedOn": "",
       "notes": "",

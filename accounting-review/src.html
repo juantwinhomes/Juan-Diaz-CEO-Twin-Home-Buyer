@@ -107,6 +107,7 @@ td input,td select{min-width:90px}
 .pv{display:inline-block;font-size:.72rem;font-weight:600;color:var(--pv);background:var(--pv-soft);border-radius:4px;padding:1px 6px;white-space:nowrap}
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
 .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.f.st-Notyetsent{border-color:var(--warn);color:var(--warn);font-weight:600}.f.st-Senttocontractor,.f.st-Scheduled{border-color:var(--info);color:var(--info);font-weight:600}.f.st-Cleared{border-color:var(--ok);color:var(--ok);font-weight:600}
 .pill.ok{background:var(--ok-soft);color:var(--ok)}
 .pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.bad{background:var(--bad-soft);color:var(--bad)}
@@ -161,6 +162,10 @@ textarea.f{resize:vertical;min-height:56px;line-height:1.4}
 #report h2{margin:18px 0 8px}
 #report table{margin-bottom:6px}
 
+.taxopt{all:unset;box-sizing:border-box;cursor:pointer;border:1.5px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.taxopt:hover{border-color:var(--accent)}
+.taxopt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.taxopt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* live status */
 .live{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;font-weight:600;color:var(--muted)}
 .live i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
@@ -284,15 +289,16 @@ function calc(S){
   const hondaTotal=hb===null?null:hb+(num(h.fees)||0)+(num(h.salesTax)||0);
   const payrollTotal=num(S.payroll.total)!==null?num(S.payroll.total):((num(S.payroll.regular)!==null||num(S.payroll.overtime)!==null)?(num(S.payroll.regular)||0)+(num(S.payroll.overtime)||0):null);
   const contractorsApproved=S.contractors.approved.reduce((a,p)=>a+(num(p.amount)||0),0);
-  return {cards,cardPaydown,totBal,overallUtil,units,expected,sepRcv,octRcv,outstanding,mort,exp,netActual,netFull,shortfall,hondaTotal,payrollTotal,contractorsApproved};
+  return {S,cards,cardPaydown,totBal,overallUtil,units,expected,sepRcv,octRcv,outstanding,mort,exp,netActual,netFull,shortfall,hondaTotal,payrollTotal,contractorsApproved};
 }
-function decisionAmount(d,K){
+function decisionAmount(d,K,S){S=S||K.S;
   switch(d.amountSource){
     case 'cards':return K.cardPaydown;
     case 'honda':return K.hondaTotal;
     case 'rentalOutstanding':return K.outstanding;
     case 'rentalShortfall':return K.shortfall;
     case 'payroll':return K.payrollTotal;
+    case 'tax':return (PPS_OPTS.find(o=>o.key===(S.tax&&S.tax.choice))||{}).cost??null;
     default:return num(d.amount);
   }
 }
@@ -305,7 +311,6 @@ function risks(S,K){
     const dd=daysUntil(c.dueDate);if(dd!==null&&dd>=0&&dd<=7&&c.autopay!=='On')r.push({lvl:'warn',text:nm+' payment due '+fmtDate(c.dueDate)+' without confirmed autopay',sec:'cards'});
   });
   if(!K.cards.some(x=>x.k.bal!==null))r.push({lvl:'warn',text:'Credit card balances not entered yet — card risk cannot be measured',sec:'cards'});
-  if(!/filed/i.test(S.tax.status)||/not/i.test(S.tax.status))r.push({lvl:'bad',text:'PPS 2025 returns: extended federal deadlines have passed and filing is not confirmed',sec:'tax'});
   if(K.outstanding>0)r.push({lvl:'warn',text:'8715 D St has '+money(K.outstanding)+' in unpaid rent',sec:'rental'});
   if(K.shortfall>0)r.push({lvl:'warn',text:'8715 D St is short '+money(K.shortfall)+' this month after mortgage and expenses',sec:'rental'});
   if(S.rental.qbMissing.length)r.push({lvl:'warn',text:S.rental.qbMissing.length+' missing QuickBooks record item(s) for 8715 D St',sec:'rental'});
@@ -511,14 +516,14 @@ function Cards(){
 
 function PayTable({rows,base,showTotal}){
   const {edit,set,S}=useContext(Ctx);
-  const opts=['Pending verification','Approved — not yet sent','Sent','Cleared','On hold'];
+  const opts=['Not yet sent','Scheduled','Sent to contractor','Cleared','On hold'];
   const total=rows.reduce((a,p)=>a+(num(p.amount)||0),0);
   return html`<div class=${'tablewrap'+(edit?' editing':'')}><table><thead><tr><th>Payee</th><th>Job / property</th><th class="r">Amount</th><th>Source account</th><th>Processing status</th><th>Paid on</th><th>Outstanding action</th></tr></thead>
   <tbody>${rows.map((p,i)=>html`<tr key=${p.id}>
     <td>${edit?html`<${F} path=${base+'.'+i+'.payee'}/>`:html`<b>${p.payee}</b>`}</td><td>${edit?html`<${F} path=${base+'.'+i+'.job'}/>`:p.job}</td>
     <td class="r"><${F} path=${base+'.'+i+'.amount'} kind="money"/></td>
     <td><${F} path=${base+'.'+i+'.source'} ph="e.g. Chase Ops ••1234"/></td>
-    <td>${edit?html`<${F} path=${base+'.'+i+'.status'} kind="select" options=${opts}/>`:html`<${Pill} cls=${p.status==='Cleared'?'ok':p.status==='Sent'?'info':p.status==='On hold'?'warn':'neutral'}>${p.status}<//>`}</td>
+    <td><select class=${'f st-'+(p.status||'').replace(/\W+/g,'')} id=${'st-'+p.id} style=${{minWidth:'168px'}} value=${p.status} onChange=${e=>set(base+'.'+i+'.status',e.target.value)}>${opts.map(o=>html`<option key=${o} value=${o}>${o}</option>`)}</select></td>
     <td><${F} path=${base+'.'+i+'.paidOn'} kind="date" empty="—"/></td>
     <td><${F} path=${base+'.'+i+'.action'} empty="None"/></td></tr>`)}</tbody>
   ${showTotal&&html`<tfoot><tr><td colspan="2">Total</td><td class="r num">${money(total)}</td><td colspan="4"></td></tr></tfoot>`}
@@ -536,28 +541,51 @@ function Contractors(){
   </div>`;
 }
 
+/* PPS figures copied unchanged from "PPS 2025 Taxes: Juan's Filing Decision" (Kristine, Oct 17, 2026) */
+const PPS_SRC='https://claude.ai/artifact/1eQ4pY7477YdeM12LfvBa9';
+const PPS_OPTS=[
+ {key:'B',name:'Paper',cost:20,costText:'$20',rec:true,desc:'Kristine and Jairo print and mail by Certified Mail. You sign two forms.',pro:'Cheapest.',con:'Confirmation takes 8–12 weeks.'},
+ {key:'A',name:'Online',cost:230,costText:'$230',desc:'Kristine files with TaxAct. You sign two e-file forms.',pro:'Accepted in 1–3 days.',con:'Pays $230 for a $0 return.'},
+ {key:'C',name:'Kaden, BEC CFO and CPA',cost:null,costText:'CPA fee',desc:'Kaden reviews and e-files. You approve his fee and sign.',pro:'CPA signature.',con:'Extra fee for finished work.'}];
 function Tax(){
-  const {S,set,edit}=useContext(Ctx);const t=S.tax;
+  const {S,set}=useContext(Ctx);const choice=S.tax&&S.tax.choice;
   return html`<div class="stack">
-    <${SecHead} title="PPS 2025 Tax Returns" k="tax"/>
-    <div class="banner bad"><span class="grow">${t.deadlineNote}</span></div>
-    <div class="panel"><div class="facts">
-      <${Fact} label="Current filing status"><${F} path="tax.status" kind="select" options=${['Pending verification','Not started','In progress with CPA','Extension filed — not yet filed','Filed']}/><//>
-      <${Fact} label="Entity type"><${F} path="tax.entity" kind="select" options=${['','Partnership (1065)','S corporation (1120-S)','C corporation (1120)','Single-member LLC (Schedule C)']}/><//>
-      <${Fact} label="Extension filed"><${F} path="tax.extension" kind="select" options=${['Unknown','Yes','No']}/><//>
-      <${Fact} label="CPA / preparer"><${F} path="tax.cpa"/><//>
-      <div class="fact" style=${{gridColumn:'1/-1'}}><div class="lbl">Required returns</div><div class="val"><${F} path="tax.returns"/></div></div>
-    </div></div>
-    <div class="panel"><h3>Filing options</h3>
-      <div class="grid3">${t.options.map((o,i)=>html`<div key=${o.key} class="panel" style=${t.recommended===o.key?{borderColor:'var(--accent)',background:'var(--accent-soft)'}:null}>
-        <div style=${{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'flex-start'}}><h3>${o.key}. ${o.name}</h3>${t.recommended===o.key&&html`<${Pill} cls="info">Kristine recommends<//>`}</div>
-        <div style=${{display:'grid',gap:'6px',marginTop:'8px',fontSize:'.84rem'}}>
-          <div><span class="lbl">CPA fee</span><br/><${F} path=${'tax.options.'+i+'.fee'} kind="money"/></div>
-          <div><span class="lbl">Est. penalties & interest</span><br/><${F} path=${'tax.options.'+i+'.penalty'} kind="money"/></div>
-          <div><span class="lbl">Benefit</span><br/>${o.benefit}</div>
-          <div><span class="lbl">Risk</span><br/>${o.risk}</div>
-        </div></div>`)}</div>
-      ${edit&&html`<div style=${{marginTop:'10px',maxWidth:'260px'}}><span class="lbl">Kristine recommends option</span><${F} path="tax.recommended" kind="select" options=${['A','B','C']}/></div>`}
+    <${SecHead} title="PPS 2025 Tax Returns" k="tax" sub="Peninsula Plumbing Solutions Inc., first tax year, June 28 – December 31, 2025"/>
+    <div class="banner info"><span class="grow"><b>Nothing is owed. One decision is needed.</b> Both returns are prepared and checked. PPS lost money in its first year, so no tax is due.</span><a class="btn sm" href=${PPS_SRC} target="_blank" rel="noopener">Open the returns</a></div>
+    <div class="panel facts">
+      <${Fact} label="IRS, Form 1120" big><span class="num">$0</span><//>
+      <${Fact} label="FTB, Form 100" big><span class="num">$0</span><//>
+      <${Fact} label="Loss saved for future years" big><span class="num">$45,000</span><//>
+      <${Fact} label="PPS owes ETI, both books agree" big><span class="num">$65,118</span><//>
+    </div>
+    <div class="panel"><h3>How should we file? <span class="muted" style=${{fontWeight:400}}>Every option ends at $0 owed. They differ only in cost and speed.</span></h3>
+      <div class="grid3">${PPS_OPTS.map(o=>html`<button key=${o.key} type="button" class=${'taxopt'+(choice===o.key?' sel':'')} aria-pressed=${choice===o.key} onClick=${()=>set('tax.choice',o.key)}>
+        <div style=${{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'baseline'}}><b style=${{fontSize:'1.02rem'}}>${o.name}</b><span class="num" style=${{fontSize:'1.15rem',fontWeight:600}}>${o.costText}</span></div>
+        ${o.rec&&html`<span class="pill info" style=${{alignSelf:'flex-start'}}>Kristine recommends · ready to print today</span>`}
+        <span style=${{fontSize:'.86rem'}}>${o.desc} <span style=${{color:'var(--ok)'}}>${o.pro}</span> <span style=${{color:'var(--warn)'}}>${o.con}</span></span>
+        <span class="lbl" style=${{color:choice===o.key?'var(--accent)':'var(--faint)'}}>${choice===o.key?'✓ Selected':'Select'}</span>
+      </button>`)}</div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h3>The numbers</h3>
+        <div class="tablewrap"><table><thead><tr><th></th><th class="r">IRS</th><th class="r">FTB</th></tr></thead><tbody>
+          <tr><td>Sales after discounts</td><td class="r num">$58,139</td><td class="r num">$58,139</td></tr>
+          <tr><td>Tools deducted in 2025</td><td class="r num">$27,627</td><td class="r num">$767</td></tr>
+          <tr><td>Taxable income</td><td class="r num">($45,000)</td><td class="r num">($18,140)</td></tr>
+          <tr><td><b>Amount due</b></td><td class="r num"><b>$0</b></td><td class="r num"><b>$0</b></td></tr>
+        </tbody></table></div>
+        <p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>California spreads the tools deduction over six years instead of taking it all in 2025.</p>
+      </div>
+      <div class="panel"><h3>What was checked</h3>
+        <div class="list">${['Books reconciled to ETI','No cost deducted twice','Duplicate sales removed, missing sales added','Bank matches Relay ($12,307.15)','Matrix Group Inc listed as related company','ETI and Matrix returns need no changes','Your personal return is not affected'].map(t=>html`<div class="risk" key=${t}><span style=${{color:'var(--ok)',fontWeight:700}}>✓</span><div>${t}</div></div>`)}</div>
+        <p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>Prepared and double-checked by Kristine. Calculations reviewed with Claude, an AI assistant and not a licensed CPA.</p>
+      </div>
+    </div>
+    <div class="panel"><h3>Why paper</h3><div class="list">
+      <div class="risk"><div>Nothing is owed, so there’s no payment to rush and no penalty to stop.</div></div>
+      <div class="risk"><div>The paper packet is already filled in, line by line. It only needs printing and your signature.</div></div>
+      <div class="risk"><div>A Certified Mail receipt is legal proof of the filing date.</div></div></div>
+      <p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>Source: “PPS 2025 Taxes: Juan’s Filing Decision,” prepared for Juan Manuel Diaz by Kristine Joy Lomeda, October 17, 2026. The signed returns and downloads are in that page.</p>
     </div>
     <${Decisions} section="tax"/>
   </div>`;
@@ -733,7 +761,7 @@ function Summary(){
 
     <div class="panel"><h3>Already approved, completed, and informational</h3>
       <div class="tablewrap"><table><thead><tr><th>Item</th><th class="r">Amount</th><th>Status</th><th>Note</th></tr></thead><tbody>
-        ${S.contractors.approved.map(p=>html`<tr key=${p.id}><td>${p.payee} — ${p.job}</td><td class="r num">${money(p.amount)}</td><td><${Pill} cls=${p.status==='Cleared'?'ok':'info'}>${p.status==='Cleared'?'Paid & cleared':'Approved — '+p.status.toLowerCase()}<//></td><td>${p.action}</td></tr>`)}
+        ${S.contractors.approved.map(p=>html`<tr key=${p.id}><td>${p.payee} — ${p.job}</td><td class="r num">${money(p.amount)}</td><td><${Pill} cls=${p.status==='Cleared'?'ok':'info'}>${p.status==='Cleared'?'Paid & cleared':'Approved · '+p.status.toLowerCase()}<//></td><td>${p.action}</td></tr>`)}
         ${S.time.process.map(p=>html`<tr key=${p.id}><td>Timekeeping: ${p.area}</td><td class="r muted">—</td><td><${Pill} cls="neutral">Routine · Kristine<//></td><td>${p.status}</td></tr>`)}
         ${S.info.map(x=>html`<tr key=${x.id}><td>${x.item}</td><td class="r num">${money(x.amount)||'—'}</td><td>${x.status}</td><td>${x.note}</td></tr>`)}
       </tbody><tfoot><tr><td>Approved contractor payments</td><td class="r num">${money(K.contractorsApproved)}</td><td colspan="2"></td></tr></tfoot></table></div>
