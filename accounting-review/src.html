@@ -600,6 +600,11 @@ function Tax(){
       </tbody></table></div>
       <p class="muted" style=${{fontSize:'.78rem',margin:'10px 0 0'}}>Original recommendation (Paper) and all figures above are from “PPS 2025 Taxes: Juan’s Filing Decision,” prepared by Kristine Joy Lomeda, Oct 17, 2026; that page is unchanged. Revised after reviewing California’s business e-file rule. Not reviewed by a licensed CPA.</p>
     </div>
+    ${S.tax.closeout&&html`<div class="panel"><div style=${{display:'flex',flexWrap:'wrap',gap:'8px',justifyContent:'space-between',alignItems:'baseline'}}><h3>Closing PPS · 2026 is the final tax year</h3><${Pill} cls="warn">Needs Juan's approval<//></div>
+      <p style=${{margin:'4px 0 12px'}}>${S.tax.closeout.summary}</p>
+      <div class="tablewrap"><table><thead><tr><th>#</th><th>Step</th><th>Who</th><th>By</th></tr></thead><tbody>
+      ${S.tax.closeout.steps.map((x,i)=>html`<tr key=${i}><td class="num">${i+1}</td><td>${x.t}</td><td>${x.who}</td><td style=${{whiteSpace:'nowrap'}}>${x.by}</td></tr>`)}
+      </tbody></table></div></div>`}
     <${Decisions} section="tax"/>
   </div>`;
 }

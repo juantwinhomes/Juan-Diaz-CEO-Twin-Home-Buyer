@@ -173,7 +173,52 @@
   },
   "tax": {
     "choice": "A",
-    "source": "https://claude.ai/artifact/1eQ4pY7477YdeM12LfvBa9"
+    "source": "https://claude.ai/artifact/1eQ4pY7477YdeM12LfvBa9",
+    "closeout": {
+      "summary": "If PPS stops all business by Dec 31, 2026, its 2026 return (filed by Apr 15, 2027) is the last one. Filing the dissolution with the Secretary of State within 12 months after that final return means no 2027 return and no 2027 $800 California minimum tax.",
+      "steps": [
+        {
+          "t": "Juan signs the board and shareholder consent to close PPS; file IRS Form 966 within 30 days",
+          "who": "Juan · Kristine",
+          "by": "Nov 2026"
+        },
+        {
+          "t": "Finish open PPS jobs, send final invoices, collect what customers owe; no new PPS work",
+          "who": "Kristine",
+          "by": "Dec 31, 2026"
+        },
+        {
+          "t": "Settle the $65,118 PPS owes ETI (repay or write off; CPA confirms the tax effect)",
+          "who": "Kristine",
+          "by": "Dec 31, 2026"
+        },
+        {
+          "t": "Decide what happens to PPS tools and equipment (sell, or transfer to another company at fair value)",
+          "who": "Juan · Kristine",
+          "by": "Dec 31, 2026"
+        },
+        {
+          "t": "Cancel PPS accounts: contractor license and bond, insurance, Jobber, Square; close the Relay bank account after the last payment",
+          "who": "Kristine",
+          "by": "Dec 31, 2026"
+        },
+        {
+          "t": "File the 2026 IRS Form 1120 and California Form 100 marked FINAL",
+          "who": "Kristine",
+          "by": "Apr 15, 2027"
+        },
+        {
+          "t": "File the dissolution with the California Secretary of State",
+          "who": "Kristine",
+          "by": "Within 12 months of the final return"
+        },
+        {
+          "t": "Ask the CPA whether Juan can deduct his PPS investment as a loss on his personal return",
+          "who": "Kristine",
+          "by": "Before filing 2026 returns"
+        }
+      ]
+    }
   },
   "honda": {
     "vehicle": "2024 Honda Accord LX",
@@ -400,6 +445,24 @@
       "holdReason": ""
     },
     {
+      "id": "d-pps-close",
+      "section": "tax",
+      "title": "Close Peninsula Plumbing Solutions (PPS)",
+      "amountSource": "",
+      "amount": null,
+      "amountNote": "Saves $800 a year in California minimum tax",
+      "situation": "PPS lost money in its first year. Like Prescott, it will be shut down, so its 2026 return would be its last.",
+      "rec": "Approve closing PPS: stop all PPS business by Dec 31, 2026, file 2026 as the final return, then file the dissolution with the Secretary of State.",
+      "required": "Approve closing PPS, with 2026 as its final tax year.",
+      "owner": "Kristine",
+      "target": "2026-11-14",
+      "next": "Kristine prepares the closing consent for Juan to sign and works the close-out checklist.",
+      "status": "Pending",
+      "decidedOn": "",
+      "notes": "",
+      "holdReason": ""
+    },
+    {
       "id": "d-collect",
       "section": "rental",
       "title": "8715 D St — collection steps for unpaid rent",
@@ -468,6 +531,13 @@
       "amount": 17683.9,
       "status": "Title check pending",
       "note": "DMV mailed the title in Juan's name. Once it shows no lienholder, it is transferred to Equity Track Inc."
+    },
+    {
+      "id": "i-prescott",
+      "item": "Prescott — closing and shutting down",
+      "amount": null,
+      "status": "Decided",
+      "note": "Confirmed by Juan and Cherry. No decision needed."
     }
   ]
 }
