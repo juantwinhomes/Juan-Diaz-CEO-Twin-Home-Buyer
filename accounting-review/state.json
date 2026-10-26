@@ -27,7 +27,7 @@
     },
     "rental": {
       "asOf": "2026-10-26",
-      "source": "Kristine's corrected tenant list; November mortgage statement"
+      "source": "Kristine's tenant list; Sept and Oct rent received; November mortgage statement"
     },
     "time": {
       "asOf": "2026-10-26",
@@ -263,9 +263,9 @@
         "unit": "",
         "tenant": "Cornelio Lopez",
         "rent": 790,
-        "sep": null,
-        "oct": null,
-        "outstanding": null,
+        "sep": 790,
+        "oct": 790,
+        "outstanding": 0,
         "since": "",
         "status": "Current"
       },
@@ -285,9 +285,9 @@
         "unit": "",
         "tenant": "Anisa D. Hamilton",
         "rent": 1800,
-        "sep": null,
-        "oct": null,
-        "outstanding": null,
+        "sep": 1800,
+        "oct": 1800,
+        "outstanding": 0,
         "since": "",
         "status": "Current"
       },
@@ -296,9 +296,9 @@
         "unit": "",
         "tenant": "Ramon Villalobos",
         "rent": 700,
-        "sep": null,
-        "oct": null,
-        "outstanding": null,
+        "sep": 700,
+        "oct": 700,
+        "outstanding": 0,
         "since": "",
         "status": "Current"
       },
@@ -307,16 +307,16 @@
         "unit": "",
         "tenant": "Jose Gollado",
         "rent": 800,
-        "sep": null,
-        "oct": null,
-        "outstanding": null,
+        "sep": 800,
+        "oct": 800,
+        "outstanding": 0,
         "since": "",
         "status": "Current"
       },
       {
         "id": "u6",
         "unit": "Unit 2 Downstairs",
-        "tenant": "Vacant (former tenant Rainier Calderon, was $560)",
+        "tenant": "Vacant",
         "rent": null,
         "sep": null,
         "oct": null,
@@ -338,7 +338,19 @@
     ],
     "mortgage": 3028.3,
     "expenses": null,
-    "activity": [],
+    "activity": [
+      {
+        "id": "a-maria",
+        "date": "2026-10-26",
+        "unit": "",
+        "type": "Payment received",
+        "detail": "Maria Navarro has paid $6,000 so far in 2026",
+        "by": "Kristine",
+        "next": "Collect the remaining $8,980 overdue",
+        "owner": "Kristine",
+        "due": ""
+      }
+    ],
     "qbMissing": [
       {
         "id": "q1",
@@ -347,8 +359,7 @@
         "due": ""
       }
     ],
-    "mortgageLabel": "November mortgage",
-    "alert": "Rainier Calderon has moved out of Unit 2 Downstairs; his $560 is no longer counted as rent. Verify his move-out date before finalizing September and October collections."
+    "mortgageLabel": "November mortgage"
   },
   "time": {
     "process": [
@@ -526,7 +537,7 @@
       "amountSource": "",
       "amount": 100,
       "amountNote": "",
-      "situation": "Unit 2 Downstairs (was $560 with Rainier Calderon) and Unit 3 Downstairs are empty and earning nothing.",
+      "situation": "Unit 2 Downstairs and Unit 3 Downstairs are empty and earning nothing.",
       "rec": "Rent both rooms first. Inspect, photograph and price them, then list on Facebook Marketplace and local rental groups, with paid Facebook Housing ads if needed.",
       "required": "Approve renting both rooms and an ad budget of up to $100.",
       "owner": "Kristine",
@@ -544,7 +555,7 @@
       "amountSource": "rentalOutstanding",
       "amount": null,
       "amountNote": "",
-      "situation": "Maria Navarro pays $860 a month and owes about $8,980 through October.",
+      "situation": "Maria Navarro pays $860 a month. She has paid $6,000 so far this year and still owes about $8,980 through October.",
       "rec": "Approve a formal written notice to Maria, with a written payment plan only if she commits to dates.",
       "required": "Approve the collection steps for Maria Navarro.",
       "owner": "Kristine",
@@ -631,10 +642,10 @@
       "topic": "8715 D St",
       "status": "warn",
       "headline": "5 tenants pay $4,950 a month. 2 rooms are empty, and Maria owes $8,980.",
-      "now": "Without Maria, expected collections are $4,090. After the November mortgage ($3,028.30), about $1,061.70 is left before other expenses.",
+      "now": "All other tenants paid September and October in full. Maria has paid $6,000 this year but still owes $8,980. Without Maria, expected collections are $4,090; after the November mortgage ($3,028.30), about $1,061.70 is left before other expenses.",
       "you": "Approve up to $100 to advertise the 2 empty rooms, and approve collection steps for Maria.",
       "youShort": "Approve $100 for ads; approve collecting from Maria",
-      "next": "Kristine lists both rooms and verifies Rainier's move-out date before finalizing September and October."
+      "next": "Kristine lists both empty rooms and follows up with Maria on the $8,980."
     },
     "payroll": {
       "topic": "Payroll",
