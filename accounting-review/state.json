@@ -249,7 +249,7 @@
       {
         "id": "t2",
         "area": "GPS / geofence verification",
-        "current": "Deputy records GPS location and distance from the job site on a map",
+        "current": "100-yard geofence: Deputy blocks clock-in and clock-out outside 100 yards of the property, and maps each location",
         "owner": "Marieflor",
         "status": "Working"
       },
@@ -290,7 +290,7 @@
       "items": [
         {
           "name": "Geofence / GPS",
-          "what": "Records where each clock-in and clock-out happened and how far it was from the job site, shown on a map.",
+          "what": "Employees can't clock in or out unless they are within 100 yards of the property. Deputy also maps where each clock-in and clock-out happened.",
           "example": "clocked in 22 m and out 8 m from the site"
         },
         {
@@ -467,7 +467,7 @@
       "item": "Deputy clock-in and clock-out photo required for all employees",
       "amount": null,
       "status": "In place",
-      "note": "Deputy also records GPS location at each clock-in and clock-out. No decision needed."
+      "note": "Clock-in and clock-out only work within 100 yards of the property. No decision needed."
     }
   ]
 }
