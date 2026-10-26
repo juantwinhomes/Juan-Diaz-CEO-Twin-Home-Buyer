@@ -308,12 +308,13 @@ function cardFlag(c){
   if(util!==null&&util>=0.8&&bal<=lim)yellow.push('Utilization '+pct(util));
   if(dd!==null&&dd>=0&&dd<=7&&!paid)yellow.push('Payment due '+(dd===0?'today':'in '+dd+' day'+(dd>1?'s':'')));
   if(c.autopay==='Off')yellow.push('Autopay off');
-  const verified=bal!==null&&(c.charge||lim!==null)&&c.autopay==='On'&&c.late==='No'&&c.pastDue==='No'&&!!c.dueDate;
+  const verified=bal!==null&&(c.charge||lim!==null)&&c.autopay==='On'&&c.late==='No'&&c.pastDue==='No'&&(!!c.dueDate||num(c.minDue)===0);
   const missing=[];
   if(bal===null)missing.push('balance');if(!c.charge&&lim===null)missing.push('credit limit');if(!c.closeDate)missing.push('statement closing date');
-  if(!c.dueDate)missing.push('due date');if(num(c.minDue)===null)missing.push('minimum payment');
+  const nothingDue=num(c.minDue)===0;
+  if(!c.dueDate&&!nothingDue)missing.push('due date');if(num(c.minDue)===null)missing.push('minimum payment');
   if(!/^(On|Off)$/.test(c.autopay||''))missing.push('autopay status');if(!/^(Yes|No)$/.test(c.late||''))missing.push('12-month payment history');
-  if(!/^(Yes|No)$/.test(c.pastDue||''))missing.push('past-due status');if(!/^(Paid|Scheduled|Not paid)$/.test(c.paid||''))missing.push('whether this payment is paid or scheduled');
+  if(!/^(Yes|No)$/.test(c.pastDue||''))missing.push('past-due status');if(!nothingDue&&!/^(Paid|Scheduled|Not paid)$/.test(c.paid||''))missing.push('whether this payment is paid or scheduled');
   const f=red.length?'red':yellow.length?'yellow':verified?'green':'gray';
   return {bal,lim,util,dd,paid,flag:f,reasons:red.concat(yellow),missing};
 }
