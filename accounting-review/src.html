@@ -253,7 +253,7 @@ const SEC_NAME=Object.fromEntries(SECTIONS);
 /* ---------- helpers ---------- */
 const clone=o=>JSON.parse(JSON.stringify(o));
 function num(v){if(v===null||v===undefined||v==='')return null;if(typeof v==='number')return isFinite(v)?v:null;const n=parseFloat(String(v).replace(/[$,\s]/g,''));return isFinite(n)?n:null}
-function money(v,{cents}={}){const n=num(v);if(n===null)return null;return n.toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:cents?2:0,maximumFractionDigits:cents?2:(Number.isInteger(n)?0:2)})}
+function money(v,{cents}={}){const n=num(v);if(n===null)return null;return n.toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:(cents||!Number.isInteger(n))?2:0,maximumFractionDigits:(cents||!Number.isInteger(n))?2:0})}
 function pct(v){return v===null?null:(v*100).toFixed(1)+'%'}
 function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function fmtDate(s){if(!s)return null;const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);if(!m)return s;const d=new Date(+m[1],+m[2]-1,+m[3]);return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
@@ -297,6 +297,10 @@ function calc(S){
   const sum=(arr,f)=>{const v=arr.map(f).filter(x=>x!==null);return v.length?v.reduce((a,b)=>a+b,0):null};
   const expected=sum(units,x=>x.rent),sepRcv=sum(units,x=>x.sep),octRcv=sum(units,x=>x.oct),outstanding=sum(units,x=>x.out);
   const mort=num(S.rental.mortgage),exp=num(S.rental.expenses);
+  const NOPAY=['Behind on rent','Legal / eviction','Vacant'];
+  const collectible=sum(units.filter(x=>!NOPAY.includes(x.u.status)),x=>x.rent);
+  const afterMortgage=(collectible!==null&&mort!==null)?collectible-mort:null;
+  const vacant=units.filter(x=>x.u.status==='Vacant').length;
   const netActual=(octRcv!==null&&mort!==null&&exp!==null)?octRcv-mort-exp:null;
   const netFull=(expected!==null&&mort!==null&&exp!==null)?expected-mort-exp:null;
   const shortfall=netActual===null?null:Math.max(0,-netActual);
@@ -305,7 +309,7 @@ function calc(S){
   const hondaTotal=hb===null?null:hb+(num(h.fees)||0)+(num(h.salesTax)||0);
   const payrollTotal=num(S.payroll.total)!==null?num(S.payroll.total):((num(S.payroll.regular)!==null||num(S.payroll.overtime)!==null)?(num(S.payroll.regular)||0)+(num(S.payroll.overtime)||0):null);
   const contractorsApproved=S.contractors.approved.reduce((a,p)=>a+(num(p.amount)||0),0);
-  return {S,cards,cardPaydown,totBal,overallUtil,units,expected,sepRcv,octRcv,outstanding,mort,exp,netActual,netFull,shortfall,hondaTotal,payrollTotal,contractorsApproved};
+  return {S,cards,cardPaydown,totBal,overallUtil,units,expected,collectible,afterMortgage,vacant,sepRcv,octRcv,outstanding,mort,exp,netActual,netFull,shortfall,hondaTotal,payrollTotal,contractorsApproved};
 }
 function decisionAmount(d,K,S){S=S||K.S;
   switch(d.amountSource){
@@ -328,6 +332,7 @@ function risks(S,K){
   });
   if(!K.cards.some(x=>x.k.bal!==null))r.push({lvl:'warn',text:'Credit card balances not entered yet — card risk cannot be measured',sec:'cards'});
   if(K.outstanding>0)r.push({lvl:'warn',text:'8715 D St has '+money(K.outstanding)+' in unpaid rent',sec:'rental'});
+  if(K.vacant>0)r.push({lvl:'warn',text:'8715 D St has '+K.vacant+' vacant room'+(K.vacant>1?'s':'')+' earning no rent',sec:'rental'});
   if(K.shortfall>0)r.push({lvl:'warn',text:'8715 D St is short '+money(K.shortfall)+' this month after mortgage and expenses',sec:'rental'});
   if(S.rental.qbMissing.length)r.push({lvl:'warn',text:S.rental.qbMissing.length+' missing QuickBooks record item(s) for 8715 D St',sec:'rental'});
   if(S.honda.titleStatus==='Received — Honda still listed')r.push({lvl:'bad',text:'Honda Accord title still lists Honda',sec:'honda'});
@@ -719,7 +724,7 @@ function Honda(){
 
 function Rental(){
   const {S,K,set,edit}=useContext(Ctx);
-  const statuses=['Pending verification','Current','Late — reminder sent','Notice served','Payment plan','Legal / eviction','Vacant'];
+  const statuses=['Pending verification','Current','Behind on rent','Late — reminder sent','Notice served','Payment plan','Legal / eviction','Vacant'];
   const addU=()=>set('rental.units',[...S.rental.units,{id:uid('u'),unit:'',tenant:'',rent:null,sep:null,oct:null,outstanding:null,since:'',status:'Pending verification'}]);
   const addA=()=>set('rental.activity',[...S.rental.activity,{id:uid('a'),date:today(),unit:'',type:'Call',detail:'',by:'',next:'',owner:'',due:''}]);
   const addQ=()=>set('rental.qbMissing',[...S.rental.qbMissing,{id:uid('q'),record:'',owner:'',due:''}]);
@@ -729,22 +734,23 @@ function Rental(){
   return html`<div class="stack">
     <${SecHead} title="8715 D St — Rental Performance" k="rental"/>
     <${Brief} k="rental"/>
+    ${S.rental.alert&&html`<div class="banner warn"><span class="grow">${S.rental.alert}</span></div>`}
     <div class="panel facts">
-      <${Fact} label="Expected monthly rent" big><${Money} v=${K.expected}/><//>
-      <${Fact} label="October rent received" big><${Money} v=${K.octRcv}/><//>
-      <${Fact} label="Total outstanding rent" big><${Money} v=${K.outstanding}/><//>
-      <${Fact} label="Monthly mortgage" big><${F} path="rental.mortgage" kind="money" big/><//>
-      <${Fact} label="Monthly property expenses" big><${F} path="rental.expenses" kind="money" big/><//>
-      <${Fact} label="Net cash flow (actual Oct.)" big>${net===null?html`<${PV}/>`:html`<span class="num" style=${{color:net<0?'var(--bad)':'var(--ok)'}}>${money(net)}</span>`}<//>
-      <${Fact} label="Monthly shortfall / surplus" big>${net===null?html`<${PV}/>`:html`<${Pill} cls=${net<0?'bad':'ok'}>${net<0?'Shortfall '+money(-net):'Surplus '+money(net)}<//>`}<//>
-      <${Fact} label="Net if all rent collected" big><${Money} v=${K.netFull}/><//>
+      <${Fact} label="Scheduled monthly rent (current tenants)" big><${Money} v=${K.expected}/><//>
+      <${Fact} label="Expected collections (excluding tenants behind)" big><${Money} v=${K.collectible}/><//>
+      <${Fact} label=${S.rental.mortgageLabel||'Monthly mortgage'} big><${F} path="rental.mortgage" kind="money" big/><//>
+      <${Fact} label="Left after mortgage (before other expenses)" big>${K.afterMortgage===null?html`<${PV}/>`:html`<span class="num" style=${{color:K.afterMortgage<0?'var(--bad)':'var(--ok)'}}>${money(K.afterMortgage,{cents:true})}</span>`}<//>
+      <${Fact} label="Overdue rent" big><${Money} v=${K.outstanding}/><//>
+      <${Fact} label="Vacant rooms" big><span class="num" style=${K.vacant?{color:'var(--warn)'}:null}>${K.vacant}</span><//>
+      <${Fact} label="Other monthly property expenses" big><${F} path="rental.expenses" kind="money" big/><//>
     </div>
     <div class="panel"><h3>Unit-by-unit</h3>
       <div class=${'tablewrap'+(edit?' editing':'')}><table><thead><tr><th>Unit</th><th>Tenant</th><th class="r">Monthly rent</th><th class="r">Sept. received</th><th class="r">Oct. received</th><th class="r">Outstanding</th><th>Delinquent since</th><th>Collection status</th>${edit&&html`<th></th>`}</tr></thead>
       <tbody>${shownU.length?'':html`<tr><td colspan="9" class="empty">No units entered yet. Kristine adds each unit with <b>Edit numbers</b>.</td></tr>`}${shownU.map(x=>{const i=x.i;return html`<tr key=${x.u.id}>
-        <td><${F} path=${'rental.units.'+i+'.unit'} width="70px"/></td><td><${F} path=${'rental.units.'+i+'.tenant'} width="120px"/></td>
+        <td><${F} path=${'rental.units.'+i+'.unit'} width="70px" empty="—"/></td><td><${F} path=${'rental.units.'+i+'.tenant'} width="120px"/></td>
+        ${!edit&&x.u.status==='Vacant'?html`<td class="r muted">—</td><td class="r muted">—</td><td class="r muted">—</td><td class="r muted">—</td>`:html`
         <td class="r"><${F} path=${'rental.units.'+i+'.rent'} kind="money"/></td><td class="r"><${F} path=${'rental.units.'+i+'.sep'} kind="money"/></td><td class="r"><${F} path=${'rental.units.'+i+'.oct'} kind="money"/></td>
-        <td class="r">${edit?html`<${F} path=${'rental.units.'+i+'.outstanding'} kind="money" ph=${x.auto!==null?money(x.auto):'auto'}/>`:(x.out===null?html`<${PV}/>`:html`<span class="num" style=${x.out>0?{color:'var(--bad)',fontWeight:600}:null}>${money(x.out)}</span>`)}</td>
+        <td class="r">${edit?html`<${F} path=${'rental.units.'+i+'.outstanding'} kind="money" ph=${x.auto!==null?money(x.auto):'auto'}/>`:(x.out===null?html`<${PV}/>`:html`<span class="num" style=${x.out>0?{color:'var(--bad)',fontWeight:600}:null}>${money(x.out)}</span>`)}</td>`}
         <td><${F} path=${'rental.units.'+i+'.since'} kind="date" empty="—"/></td>
         <td>${edit?html`<${F} path=${'rental.units.'+i+'.status'} kind="select" options=${statuses}/>`:html`<${Pill} cls=${x.u.status==='Current'?'ok':/Pending/.test(x.u.status)?'neutral':/Legal|Notice/.test(x.u.status)?'bad':'warn'}>${x.u.status}<//>`}</td>
         ${edit&&html`<td><button class="btn sm danger" onClick=${()=>rm('rental.units',i)}>Remove</button></td>`}</tr>`})}</tbody>

@@ -26,8 +26,8 @@
       "source": "Honda Accord Buyout tracker; DMV title status"
     },
     "rental": {
-      "asOf": "",
-      "source": ""
+      "asOf": "2026-10-26",
+      "source": "Kristine's corrected tenant list; November mortgage statement"
     },
     "time": {
       "asOf": "2026-10-26",
@@ -261,27 +261,82 @@
       {
         "id": "u1",
         "unit": "",
-        "tenant": "",
-        "rent": null,
+        "tenant": "Cornelio Lopez",
+        "rent": 790,
         "sep": null,
         "oct": null,
         "outstanding": null,
         "since": "",
-        "status": "Pending verification"
+        "status": "Current"
       },
       {
         "id": "u2",
         "unit": "",
-        "tenant": "",
+        "tenant": "Maria Navarro",
+        "rent": 860,
+        "sep": null,
+        "oct": null,
+        "outstanding": 8980,
+        "since": "",
+        "status": "Behind on rent"
+      },
+      {
+        "id": "u3",
+        "unit": "",
+        "tenant": "Anisa D. Hamilton",
+        "rent": 1800,
+        "sep": null,
+        "oct": null,
+        "outstanding": null,
+        "since": "",
+        "status": "Current"
+      },
+      {
+        "id": "u4",
+        "unit": "",
+        "tenant": "Ramon Villalobos",
+        "rent": 700,
+        "sep": null,
+        "oct": null,
+        "outstanding": null,
+        "since": "",
+        "status": "Current"
+      },
+      {
+        "id": "u5",
+        "unit": "",
+        "tenant": "Jose Gollado",
+        "rent": 800,
+        "sep": null,
+        "oct": null,
+        "outstanding": null,
+        "since": "",
+        "status": "Current"
+      },
+      {
+        "id": "u6",
+        "unit": "Unit 2 Downstairs",
+        "tenant": "Vacant (former tenant Rainier Calderon, was $560)",
         "rent": null,
         "sep": null,
         "oct": null,
         "outstanding": null,
         "since": "",
-        "status": "Pending verification"
+        "status": "Vacant"
+      },
+      {
+        "id": "u7",
+        "unit": "Unit 3 Downstairs",
+        "tenant": "Vacant",
+        "rent": null,
+        "sep": null,
+        "oct": null,
+        "outstanding": null,
+        "since": "",
+        "status": "Vacant"
       }
     ],
-    "mortgage": null,
+    "mortgage": 3028.3,
     "expenses": null,
     "activity": [],
     "qbMissing": [
@@ -291,7 +346,9 @@
         "owner": "",
         "due": ""
       }
-    ]
+    ],
+    "mortgageLabel": "November mortgage",
+    "alert": "Rainier Calderon has moved out of Unit 2 Downstairs; his $560 is no longer counted as rent. Verify his move-out date before finalizing September and October collections."
   },
   "time": {
     "process": [
@@ -463,36 +520,36 @@
       "holdReason": ""
     },
     {
-      "id": "d-collect",
+      "id": "d-vacancy",
       "section": "rental",
-      "title": "8715 D St — collection steps for unpaid rent",
-      "amountSource": "rentalOutstanding",
-      "amount": null,
+      "title": "8715 D St — rent the 2 vacant rooms",
+      "amountSource": "",
+      "amount": 100,
       "amountNote": "",
-      "situation": "September and October rent for 8715 D St is being checked unit by unit against bank deposits and QuickBooks.",
-      "rec": "Approve formal written notices for any unit with unpaid rent, and written payment plans only where the tenant commits to dates.",
-      "required": "Approve the collection approach for units with unpaid rent.",
+      "situation": "Unit 2 Downstairs (was $560 with Rainier Calderon) and Unit 3 Downstairs are empty and earning nothing.",
+      "rec": "Rent both rooms first. Inspect, photograph and price them, then list on Facebook Marketplace and local rental groups, with paid Facebook Housing ads if needed.",
+      "required": "Approve renting both rooms and an ad budget of up to $100.",
       "owner": "Kristine",
-      "target": "2026-11-03",
-      "next": "Kristine confirms balances per unit; notices go out after approval.",
+      "target": "2026-11-07",
+      "next": "Kristine inspects and photographs both rooms, sets prices, and posts the listings.",
       "status": "Pending",
       "decidedOn": "",
       "notes": "",
       "holdReason": ""
     },
     {
-      "id": "d-shortfall",
+      "id": "d-collect",
       "section": "rental",
-      "title": "8715 D St — cover monthly cash shortfall",
-      "amountSource": "rentalShortfall",
+      "title": "8715 D St — collect Maria Navarro's overdue rent",
+      "amountSource": "rentalOutstanding",
       "amount": null,
       "amountNote": "",
-      "situation": "If rent collected does not cover the mortgage and expenses, the gap must be funded from another account.",
-      "rec": "Fund only the verified shortfall, after this month's rent collections are confirmed.",
-      "required": "Approve funding the shortfall and the source account.",
+      "situation": "Maria Navarro pays $860 a month and owes about $8,980 through October.",
+      "rec": "Approve a formal written notice to Maria, with a written payment plan only if she commits to dates.",
+      "required": "Approve the collection steps for Maria Navarro.",
       "owner": "Kristine",
       "target": "2026-11-03",
-      "next": "Kristine enters mortgage, expenses, and rent received to confirm the gap.",
+      "next": "Kristine confirms Maria's balance, then sends the notice after approval.",
       "status": "Pending",
       "decidedOn": "",
       "notes": "",
@@ -572,12 +629,12 @@
     },
     "rental": {
       "topic": "8715 D St",
-      "status": "info",
-      "headline": "September and October rent is being checked.",
-      "now": "Kristine is matching the rent each unit paid to the bank and QuickBooks.",
-      "you": "Approve sending notices to any unit that hasn't paid, and covering any monthly shortfall.",
-      "youShort": "Approve collection notices and shortfall",
-      "next": "Unit balances are filled in once they are verified."
+      "status": "warn",
+      "headline": "5 tenants pay $4,950 a month. 2 rooms are empty, and Maria owes $8,980.",
+      "now": "Without Maria, expected collections are $4,090. After the November mortgage ($3,028.30), about $1,061.70 is left before other expenses.",
+      "you": "Approve up to $100 to advertise the 2 empty rooms, and approve collection steps for Maria.",
+      "youShort": "Approve $100 for ads; approve collecting from Maria",
+      "next": "Kristine lists both rooms and verifies Rainier's move-out date before finalizing September and October."
     },
     "payroll": {
       "topic": "Payroll",
