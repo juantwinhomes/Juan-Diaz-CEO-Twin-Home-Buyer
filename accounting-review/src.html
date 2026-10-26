@@ -68,7 +68,7 @@ a{color:var(--accent)}
 .savestate{font-size:.78rem;color:var(--muted)}
 .savestate.dirty{color:var(--warn);font-weight:600}
 
-.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:18px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:18px}
 .kpi{padding:10px 14px;border-right:1px solid var(--line);min-width:0}
 .kpi:last-child{border-right:0}
 .kpi .v{font-family:var(--f-num);font-size:1.25rem;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -161,7 +161,37 @@ textarea.f{resize:vertical;min-height:56px;line-height:1.4}
 #report h2{margin:18px 0 8px}
 #report table{margin-bottom:6px}
 
-@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.kpi:nth-child(3){border-right:0}.kpi:nth-child(-n+3){border-bottom:1px solid var(--line)}}
+/* live status */
+.live{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;font-weight:600;color:var(--muted)}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.live.ok{color:var(--ok)} .live.ok i{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.live.busy{color:var(--info)} .live.busy i{background:var(--info)}
+.live.err,.live.off{color:var(--warn)} .live.err i,.live.off i{background:var(--warn)}
+/* Juan's decision list */
+.hero{display:flex;flex-direction:column;gap:6px;padding-block:4px 2px}
+.hero-big{font-family:var(--f-display);font-size:1.7rem;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+.hero-note{font-size:.82rem;color:var(--pv);background:var(--pv-soft);border-radius:5px;padding:4px 9px;align-self:flex-start}
+.grp{margin-bottom:8px;font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.qlist{display:flex;flex-direction:column;gap:10px}
+.qd{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:var(--r);background:var(--bg);scroll-margin-top:16px}
+.qd.st-Approved{border-left-color:var(--ok)} .qd.st-Hold{border-left-color:var(--warn)}
+.qd.st-Approved .qd-title{color:var(--muted)}
+.qd.flash{box-shadow:0 0 0 3px var(--accent)}
+.qd-row{display:grid;grid-template-columns:minmax(0,1fr) 140px 250px;gap:16px;align-items:center;padding:14px 16px 6px}
+.qd-title{font-weight:700;font-size:1.02rem}
+.qd-rec{color:var(--muted);margin-top:3px;font-size:.88rem}
+.qd-rec b{color:var(--accent);font-weight:600}
+.qd-amt{font-size:1.25rem;font-weight:600;text-align:right}
+.qd-note{font-size:.8rem;font-weight:500;color:var(--muted)}
+.qd-act{display:flex;gap:8px}
+.qd-act .act{padding:10px 12px;text-transform:uppercase}
+.qd-more{all:unset;cursor:pointer;font-size:.78rem;color:var(--accent);font-weight:600;padding:4px 16px 10px;display:inline-block}
+.qd-more:focus-visible{outline:2px solid var(--accent)}
+.qd-detail{border-top:1px solid var(--line);padding:12px 16px 14px;display:flex;flex-direction:column;gap:10px;background:var(--panel);border-radius:0 0 var(--r) var(--r)}
+.qd-meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.8rem;color:var(--muted)}
+.qd-meta b{color:var(--fg);font-weight:600;margin-right:3px}
+
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.kpi:nth-child(3){border-right:0}.kpi:nth-child(-n+3){border-bottom:1px solid var(--line)}.qd-row{grid-template-columns:minmax(0,1fr) auto}.qd-act{grid-column:1/-1}}
 @media (max-width:860px){
   .app{grid-template-columns:minmax(0,1fr)}
   .side{position:sticky;top:env(safe-area-inset-top,0px);height:auto;z-index:20;border-right:0;border-bottom:1px solid var(--line);padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
@@ -174,6 +204,7 @@ textarea.f{resize:vertical;min-height:56px;line-height:1.4}
   body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--panel)}
 }
 @media (max-width:520px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{border-right:1px solid var(--line)!important;border-bottom:1px solid var(--line)}.kpi:nth-child(2n){border-right:0!important}.dfoot{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.qd-row{grid-template-columns:minmax(0,1fr)}.qd-amt{text-align:left}.kpi:last-child{grid-column:1/-1}}
 @media print{.side,.tools,.no-print,.actions .btn{display:none!important}.app{display:block}.main{padding:0}.dcard{break-inside:avoid}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -292,7 +323,7 @@ function deadlines(S,K){
 }
 
 /* ---------- small components ---------- */
-const PV=()=>html`<span class="pv">Pending verification</span>`;
+const PV=()=>html`<span class="pv" title="Pending verification — Kristine to confirm">To verify</span>`;
 function Pill({cls,children}){return html`<span class=${'pill '+cls}>${children}</span>`}
 function StatusPill({s}){const m={Pending:'info',Approved:'ok',Hold:'warn'};return html`<${Pill} cls=${m[s]||'neutral'}>${s==='Hold'?'On hold':s}<//>`}
 
@@ -365,26 +396,58 @@ function Decisions({section,title}){
 }
 
 /* ---------- sections ---------- */
+function QuickDecision({d}){
+  const {S,K,set,setDecision,go,flash}=useContext(Ctx);
+  const [open,setOpen]=useState(false);
+  const i=S.decisions.indexOf(d);const p='decisions.'+i;
+  const a=decisionAmount(d,K);
+  return html`<div id=${'q-'+d.id} class=${'qd st-'+d.status+(flash===d.id?' flash':'')}>
+    <div class="qd-row">
+      <div class="qd-main">
+        <div class="qd-title">${d.title}</div>
+        <div class="qd-rec"><b>Kristine recommends:</b> ${d.rec}</div>
+      </div>
+      <div class="qd-amt">${a!==null?html`<span class="num">${money(a)}</span>`:d.amountNote?html`<span class="qd-note">${d.amountNote}</span>`:html`<span class="qd-note">Amount to verify</span>`}</div>
+      <div class="qd-act">
+        <button class=${'act approve'+(d.status==='Approved'?' sel':'')} aria-pressed=${d.status==='Approved'} onClick=${()=>setDecision(d.id,d.status==='Approved'?'Pending':'Approved')}>${d.status==='Approved'?'✓ Approved':'Approve'}</button>
+        <button class=${'act hold'+(d.status==='Hold'?' sel':'')} aria-pressed=${d.status==='Hold'} onClick=${()=>{setDecision(d.id,d.status==='Hold'?'Pending':'Hold');if(d.status!=='Hold')setOpen(true)}}>${d.status==='Hold'?'■ On hold':'Hold'}</button>
+      </div>
+    </div>
+    <button class="qd-more" aria-expanded=${open} onClick=${()=>setOpen(!open)}>${open?'Hide details':'Details & notes'}${d.notes?' · has note':''}</button>
+    ${open&&html`<div class="qd-detail">
+      <div class="grid2">
+        <div><div class="lbl">What's happening</div><div>${d.situation}</div></div>
+        <div><div class="lbl">What you're deciding</div><div class="req">${d.required}</div></div>
+      </div>
+      ${d.status==='Hold'&&html`<div><label class="lbl" for=${'qhr-'+d.id} style=${{color:'var(--warn)'}}>Why on hold · what must happen first</label><textarea id=${'qhr-'+d.id} class="f" value=${d.holdReason||''} onChange=${e=>set(p+'.holdReason',e.target.value)}></textarea></div>`}
+      <div><label class="lbl" for=${'qnt-'+d.id}>Juan's notes</label><textarea id=${'qnt-'+d.id} class="f" value=${d.notes||''} placeholder="Comment, instruction, or condition" onChange=${e=>set(p+'.notes',e.target.value)}></textarea></div>
+      <div class="qd-meta"><span><b>Owner</b> ${d.owner||'—'}</span><span><b>Target</b> ${fmtDate(d.target)||'—'}</span><span><b>Next</b> ${d.next||'—'}</span>${d.decidedOn&&html`<span><b>Decided</b> ${fmtDate(d.decidedOn)}</span>`}<button class="linkbtn" onClick=${()=>go(d.section,d.id)}>Full detail in ${SEC_NAME[d.section]}</button></div>
+    </div>`}
+  </div>`;
+}
 function Overview(){
   const {S,K,go,counts}=useContext(Ctx);
-  const R=risks(S,K);const D=deadlines(S,K).slice(0,8);
+  const R=risks(S,K);const D=deadlines(S,K).slice(0,6);
+  const groups=[['Pending','Waiting on you'],['Hold','On hold'],['Approved','Approved']];
+  const pendingAmt=S.decisions.filter(d=>d.status==='Pending').reduce((a,d)=>a+(decisionAmount(d,K)||0),0);
+  const toVerify=S.decisions.filter(d=>decisionAmount(d,K)===null&&!d.amountNote).length;
   return html`<div class="stack">
-    <${SecHead} title="Executive Overview" sub=${'Review with Kristine · report due '+fmtDate(S.meta.reviewDate)}/>
-    <div class="banner info"><span class="grow"><b>Approve and Hold record decisions in this report only.</b> Nothing is paid, emailed, or changed at any bank or outside system. Recommendations are Kristine's drafts; she confirms them during the review.</span></div>
+    <div class="hero">
+      <div class="hero-big">${counts.Pending===0?'All decisions answered.':html`<span class="num">${counts.Pending}</span> decision${counts.Pending===1?'':'s'} waiting on you${pendingAmt?html` · <span class="num">${money(pendingAmt)}</span>`:''}`}</div>
+      <div class="muted">Read Kristine's recommendation, then tap <b>Approve</b> or <b>Hold</b>. Tap again to undo. These buttons only record your decision; nothing is paid or sent.</div>
+      ${toVerify>0&&html`<div class="hero-note">${toVerify} amount${toVerify===1?' is':'s are'} still being verified by Kristine.</div>`}
+    </div>
+    ${groups.map(([st,label])=>{const list=S.decisions.filter(d=>d.status===st);if(!list.length)return null;
+      return html`<section key=${st}><h3 class="grp">${label} <span class="muted num">${list.length}</span></h3><div class="qlist">${list.map(d=>html`<${QuickDecision} key=${d.id} d=${d}/>`)}</div></section>`})}
     <div class="grid2">
-      <div class="panel"><h3>Critical payment & credit risks</h3>
+      <div class="panel"><h3>Risks to know about</h3>
         ${R.length?html`<div class="list">${R.map((r,i)=>html`<div class="risk" key=${i}><${Pill} cls=${r.lvl}>${r.lvl==='bad'?'Critical':'Watch'}<//><div style=${{flex:1}}>${r.text} · <button class="linkbtn" onClick=${()=>go(r.sec)}>Open</button></div></div>`)}</div>`:html`<div class="empty">No critical risks flagged.</div>`}
       </div>
       <div class="panel"><h3>Upcoming deadlines</h3>
         ${D.length?html`<div class="list">${D.map((x,i)=>{const dd=daysUntil(x.date);return html`<div class="risk" key=${i}><span class="num" style=${{minWidth:'96px'}}>${fmtDate(x.date)}</span><div style=${{flex:1}}>${x.text}</div><${Pill} cls=${dd<0?'bad':dd<=3?'warn':'neutral'}>${dd<0?Math.abs(dd)+'d late':dd===0?'Today':dd+'d'}<//></div>`})}</div>`:html`<div class="empty">No dated deadlines yet.</div>`}
       </div>
     </div>
-    <div class="panel"><h3>Decision queue</h3>
-      <div class="tablewrap"><table><thead><tr><th>Item</th><th class="r">Amount</th><th>Status</th><th>Owner</th><th>Target</th></tr></thead><tbody>
-      ${S.decisions.map(d=>{const a=decisionAmount(d,K);return html`<tr key=${d.id}><td><button class="linkbtn" onClick=${()=>go(d.section,d.id)}>${d.title}</button></td><td class="r">${a!==null?html`<span class="num">${money(a)}</span>`:(d.amountNote||html`<${PV}/>`)}</td><td><${StatusPill} s=${d.status}/></td><td>${d.owner||'—'}</td><td class="num">${fmtDate(d.target)||'—'}</td></tr>`})}
-      </tbody></table></div>
-    </div>
-    <div class="panel"><h3>Already approved — not a new decision</h3>
+    <div class="panel"><h3>Already approved — no decision needed</h3>
       <div class="facts"><${Fact} label="Contractor payments approved" big><span class="num">${money(K.contractorsApproved)}</span><//><${Fact} label="Payments">${S.contractors.approved.length} payments<//><${Fact} label="Completion verified">${S.contractors.approved.filter(p=>p.status==='Cleared').length} of ${S.contractors.approved.length}<//></div>
       <div style=${{marginTop:'8px'}}><button class="linkbtn" onClick=${()=>go('contractors')}>See contractor payments</button></div>
     </div>
@@ -397,9 +460,11 @@ function Cards(){
   const del=i=>set('cards',S.cards.filter((_,j)=>j!==i));
   const pri=K.cards.map((x,i)=>({...x,i})).filter(x=>x.k.risk==='immediate'||x.k.risk==='high'||x.k.risk==='monitor'||(x.k.rec||0)>0).sort((a,b)=>RISK[a.k.risk].rank-RISK[b.k.risk].rank);
   const hasData=K.cards.some(x=>x.k.bal!==null);
+  const blankCard=c=>!c.name&&!c.last4&&num(c.balance)===null&&num(c.limit)===null;
+  const shown=K.cards.map((x,i)=>({...x,i})).filter(x=>edit||!blankCard(x.c));
   return html`<div class="stack">
     <${SecHead} title="Credit Cards & Paydown Plan" k="cards" sub="First priority. Utilization is calculated automatically for cards with a credit limit."/>
-    ${!hasData&&html`<div class="banner warn"><span class="grow">No card data has been entered yet. Turn on <b>Edit data</b> and enter each business and personal card from its latest statement. Only the last four digits are stored.</span></div>`}
+    ${!hasData&&html`<div class="banner warn"><span class="grow">No card data has been entered yet. Turn on <b>Edit numbers</b> and enter each business and personal card from its latest statement. Only the last four digits are stored.</span></div>`}
     <div class="facts panel">
       <${Fact} label="Total card balances" big><${Money} v=${K.totBal}/><//>
       <${Fact} label="Overall revolving utilization" big>${K.overallUtil===null?html`<${PV}/>`:html`<span class="num">${pct(K.overallUtil)}</span>`}<//>
@@ -408,7 +473,7 @@ function Cards(){
     </div>
     <div class=${'tablewrap'+(edit?' editing':'')}><table>
       <thead><tr><th>Card</th><th>Last 4</th><th>Type</th><th>Charge card</th><th class="r">Balance</th><th class="r">Credit limit</th><th class="r">Utilization</th><th>Stmt closes</th><th>Payment due</th><th class="r">Min. due</th><th>Autopay</th><th>Past due now</th><th>Late (12 mo)</th><th class="r">To ${'<'}30%</th><th class="r">To ${'<'}10%</th><th class="r">Rec. paydown</th><th>Priority</th>${edit&&html`<th></th>`}</tr></thead>
-      <tbody>${K.cards.map(({c,k},i)=>html`<tr key=${c.id}>
+      <tbody>${shown.length?'':html`<tr><td colspan="18" class="empty">No cards entered yet. Kristine adds each card with <b>Edit numbers</b>.</td></tr>`}${shown.map(({c,k,i})=>html`<tr key=${c.id}>
         <td><${F} path=${'cards.'+i+'.name'} ph="e.g. Chase Ink" width="130px"/></td>
         <td>${edit?html`<input class="f num" style=${{minWidth:'60px',width:'64px'}} maxlength="4" inputmode="numeric" value=${c.last4||''} onChange=${e=>set('cards.'+i+'.last4',e.target.value.replace(/\D/g,'').slice(0,4))}/>`:(c.last4?html`<span class="num">••${c.last4}</span>`:html`<${PV}/>`)}</td>
         <td><${F} path=${'cards.'+i+'.kind'} kind="select" options=${['Business','Personal']}/></td>
@@ -533,6 +598,7 @@ function Rental(){
   const addQ=()=>set('rental.qbMissing',[...S.rental.qbMissing,{id:uid('q'),record:'',owner:'',due:''}]);
   const rm=(path,i)=>set(path,getAt(S,path).filter((_,j)=>j!==i));
   const net=K.netActual;
+  const shownU=K.units.map((x,i)=>({...x,i})).filter(x=>edit||x.u.unit||x.u.tenant||x.rent!==null);
   return html`<div class="stack">
     <${SecHead} title="8715 D St — Rental Performance" k="rental"/>
     <div class="panel facts">
@@ -547,13 +613,13 @@ function Rental(){
     </div>
     <div class="panel"><h3>Unit-by-unit</h3>
       <div class=${'tablewrap'+(edit?' editing':'')}><table><thead><tr><th>Unit</th><th>Tenant</th><th class="r">Monthly rent</th><th class="r">Sept. received</th><th class="r">Oct. received</th><th class="r">Outstanding</th><th>Delinquent since</th><th>Collection status</th>${edit&&html`<th></th>`}</tr></thead>
-      <tbody>${K.units.map((x,i)=>html`<tr key=${x.u.id}>
+      <tbody>${shownU.length?'':html`<tr><td colspan="9" class="empty">No units entered yet. Kristine adds each unit with <b>Edit numbers</b>.</td></tr>`}${shownU.map(x=>{const i=x.i;return html`<tr key=${x.u.id}>
         <td><${F} path=${'rental.units.'+i+'.unit'} width="70px"/></td><td><${F} path=${'rental.units.'+i+'.tenant'} width="120px"/></td>
         <td class="r"><${F} path=${'rental.units.'+i+'.rent'} kind="money"/></td><td class="r"><${F} path=${'rental.units.'+i+'.sep'} kind="money"/></td><td class="r"><${F} path=${'rental.units.'+i+'.oct'} kind="money"/></td>
         <td class="r">${edit?html`<${F} path=${'rental.units.'+i+'.outstanding'} kind="money" ph=${x.auto!==null?money(x.auto):'auto'}/>`:(x.out===null?html`<${PV}/>`:html`<span class="num" style=${x.out>0?{color:'var(--bad)',fontWeight:600}:null}>${money(x.out)}</span>`)}</td>
         <td><${F} path=${'rental.units.'+i+'.since'} kind="date" empty="—"/></td>
         <td>${edit?html`<${F} path=${'rental.units.'+i+'.status'} kind="select" options=${statuses}/>`:html`<${Pill} cls=${x.u.status==='Current'?'ok':/Pending/.test(x.u.status)?'neutral':/Legal|Notice/.test(x.u.status)?'bad':'warn'}>${x.u.status}<//>`}</td>
-        ${edit&&html`<td><button class="btn sm danger" onClick=${()=>rm('rental.units',i)}>Remove</button></td>`}</tr>`)}</tbody>
+        ${edit&&html`<td><button class="btn sm danger" onClick=${()=>rm('rental.units',i)}>Remove</button></td>`}</tr>`})}</tbody>
       <tfoot><tr><td colspan="2">Totals</td><td class="r num">${money(K.expected)||'—'}</td><td class="r num">${money(K.sepRcv)||'—'}</td><td class="r num">${money(K.octRcv)||'—'}</td><td class="r num">${money(K.outstanding)||'—'}</td><td colspan=${edit?3:2}></td></tr></tfoot>
       </table></div>
       ${edit&&html`<div style=${{marginTop:'8px'}}><button class="btn" onClick=${addU}>+ Add unit</button></div>`}
@@ -564,7 +630,7 @@ function Rental(){
       ${S.rental.activity.map((a,i)=>html`<tr key=${a.id}><td><${F} path=${'rental.activity.'+i+'.date'} kind="date"/></td><td><${F} path=${'rental.activity.'+i+'.unit'} width="60px"/></td>
       <td><${F} path=${'rental.activity.'+i+'.type'} kind="select" options=${['Call','Text / email','Written notice','Payment plan','Payment received','Legal']}/></td>
       <td><${F} path=${'rental.activity.'+i+'.detail'} width="160px"/></td><td><${F} path=${'rental.activity.'+i+'.by'} width="90px"/></td><td><${F} path=${'rental.activity.'+i+'.next'} width="160px"/></td><td><${F} path=${'rental.activity.'+i+'.owner'} width="90px"/></td><td><${F} path=${'rental.activity.'+i+'.due'} kind="date"/></td>
-      ${edit&&html`<td><button class="btn sm danger" onClick=${()=>rm('rental.activity',i)}>Remove</button></td>`}</tr>`)}</tbody></table></div>`:html`<div class="empty">No collection activity logged yet. ${edit?'':'Turn on Edit data to add notices, calls, and payment plans.'}</div>`}
+      ${edit&&html`<td><button class="btn sm danger" onClick=${()=>rm('rental.activity',i)}>Remove</button></td>`}</tr>`)}</tbody></table></div>`:html`<div class="empty">No collection activity logged yet. ${edit?'':'Turn on Edit numbers to add notices, calls, and payment plans.'}</div>`}
       ${edit&&html`<div style=${{marginTop:'8px'}}><button class="btn" onClick=${addA}>+ Log activity</button></div>`}
     </div>
     <div class="panel" style=${{borderColor:'var(--warn)'}}><h3>Missing QuickBooks records</h3>
@@ -719,6 +785,9 @@ function App(){
   const [readOnly,setReadOnly]=useState(false);
   const [saving,setSaving]=useState(false);
   const mainRef=useRef(null);
+  const sRef=useRef(S);sRef.current=S;
+  const revRef=useRef(0),savingRef=useRef(false),fastRef=useRef(false);
+  const [saveErr,setSaveErr]=useState('');
 
   const K=useMemo(()=>calc(S),[S]);
   const counts=useMemo(()=>{const c={Pending:0,Approved:0,Hold:0};S.decisions.forEach(d=>c[d.status]=(c[d.status]||0)+1);return c},[S]);
@@ -740,28 +809,31 @@ function App(){
   // hash
   useEffect(()=>{const f=()=>{const h=(location.hash||'').slice(1);if(SEC_NAME[h])setSec(h)};window.addEventListener('hashchange',f);return()=>window.removeEventListener('hashchange',f)},[]);
 
-  const set=useCallback((path,v)=>{setS(s=>setAt(s,path.split('.'),v));setDirty(true)},[]);
-  const setDecision=useCallback((id,status)=>{setS(s=>({...s,decisions:s.decisions.map(d=>d.id!==id?d:{...d,status,decidedOn:status==='Pending'?'':today()})}));setDirty(true);
+  const set=useCallback((path,v)=>{revRef.current++;setS(s=>setAt(s,path.split('.'),v));setDirty(true)},[]);
+  const setDecision=useCallback((id,status)=>{revRef.current++;fastRef.current=true;setS(s=>({...s,decisions:s.decisions.map(d=>d.id!==id?d:{...d,status,decidedOn:status==='Pending'?'':today()})}));setDirty(true);
     if(status==='Hold')setTimeout(()=>{const el=document.getElementById('hr-'+id);if(el)el.focus()},50)},[]);
-  const removeDecision=id=>{setS(s=>({...s,decisions:s.decisions.filter(d=>d.id!==id)}));setDirty(true)};
+  const removeDecision=id=>{revRef.current++;setS(s=>({...s,decisions:s.decisions.filter(d=>d.id!==id)}));setDirty(true)};
   const go=(s,id)=>{const target=s==='other'?'other':s;setSec(target);try{history.replaceState(null,'','#'+target)}catch(e){}
     if(id){setFlash(id);setTimeout(()=>{const el=document.getElementById('dec-'+id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},60);setTimeout(()=>setFlash(null),2200)}else window.scrollTo({top:0})};
 
   async function save(){
-    if(!art){setModal('export');say('Shared saving is not available in this view. Export JSON to keep your work.');return}
-    const next={...S,meta:{...S.meta,savedAt:new Date().toISOString()}};
-    try{localStorage.setItem(DRAFT_KEY,JSON.stringify({at:new Date().toISOString(),data:S}))}catch(e){}
-    setSaving(true);
+    if(!art||readOnly)return;
+    if(savingRef.current)return;
+    savingRef.current=true;setSaving(true);setSaveErr('');
+    const rev=revRef.current;const at=new Date().toISOString();
+    const cur=sRef.current;const next={...cur,meta:{...cur.meta,savedAt:at}};
+    try{localStorage.setItem(DRAFT_KEY,JSON.stringify({at,data:cur}))}catch(e){}
     try{await art.publish({'state.json':{content:JSON.stringify(next,null,2),contentType:'application/json'}});
-      setS(next);setDirty(false);setSaveMsg('Saved for everyone · '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
-      try{localStorage.removeItem(DRAFT_KEY)}catch(e){}
-      say('Saved. Everyone who opens this report sees these decisions.');
+      setS(s=>({...s,meta:{...s.meta,savedAt:at}}));
+      if(revRef.current===rev){setDirty(false);try{localStorage.removeItem(DRAFT_KEY)}catch(e){}}
     }catch(err){const c=err&&err.code;
-      if(c==='conflict')say('Someone saved a newer version. The page will reload to it; your edits are kept as a draft on this device.');
-      else if(['not_writer','not_granted','capability_disabled','capability_removed','not_declared','consent_required'].includes(c)){setReadOnly(true);setModal('export');say('This view cannot save the shared report. Use Export JSON to keep your decisions.')}
-      else say('Save did not go through ('+(c||'error')+'). Your edits are kept on this device; try again in a moment.');
-    }finally{setSaving(false)}
+      if(c==='conflict')say('Kristine or Juan saved at the same moment. The page is reloading to the latest; your last change is kept as a draft on this device.');
+      else if(['not_writer','not_granted','capability_disabled','capability_removed','not_declared','consent_required'].includes(c)){setReadOnly(true);say('You have view-only access, so changes are not shared. Ask the owner for edit access, or export a copy.')}
+      else {setSaveErr(c||'error');say('Could not save just now. Your changes are safe on this device. Tap Retry.')}
+    }finally{savingRef.current=false;setSaving(false)}
   }
+  // live autosave: shared with everyone a few seconds after a change
+  useEffect(()=>{if(!loaded||!dirty||!art||readOnly||saveErr)return;const t=setTimeout(save,fastRef.current?700:3000);fastRef.current=false;return()=>clearTimeout(t)},[S,dirty,art,readOnly,loaded,saveErr]);
   async function download(filename,data,type){
     try{const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
       if(!dl)throw {code:'unavailable'};
@@ -772,7 +844,7 @@ function App(){
   const copySummary=()=>copy(summaryText(S,K),'Decision summary');
   const openReport=()=>setModal('report');
   function importJSON(text){
-    try{const d=JSON.parse(text);if(!d||!Array.isArray(d.decisions)||!d.cards)throw 0;setS({...SEED,...d});setDirty(true);setModal(null);say('Imported. Press Save to share it, or keep exporting JSON.')}
+    try{const d=JSON.parse(text);if(!d||!Array.isArray(d.decisions)||!d.cards)throw 0;revRef.current++;setS({...SEED,...d});setDirty(true);setModal(null);say('Imported. It saves for everyone automatically.')}
     catch(e){say('That file is not a saved review. Choose a JSON file exported from this dashboard.')}
   }
 
@@ -786,7 +858,9 @@ function App(){
   const ctx={S,K,set,edit,go,flash,setDecision,removeDecision,counts,copySummary,openReport};
   const Sec={overview:Overview,cards:Cards,contractors:Contractors,tax:Tax,honda:Honda,rental:Rental,time:Time,payroll:Payroll,other:Other,summary:Summary}[sec];
 
-  const saveLabel=readOnly?'View only — export to keep changes':dirty?'Unsaved changes':(saveMsg||(S.meta.savedAt?'Last saved '+new Date(S.meta.savedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Starting data · not yet saved'));
+  const fmtT=iso=>new Date(iso).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  const live=art&&!readOnly;
+  const status=art===undefined?{cls:'',t:'Connecting…'}:!live?{cls:'off',t:readOnly?'View only · changes are not shared':'Not live here · changes stay on this device'}:saveErr?{cls:'err',t:'Not saved yet'}:saving?{cls:'busy',t:'Saving…'}:dirty?{cls:'busy',t:'Saving shortly…'}:{cls:'ok',t:S.meta.savedAt?'Live · saved '+fmtT(S.meta.savedAt):'Live · changes save automatically'};
 
   return html`<${Ctx.Provider} value=${ctx}>
   <div class="app">
@@ -796,46 +870,44 @@ function App(){
     </aside>
     <main class="main" ref=${mainRef}>
       <div class="top">
-        <div class="title"><span class="lbl">Juan Diaz, CEO · with Kristine, Controller</span><span class=${'savestate'+(dirty?' dirty':'')}>${saveLabel}</span></div>
+        <div class="title"><span class="lbl">Juan Diaz, CEO · with Kristine, Controller</span><span class=${'live '+status.cls} role="status"><i></i>${status.t}${saveErr&&html` <button class="btn sm" onClick=${()=>{setSaveErr('');save()}}>Retry</button>`}</span></div>
         <div class="tools">
-          <button class=${'btn'+(edit?' on':'')} aria-pressed=${edit} onClick=${()=>setEdit(!edit)}>${edit?'Done editing':'Edit data'}</button>
-          <button class="btn" onClick=${()=>setModal('export')}>Export / import</button>
-          <button class="btn" onClick=${openReport}>Printable report</button>
-          <button class="btn primary" disabled=${saving||(!dirty&&!draft)||readOnly} onClick=${save}>${saving?'Saving…':'Save'}</button>
+          <button class=${'btn'+(edit?' on':'')} aria-pressed=${edit} onClick=${()=>setEdit(!edit)}>${edit?'Done editing':'Edit numbers'}</button>
+          <button class="btn" onClick=${()=>setModal('export')}>Export & print</button>
         </div>
       </div>
-      ${draft&&html`<div class="banner warn" style=${{marginBottom:'12px'}}><span class="grow">This device has unsaved changes from ${new Date(draft.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}.</span><button class="btn sm" onClick=${()=>{setS(draft.data);setDirty(true);setDraft(null);say('Draft restored. Press Save to share it.')}}>Restore draft</button><button class="btn sm" onClick=${()=>{try{localStorage.removeItem(DRAFT_KEY)}catch(e){}setDraft(null)}}>Discard</button></div>`}
-      ${art===null&&!readOnly&&html`<div class="banner info no-print" style=${{marginBottom:'12px'}}><span class="grow">Shared saving is not available in this view. Decisions are kept on this device only; use <b>Export / import</b> to save a JSON copy.</span></div>`}
+      ${draft&&html`<div class="banner warn" style=${{marginBottom:'12px'}}><span class="grow">This device has unsaved changes from ${new Date(draft.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}.</span><button class="btn sm" onClick=${()=>{revRef.current++;setS(draft.data);setDirty(true);setDraft(null);say('Draft restored. It saves for everyone automatically.')}}>Restore draft</button><button class="btn sm" onClick=${()=>{try{localStorage.removeItem(DRAFT_KEY)}catch(e){}setDraft(null)}}>Discard</button></div>`}
+      ${art===null&&!readOnly&&html`<div class="banner info no-print" style=${{marginBottom:'12px'}}><span class="grow">This copy is not live, so decisions stay on this device. Open the report from its claude.ai link to share decisions, or use <b>Export & print</b> to keep a copy.</span></div>`}
       <div class="kpis">
-        <div class="kpi"><div class="lbl">New decisions total</div><div class="v">${money(totalAmt)}</div><div class="s">${unknownAmt?unknownAmt+' item(s) pending verification':'all amounts known'}</div></div>
-        <div class="kpi info"><button onClick=${()=>go('summary')}><div class="lbl">Pending</div><div class="v">${counts.Pending}</div><div class="s">${money(pendingAmt)} awaiting Juan</div></button></div>
-        <div class="kpi ok"><div class="lbl">Approved in review</div><div class="v">${counts.Approved}</div><div class="s">of ${S.decisions.length} decisions</div></div>
-        <div class="kpi warn"><div class="lbl">On hold</div><div class="v">${counts.Hold}</div><div class="s">waiting on conditions</div></div>
+        <div class="kpi info"><button onClick=${()=>go('overview')}><div class="lbl">Waiting on Juan</div><div class="v">${counts.Pending}</div><div class="s">${[pendingAmt?money(pendingAmt):'',unknownAmt?unknownAmt+' amount'+(unknownAmt===1?'':'s')+' to verify':''].filter(Boolean).join(' · ')||'decisions to make'}</div></button></div>
+        <div class="kpi ok"><div class="lbl">Approved</div><div class="v">${counts.Approved}</div><div class="s">of ${S.decisions.length} decisions</div></div>
+        <div class="kpi warn"><div class="lbl">On hold</div><div class="v">${counts.Hold}</div><div class="s">waiting on a condition</div></div>
         <div class="kpi"><div class="lbl">Next deadline</div><div class="v" style=${{fontSize:'1rem'}}>${nextDL?fmtDate(nextDL.date):'—'}</div><div class="s" title=${nextDL?nextDL.text:''} style=${{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>${nextDL?nextDL.text:'None dated'}</div></div>
         <div class=${'kpi '+(crit?'bad':'')}><button onClick=${()=>go('overview')}><div class="lbl">Critical risks</div><div class="v">${crit}</div><div class="s">${R.length-crit} more to watch</div></button></div>
       </div>
       <${Sec}/>
     </main>
   </div>
-  ${modal==='export'&&html`<${ExportModal} S=${S} close=${()=>setModal(null)} download=${download} copy=${copy} importJSON=${importJSON} K=${K}/>`}
+  ${modal==='export'&&html`<${ExportModal} S=${S} openReport=${openReport} close=${()=>setModal(null)} download=${download} copy=${copy} importJSON=${importJSON} K=${K}/>`}
   ${modal==='report'&&html`<${ReportModal} S=${S} K=${K} close=${()=>setModal(null)} download=${download} copy=${copy}/>`}
   ${modal&&modal.copy!==undefined&&html`<div class="modal-bg" onClick=${e=>{if(e.target===e.currentTarget)setModal(null)}}><div class="modal" role="dialog" aria-label="Copy text"><h3>${modal.title}</h3><p class="muted">Select all and copy this text.</p><textarea class="f" id="copy-fallback" readonly value=${modal.copy} onFocus=${e=>e.target.select()}></textarea><div><button class="btn" onClick=${()=>setModal(null)}>Close</button></div></div></div>`}
   ${toast&&html`<div class="toast" role="status">${toast}</div>`}
   <//>`;
 }
 
-function ExportModal({S,K,close,download,copy,importJSON}){
+function ExportModal({S,K,close,download,copy,importJSON,openReport}){
   const [paste,setPaste]=useState('');
   const json=JSON.stringify(S,null,2);
   const stamp=today();
   const onFile=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importJSON(String(r.result));r.readAsText(f)};
   return html`<div class="modal-bg" onClick=${e=>{if(e.target===e.currentTarget)close()}}><div class="modal" role="dialog" aria-label="Export or import">
-    <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center'}}><h2>Export / import</h2><button class="btn sm" onClick=${close}>Close</button></div>
-    <p class="muted" style=${{margin:0}}><b>Save</b> stores decisions in the shared report for everyone with access. A JSON export is a backup you keep yourself, and it restores every decision, note, and figure.</p>
+    <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center'}}><h2>Export & print</h2><button class="btn sm" onClick=${close}>Close</button></div>
+    <p class="muted" style=${{margin:0}}>Decisions save to the live report automatically. A JSON backup is an extra copy you keep yourself; importing it restores every decision, note, and figure.</p>
+    <div class="tools"><button class="btn primary" onClick=${openReport}>Printable report</button><button class="btn" onClick=${()=>copy(summaryText(S,K),'Decision summary')}>Copy decision summary</button></div>
+    <h3>Backup</h3>
     <div class="tools">
-      <button class="btn primary" onClick=${()=>download('accounting-review-'+stamp+'.json',json,'application/json')}>Download JSON backup</button>
+      <button class="btn" onClick=${()=>download('accounting-review-'+stamp+'.json',json,'application/json')}>Download JSON backup</button>
       <button class="btn" onClick=${()=>copy(json,'JSON backup')}>Copy JSON</button>
-      <button class="btn" onClick=${()=>copy(summaryText(S,K),'Decision summary')}>Copy decision summary</button>
       <button class="btn" onClick=${()=>download('decision-summary-'+stamp+'.txt',summaryText(S,K),'text/plain')}>Download summary (.txt)</button>
     </div>
     <hr style=${{border:0,borderTop:'1px solid var(--line)',width:'100%'}}/>
@@ -843,7 +915,7 @@ function ExportModal({S,K,close,download,copy,importJSON}){
     <input id="import-file" type="file" accept="application/json,.json" onChange=${onFile}/>
     <textarea class="f" id="import-paste" placeholder="…or paste the JSON here" value=${paste} onChange=${e=>setPaste(e.target.value)} onPaste=${e=>{}}></textarea>
     <div><button class="btn" disabled=${!paste.trim()} onClick=${()=>importJSON(paste)}>Import pasted JSON</button></div>
-    <p class="muted" style=${{margin:0,fontSize:'.78rem'}}>Importing replaces what is on screen. Press Save afterward to share it.</p>
+    <p class="muted" style=${{margin:0,fontSize:'.78rem'}}>Importing replaces what is on screen and saves it for everyone.</p>
   </div></div>`;
 }
 function ReportModal({S,K,close,download,copy}){
