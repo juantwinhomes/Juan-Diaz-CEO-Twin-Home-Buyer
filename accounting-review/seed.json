@@ -22,8 +22,8 @@
       "source": "PPS 2025 Taxes: Juan's Filing Decision (prepared by Kristine)"
     },
     "honda": {
-      "asOf": "",
-      "source": ""
+      "asOf": "2026-10-26",
+      "source": "Honda Accord Buyout tracker; DMV title status"
     },
     "rental": {
       "asOf": "",
@@ -176,29 +176,36 @@
     "source": "https://claude.ai/artifact/1eQ4pY7477YdeM12LfvBa9"
   },
   "honda": {
-    "leaseStatus": "",
-    "lender": "",
-    "buyout": null,
-    "fees": null,
-    "salesTax": null,
-    "deadline": "",
-    "payFrom": "",
-    "marketValue": null,
-    "options": [
+    "vehicle": "2024 Honda Accord LX",
+    "vinLast": "001462",
+    "amount": 17683.9,
+    "purchaseDate": "2026-10-06",
+    "lender": "Honda Financial Services",
+    "titleStatus": "Not received yet",
+    "registeredOwner": "",
+    "legalOwner": "",
+    "steps": [
       {
-        "name": "Pay cash from operating account",
-        "note": "No interest; reduces cash on hand"
+        "t": "Juan authorized Kristine with Honda Financial Services (Oct 5)",
+        "done": true
       },
       {
-        "name": "Finance the buyout",
-        "note": "Preserves cash; adds interest cost"
+        "t": "Buyout amount confirmed: $17,683.90, purchase date Oct 6",
+        "done": true
       },
       {
-        "name": "Return vehicle at lease end",
-        "note": "No buyout cost; possible mileage or wear charges"
+        "t": "Buyout paperwork emailed and faxed to Honda",
+        "done": true
+      },
+      {
+        "t": "DMV shows the title has been mailed",
+        "done": true
+      },
+      {
+        "t": "Title received and checked: Juan is the owner, not Honda",
+        "done": false
       }
-    ],
-    "recommendedOption": ""
+    ]
   },
   "rental": {
     "units": [
@@ -389,24 +396,6 @@
       "holdReason": ""
     },
     {
-      "id": "d-honda",
-      "section": "honda",
-      "title": "Honda Accord lease buyout",
-      "amountSource": "honda",
-      "amount": null,
-      "amountNote": "",
-      "situation": "Juan needs to decide whether to buy out the Honda Accord lease. The payoff quote, fees, and deadline are still being confirmed.",
-      "rec": "Get the written payoff quote first. Buy out only if the total is at or below the car's market value.",
-      "required": "Buy out or return the vehicle, and choose how to pay.",
-      "owner": "Kristine",
-      "target": "2026-11-06",
-      "next": "Kristine requests the written payoff quote from the lender.",
-      "status": "Pending",
-      "decidedOn": "",
-      "notes": "",
-      "holdReason": ""
-    },
-    {
       "id": "d-collect",
       "section": "rental",
       "title": "8715 D St — collection steps for unpaid rent",
@@ -468,6 +457,13 @@
       "amount": null,
       "status": "In place",
       "note": "Clock-in and clock-out only work within 100 yards of the property. No decision needed."
+    },
+    {
+      "id": "i-honda",
+      "item": "Honda Accord bought out",
+      "amount": 17683.9,
+      "status": "Title check pending",
+      "note": "Paperwork emailed and faxed; DMV mailed the title. Kristine checks it shows Juan as owner, not Honda."
     }
   ]
 }

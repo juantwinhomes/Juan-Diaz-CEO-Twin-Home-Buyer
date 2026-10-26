@@ -285,7 +285,7 @@ function calc(S){
   const netFull=(expected!==null&&mort!==null&&exp!==null)?expected-mort-exp:null;
   const shortfall=netActual===null?null:Math.max(0,-netActual);
   // honda
-  const h=S.honda;const hb=num(h.buyout);
+  const h=S.honda;const hb=num(h.buyout!=null?h.buyout:h.amount);
   const hondaTotal=hb===null?null:hb+(num(h.fees)||0)+(num(h.salesTax)||0);
   const payrollTotal=num(S.payroll.total)!==null?num(S.payroll.total):((num(S.payroll.regular)!==null||num(S.payroll.overtime)!==null)?(num(S.payroll.regular)||0)+(num(S.payroll.overtime)||0):null);
   const contractorsApproved=S.contractors.approved.reduce((a,p)=>a+(num(p.amount)||0),0);
@@ -314,7 +314,7 @@ function risks(S,K){
   if(K.outstanding>0)r.push({lvl:'warn',text:'8715 D St has '+money(K.outstanding)+' in unpaid rent',sec:'rental'});
   if(K.shortfall>0)r.push({lvl:'warn',text:'8715 D St is short '+money(K.shortfall)+' this month after mortgage and expenses',sec:'rental'});
   if(S.rental.qbMissing.length)r.push({lvl:'warn',text:S.rental.qbMissing.length+' missing QuickBooks record item(s) for 8715 D St',sec:'rental'});
-  const hd=daysUntil(S.honda.deadline);if(hd!==null&&hd<=14&&hd>=0)r.push({lvl:'warn',text:'Honda buyout deadline in '+hd+' day(s)',sec:'honda'});
+  if(S.honda.titleStatus==='Received — still shows Honda')r.push({lvl:'bad',text:'Honda Accord title still shows Honda as owner',sec:'honda'});
   return r;
 }
 function deadlines(S,K){
@@ -605,29 +605,44 @@ function Tax(){
 }
 
 function Honda(){
-  const {S,K,edit}=useContext(Ctx);const h=S.honda;const mv=num(h.marketValue);
+  const {S,set}=useContext(Ctx);const h=S.honda;
+  const st=h.titleStatus||'Not received yet';
+  const outcome={
+    'Not received yet':{cls:'info',t:'Waiting for the title from the DMV. Check it as soon as it arrives.'},
+    'Received — Juan is the owner':{cls:'ok',t:'Done. Store the title in the office safe and update insurance (below).'},
+    'Received — still shows Honda':{cls:'bad',t:'Not finished. Call Honda Financial Services to release ownership, then file the transfer with the DMV.'}}[st]||{cls:'info',t:''};
+  const steps=h.steps||[];
   return html`<div class="stack">
-    <${SecHead} title="Honda Accord Buyout" k="honda"/>
-    <div class="panel"><div class="facts">
-      <${Fact} label="Lease status"><${F} path="honda.leaseStatus" ph="e.g. Ends Dec 2026"/><//>
-      <${Fact} label="Lender"><${F} path="honda.lender"/><//>
-      <${Fact} label="Buyout amount" big><${F} path="honda.buyout" kind="money"/><//>
-      <${Fact} label="Fees" big><${F} path="honda.fees" kind="money"/><//>
-      <${Fact} label="Sales tax" big><${F} path="honda.salesTax" kind="money"/><//>
-      <${Fact} label="Total to buy out" big><${Money} v=${K.hondaTotal}/><//>
-      <${Fact} label="Buyout deadline"><${F} path="honda.deadline" kind="date"/><//>
-      <${Fact} label="Est. market value"><${F} path="honda.marketValue" kind="money"/><//>
+    <${SecHead} title="Honda Accord Buyout" k="honda" sub=${h.vehicle+' · VIN ending '+h.vinLast}/>
+    <div class=${'banner '+(outcome.cls==='ok'?'info':outcome.cls==='bad'?'bad':'warn')}><span class="grow"><b>${st}.</b> ${outcome.t}</span></div>
+    <div class="panel facts">
+      <${Fact} label="Buyout paid" big><span class="num">${money(h.amount,{cents:true})}</span><//>
+      <${Fact} label="Purchase date"><span>${fmtDate(h.purchaseDate)}</span><//>
+      <${Fact} label="Lender"><span>${h.lender}</span><//>
+      <${Fact} label="Status"><${Pill} cls=${outcome.cls==='bad'?'bad':outcome.cls==='ok'?'ok':'warn'}>${st==='Received — Juan is the owner'?'Complete':'Title check pending'}<//><//>
     </div>
-    ${K.hondaTotal!==null&&mv!==null&&html`<div class=${'banner '+(K.hondaTotal<=mv?'info':'warn')} style=${{marginTop:'12px'}}>Buyout total is ${money(Math.abs(mv-K.hondaTotal))} ${K.hondaTotal<=mv?'below':'above'} estimated market value.</div>`}
+    <div class="panel"><h3>Where it stands</h3>
+      <div class="list">${steps.map(x=>html`<div class="risk" key=${x.t}><span style=${{color:x.done?'var(--ok)':'var(--faint)',fontWeight:700,flex:'none',width:'18px'}}>${x.done?'✓':'○'}</span><div style=${{flex:1}}>${x.t}</div></div>`)}</div>
     </div>
-    <div class="panel"><h3>Payment options</h3>
-      <div class="tablewrap"><table><thead><tr><th>Option</th><th>What it means</th><th></th></tr></thead><tbody>
-      ${h.options.map((o,i)=>html`<tr key=${i}><td><b>${o.name}</b></td><td>${o.note}</td><td>${h.recommendedOption===o.name&&html`<${Pill} cls="info">Recommended<//>`}</td></tr>`)}
+    <div class="panel" style=${{borderColor:'var(--accent)'}}><h3>When the title arrives, check these two lines</h3>
+      <div class="tablewrap"><table><thead><tr><th>Line on the California title</th><th>Should say</th><th>Problem if it says</th></tr></thead><tbody>
+        <tr><td><b>Registered owner</b></td><td>Juan M. Diaz</td><td>Honda Lease Trust or American Honda Finance</td></tr>
+        <tr><td><b>Legal owner / lienholder</b></td><td>Blank, or Juan M. Diaz</td><td>Honda Lease Trust or American Honda Finance</td></tr>
       </tbody></table></div>
-      ${edit&&html`<div style=${{marginTop:'10px',maxWidth:'320px'}}><span class="lbl">Recommended approach</span><${F} path="honda.recommendedOption" kind="select" options=${['',...h.options.map(o=>o.name)]}/></div>`}
-      <div style=${{marginTop:'10px'}}><span class="lbl">Pay from</span> <${F} path="honda.payFrom" ph="e.g. Operating account"/></div>
+      <div class="grid3" style=${{marginTop:'12px'}}>
+        <div><label class="lbl" for="h-st">Title result</label><select id="h-st" class="f" value=${st} onChange=${e=>set('honda.titleStatus',e.target.value)}>${['Not received yet','Received — Juan is the owner','Received — still shows Honda'].map(o=>html`<option key=${o}>${o}</option>`)}</select></div>
+        <div><label class="lbl" for="h-ro">Registered owner shown</label><input id="h-ro" class="f" value=${h.registeredOwner||''} placeholder="Name on the title" onChange=${e=>set('honda.registeredOwner',e.target.value)}/></div>
+        <div><label class="lbl" for="h-lo">Legal owner shown</label><input id="h-lo" class="f" value=${h.legalOwner||''} placeholder="Blank if none" onChange=${e=>set('honda.legalOwner',e.target.value)}/></div>
+      </div>
     </div>
-    <${Decisions} section="honda"/>
+    <div class="panel"><h3>Next steps</h3>
+      <div class="tablewrap"><table><thead><tr><th>#</th><th>Step</th><th>Who</th></tr></thead><tbody>
+        <tr><td class="num">1</td><td>Watch the mail for the title from the DMV and record the two lines above</td><td>Kristine</td></tr>
+        <tr><td class="num">2</td><td>If it still shows Honda: call Honda Financial Services (800) 708-6555 to release ownership, then submit the transfer to the DMV</td><td>Kristine</td></tr>
+        <tr><td class="num">3</td><td>Once Juan is the owner: remove Honda from the car insurance policy as lienholder or loss payee</td><td>Kristine</td></tr>
+        <tr><td class="num">4</td><td>Keep the title, payoff confirmation and DMV papers in the vehicle file</td><td>Kristine</td></tr>
+      </tbody></table></div>
+    </div>
   </div>`;
 }
 
