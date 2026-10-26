@@ -146,4 +146,6 @@ at the start of substantive work and keep it current as you learn more. Key
 files: `juan-grok-prompting-profile.md` (how Juan communicates — match it),
 `deal-pattern-buybox.md` (deal screening), `marketing-postcard-kpis.md`,
 `property-command-center.md` (live property board snapshot + team tools),
-`master-property-list.md` (every property on record across all entities).
+`master-property-list.md` (every property on record across all entities),
+`juan-voicenotes-2026-07.md` (Juan's own words from Voicenotes — how he talks to
+sellers and the team; read before writing anything in his voice).
