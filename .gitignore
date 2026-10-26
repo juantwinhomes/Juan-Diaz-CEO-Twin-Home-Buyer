@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Email agent run outputs contain inbox content; keep them local
+email_agent/runs/*
+!email_agent/runs/.gitkeep

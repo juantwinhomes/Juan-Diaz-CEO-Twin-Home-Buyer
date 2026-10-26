@@ -1,0 +1,8 @@
+date,run,thread_subject,agent_said,should_be,cause,fix
+2026-10-26,run1-v1,Meeting records (Google Meet recap),URGENT (escrow),NOISE,"keyword ""recording"" matched Meet recap",removed keyword; meetings-noreply is always NOISE
+2026-10-26,run1-v1,Re: Moving forward / many team threads,ACTION (deal_lead),FYI,"""buyer"" matched company name Twin Home Buyer","changed to ""buyers"""
+2026-10-26,run1-v1,Security alert (Google),construction,account_security only,"""windows"" matched device name",replaced with window install / windows delivery
+2026-10-26,run1-v1,The likes of Compass and Anywhere Real Estate (newsletter),URGENT (escrow),FYI,"""closing"" too generic","use ""closing date"" / ""closing on"""
+2026-10-26,run1-v1,Peninsula Plumbing - Emergency: missed call,URGENT,ACTION,"""Emergency"" is part of the phone line name",robots capped at ACTION
+2026-10-26,run1-v2,Norton electric heaters order,URGENT (wire),ACTION (construction),"bare ""wire"" = electrical wire on a job site",only money-wire phrases count
+2026-10-26,run1-v2,Sales - 915 52nd St (Alameda County Assessor),URGENT via keyword only,URGENT via .gov sender,acgov.org has no .gov suffix,"added ""gov.org"" sender rule"
