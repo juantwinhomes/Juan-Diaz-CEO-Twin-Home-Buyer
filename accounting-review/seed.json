@@ -35,7 +35,7 @@
     },
     "payroll": {
       "asOf": "",
-      "source": "Matrix Payroll"
+      "source": "Deputy → Paychex Flex"
     }
   },
   "cards": [
@@ -256,26 +256,43 @@
       {
         "id": "t3",
         "area": "Kiosk verification",
-        "current": "",
+        "current": "Kiosk clock-in at the site",
         "owner": "Marieflor",
-        "status": "Pending verification"
+        "status": "Working"
       },
       {
         "id": "t4",
         "area": "Daily timekeeping review",
         "current": "Reviews and approves timesheets in Deputy",
         "owner": "Marieflor",
-        "status": "Pending verification"
+        "status": "Working"
       },
       {
         "id": "t5",
-        "area": "Payroll verification",
-        "current": "Checks Marieflor's payroll: the Deputy data she used, and any timesheet changes (edited times, added or deleted shifts)",
+        "area": "Weekly payroll verification",
+        "current": "Every week, checks Marieflor's payroll: the Deputy data she used and any timesheet changes (edited times, added or deleted shifts) before hours go to Paychex",
         "owner": "Kristine",
-        "status": "Pending verification"
+        "status": "Working"
       }
     ],
-    "issues": [],
+    "issues": [
+      {
+        "id": "i-fixed",
+        "issue": "Fixed-rate employees working over 40 hours",
+        "impact": "Some workers' fixed rate is meant to cover up to 45 hours, but some work 50+. California counts a fixed weekly rate as pay for 40 hours only, so overtime is owed on every hour over 40 a week and over 8 a day.",
+        "owner": "Kristine",
+        "due": "2026-11-06",
+        "status": "Open"
+      },
+      {
+        "id": "i-paychex",
+        "issue": "Getting Deputy hours into Paychex Flex",
+        "impact": "Hours are exported from Deputy and re-entered for Paychex. Deputy already has a Paychex Flex integration and a built-in Paychex export; test those before building a custom export.",
+        "owner": "Marieflor",
+        "due": "2026-11-06",
+        "status": "In progress"
+      }
+    ],
     "proof": {
       "example": "972 Norton Street shift, Thu Oct 22, 2026",
       "items": [
@@ -434,18 +451,18 @@
       "holdReason": ""
     },
     {
-      "id": "d-deputy",
+      "id": "d-fixedrate",
       "section": "time",
-      "title": "Require geofence and photo on every Deputy clock-in",
+      "title": "Fixed-rate workers — pay overtime over 40 hours",
       "amountSource": "",
       "amount": null,
-      "amountNote": "No direct cost",
-      "situation": "Deputy already records GPS location and a photo at each clock-in and clock-out. It is not yet confirmed that every worker is required to use them.",
-      "rec": "Approve: make geofence and photo required for all hourly staff, so clock-ins only work at the job site.",
-      "required": "Approve requiring geofence and photo for all clock-ins.",
-      "owner": "Marieflor",
-      "target": "2026-11-07",
-      "next": "Marieflor turns on the requirement in Deputy settings and tells staff; Kristine confirms it's on.",
+      "amountNote": "Cost to verify",
+      "situation": "Some workers are on a fixed rate meant to cover up to 45 hours, and some work 50+. In California a fixed weekly rate only covers 40 hours.",
+      "rec": "Pay overtime on hours over 40 a week and 8 a day, starting this pay period. Kristine estimates what's owed for past weeks and confirms with Paychex or an employment lawyer.",
+      "required": "Approve paying overtime to fixed-rate workers going forward and reviewing past pay periods.",
+      "owner": "Kristine",
+      "target": "2026-11-06",
+      "next": "Kristine lists fixed-rate workers and their weekly hours, and estimates the overtime owed.",
       "status": "Pending",
       "decidedOn": "",
       "notes": "",
@@ -470,5 +487,13 @@
       "holdReason": ""
     }
   ],
-  "info": []
+  "info": [
+    {
+      "id": "i-photo",
+      "item": "Deputy clock-in and clock-out photo required for all employees",
+      "amount": null,
+      "status": "In place",
+      "note": "Deputy also records GPS location at each clock-in and clock-out. No decision needed."
+    }
+  ]
 }
