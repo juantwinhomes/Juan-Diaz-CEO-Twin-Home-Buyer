@@ -313,6 +313,7 @@ function risks(S,K){
   if(!K.cards.some(x=>x.k.bal!==null))r.push({lvl:'warn',text:'Credit card balances not entered yet — card risk cannot be measured',sec:'cards'});
   if(K.outstanding>0)r.push({lvl:'warn',text:'8715 D St has '+money(K.outstanding)+' in unpaid rent',sec:'rental'});
   if(K.shortfall>0)r.push({lvl:'warn',text:'8715 D St is short '+money(K.shortfall)+' this month after mortgage and expenses',sec:'rental'});
+  if(S.time.week){const o=S.time.week.employees.filter(e=>e.hours>40);if(o.length)r.push({lvl:'warn',text:o.length+' employees worked over 40 hours (week of Oct 19); '+(S.time.week.timesheets-S.time.week.approved)+' Deputy timesheets still pending',sec:'time'});}
   if(S.rental.qbMissing.length)r.push({lvl:'warn',text:S.rental.qbMissing.length+' missing QuickBooks record item(s) for 8715 D St',sec:'rental'});
   const hd=daysUntil(S.honda.deadline);if(hd!==null&&hd<=14&&hd>=0)r.push({lvl:'warn',text:'Honda buyout deadline in '+hd+' day(s)',sec:'honda'});
   return r;
@@ -590,13 +591,13 @@ function Tax(){
         <tr><td><b>Software checks the math and missing fields</b></td><td>A paper return sent back for errors, which delays filing again</td></tr>
         <tr><td><b>The $45,000 loss carries into the 2026 return</b></td><td>Re-entering the loss and tools by hand next year</td></tr>
       </tbody></table></div>
-      <h3 style=${{margin:'16px 0 8px'}}>Before filing</h3>
-      <div class="list">
-        <div class="risk"><span class="num muted">1</span><div><b>Change line 15a to “No”</b> (Form 1120, Schedule K). PPS has no 1099s: Matrix Group and ETI are corporations, and card payments are reported by the card companies. Line 15b stays blank. <span class="muted">Kristine confirms the $1,376 equipment rental was paid to a company or by card.</span></div></div>
-        <div class="risk"><span class="num muted">2</span><div><b>Buy TaxAct Business 1120 with the California add-on</b> directly at taxact.com and enter the prepared numbers. <span class="muted">Kristine</span></div></div>
-        <div class="risk"><span class="num muted">3</span><div><b>Juan signs two e-file authorizations:</b> IRS Form 8879-CORP and California Form 8453-C. <span class="muted">Juan</span></div></div>
-        <div class="risk"><span class="num muted">4</span><div><b>Transmit, then keep the IRS and California acceptance emails</b> with the returns for 7 years. <span class="muted">Kristine</span></div></div>
-      </div>
+      <h3 style=${{margin:'16px 0 8px'}}>Next steps</h3>
+      <div class="tablewrap"><table><thead><tr><th>#</th><th>Step</th><th>Who</th><th>By</th></tr></thead><tbody>
+        <tr><td class="num">1</td><td>Set line 15a to “No” (no 1099s; Matrix and ETI are corporations)</td><td>Kristine</td><td class="num">Oct 28</td></tr>
+        <tr><td class="num">2</td><td>Buy TaxAct Business 1120 + California at taxact.com and enter the returns</td><td>Kristine</td><td class="num">Oct 29</td></tr>
+        <tr><td class="num">3</td><td>Sign IRS Form 8879-CORP and California Form 8453-C</td><td>Juan</td><td class="num">Oct 30</td></tr>
+        <tr><td class="num">4</td><td>E-file both returns and save the acceptance emails</td><td>Kristine</td><td class="num">Oct 31</td></tr>
+      </tbody></table></div>
       <p class="muted" style=${{fontSize:'.78rem',margin:'10px 0 0'}}>Original recommendation (Paper) and all figures above are from “PPS 2025 Taxes: Juan’s Filing Decision,” prepared by Kristine Joy Lomeda, Oct 17, 2026; that page is unchanged. Revised after reviewing California’s business e-file rule. Not reviewed by a licensed CPA.</p>
     </div>
     <${Decisions} section="tax"/>
@@ -683,12 +684,43 @@ function Rental(){
   </div>`;
 }
 
+function TimesheetWeek(){
+  const {S,set}=useContext(Ctx);const w=S.time.week;
+  const emps=w.employees.map(e=>({...e,ot:Math.max(0,e.hours-40),avg:e.hours/e.sheets}));
+  const over=emps.filter(e=>e.ot>0);const otTotal=over.reduce((a,e)=>a+e.ot,0);
+  const verdictCls=v=>/^Approve/.test(v)?'ok':/Verify/.test(v)?'warn':v==='Approved in Deputy'?'ok':'neutral';
+  return html`
+    <div class="panel facts">
+      <${Fact} label="Week" big><span style=${{fontSize:'1rem'}}>${w.label}</span><//>
+      <${Fact} label="Timesheets pending" big><span class="num" style=${{color:'var(--warn)'}}>${w.timesheets-w.approved}</span> <span class="muted" style=${{fontSize:'.8rem'}}>of ${w.timesheets}</span><//>
+      <${Fact} label="Total hours" big><span class="num">${w.hours.toFixed(2)}</span><//>
+      <${Fact} label="Hours over 40 (6 people)" big><span class="num" style=${{color:'var(--bad)'}}>${otTotal.toFixed(2)}</span><//>
+    </div>
+    <div class="panel"><h3>Hours by employee · from Deputy</h3>
+      <div class="tablewrap"><table><thead><tr><th>Employee</th><th class="r">Timesheets</th><th class="r">Hours</th><th class="r">Over 40</th><th class="r">Avg per shift</th><th>Check</th></tr></thead><tbody>
+      ${emps.map(e=>html`<tr key=${e.name}><td>${e.name}</td><td class="r num">${e.sheets}</td><td class="r num">${e.hours.toFixed(2)}</td><td class="r num" style=${e.ot?{color:'var(--bad)',fontWeight:600}:null}>${e.ot?e.ot.toFixed(2):'—'}</td><td class="r num">${e.avg.toFixed(1)}h</td>
+        <td>${e.avg>12?html`<${Pill} cls="bad">Over 12h/day: possible double time<//>`:e.ot?html`<${Pill} cls="warn">Overtime<//>`:html`<${Pill} cls="ok">Under 40h<//>`}</td></tr>`)}
+      </tbody><tfoot><tr><td>All employees</td><td class="r num">${w.timesheets}</td><td class="r num">${w.hours.toFixed(2)}</td><td class="r num">${otTotal.toFixed(2)}</td><td colspan="2"></td></tr></tfoot></table></div>
+      <p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>California also pays overtime after 8 hours in a day and double time after 12, so daily hours matter, not just the weekly total. Deputy shows $0.00 labor cost because pay rates aren't loaded in Deputy; pay is calculated in Matrix Payroll.</p>
+    </div>
+    ${w.reviews.map((r,ri)=>html`<div class="panel" key=${r.employee}>
+      <div style=${{display:'flex',flexWrap:'wrap',gap:'8px',justifyContent:'space-between',alignItems:'baseline'}}><h3>${r.employee} · ${r.total} hours</h3><${Pill} cls="warn">All 4 shifts show “Unscheduled shift”<//></div>
+      <div class="tablewrap" style=${{marginTop:'10px'}}><table><thead><tr><th>Day</th><th>Clocked</th><th class="r">Break</th><th class="r">Hours</th><th>What the record shows</th><th>Action</th></tr></thead><tbody>
+      ${r.shifts.map((x,i)=>html`<tr key=${x.day}><td style=${{whiteSpace:'nowrap'}}>${x.day}</td><td class="num" style=${{whiteSpace:'nowrap'}}>${x.time}</td><td class="r num">${x.brk}</td><td class="r num">${x.hours}</td><td style=${{minWidth:'240px'}}>${x.note}</td>
+        <td><select class=${'f st-'+(/^Approve/.test(x.action)||x.action==='Approved in Deputy'?'Cleared':'Notyetsent')} id=${'ts-'+ri+'-'+i} style=${{minWidth:'170px'}} value=${x.action} onChange=${e=>set('time.week.reviews.'+ri+'.shifts.'+i+'.action',e.target.value)}>${['Approve as recorded','Verify first','Approved in Deputy'].map(o=>html`<option key=${o}>${o}</option>`)}</select></td></tr>`)}
+      </tbody></table></div>
+      <div class="banner info" style=${{marginTop:'10px'}}><span class="grow"><b>Don't press “Round.”</b> Pay the exact recorded time (7.52h on Oct 22). California doesn't allow rounding when exact clock times are recorded, and rounding invites wage claims. The “Unscheduled shift” warning means no schedule was published for that day; it is not an error by Esteban.</span></div>
+    </div>`)}
+  `;
+}
+
 function Time(){
   const {S,set,edit}=useContext(Ctx);
   const addI=()=>set('time.issues',[...S.time.issues,{id:uid('i'),issue:'',impact:'',owner:'',due:'',status:'Open'}]);
   const rm=i=>set('time.issues',S.time.issues.filter((_,j)=>j!==i));
   return html`<div class="stack">
-    <${SecHead} title="Clock-In / Clock-Out Tracking" k="time" sub="Routine controls Kristine runs. Only the policy decision below needs Juan."/>
+    <${SecHead} title="Clock-In / Clock-Out Tracking" k="time" sub="Deputy timesheets for the week, routine controls Kristine runs, and the decisions that need Juan."/>
+    ${S.time.week&&html`<${TimesheetWeek}/>`}
     <div class="panel"><h3>Routine timekeeping controls · Kristine handles</h3>
       <div class=${'tablewrap'+(edit?' editing':'')}><table><thead><tr><th>Control</th><th>How it works today</th><th>Responsible</th><th>Status</th></tr></thead><tbody>
       ${S.time.process.map((p,i)=>html`<tr key=${p.id}><td><b>${p.area}</b></td><td><${F} path=${'time.process.'+i+'.current'} width="200px"/></td><td><${F} path=${'time.process.'+i+'.owner'} width="110px"/></td>

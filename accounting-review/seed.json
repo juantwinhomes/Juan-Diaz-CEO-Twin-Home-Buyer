@@ -30,8 +30,8 @@
       "source": ""
     },
     "time": {
-      "asOf": "",
-      "source": "Deputy"
+      "asOf": "2026-10-26",
+      "source": "Deputy Timesheets, Mon 19 Oct – Sun 25 Oct"
     },
     "payroll": {
       "asOf": "",
@@ -242,16 +242,16 @@
       {
         "id": "t1",
         "area": "Clock-in / clock-out method",
-        "current": "Deputy",
+        "current": "Deputy mobile app with clock-in and clock-out photos",
         "owner": "",
-        "status": "Pending verification"
+        "status": "Working"
       },
       {
         "id": "t2",
         "area": "GPS / geofence verification",
-        "current": "",
+        "current": "Deputy records GPS distance from site (e.g. 22 m / 8 m on Oct 22)",
         "owner": "",
-        "status": "Pending verification"
+        "status": "Working"
       },
       {
         "id": "t3",
@@ -263,9 +263,9 @@
       {
         "id": "t4",
         "area": "Daily timekeeping review",
-        "current": "",
+        "current": "All 47 timesheets for Oct 19–25 still pending; no shifts scheduled",
         "owner": "",
-        "status": "Pending verification"
+        "status": "Gap found"
       },
       {
         "id": "t5",
@@ -275,7 +275,105 @@
         "status": "Pending verification"
       }
     ],
-    "issues": []
+    "issues": [],
+    "week": {
+      "label": "Mon 19 Oct – Sun 25 Oct",
+      "timesheets": 47,
+      "approved": 0,
+      "hours": 466.62,
+      "employees": [
+        {
+          "name": "Alex (Alejandro Nunez)",
+          "sheets": 6,
+          "hours": 62.81
+        },
+        {
+          "name": "Bryan (Bryan Joslin)",
+          "sheets": 1,
+          "hours": 8.12
+        },
+        {
+          "name": "Esteban Isses (Esteban Osses)",
+          "sheets": 4,
+          "hours": 29.02
+        },
+        {
+          "name": "Frank (Frank Chacon)",
+          "sheets": 3,
+          "hours": 22.47
+        },
+        {
+          "name": "Gaspar (Gaspar Rios)",
+          "sheets": 6,
+          "hours": 54.64
+        },
+        {
+          "name": "Jaime Lopez",
+          "sheets": 6,
+          "hours": 65.18
+        },
+        {
+          "name": "Jairo (Jairo Prudencio)",
+          "sheets": 6,
+          "hours": 64.17
+        },
+        {
+          "name": "Israel (Jose Israel Esqu…)",
+          "sheets": 4,
+          "hours": 30.96
+        },
+        {
+          "name": "Jose (José Jaime)",
+          "sheets": 5,
+          "hours": 55.45
+        },
+        {
+          "name": "Luis (Luis Salvador)",
+          "sheets": 6,
+          "hours": 73.8
+        }
+      ],
+      "reviews": [
+        {
+          "employee": "Esteban Isses (Esteban Osses)",
+          "total": "29.02",
+          "shifts": [
+            {
+              "day": "Tue, Oct 20",
+              "time": "10:00 AM – 5:00 PM",
+              "brk": "30m",
+              "hours": "6.5",
+              "note": "Exact on-the-hour times usually mean they were typed in, not clocked. Open Shift activity and check for real clock times and photos.",
+              "action": "Verify first"
+            },
+            {
+              "day": "Wed, Oct 21",
+              "time": "8:00 AM – 4:00 PM",
+              "brk": "30m",
+              "hours": "7.5",
+              "note": "Same as Tuesday: on-the-hour times. Confirm the actual clock-in and clock-out with the site lead before approving.",
+              "action": "Verify first"
+            },
+            {
+              "day": "Thu, Oct 22",
+              "time": "7:03 AM – 3:04 PM",
+              "brk": "30m",
+              "hours": "7.52",
+              "note": "Good record: clock-in and clock-out photos, GPS 22 m and 8 m from 972 Norton St, meal break 11:49–12:19 (before the 5th hour).",
+              "action": "Approve as recorded"
+            },
+            {
+              "day": "Fri, Oct 23",
+              "time": "7:01 AM – 3:01 PM",
+              "brk": "30m",
+              "hours": "7.5",
+              "note": "Real clock times. Approve if photos and GPS look like Thursday's.",
+              "action": "Approve as recorded"
+            }
+          ]
+        }
+      ]
+    }
   },
   "payroll": {
     "period": "",
@@ -353,7 +451,7 @@
       "required": "Approve ~$230 for TaxAct, then sign Form 8879-CORP and California Form 8453-C.",
       "owner": "Kristine",
       "target": "2026-10-31",
-      "next": "Kristine sets line 15a to No, files both returns in TaxAct, and saves the acceptance emails.",
+      "next": "Kristine sets line 15a to No, files both returns in TaxAct by Oct 31, and saves the acceptance emails.",
       "status": "Pending",
       "decidedOn": "",
       "notes": "",
@@ -414,18 +512,36 @@
       "holdReason": ""
     },
     {
+      "id": "d-overtime",
+      "section": "time",
+      "title": "Overtime — 6 employees over 40 hours (week of Oct 19)",
+      "amountSource": "",
+      "amount": null,
+      "amountNote": "136 overtime hours",
+      "situation": "Deputy shows 466.62 hours across 10 employees. Six worked 54–74 hours; Luis averaged 12.3 hours a shift.",
+      "rec": "Pay all recorded hours, including overtime, as the law requires. From next week, any shift past 8 hours needs a manager's OK first.",
+      "required": "Approve paying this week as recorded and the overtime pre-approval rule.",
+      "owner": "Kristine",
+      "target": "2026-10-28",
+      "next": "Kristine verifies hours, approves timesheets in Deputy, and sends totals to Matrix Payroll.",
+      "status": "Pending",
+      "decidedOn": "",
+      "notes": "",
+      "holdReason": ""
+    },
+    {
       "id": "d-deputy",
       "section": "time",
-      "title": "Require geofenced or kiosk clock-ins in Deputy",
+      "title": "Publish weekly schedules in Deputy",
       "amountSource": "",
       "amount": null,
       "amountNote": "No direct cost",
-      "situation": "Clock-ins from outside approved job sites cannot be verified and can inflate paid hours.",
-      "rec": "Approve: require geofenced mobile or kiosk clock-ins for all hourly staff, with manager approval for exceptions.",
-      "required": "Approve the timekeeping policy change.",
+      "situation": "Every shift shows “Unscheduled shift” because no schedule is published. Without one, Deputy can't flag late starts, early leaves, or unplanned overtime.",
+      "rec": "Approve: site leads publish each week's schedule in Deputy by Friday, so every clock-in is checked against a planned shift.",
+      "required": "Approve requiring weekly schedules in Deputy.",
       "owner": "Kristine",
-      "target": "2026-11-07",
-      "next": "Kristine updates Deputy settings and notifies staff after approval.",
+      "target": "2026-10-30",
+      "next": "Kristine sets up schedules for Nov 2–8 with site leads and turns on late/overtime alerts.",
       "status": "Pending",
       "decidedOn": "",
       "notes": "",
