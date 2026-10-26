@@ -587,24 +587,6 @@
       "decidedOn": "",
       "notes": "",
       "holdReason": ""
-    },
-    {
-      "id": "d-payroll",
-      "section": "payroll",
-      "title": "Matrix Payroll — current period release",
-      "amountSource": "payroll",
-      "amount": null,
-      "amountNote": "",
-      "situation": "Marieflor prepares payroll from Deputy hours. Kristine checks the data she used and any timesheet changes before release.",
-      "rec": "Approve once Kristine confirms the hours match Deputy and every timesheet change has a reason.",
-      "required": "Approve payroll release, or hold for discrepancies.",
-      "owner": "Kristine",
-      "target": "",
-      "next": "Kristine reviews Marieflor's payroll and the Deputy change history, then confirms the pay date.",
-      "status": "Pending",
-      "decidedOn": "",
-      "notes": "",
-      "holdReason": ""
     }
   ],
   "info": [
@@ -668,15 +650,6 @@
       "you": "Approve listing the 2 empty rooms (free posts first, a small Facebook boost only if needed), and approve a payment plan for Maria.",
       "youShort": "Approve room listings; approve Maria's payment plan",
       "next": "MC posts both rooms with photos on Facebook and Craigslist; Kristine sends Maria a written payment plan."
-    },
-    "payroll": {
-      "topic": "Payroll",
-      "status": "info",
-      "headline": "This period's payroll is waiting for Kristine's check.",
-      "now": "Marieflor prepares payroll from Deputy hours. Kristine checks the hours and any timesheet changes.",
-      "you": "Approve the payroll once Kristine confirms the hours match Deputy.",
-      "youShort": "Approve after Kristine's check",
-      "next": "Payroll is released to Paychex after approval."
     },
     "time": {
       "topic": "Clock-in / clock-out",
