@@ -176,7 +176,7 @@
     "source": "https://claude.ai/artifact/1eQ4pY7477YdeM12LfvBa9"
   },
   "honda": {
-    "vehicle": "2024 Honda Accord LX",
+    "vehicle": "2024 Honda Accord LX · new owner Equity Track Inc.",
     "vinLast": "001462",
     "amount": 17683.9,
     "purchaseDate": "2026-10-06",
@@ -202,7 +202,7 @@
         "done": true
       },
       {
-        "t": "Title received and checked: Juan is the owner, not Honda",
+        "t": "Title received and checked: Equity Track Inc. is the owner, not Honda or Juan",
         "done": false
       }
     ]
@@ -463,7 +463,7 @@
       "item": "Honda Accord bought out",
       "amount": 17683.9,
       "status": "Title check pending",
-      "note": "Paperwork emailed and faxed; DMV mailed the title. Kristine checks it shows Juan as owner, not Honda."
+      "note": "Paperwork emailed and faxed; DMV mailed the title. Kristine checks it shows Equity Track Inc. as owner."
     }
   ]
 }

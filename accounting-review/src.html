@@ -314,7 +314,7 @@ function risks(S,K){
   if(K.outstanding>0)r.push({lvl:'warn',text:'8715 D St has '+money(K.outstanding)+' in unpaid rent',sec:'rental'});
   if(K.shortfall>0)r.push({lvl:'warn',text:'8715 D St is short '+money(K.shortfall)+' this month after mortgage and expenses',sec:'rental'});
   if(S.rental.qbMissing.length)r.push({lvl:'warn',text:S.rental.qbMissing.length+' missing QuickBooks record item(s) for 8715 D St',sec:'rental'});
-  if(S.honda.titleStatus==='Received — still shows Honda')r.push({lvl:'bad',text:'Honda Accord title still shows Honda as owner',sec:'honda'});
+  if(S.honda.titleStatus==='Received — shows Honda or Juan')r.push({lvl:'bad',text:'Honda Accord title is not in Equity Track Inc. name yet',sec:'honda'});
   return r;
 }
 function deadlines(S,K){
@@ -609,8 +609,8 @@ function Honda(){
   const st=h.titleStatus||'Not received yet';
   const outcome={
     'Not received yet':{cls:'info',t:'Waiting for the title from the DMV. Check it as soon as it arrives.'},
-    'Received — Juan is the owner':{cls:'ok',t:'Done. Store the title in the office safe and update insurance (below).'},
-    'Received — still shows Honda':{cls:'bad',t:'Not finished. Call Honda Financial Services to release ownership, then file the transfer with the DMV.'}}[st]||{cls:'info',t:''};
+    'Received — Equity Track Inc. is the owner':{cls:'ok',t:'Done. Store the title in the office safe and update insurance (below).'},
+    'Received — shows Honda or Juan':{cls:'bad',t:'Not finished. Call Honda Financial Services to release ownership to Equity Track Inc., then file the transfer with the DMV.'}}[st]||{cls:'info',t:''};
   const steps=h.steps||[];
   return html`<div class="stack">
     <${SecHead} title="Honda Accord Buyout" k="honda" sub=${h.vehicle+' · VIN ending '+h.vinLast}/>
@@ -619,28 +619,28 @@ function Honda(){
       <${Fact} label="Buyout paid" big><span class="num">${money(h.amount,{cents:true})}</span><//>
       <${Fact} label="Purchase date"><span>${fmtDate(h.purchaseDate)}</span><//>
       <${Fact} label="Lender"><span>${h.lender}</span><//>
-      <${Fact} label="Status"><${Pill} cls=${outcome.cls==='bad'?'bad':outcome.cls==='ok'?'ok':'warn'}>${st==='Received — Juan is the owner'?'Complete':'Title check pending'}<//><//>
+      <${Fact} label="Status"><${Pill} cls=${outcome.cls==='bad'?'bad':outcome.cls==='ok'?'ok':'warn'}>${st==='Received — Equity Track Inc. is the owner'?'Complete':'Title check pending'}<//><//>
     </div>
     <div class="panel"><h3>Where it stands</h3>
       <div class="list">${steps.map(x=>html`<div class="risk" key=${x.t}><span style=${{color:x.done?'var(--ok)':'var(--faint)',fontWeight:700,flex:'none',width:'18px'}}>${x.done?'✓':'○'}</span><div style=${{flex:1}}>${x.t}</div></div>`)}</div>
     </div>
     <div class="panel" style=${{borderColor:'var(--accent)'}}><h3>When the title arrives, check these two lines</h3>
       <div class="tablewrap"><table><thead><tr><th>Line on the California title</th><th>Should say</th><th>Problem if it says</th></tr></thead><tbody>
-        <tr><td><b>Registered owner</b></td><td>Juan M. Diaz</td><td>Honda Lease Trust or American Honda Finance</td></tr>
-        <tr><td><b>Legal owner / lienholder</b></td><td>Blank, or Juan M. Diaz</td><td>Honda Lease Trust or American Honda Finance</td></tr>
+        <tr><td><b>Registered owner</b></td><td>Equity Track Inc.</td><td>Honda Lease Trust, American Honda Finance, or Juan M. Diaz</td></tr>
+        <tr><td><b>Legal owner / lienholder</b></td><td>Blank, or Equity Track Inc.</td><td>Honda Lease Trust or American Honda Finance</td></tr>
       </tbody></table></div>
       <div class="grid3" style=${{marginTop:'12px'}}>
-        <div><label class="lbl" for="h-st">Title result</label><select id="h-st" class="f" value=${st} onChange=${e=>set('honda.titleStatus',e.target.value)}>${['Not received yet','Received — Juan is the owner','Received — still shows Honda'].map(o=>html`<option key=${o}>${o}</option>`)}</select></div>
-        <div><label class="lbl" for="h-ro">Registered owner shown</label><input id="h-ro" class="f" value=${h.registeredOwner||''} placeholder="Name on the title" onChange=${e=>set('honda.registeredOwner',e.target.value)}/></div>
+        <div><label class="lbl" for="h-st">Title result</label><select id="h-st" class="f" value=${st} onChange=${e=>set('honda.titleStatus',e.target.value)}>${['Not received yet','Received — Equity Track Inc. is the owner','Received — shows Honda or Juan'].map(o=>html`<option key=${o}>${o}</option>`)}</select></div>
+        <div><label class="lbl" for="h-ro">Registered owner shown</label><input id="h-ro" class="f" value=${h.registeredOwner||''} placeholder="Should be Equity Track Inc." onChange=${e=>set('honda.registeredOwner',e.target.value)}/></div>
         <div><label class="lbl" for="h-lo">Legal owner shown</label><input id="h-lo" class="f" value=${h.legalOwner||''} placeholder="Blank if none" onChange=${e=>set('honda.legalOwner',e.target.value)}/></div>
       </div>
     </div>
     <div class="panel"><h3>Next steps</h3>
       <div class="tablewrap"><table><thead><tr><th>#</th><th>Step</th><th>Who</th></tr></thead><tbody>
         <tr><td class="num">1</td><td>Watch the mail for the title from the DMV and record the two lines above</td><td>Kristine</td></tr>
-        <tr><td class="num">2</td><td>If it still shows Honda: call Honda Financial Services (800) 708-6555 to release ownership, then submit the transfer to the DMV</td><td>Kristine</td></tr>
-        <tr><td class="num">3</td><td>Once Juan is the owner: remove Honda from the car insurance policy as lienholder or loss payee</td><td>Kristine</td></tr>
-        <tr><td class="num">4</td><td>Keep the title, payoff confirmation and DMV papers in the vehicle file</td><td>Kristine</td></tr>
+        <tr><td class="num">2</td><td>If it shows Honda or Juan: call Honda Financial Services (800) 708-6555 to release ownership, then submit the transfer to Equity Track Inc. at the DMV</td><td>Kristine</td></tr>
+        <tr><td class="num">3</td><td>Once Equity Track Inc. is the owner: insure the car under the company policy and remove Honda as lienholder or loss payee</td><td>Kristine</td></tr>
+        <tr><td class="num">4</td><td>Record the car as an Equity Track Inc. asset in QuickBooks ($17,683.90) and keep the title, payoff confirmation and DMV papers in the vehicle file</td><td>Kristine</td></tr>
       </tbody></table></div>
     </div>
   </div>`;
