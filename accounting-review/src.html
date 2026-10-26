@@ -832,9 +832,10 @@ function PrescottCloseout(){
   return html`<div class="panel" style=${{borderColor:'var(--accent)'}}>
     <div style=${{display:'flex',flexWrap:'wrap',gap:'8px',justifyContent:'space-between',alignItems:'baseline'}}><h3>${p.title}</h3><${Pill} cls="ok">${p.decided}<//></div>
     <div class="facts" style=${{margin:'12px 0'}}>${p.facts.map(f=>html`<${Fact} key=${f[0]} label=${f[0]}>${f[1]}<//>`)}</div>
-    <div class="banner bad" style=${{marginBottom:'12px'}}><span class="grow"><b>Fix first:</b> ${p.risks.join(' ')}</span></div>
+    ${p.intro&&html`<p style=${{margin:'0 0 12px'}}>${p.intro}</p>`}
+    ${p.risks&&p.risks.length>0&&html`<div class="banner warn" style=${{marginBottom:'12px'}}><span class="grow"><b>Watch:</b> ${p.risks.join(' ')}</span></div>`}
     <div class="tablewrap"><table><thead><tr><th>#</th><th>Step</th><th>Who</th><th>By</th></tr></thead><tbody>
-    ${p.steps.map((x,i)=>html`<tr key=${i}><td class="num">${i+1}</td><td>${x.t}</td><td>${x.who}</td><td style=${{whiteSpace:'nowrap'}}>${x.by}</td></tr>`)}
+    ${p.steps.map((x,i)=>html`<tr key=${i} style=${x.done?{color:'var(--muted)'}:null}><td class="num">${x.done?html`<span style=${{color:'var(--ok)',fontWeight:700}}>✓</span>`:i+1}</td><td>${x.t}</td><td>${x.who}</td><td style=${{whiteSpace:'nowrap'}}>${x.done?html`<${Pill} cls="ok">Done<//>`:x.by}</td></tr>`)}
     </tbody></table></div>
     <p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>${p.source}</p>
   </div>`;

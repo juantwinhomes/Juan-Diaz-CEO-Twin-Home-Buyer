@@ -537,11 +537,11 @@
       "item": "Prescott Development LLC — closing and shutting down",
       "amount": null,
       "status": "Decided",
-      "note": "Confirmed by Juan and Cherry. Close-out checklist is under Other Pending Decisions; 2024 and 2025 returns still need filing."
+      "note": "Confirmed by Juan and Cherry. 2024 and 2025 returns filed. Remaining steps are under Other Pending Decisions."
     }
   ],
   "prescott": {
-    "title": "Close Prescott Development LLC · 2026 is the final tax year",
+    "title": "Shutting down Prescott Development LLC",
     "decided": "Decided by Juan and Cherry · no decision needed",
     "facts": [
       [
@@ -562,8 +562,7 @@
       ]
     ],
     "risks": [
-      "The 2024 and 2025 Prescott tax returns (Form 1065 and California Form 568) have not been started. The IRS charges about $255 per member, per month late, for up to 12 months, and California won't accept the cancellation until every return is filed.",
-      "The 2026 California LLC fee is based on gross receipts, so the $2.9M sale may make it about $6,000; the CPA should confirm."
+      "The 2026 California LLC fee is based on gross receipts, so the $2.9M sale may make it about $6,000. The CPA should confirm when preparing the final return."
     ],
     "steps": [
       {
@@ -592,9 +591,10 @@
         "by": "Nov 14, 2026"
       },
       {
-        "t": "CPA files the late 2024 and 2025 Form 1065 and Form 568, with K-1s to Mike, Issa and Equity Track / Juan, and asks for penalty relief",
-        "who": "CPA · Kristine",
-        "by": "As soon as possible"
+        "t": "2024 and 2025 Form 1065 and California Form 568 filed",
+        "who": "CPA",
+        "by": "",
+        "done": true
       },
       {
         "t": "Close Relay ••4436 after the last payment; cancel the ZenBusiness registered agent",
@@ -612,7 +612,8 @@
         "by": "Within 12 months of the final return"
       }
     ],
-    "source": "Facts from Prescott Financial Statement, 751 27th Ave Closeout, Investor Payout Approval, Cost Reconciliation and Juan Diaz Records Desk. Sale figures are from the estimated settlement statement; confirm against the final one."
+    "source": "Facts from Prescott Financial Statement, 751 27th Ave Closeout, Investor Payout Approval, Cost Reconciliation and Juan Diaz Records Desk. Sale figures are from the estimated settlement statement; confirm against the final one.",
+    "intro": "Prescott was the company that bought, renovated and sold 751 27th Ave. The project is finished, so the company is being closed. Past tax returns are filed; these are the remaining steps."
   },
   "briefs": {
     "contractors": {
@@ -680,12 +681,12 @@
     },
     "other": {
       "topic": "Prescott",
-      "status": "bad",
-      "headline": "Prescott is closing. Its 2024 and 2025 tax returns are overdue.",
-      "now": "751 27th Ave sold for $2.9M and payouts were approved. The company is being shut down.",
-      "you": "Nothing to decide. Sign the late returns, the final return and the closing papers when they are ready.",
-      "youShort": "Sign returns and closing papers when ready",
-      "next": "The CPA files the late 2024 and 2025 returns first; the final return is due Mar 15, 2027."
+      "status": "info",
+      "headline": "Prescott is closing. Past tax returns are filed.",
+      "now": "751 27th Ave sold for $2.9M and payouts were approved. The 2024 and 2025 returns are done. The company is being shut down.",
+      "you": "Nothing to decide. Sign the final 2026 return and the closing papers when they are ready.",
+      "youShort": "Sign final return and closing papers when ready",
+      "next": "Kristine confirms the sale closed and payouts went out; the final return is due Mar 15, 2027."
     }
   }
 }
