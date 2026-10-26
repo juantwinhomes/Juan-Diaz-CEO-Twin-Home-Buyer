@@ -286,11 +286,11 @@
       },
       {
         "id": "i-paychex",
-        "issue": "Getting Deputy hours into Paychex Flex",
-        "impact": "Hours are exported from Deputy and re-entered for Paychex. Deputy already has a Paychex Flex integration and a built-in Paychex export; test those before building a custom export.",
+        "issue": "Fixed-rate employees entered by hand in Paychex Flex",
+        "impact": "The Deputy export to Paychex works for hourly employees. Fixed-rate employees' hours are re-entered by hand each week, which can cause typing errors. Kristine checks these entries in her weekly review.",
         "owner": "Marieflor",
-        "due": "2026-11-06",
-        "status": "In progress"
+        "due": "",
+        "status": "Working, manual step"
       }
     ],
     "proof": {

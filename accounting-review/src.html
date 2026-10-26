@@ -711,7 +711,7 @@ function Time(){
       </tbody></table></div></div>
     <div class="panel"><h3>Current issues or gaps</h3>
       ${S.time.issues.length?html`<div class=${'tablewrap'+(edit?' editing':'')}><table><thead><tr><th>Issue</th><th>Impact</th><th>Owner</th><th>Due</th><th>Status</th>${edit&&html`<th></th>`}</tr></thead><tbody>
-      ${S.time.issues.map((x,i)=>html`<tr key=${x.id}><td><${F} path=${'time.issues.'+i+'.issue'} width="180px"/></td><td><${F} path=${'time.issues.'+i+'.impact'} width="140px"/></td><td><${F} path=${'time.issues.'+i+'.owner'} width="90px"/></td><td><${F} path=${'time.issues.'+i+'.due'} kind="date"/></td><td><${F} path=${'time.issues.'+i+'.status'} kind="select" options=${['Open','In progress','Resolved']}/></td>${edit&&html`<td><button class="btn sm danger" onClick=${()=>rm(i)}>Remove</button></td>`}</tr>`)}
+      ${S.time.issues.map((x,i)=>html`<tr key=${x.id}><td><${F} path=${'time.issues.'+i+'.issue'} width="180px"/></td><td><${F} path=${'time.issues.'+i+'.impact'} width="140px"/></td><td><${F} path=${'time.issues.'+i+'.owner'} width="90px"/></td><td><${F} path=${'time.issues.'+i+'.due'} kind="date"/></td><td><${F} path=${'time.issues.'+i+'.status'} kind="select" options=${['Open','In progress','Working, manual step','Resolved']}/></td>${edit&&html`<td><button class="btn sm danger" onClick=${()=>rm(i)}>Remove</button></td>`}</tr>`)}
       </tbody></table></div>`:html`<div class="empty">No timekeeping issues logged yet.</div>`}
       ${edit&&html`<div style=${{marginTop:'8px'}}><button class="btn" onClick=${addI}>+ Add issue</button></div>`}
     </div>
