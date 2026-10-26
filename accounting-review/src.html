@@ -531,32 +531,21 @@ function PayTable({rows,base,showTotal}){
   </table></div>`;
 }
 function TransferPlan(){
-  const {S,set}=useContext(Ctx);
-  const bal=S.contractors.balances||{};
+  const {S}=useContext(Ctx);
   const groups={};
-  const add=(p,kind)=>{const acct=p.source||'Source account not set';const g=groups[acct]=groups[acct]||{acct,approved:0,hold:0,payees:{}};
-    const amt=num(p.amount)||0;if(kind==='hold')g.hold+=amt;else g.approved+=amt;
-    const key=p.payee+(kind==='hold'?' (on hold)':'');const e=g.payees[key]=g.payees[key]||{payee:key,amount:0,jobs:[],kind,sent:true};
-    e.amount+=amt;e.jobs.push(p.job.replace(/ — /,': ')+' '+money(amt));if(!/Sent|Cleared/.test(p.status))e.sent=false;};
-  S.contractors.approved.forEach(p=>add(p,'approved'));S.contractors.hold.forEach(p=>add(p,'hold'));
-  const list=Object.values(groups).sort((a,b)=>b.approved-a.approved);
-  const total=list.reduce((a,g)=>a+g.approved,0);
+  S.contractors.approved.forEach(p=>{const acct=p.source||'Source account not set';const g=groups[acct]=groups[acct]||{acct,total:0,payees:{}};
+    const amt=num(p.amount)||0;g.total+=amt;const e=g.payees[p.payee]=g.payees[p.payee]||{payee:p.payee,amount:0,jobs:[],sent:true};
+    e.amount+=amt;e.jobs.push(p.job+' '+money(amt));if(!/Sent|Cleared/.test(p.status))e.sent=false;});
+  const list=Object.values(groups).sort((a,b)=>b.total-a.total);
+  const total=list.reduce((a,g)=>a+g.total,0);
   return html`<div class="panel" style=${{borderColor:'var(--accent)'}}>
     <div style=${{display:'flex',flexWrap:'wrap',gap:'8px',justifyContent:'space-between',alignItems:'baseline'}}><h3>Transfer plan by source account</h3><span class="num" style=${{fontWeight:600}}>${money(total)} to send</span></div>
-    <p class="muted" style=${{margin:'4px 0 12px',fontSize:'.84rem'}}>Madera work is paid from Relay ••5776; everything else from WF ••8251. Payments to the same person from the same account are combined into one transfer.</p>
-    <div class="grid2">${list.map(g=>{const b=num(bal[g.acct]);const short=b!==null&&b<g.approved;
-      return html`<div class="panel" key=${g.acct} style=${{background:'var(--panel)'}}>
-        <div style=${{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'baseline'}}><h3 style=${{margin:0}}>${g.acct}</h3><span class="num" style=${{fontSize:'1.15rem',fontWeight:600}}>${money(g.approved)}</span></div>
+    <div class="grid2" style=${{marginTop:'12px'}}>${list.map(g=>html`<div class="panel" key=${g.acct} style=${{background:'var(--panel)'}}>
+        <div style=${{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'baseline'}}><h3 style=${{margin:0}}>${g.acct}</h3><span class="num" style=${{fontSize:'1.15rem',fontWeight:600}}>${money(g.total)}</span></div>
         <div class="list" style=${{marginTop:'8px'}}>${Object.values(g.payees).map(e=>html`<div class="risk" key=${e.payee}>
           <div style=${{flex:1,minWidth:0}}><b>${e.payee}</b><div class="muted" style=${{fontSize:'.78rem'}}>${e.jobs.join(' · ')}</div></div>
-          <div style=${{textAlign:'right'}}><div class="num" style=${{fontWeight:600}}>${money(e.amount)}</div>${e.kind==='hold'?html`<${Pill} cls="warn">Do not send<//>`:e.sent?html`<${Pill} cls="ok">Sent<//>`:html`<${Pill} cls="neutral">To send<//>`}</div></div>`)}</div>
-        <div style=${{display:'flex',flexWrap:'wrap',gap:'8px',alignItems:'center',marginTop:'10px',fontSize:'.82rem'}}>
-          <label class="lbl" for=${'bal-'+g.acct.replace(/\W+/g,'')}>Available balance</label>
-          <input id=${'bal-'+g.acct.replace(/\W+/g,'')} class="f num" style=${{width:'130px'}} inputmode="decimal" placeholder="Enter balance" value=${bal[g.acct]??''} onChange=${e=>set('contractors.balances',{...bal,[g.acct]:e.target.value===''?null:e.target.value})}/>
-          ${b!==null&&html`<${Pill} cls=${short?'bad':'ok'}>${short?'Short '+money(g.approved-b):'Enough · '+money(b-g.approved)+' left'}<//>`}
-        </div>
-        ${g.hold>0&&html`<div class="muted" style=${{fontSize:'.78rem',marginTop:'6px'}}>Plus ${money(g.hold)} on hold from this account, not included above.</div>`}
-      </div>`})}</div>
+          <div style=${{textAlign:'right'}}><div class="num" style=${{fontWeight:600}}>${money(e.amount)}</div>${e.sent?html`<${Pill} cls="ok">Sent<//>`:html`<${Pill} cls="neutral">To send<//>`}</div></div>`)}</div>
+      </div>`)}</div>
   </div>`;
 }
 
