@@ -566,7 +566,7 @@ function Overview(){
     <${PkgItem} n="3" k="rental" title="8715 D St rents" extra=${html`<div class="facts" style=${{marginTop:'10px'}}><${Fact} label="Monthly rent">${money(K.expected)}<//><${Fact} label="Collected (Oct)">${money(K.octRcv)}<//><${Fact} label="Owed">${money(K.outstanding)}<//><${Fact} label="Empty rooms">${K.vacant}<//></div>`}/>
     <${PkgItem} n="4" k="payroll" title="Matrix payroll"/>
     <${PkgItem} n="5" k="wires" title="Wires waiting on your release" extra=${html`<div class="tablewrap" style=${{marginTop:'10px'}}><table><tbody>
-      ${(S.wires&&S.wires.items||[]).map(w=>html`<tr key=${w.id}><td><b>${w.payee}</b></td><td class="r num">${money(w.amount,{cents:true})}</td></tr>`)}
+      ${(S.wires&&S.wires.items||[]).map(w=>html`<tr key=${w.id}><td><b>${w.payee}</b></td><td class="r num">${w.amount!=null?money(w.amount,{cents:true}):html`<span class="muted">${w.amountNote||'—'}</span>`}</td></tr>`)}
       ${ap.map(p=>html`<tr key=${p.id}><td>${p.payee} <span class="muted">· ${p.source}</span></td><td class="r num">${money(p.amount,{cents:true})}</td></tr>`)}
       <tr><td><b>Total</b></td><td class="r num"><b>${money(wireTot,{cents:true})}</b></td></tr></tbody></table></div>`}/>
     <${PkgItem} n="6" k="erc" title="ERC Specialists bill"/>
@@ -910,11 +910,11 @@ function Time(){
 
 function Payroll(){
   const {S,K}=useContext(Ctx);const p=S.payroll;
-  const cls={'Not yet reviewed':'neutral','Reviewed — awaiting processing':'info','Requires Juan approval':'warn','Processed':'ok'}[p.status]||'neutral';
+  const cls={'Blocked — waiting on Marieflor':'bad','Not yet reviewed':'neutral','Reviewed — awaiting processing':'info','Requires Juan approval':'warn','Processed':'ok'}[p.status]||'neutral';
   return html`<div class="stack">
     <${SecHead} title="Matrix Payroll" k="payroll"/>
     <${Brief} k="payroll"/>
-    <div class="panel" style=${{display:'flex',gap:'12px',alignItems:'center',flexWrap:'wrap'}}><span class="lbl">Payroll status</span><${Pill} cls=${cls}>${p.status}<//><span style=${{marginLeft:'auto'}}><${F} path="payroll.status" kind="select" options=${['Not yet reviewed','Reviewed — awaiting processing','Requires Juan approval','Processed']}/></span></div>
+    <div class="panel" style=${{display:'flex',gap:'12px',alignItems:'center',flexWrap:'wrap'}}><span class="lbl">Payroll status</span><${Pill} cls=${cls}>${p.status}<//><span style=${{marginLeft:'auto'}}><${F} path="payroll.status" kind="select" options=${['Blocked — waiting on Marieflor','Not yet reviewed','Reviewed — awaiting processing','Requires Juan approval','Processed']}/></span></div>
     <div class="panel facts">
       <${Fact} label="Payroll period"><${F} path="payroll.period" ph="e.g. Oct 13 – Oct 26, 2026"/><//>
       <${Fact} label="Scheduled pay date"><${F} path="payroll.payDate" kind="date"/><//>
@@ -944,7 +944,7 @@ function Wires(){
         <td style=${{minWidth:'200px'}}>${x.purpose}${x.notes&&html`<div class="muted" style=${{fontSize:'.76rem'}}>${x.notes}</div>`}</td>
         <td>${x.from||html`<${PV}/>`}</td><td style=${{whiteSpace:'nowrap'}}>${x.deadline?fmtDate(x.deadline):(x.deadlineNote||html`<${PV}/>`)}</td>
         <td>${edit?html`<${F} path=${'wires.items.'+i+'.verified'} kind="select" options=${['Not verified','Yes','No']}/>`:html`<${Pill} cls=${x.verified==='Yes'?'ok':x.verified==='No'?'bad':'warn'}>${x.verified==='Yes'?'Yes':x.verified==='No'?'No':'Not yet'}<//>`}</td>
-        <td>${edit?html`<${F} path=${'wires.items.'+i+'.status'} kind="select" options=${['Waiting on Juan','Released','On hold','Cancelled']}/>`:html`<${Pill} cls=${x.status==='Released'?'ok':x.status==='On hold'?'warn':'info'}>${x.status}<//>`}</td></tr>`)}
+        <td>${edit?html`<${F} path=${'wires.items.'+i+'.status'} kind="select" options=${['Waiting on Juan','Blocked','Released','On hold','Cancelled']}/>`:html`<${Pill} cls=${x.status==='Released'?'ok':x.status==='Blocked'?'bad':x.status==='On hold'?'warn':'info'}>${x.status}<//>`}</td></tr>`)}
       </tbody></table></div>`:html`<div class="empty">No wires waiting.</div>`}
       ${w.source&&html`<p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>${w.source}</p>`}
     </div>

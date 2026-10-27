@@ -582,9 +582,9 @@
   "total": null,
   "regular": null,
   "overtime": null,
-  "adjustments": "Last week (Oct 12–18) is done: $22,253.03 deposit ($15,763.18 gross, 10 people, about 99 overtime hours, up from 51 because of Madera evening shifts). Juan approved Oct 21; transfers sent Oct 22. To clean up: Jairo's $449.39 mileage was run through payroll as wages (should be a reimbursement), and Marieflor's notes differ from the final by $3.90.",
+  "adjustments": "",
   "payDate": "",
-  "status": "Not yet reviewed"
+  "status": "Blocked — waiting on Marieflor"
  },
  "decisions": [
   {
@@ -911,7 +911,7 @@
   "wires": {
    "topic": "Wires",
    "status": "warn",
-   "headline": "To release: the $10,500 Heyer earnest money wire (WFG Title) and $17,900 in approved contractor payments.",
+   "headline": "To release: the $10,500 Heyer earnest money wire, $17,900 in approved contractor payments, and this week's payroll once it's reviewed.",
    "now": "Contractor payments: $12,100 from Relay ••5776 and $5,800 from WF ••8251, all already approved. Gonzalo's $2,000 stays on hold.",
    "you": "Approve releasing the $10,500 Heyer wire after Kristine confirms the instructions by phone.",
    "youShort": "Approve $10,500 Heyer EMD",
@@ -937,12 +937,12 @@
   },
   "payroll": {
    "topic": "Matrix payroll",
-   "status": "info",
-   "headline": "Last week's payroll ($22,253.03) is done. This week's is being prepared.",
-   "now": "Overtime was higher last week because of Madera evening shifts.",
-   "you": "Nothing today. You'll get the Oct 19–25 transfers to approve once Marieflor submits and Kristine checks them.",
-   "youShort": "Nothing yet — transfers coming",
-   "next": "Marieflor submits; Kristine verifies hours, fixed-rate employees and totals, then sends you the transfers."
+   "status": "bad",
+   "headline": "BLOCKED: Marieflor has not finished this week's payroll (Oct 19–25).",
+   "now": "Kristine reviews it as soon as Marieflor is done, then sends you the payroll transfer to approve.",
+   "you": "Nothing yet.",
+   "youShort": "Nothing yet — transfer comes after review",
+   "next": "Marieflor finishes; Kristine reviews hours, fixed-rate employees and totals."
   }
  },
  "wires": {
@@ -959,6 +959,20 @@
     "deadlineNote": "",
     "verified": "Not verified",
     "status": "Waiting on Juan"
+   },
+   {
+    "id": "w-payroll",
+    "payee": "Matrix payroll — week of Oct 19–25",
+    "escrow": "",
+    "amount": null,
+    "amountNote": "After review",
+    "purpose": "Payroll deposit for Paychex",
+    "notes": "Amount comes after Kristine reviews Marieflor's payroll.",
+    "from": "—",
+    "deadline": "",
+    "deadlineNote": "—",
+    "verified": "Not verified",
+    "status": "Blocked"
    }
   ],
   "source": ""
