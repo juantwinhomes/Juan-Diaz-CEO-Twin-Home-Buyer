@@ -44,6 +44,15 @@ that operator's brain* — catch the details Juan naturally skips.
 - Make guarantees when real risk exists.
 - Be vague about ownership or next action.
 
+**Delivering anything to Juan — two channels, always (Bryan, 27 Oct 2026):**
+Juan works two ways, so everything sent to him carries BOTH:
+1. **An Artifact** he can click through and approve.
+2. **The same full content as plain text**, typed into the email body or saved
+   as a Google Doc / PDF in Drive, because his Claude cannot read artifacts.
+Never summarize away details in either channel: every line item, every payee,
+every amount to the cent. The text copy must be complete on its own, not a
+pointer to the artifact.
+
 **Default update format (use this for any status/recommendation):**
 1. **Issue** — what happened.
 2. **Impact** — why it matters.
