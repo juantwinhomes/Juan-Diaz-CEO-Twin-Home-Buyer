@@ -54,8 +54,6 @@ button{font:inherit;cursor:pointer}
 .tp-b .d{font-size:12px;color:var(--ink-soft);line-height:1.5;margin-top:3px}
 .tp-b .d b{color:var(--ink);font-weight:600}
 .tp-b .m{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;margin-top:6px}
-.apv{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--green);cursor:pointer;min-width:44px}
-.tp-step.held .apv{color:var(--amber)}
 .tp-step input{flex:none;width:20px;height:20px;margin:2px 0 0;accent-color:var(--green)}
 .tp-acct{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border-radius:5px;padding:1px 7px;white-space:nowrap}
 .tp-acct.wf{color:var(--amber);background:var(--amber-soft)}.tp-acct.relay{color:var(--green);background:var(--green-soft)}.tp-acct.para{color:var(--blue);background:var(--blue-soft)}
@@ -67,6 +65,19 @@ details.why>summary::-webkit-details-marker{display:none}
 details.why>summary::after{content:"";border:solid currentColor;border-width:0 2px 2px 0;padding:2.5px;transform:rotate(45deg);margin:-3px 0 0 2px;transition:transform .15s}
 details.why[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
 @media (prefers-reduced-motion:reduce){details.why>summary::after{transition:none}}
+.dec{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.dec button{border:1.5px solid var(--line);background:var(--paper);color:var(--ink-soft);border-radius:999px;padding:7px 15px;font-size:12.5px;font-weight:700;min-height:36px}
+.dec button[aria-pressed="true"][data-v="approve"]{background:var(--green);border-color:var(--green);color:#fff}
+.dec button[aria-pressed="true"][data-v="hold"]{background:var(--amber);border-color:var(--amber);color:#fff}
+.dec button[aria-pressed="true"][data-v="note"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.dec button:disabled{opacity:.5;cursor:default}
+.amts{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px}
+.amts label{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-soft)}
+.amts input{width:120px;border:1.5px solid var(--green);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px;font-weight:700;background:var(--paper);color:var(--ink)}
+.decwrap textarea{display:block;width:100%;margin-top:8px;min-height:54px;border:1.5px solid var(--accent);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;background:var(--accent-soft);color:var(--ink);resize:vertical}
+.byline{font-size:11px;color:var(--ink-faint);margin-top:6px}
+.rlab{font-size:11px;font-weight:700;color:var(--ink-faint);margin-top:1px}
+.tp-step.ok-row{border-color:var(--green)}
 .tp-total{display:flex;justify-content:space-between;border-top:2px solid var(--line);margin-top:4px;padding-top:11px;font-weight:800;font-size:13.5px}
 .tp-total .num{color:var(--accent)}
 .bk-group{margin-top:10px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -110,39 +121,39 @@ details.cat[open]>summary{background:var(--wash)}
   <div class="hero">
     <div class="eyebrow">Twin Home Buyer · Equity Track</div>
     <h1>Payments to Release — Oct 27</h1>
-    <div class="fund-label">Leaving today</div>
-    <div class="fund-amount" id="hero-amt">$28,400.00</div>
+    <div class="fund-label">Approved by Juan to leave the accounts</div>
+    <div class="fund-amount" id="hero-amt">$0.00</div>
     <div class="fund-note" id="hero-note"></div>
     <div class="stats">
-      <div class="stat"><div class="k">WF 8251 · today</div><div class="v" id="s-wf">—</div></div>
-      <div class="stat"><div class="k">Relay 5776 · today</div><div class="v" id="s-relay">—</div></div>
-      <div class="stat"><div class="k">Cards · Nov 2–17</div><div class="v" id="s-cards">—</div></div>
-      <div class="stat"><div class="k">WF 8251 · total</div><div class="v" id="s-twf">—</div></div>
-      <div class="stat"><div class="k">Relay 5776 · total</div><div class="v" id="s-trelay">—</div></div>
-      <div class="stat"><div class="k">Relay Paramount</div><div class="v" id="s-trp">—</div></div>
+      <div class="stat"><div class="k">WF 8251 · approved</div><div class="v" id="s-twf">—</div></div>
+      <div class="stat"><div class="k">Relay 5776 · approved</div><div class="v" id="s-trelay">—</div></div>
+      <div class="stat"><div class="k">Relay Paramount · approved</div><div class="v" id="s-trp">—</div></div>
+      <div class="stat"><div class="k">Approved</div><div class="v" id="s-ap">—</div></div>
+      <div class="stat"><div class="k">On hold</div><div class="v" id="s-hold">—</div></div>
+      <div class="stat"><div class="k">Waiting on Juan</div><div class="v" id="s-wait">—</div></div>
     </div>
-    <div class="approve" id="approve-area">
-      <button class="go" id="go" type="button">Approve all</button>
+    <div class="approve">
+      <button class="go" id="go" type="button">Approve the rest as Kristine recommends</button>
       <span class="status" id="status"></span>
     </div>
   </div>
 
   <div class="section">
-    <div class="sec-head"><div class="sec-title">Today · wire and contractors</div><div class="sec-tot"><b id="g-today">$28,400.00</b></div></div>
-    <div class="lead-in">Each payment is set to <b>Approve</b>. Juan unchecks any one to <b>Hold</b> it, then taps Approve at the top. Kristine or Cherry enters these with you; you only do the bank login and codes.</div>
+    <div class="sec-head"><div class="sec-title">Today · wire and contractors</div><div class="sec-tot" id="g-today"></div></div>
+    <div class="lead-in">Juan picks <b>Approve</b>, <b>Hold</b> or <b>Note</b> on each payment. It saves right away and everyone sees it. Kristine or Cherry enters the approved ones with you; you only do the bank login and codes.</div>
     <div class="tp-steps" id="list-today"></div>
   </div>
 
   <div class="section">
-    <div class="sec-head"><div class="sec-title">Credit cards · by due date</div><div class="sec-tot"><b id="g-cards">$48,793.94</b></div></div>
-    <div class="lead-in">Nothing goes out today. Each amount is what Kristine recommends paying; Juan approves or holds each card. Tap <b>All charges on this card</b>: charges are grouped as Property, Overhead and Marketing, then by category. Tap a category to see each charge.</div>
+    <div class="sec-head"><div class="sec-title">Credit cards · by due date</div><div class="sec-tot" id="g-cards"></div></div>
+    <div class="lead-in">Nothing goes out today. The amount shown is only Kristine’s recommendation. When Juan taps Approve he can keep it or type the amount he wants from each account. Tap <b>All charges on this card</b>: charges are grouped as Property, Overhead and Marketing, then by category. Tap a category to see each charge.</div>
     <div class="tp-steps" id="list-cards"></div>
   </div>
 
   <div class="section">
-    <div class="sec-head"><div class="sec-title">Total leaving each account</div><div class="sec-tot"><b id="g-all">$77,193.94</b></div></div>
+    <div class="sec-head"><div class="sec-title">Total leaving each account · approved only</div><div class="sec-tot"><b id="g-all">$0.00</b></div></div>
     <div id="bk"></div>
-    <div class="tp-total"><span>Total routed</span><span class="num" id="tt-all">$77,193.94</span></div>
+    <div class="tp-total"><span>Total approved</span><span class="num" id="tt-all">$0.00</span></div>
     <div class="tp-codes"><b>How the wire was confirmed:</b> by phone with Christina at WFG Title, on a number already on file. It is saved in Wells Fargo as "WFG Stockton" ••8979. <b>Contractors:</b> bank details were already confirmed by phone with each payee.</div>
   </div>
 
@@ -189,32 +200,100 @@ const ACCT = {wf:"WF 8251", relay:"Relay 5776", para:"Relay Paramount"};
 const money = n => (n<0?"−$":"$") + Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const el = (t,c,txt) => {const e=document.createElement(t); if(c) e.className=c; if(txt!=null) e.textContent=txt; return e;};
 const pill = a => el("span","tp-acct "+a, ACCT[a]);
+const ITEMS = TODAY.map(p=>({...p, kind:"today", src:[[p.acct,p.amt]]})).concat(CARDS.map(c=>({...c, kind:"card"})));
+const REC_TODAY = TODAY.reduce((s,i)=>s+i.amt,0), REC_CARDS = CARDS.reduce((s,i)=>s+i.amt,0);
+const COL = "decisions-2026-10-27";
 
-const held = new Set();
+// dec[id] = {d:"approve"|"hold"|"note"|"", amts:{acct:amount}, note, by, at}: one shared db doc per payment.
+// Totals count approved payments only, at the amounts Juan approved; Kristine's amounts are the starting suggestion.
+const dec = {};
 const opened = new Set();
-let approval = null;          // {status, held, by, at}
-let db = null, user = null, myId = null, names = {};
+let db = null, user = null, myId = null, names = {}, pending = false;
 
+function approvedAmts(i){
+  const x = dec[i.id];
+  if(!x || x.d!=="approve") return null;
+  const a = {};
+  i.src.forEach(([k,v])=>{ const n = x.amts && k in x.amts ? Number(x.amts[k]) : v; a[k] = isFinite(n) ? n : v; });
+  return a;
+}
 function sums(){
-  const t = {today:{wf:0,relay:0}, cards:{wf:0,relay:0,para:0}, todayAmt:0, todayN:0, cardAmt:0};
-  TODAY.forEach(p=>{ if(held.has(p.id)) return; t.today[p.acct]+=p.amt; t.todayAmt+=p.amt; t.todayN++; });
-  CARDS.forEach(c=>{ if(held.has(c.id)) return; t.cardAmt+=c.amt; c.src.forEach(([a,v])=>t.cards[a]+=v); });
+  const t = {acct:{wf:0,relay:0,para:0}, today:0, cards:0, ap:0, hold:0, wait:0};
+  ITEMS.forEach(i=>{
+    const x = dec[i.id], a = approvedAmts(i);
+    if(a){ t.ap++; Object.entries(a).forEach(([k,v])=>{ t.acct[k]+=v; t[i.kind==="today"?"today":"cards"]+=v; }); }
+    else if(x && x.d==="hold") t.hold++;
+    else t.wait++;
+  });
   return t;
 }
 
-function step(n, item, head, details, meta, extra){
-  const row = el("div","tp-step"+(held.has(item.id)?" held":""));
-  const cb = document.createElement("input");
-  cb.type="checkbox"; cb.checked=!held.has(item.id); cb.disabled=!!approval;
-  cb.setAttribute("aria-label","Include "+item.who+" "+money(item.amt));
-  cb.addEventListener("change",()=>{ cb.checked?held.delete(item.id):held.add(item.id); render(); });
+async function write(id, patch){
+  if(!db) return;
+  const body = {...(dec[id]||{}), ...patch, by:myId||null, at:new Date().toISOString()};
+  dec[id] = body; render();
+  try{ await db.collection(COL).doc(id).set(body); }
+  catch(e){ document.getElementById("status").textContent = "Couldn't save. Check the connection, or reply in chat."; }
+}
+
+function decide(i, d){
+  const x = dec[i.id]||{};
+  if(x.d===d){ write(i.id,{d:""}); return; }      // tap the same button again to undo
+  const patch = {d};
+  if(d==="approve" && !(x.amts && Object.keys(x.amts).length)) patch.amts = Object.fromEntries(i.src);
+  if(d==="note") opened.add("note|"+i.id);
+  write(i.id, patch);
+}
+
+function controls(i){
+  const x = dec[i.id]||{};
+  const wrap = el("div","decwrap");
+  const box = el("div","dec");
+  [["approve","Approve"],["hold","Hold"],["note","Note"]].forEach(([k,lab])=>{
+    const b = el("button",null,lab); b.type="button"; b.dataset.v=k;
+    b.setAttribute("aria-pressed", x.d===k ? "true":"false"); b.disabled = !db;
+    b.addEventListener("click",()=>decide(i,k)); box.append(b);
+  });
+  wrap.append(box);
+  if(x.d==="approve" && i.kind==="card"){
+    const am = el("div","amts"), cur = approvedAmts(i);
+    i.src.forEach(([k,v])=>{
+      const l = el("label"); l.append(pill(k));
+      const inp = document.createElement("input"); inp.type="number"; inp.step="0.01"; inp.min="0"; inp.inputMode="decimal";
+      inp.value = cur[k].toFixed(2); inp.disabled = !db;
+      inp.setAttribute("aria-label","Amount from "+ACCT[k]+" for "+i.who);
+      inp.addEventListener("change",()=>{ const n = Math.max(0, Math.round((Number(inp.value)||0)*100)/100); write(i.id,{amts:{...((dec[i.id]||{}).amts||{}), [k]:n}}); });
+      l.append(inp, el("span","rechint","rec. "+money(v))); am.append(l);
+    });
+    wrap.append(am);
+  }
+  if(x.d==="note" || x.note || opened.has("note|"+i.id)){
+    const ta = document.createElement("textarea"); ta.placeholder = "Juan's note: a question, or a different amount"; ta.value = x.note||""; ta.disabled = !db;
+    ta.setAttribute("aria-label","Note for "+i.who);
+    ta.addEventListener("blur",()=>{ if(((dec[i.id]||{}).note||"")!==ta.value) write(i.id,{note:ta.value}); });
+    wrap.append(ta);
+  }
+  if(x.at && (x.d || x.note)){
+    const who = (x.by && names[x.by]) || "Someone";
+    const when = new Date(x.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/Los_Angeles"});
+    const lab = {approve:"Approved",hold:"On hold",note:"Note"}[x.d] || "Updated";
+    wrap.append(el("div","byline",lab+" by "+who+" · "+when+" PT"));
+  }
+  return wrap;
+}
+
+function step(n, i, details, meta, extra){
+  const x = dec[i.id]||{};
+  const row = el("div","tp-step"+(x.d==="hold"?" held":"")+(x.d==="approve"?" ok-row":""));
   const b = el("div","tp-b");
-  const h = el("div","h"); h.append(el("span",null,head), el("span","amt2",money(item.amt)));
+  const a = approvedAmts(i), shown = a ? Object.values(a).reduce((s,v)=>s+v,0) : i.amt;
+  const h = el("div","h"); h.append(el("span",null,i.who), el("span","amt2",money(shown)));
   b.append(h);
+  if(i.kind==="card") b.append(el("div","rlab", a ? (Math.abs(shown-i.amt)>.005 ? "Juan approved "+money(shown)+" · Kristine recommended "+money(i.amt) : "Approved at Kristine's recommended amount") : "Kristine recommends "+money(i.amt)+" · Juan decides"));
   details.forEach(d=>b.append(d));
-  const m = el("div","m"); meta.forEach(x=>m.append(x)); b.append(m);
-  const apv = el("label","apv"); apv.append(cb, el("span",null,held.has(item.id)?"Hold":"Approve"));
-  row.append(el("div","tp-num",String(n)), b, apv);
+  const m = el("div","m"); meta.forEach(z=>m.append(z)); b.append(m);
+  b.append(controls(i));
+  row.append(el("div","tp-num",String(n)), b);
   if(extra) row.append(extra);
   return row;
 }
@@ -246,99 +325,72 @@ function cardBreakdown(c){
     });
   });
   const t=el("div","bk-row tot"); t.append(el("span",null,"Kristine recommends paying"), el("span","num",money(c.amt))); box.append(t);
-  box.append(el("div","bk-note",c.rec));
+  box.append(el("div","bk-note",c.rec+" This is a recommendation only; Juan decides the amount."));
   det.append(box);
   return det;
 }
 
 function renderLists(){
   const lt = document.getElementById("list-today"); lt.replaceChildren();
-  TODAY.forEach((p,i)=>{
+  ITEMS.filter(i=>i.kind==="today").forEach((p,ix)=>{
     const d = el("div","d"); d.append(p.how+" from ", el("b",null,ACCT[p.acct]), " · "+p.what);
-    lt.append(step(i+1,p,p.who,[d],[pill(p.acct), el("span","ok","✓ "+p.verify)]));
+    lt.append(step(ix+1,p,[d],[pill(p.acct), el("span","ok","✓ "+p.verify)]));
   });
   const lc = document.getElementById("list-cards"); lc.replaceChildren();
-  CARDS.forEach((c,i)=>{
-    const d1 = el("div","d"); d1.append(el("b",null,"Recommended: "), c.rec.replace(/^Kristine recommends paying /,"").replace(/^\$[\d,.]+:? ?/,m=>m));
+  ITEMS.filter(i=>i.kind==="card").forEach((c,ix)=>{
+    const d1 = el("div","d"); d1.append(el("b",null,"Recommendation: "), c.rec.replace(/^Kristine recommends paying /,""));
     const meta = [el("span","due","Due "+c.due)];
-    c.src.forEach(([a,v])=>{ const s=pill(a); s.textContent=ACCT[a]+" "+money(v); meta.push(s); });
-    lc.append(step(i+1,c,c.who,[d1],meta,cardBreakdown(c)));
+    c.src.forEach(([a,v])=>{ const s=pill(a); s.textContent=ACCT[a]+" rec. "+money(v); meta.push(s); });
+    lc.append(step(ix+1,c,[d1],meta,cardBreakdown(c)));
   });
 }
 
 function renderBreakdown(){
   const bk = document.getElementById("bk"); bk.replaceChildren();
   ["wf","relay","para"].forEach(a=>{
-    const today = TODAY.filter(p=>p.acct===a && !held.has(p.id));
-    const cards = CARDS.filter(c=>!held.has(c.id)).flatMap(c=>c.src.filter(([x])=>x===a).map(([,v])=>({c,v})));
-    const tot = today.reduce((s,p)=>s+p.amt,0) + cards.reduce((s,x)=>s+x.v,0);
+    const rows = ITEMS.map(i=>({i, v:(approvedAmts(i)||{})[a]})).filter(r=>r.v!=null);
+    const tot = rows.reduce((s,r)=>s+r.v,0);
     const g = el("div","bk-group");
     const head = el("div","bk-head"); head.append(el("span",null,""), el("span",null,money(tot))); head.firstChild.append(pill(a));
     g.append(head);
     const row=(name,sub,v)=>{ const r=el("div","bk-row"); const s=el("span"); s.append(el("b",null,name)); if(sub) s.append(" · "+sub); r.append(s, el("span","num",money(v))); return r; };
-    if(today.length){ g.append(el("div","bk-sub","Today · "+money(today.reduce((s,p)=>s+p.amt,0)))); today.forEach(p=>g.append(row(p.who.replace(/ \(.*\)$/,""), p.what.split(" · ")[0], p.amt))); }
-    if(cards.length){ g.append(el("div","bk-sub","Cards · "+money(cards.reduce((s,x)=>s+x.v,0)))); cards.forEach(x=>g.append(row(x.c.who, "due "+x.c.due, x.v))); }
+    const td = rows.filter(r=>r.i.kind==="today"), cd = rows.filter(r=>r.i.kind==="card");
+    if(td.length){ g.append(el("div","bk-sub","Today · "+money(td.reduce((s,r)=>s+r.v,0)))); td.forEach(r=>g.append(row(r.i.who.replace(/ \(.*\)$/,""), r.i.what.split(" · ")[0], r.v))); }
+    if(cd.length){ g.append(el("div","bk-sub","Cards · "+money(cd.reduce((s,r)=>s+r.v,0)))); cd.forEach(r=>g.append(row(r.i.who, "due "+r.i.due, r.v))); }
+    if(!rows.length) g.append(el("div","bk-row","Nothing approved from this account yet."));
     bk.append(g);
   });
 }
 
 function render(){
-  const t = sums();
-  const wfT = t.today.wf+t.cards.wf, relT = t.today.relay+t.cards.relay, all = wfT+relT+t.cards.para;
-  document.getElementById("hero-amt").textContent = money(t.todayAmt);
-  const note = document.getElementById("hero-note");
-  note.replaceChildren(`${t.todayN} payment${t.todayN===1?"":"s"} today, all confirmed by phone. `, el("b",null,"Cards ("+money(t.cardAmt)+")"), " are due Nov 2–17. Checked by Cherry.");
-  document.getElementById("s-wf").textContent = money(t.today.wf);
-  document.getElementById("s-relay").textContent = money(t.today.relay);
-  document.getElementById("s-cards").textContent = money(t.cardAmt);
-  document.getElementById("s-twf").textContent = money(wfT);
-  document.getElementById("s-trelay").textContent = money(relT);
-  document.getElementById("s-trp").textContent = money(t.cards.para);
-  document.getElementById("g-today").textContent = money(t.todayAmt);
-  document.getElementById("g-cards").textContent = money(t.cardAmt);
+  // Don't rebuild the lists under a note or amount someone is typing; catch up when they leave the field.
+  const ae = document.activeElement;
+  if(ae && (ae.tagName==="TEXTAREA" || ae.tagName==="INPUT") && ae.closest(".tp-steps")){ pending = true; return; }
+  pending = false;
+  const t = sums(), all = t.acct.wf+t.acct.relay+t.acct.para;
+  document.getElementById("hero-amt").textContent = money(all);
+  document.getElementById("hero-note").replaceChildren("Counts only what Juan approves. ", el("b",null,"Kristine recommends "+money(REC_TODAY+REC_CARDS)), " (today "+money(REC_TODAY)+" + cards "+money(REC_CARDS)+"). That is a recommendation, not a decision. Checked by Cherry.");
+  document.getElementById("s-twf").textContent = money(t.acct.wf);
+  document.getElementById("s-trelay").textContent = money(t.acct.relay);
+  document.getElementById("s-trp").textContent = money(t.acct.para);
+  document.getElementById("s-ap").textContent = t.ap+" of "+ITEMS.length;
+  document.getElementById("s-hold").textContent = String(t.hold);
+  document.getElementById("s-wait").textContent = String(t.wait);
+  document.getElementById("g-today").replaceChildren("Approved ", el("b",null,money(t.today)), " · rec. "+money(REC_TODAY));
+  document.getElementById("g-cards").replaceChildren("Approved ", el("b",null,money(t.cards)), " · rec. "+money(REC_CARDS));
   document.getElementById("g-all").textContent = money(all);
   document.getElementById("tt-all").textContent = money(all);
-
-  const area = document.getElementById("approve-area"); const go = document.getElementById("go"); const status = document.getElementById("status");
-  area.querySelector(".stamp")?.remove(); area.querySelector(".link")?.remove();
-  if(approval){
-    go.hidden = true;
-    const s = el("span","stamp");
-    const who = (approval.by && names[approval.by]) || "Someone";
-    const when = approval.at ? new Date(approval.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/Los_Angeles"})+" PT" : "";
-    s.textContent = `✓ Approved by ${who}${when?" · "+when:""}`;
-    area.insertBefore(s, status);
-    const nh = (approval.held||[]).length;
-    status.textContent = nh ? `${nh} held` : "All payments approved";
-    if(user && approval.by===myId){
-      const u = el("button","link","Undo approval"); u.type="button";
-      u.addEventListener("click",()=>save(null)); area.appendChild(u);
-    }
-  } else {
-    go.hidden = false;
-    const n = t.todayN + CARDS.filter(c=>!held.has(c.id)).length;
-    go.textContent = held.size ? `Approve ${n} payments` : "Approve all";
-    go.disabled = !db || n===0;
-    status.textContent = !db ? "Open signed in to approve here, or reply \"Approved\" in chat." : (held.size ? `${held.size} held` : "");
-  }
+  const go = document.getElementById("go");
+  go.disabled = !db; go.hidden = t.wait===0;
+  document.getElementById("status").textContent = !db ? "Open this page signed in to Claude to decide. Nothing is approved until Juan taps Approve." : (t.wait ? t.wait+" still waiting on Juan" : "Every payment has a decision.");
   renderLists();
   renderBreakdown();
 }
+document.addEventListener("focusout",()=>{ setTimeout(()=>{ if(pending) render(); },0); });
 
-async function save(state){
+document.getElementById("go").addEventListener("click", async ()=>{
   if(!db) return;
-  const go = document.getElementById("go"); go.disabled = true;
-  try{
-    await db.doc("approvals/2026-10-27").set(state ? state : {status:"open", held:[], by:null, at:null});
-  }catch(e){
-    document.getElementById("status").textContent = "Couldn't save the approval. Reply \"Approved\" in chat instead.";
-    go.disabled = false;
-  }
-}
-
-document.getElementById("go").addEventListener("click",()=>{
-  if(!db) return;
-  save({status:"approved", held:[...held], by:myId, at:new Date().toISOString()});
+  for(const i of ITEMS){ const x = dec[i.id]; if(!x || !x.d) await write(i.id,{d:"approve", amts:Object.fromEntries(i.src)}); }
 });
 
 render();
@@ -352,16 +404,12 @@ render();
   db = d;
   render();
   if(!db) return;
-  db.doc("approvals/2026-10-27").onSnapshot(async snap=>{
-    const data = snap.exists ? snap.data() : null;
-    if(data && data.status==="approved"){
-      approval = data;
-      held.clear(); (data.held||[]).forEach(h=>held.add(h));
-      if(user && data.by){ try{ const ps = await user.profiles([data.by]); names[data.by] = (ps[data.by] && ps[data.by].name) || ""; }catch(e){} }
-    } else {
-      approval = null;
-    }
+  db.collection(COL).onSnapshot(async snap=>{
+    Object.keys(dec).forEach(k=>delete dec[k]);
+    snap.docs.forEach(doc=>{ if(doc.exists) dec[doc.id] = {...doc.data()}; });
+    const ids = [...new Set(Object.values(dec).map(x=>x.by).filter(Boolean))].filter(id=>!(id in names));
+    if(user && ids.length){ try{ const ps = await user.profiles(ids); ids.forEach(id=>names[id]=(ps[id]&&ps[id].name)||""); }catch(e){} }
     render();
-  }, ()=>{});
+  }, ()=>{ document.getElementById("status").textContent = "Lost the connection to saved decisions. Reload the page."; });
 })();
 </script>
