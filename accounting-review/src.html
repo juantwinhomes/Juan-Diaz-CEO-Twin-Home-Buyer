@@ -649,7 +649,7 @@ function Cards(){
         const todo=x.c.charge?'No preset limit: pay at least the amount due by each due date.':bal===null?'Get the current balance and credit limit first.':lim===null?'Credit limit needed to size the paydown; pay at least the minimum on time.':t30>0?'Pay '+money(t30,{cents:true})+' before the statement closes to get under 30%.':'Already under 30%; keep it under 10% if possible.';
         return html`<tr key=${x.c.id}><td class="num">${n+1}</td><td><b>${x.c.name}</b> <span class="num muted">••${x.c.last4}</span></td><td class="r num">${bal===null?html`<${PV}/>`:money(bal,{cents:true})}</td><td class="r num">${x.c.charge?'N/A':t30===null?'—':money(t30,{cents:true})}</td><td class="r num">${x.c.charge?'N/A':t10===null?'—':money(t10,{cents:true})}</td><td style=${{minWidth:'240px'}}>${todo}</td></tr>`})}
       </tbody></table></div>
-      <div class="muted" style=${{fontSize:'.78rem',marginTop:'6px'}}>Home Depot ••1511 and ••8087 have no balance, so they're left out. Discover is added once its balance comes in.</div>
+      <div class="muted" style=${{fontSize:'.78rem',marginTop:'6px'}}>Home Depot ••1511 and ••8087 have no balance, so they're left out.</div>
     </div>
     <section><h3 class="grp">Decisions needed from Juan</h3>
       ${decs.length?html`<div class="tablewrap"><table><thead><tr><th>Card</th><th class="r">Amount</th><th>Issue</th><th>My recommendation</th><th>Decision</th></tr></thead><tbody>

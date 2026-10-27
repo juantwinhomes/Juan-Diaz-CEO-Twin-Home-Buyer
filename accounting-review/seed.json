@@ -140,22 +140,22 @@
   {
    "id": "c-discover",
    "name": "Discover it",
-   "last4": "2006",
+   "last4": "2645",
    "kind": "Personal",
-   "balance": null,
+   "balance": 542.61,
    "limit": 20000,
    "charge": false,
    "closeDate": "2026-11-24",
-   "dueDate": "2026-10-22",
-   "minDue": 35,
+   "dueDate": "",
+   "minDue": null,
    "autopay": "On",
    "late": "No",
    "pastDue": "No",
-   "paid": "Paid",
+   "paid": "Not paid",
    "verified": "2026-10-27",
-   "source": "THB Card Desk (paid Oct 19)",
-   "sourceUrl": "https://claude.ai/artifact/987gv2Gy7howGRiAwvSD2T",
-   "notes": "Paid in full ($177.29) Oct 19 for the Oct 22 due date. The site showed $335.27 on Oct 13, so the current balance needs checking. Limit $20,000; balance to be added Oct 28. Autopay on (Kristine, Oct 27).",
+   "source": "Unpaid card charges · approval (Kristine, Oct 27)",
+   "sourceUrl": "https://claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ",
+   "notes": "Unpaid charges $542.61 (5 lines, Sep 28 – Oct 27), listed as Discover 2645 on the card charges page. Limit $20,000. Statement closes the 24th. Autopay on.",
    "closeDay": "24th"
   },
   {
@@ -327,10 +327,10 @@
   "source": "https://claude.ai/artifact/1eQ4pY7477YdeM12LfvBa9",
   "becSteps": [
    {
-    "t": "Ask BEC who prepares our returns; send that person the draft Form 1120 and CA Form 100 with all backup, copy Tony",
+    "t": "Send BEC the draft Form 1120 and CA Form 100 with all backup (Marin, Cristy, Kaden; Tony copied), marked not final",
     "who": "Kristine",
     "by": "Oct 27, morning",
-    "done": false
+    "done": true
    },
    {
     "t": "Get BEC's price, filing date, and any penalties or California minimum tax to expect (past the Oct 15 deadline)",
@@ -745,13 +745,13 @@
    "required": "Approve BEC's price.",
    "owner": "Kristine · BEC",
    "target": "",
-   "next": "Kristine sends BEC the drafts this morning and gets the price and filing date.",
+   "next": "BEC replies with its fee and filing date.",
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
    "holdReason": "",
    "recAction": "Approve",
-   "short": "Approve BEC's price to file. PPS owes $0.",
+   "short": "Approve BEC's fee to file. Drafts sent to BEC today; PPS owes $0.",
    "when": ""
   },
   {
@@ -835,6 +835,48 @@
    "holdReason": "",
    "short": "Pay 15% of the IRS checks Matrix received. The other $4,174.25 waits for their statement.",
    "when": "By Nov 3"
+  },
+  {
+   "id": "d-biberk",
+   "section": "other",
+   "title": "biBERK workers' comp — Equity Track",
+   "amountSource": "",
+   "amount": 526.0,
+   "amountNote": "",
+   "situation": "Renewal for Nov 6, 2026 – Nov 6, 2027 is due Nov 5; the policy cancels if unpaid. It was taken out when Equity Track hired an office employee in Nov 2025. Equity Track has no employees now.",
+   "recAction": "Hold",
+   "rec": "Don't renew; let it cancel, since Equity Track has no employees. Renew only if you plan to hire under Equity Track.",
+   "short": "Don't renew; Equity Track has no employees.",
+   "when": "By Nov 5",
+   "required": "Renew or let it cancel.",
+   "owner": "Kristine",
+   "target": "2026-11-05",
+   "next": "Kristine tells biBERK not to renew.",
+   "status": "Pending",
+   "decidedOn": "",
+   "notes": "",
+   "holdReason": ""
+  },
+  {
+   "id": "d-agile",
+   "section": "other",
+   "title": "PPS liability insurance (Agile Premium Finance)",
+   "amountSource": "",
+   "amount": 1114.74,
+   "amountNote": "",
+   "situation": "General liability and $2M excess liability for PPS. $1,065.43 plus a $49.31 late charge was due Sept 30 (past due). Agile was told we would confirm by Oct 31.",
+   "recAction": "Pay",
+   "rec": "Pay the $1,114.74 past due to clear it, then decide whether to keep the policies while PPS is on hold.",
+   "short": "Pay the past-due $1,114.74; then keep or cancel while PPS is on hold.",
+   "when": "By Oct 31",
+   "required": "Pay past due; keep or cancel.",
+   "owner": "Kristine",
+   "target": "2026-10-31",
+   "next": "Kristine pays Agile and confirms keep/cancel by Oct 31.",
+   "status": "Pending",
+   "decidedOn": "",
+   "notes": "",
+   "holdReason": ""
   }
  ],
  "info": [
@@ -866,8 +908,8 @@
   "tax": {
    "topic": "PPS taxes",
    "status": "warn",
-   "headline": "PPS owes $0 for 2025. BEC files the returns.",
-   "now": "Both returns are drafted. Kristine sends them to BEC this morning. PPS is on hold, not closed, so these are not final returns.",
+   "headline": "PPS owes $0 for 2025. Drafts are with BEC.",
+   "now": "Kristine sent both draft returns to BEC this morning (not final; PPS is on hold). Waiting on BEC's fee and filing date.",
    "you": "Approve BEC's price to file.",
    "youShort": "Approve BEC's price",
    "next": "BEC files once you approve."
@@ -884,8 +926,8 @@
   "cards": {
    "topic": "Credit cards",
    "status": "warn",
-   "headline": "About $219,000 on the cards. All 9 are on autopay.",
-   "now": "Amex $110,921.96, payment due Nov 6. BoA is at 87% of its limit. Juan's personal cards: Venture X 47%, Citi 51%.",
+   "headline": "About $220,000 on the cards. All 9 are on autopay.",
+   "now": "Amex $110,921.96, payment due Nov 6. BoA is at 87% of its limit. Juan's personal cards: Venture X 47%, Citi 51%, Discover 3%.",
    "you": "Approve paying Amex, Capital One Spark ($10,005.88 in full), Home Depot ••5253 and BoA on time, and paying Venture X and Citi under 30% by Nov 8.",
    "youShort": "Approve 6 card payments",
    "next": "Kristine schedules the approved payments."
@@ -1140,7 +1182,7 @@
    "owner": "Kristine",
    "due": "2026-10-27",
    "dueNote": "by 10 AM",
-   "status": "DATE",
+   "status": "DONE",
    "note": "Not final returns. PPS is on hold."
   },
   {
@@ -1149,8 +1191,8 @@
    "asked": "2026-10-26",
    "owner": "Kristine",
    "due": "2026-10-27",
-   "status": "DATE",
-   "note": ""
+   "status": "DONE",
+   "note": "Preparers: Marin, Cristy, Kaden (BEC)"
   },
   {
    "id": "o4",
@@ -1216,6 +1258,25 @@
    "due": "",
    "status": "DATE",
    "note": "Confirm with the store's Pro Desk"
+  },
+  {
+   "id": "o15",
+   "ask": "Scans 1–4: reply with two lists only, HANDLED and OUTSTANDING (vendor, amount, due, next step, owner, done-by date)",
+   "asked": "2026-10-27",
+   "owner": "Kristine",
+   "due": "2026-10-27",
+   "dueNote": "deadline first",
+   "status": "DATE",
+   "note": ""
+  },
+  {
+   "id": "o16",
+   "ask": "Lock every approved payroll period (incl. Oct 12–18, $22,253.03); no edits after approval",
+   "asked": "2026-10-27",
+   "owner": "Kristine",
+   "due": "",
+   "status": "DATE",
+   "note": "Fixes go in the next payroll as a dated adjustment, with Juan’s approval"
   }
  ],
  "decisionOrder": [
@@ -1227,6 +1288,8 @@
   "dc-venture",
   "dc-citi",
   "d-erc",
+  "d-agile",
+  "d-biberk",
   "d-tax",
   "d-collect",
   "d-vacancy",
