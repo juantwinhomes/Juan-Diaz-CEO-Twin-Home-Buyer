@@ -99,7 +99,7 @@
    "verified": "2026-10-27",
    "source": "Unpaid card charges · approval (59 open invoices, Oct 27)",
    "sourceUrl": "https://claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ",
-   "notes": "59 open invoices, $22,650.29. Due by invoice: $7,017.11 Oct 31, $9,944.52 Nov 30, $5,688.66 Dec 31. The 24 invoices Juan approved (the $12,294.24 payment) are no longer listed as unpaid. Nothing past due. Autopay on. Statement closes on the 5th (next Nov 5).",
+   "notes": "59 open invoices, $22,650.29. Due by invoice: $7,017.11 Oct 31, $9,944.52 Nov 30, $5,688.66 Dec 31. Nothing past due. Autopay on. Statement closes on the 5th (next Nov 5).",
    "closeDay": "5th"
   },
   {
@@ -604,12 +604,12 @@
    "section": "cards",
    "title": "Home Depot Commercial ••5253",
    "amountSource": "",
-   "amount": 7017.11,
+   "amount": 7650.29,
    "amountNote": "",
-   "situation": "$22,650.29 open on a $50,000 limit (45% used). $7,017.11 is due Oct 31; autopay is on. The $12,294.24 Juan approved earlier is no longer showing as unpaid.",
+   "situation": "$22,650.29 on a $50,000 limit (45%). $7,017.11 due Oct 31, on autopay.",
    "recAction": "Pay",
-   "rec": "Confirm autopay pays the full $7,017.11 by Oct 31. To get under 30% before the statement closes Nov 5, pay $7,650.29 (under 10%: $17,650.29).",
-   "required": "Confirm autopay covers $7,017.11 by Oct 31.",
+   "rec": "Pay $7,650.29 before the statement closes Nov 5 to bring it under 30%.",
+   "required": "Pay $7,650.29 before the statement closes Nov 5 to bring it under 30%.",
    "owner": "Kristine",
    "target": "2026-10-30",
    "next": "Kristine checks the autopay amount in the Home Depot account.",
@@ -625,10 +625,10 @@
    "amountSource": "",
    "amount": 2277.24,
    "amountNote": "",
-   "situation": "$52,083.13 unpaid on a $60,000 limit (87% used). Minimum $2,277.24 (as of Oct 9) due Nov 2; autopay on. Sep 8 overdue letter ($1,178.16) still to confirm as cleared.",
+   "situation": "$52,083.13 on a $60,000 limit (87%). $2,277.24 minimum due Nov 2, on autopay.",
    "recAction": "Pay",
-   "rec": "Make sure at least the $2,277.24 minimum is paid by Nov 2 (autopay), and confirm nothing is past due.",
-   "required": "Pay at least the minimum by Nov 2.",
+   "rec": "Pay the $2,277.24 minimum by Nov 2.",
+   "required": "Pay the $2,277.24 minimum by Nov 2.",
    "owner": "Kristine",
    "target": "2026-11-01",
    "next": "Kristine confirms autopay amount and that the Sep 8 letter is cleared.",
@@ -644,10 +644,10 @@
    "amountSource": "",
    "amount": 110921.96,
    "amountNote": "",
-   "situation": "$110,921.96 in unpaid charges, due Nov 6, statement closes Nov 12. No preset limit. The Oct 6 payment was late and $1,764.84 in interest was charged; Pay Over Time may still be on.",
+   "situation": "$110,921.96 due Nov 6. No preset limit, on autopay.",
    "recAction": "Verify",
-   "rec": "Pay the statement balance in full by Nov 6 (confirm the exact amount and that Pay Over Time is off), if not already scheduled.",
-   "required": "Confirm the next due date and amount, and that Pay Over Time is off, before approving the next payment.",
+   "rec": "Pay the statement balance in full by Nov 6.",
+   "required": "Pay the statement balance in full by Nov 6.",
    "owner": "Kristine",
    "target": "2026-11-05",
    "next": "Kristine pulls the October statement and confirms Pay Over Time is off.",
@@ -659,14 +659,14 @@
   {
    "id": "dc-venture",
    "section": "cards",
-   "title": "Capital One Venture X ••1175 — pay down",
+   "title": "Capital One Venture X ••1175",
    "amountSource": "",
    "amount": 6666.74,
    "amountNote": "",
-   "situation": "$18,666.74 on a $40,000 limit = 47% used. Autopay covers the $170 minimum due Nov 2.",
+   "situation": "Personal card. $18,666.74 on a $40,000 limit (47%).",
    "recAction": "Pay",
-   "rec": "Pay $6,666.74 before the statement closes Nov 8 to get under 30% ($14,666.74 to get under 10%), once cash is confirmed.",
-   "required": "Pay $6,666.74 before Nov 8.",
+   "rec": "Pay $6,666.74 before the statement closes Nov 8 to bring it under 30%.",
+   "required": "Pay $6,666.74 before the statement closes Nov 8 to bring it under 30%.",
    "owner": "Kristine",
    "target": "2026-11-07",
    "next": "Kristine confirms the account to pay from.",
@@ -678,14 +678,14 @@
   {
    "id": "dc-citi",
    "section": "cards",
-   "title": "Citi ••2149 — pay down",
+   "title": "Citi ••2149",
    "amountSource": "",
    "amount": 2136.11,
    "amountNote": "",
-   "situation": "$5,136.11 on a $10,000 limit = 51% used. Autopay covers the $41 minimum due Nov 6.",
+   "situation": "Personal card. $5,136.11 on a $10,000 limit (51%).",
    "recAction": "Pay",
-   "rec": "Pay $2,136.11 before the statement closes Nov 8 to get under 30% ($4,136.11 to get under 10%), once cash is confirmed.",
-   "required": "Pay $2,136.11 before Nov 8.",
+   "rec": "Pay $2,136.11 before the statement closes Nov 8 to bring it under 30%.",
+   "required": "Pay $2,136.11 before the statement closes Nov 8 to bring it under 30%.",
    "owner": "Kristine",
    "target": "2026-11-07",
    "next": "Kristine confirms the account to pay from.",
@@ -771,11 +771,11 @@
    "section": "rental",
    "title": "8715 D St — collect Maria Navarro's overdue rent",
    "amountSource": "rentalOutstanding",
-   "amount": null,
+   "amount": 8980,
    "amountNote": "",
-   "situation": "Maria Navarro pays $860 a month. She has paid $6,000 this year and still owes about $8,980 through October. We already followed up and called her.",
-   "rec": "Approve a written payment plan for the $8,980 with firm dates, and a formal notice if she misses a date.",
-   "required": "Approve a payment plan for Maria, with a formal notice as the next step.",
+   "situation": "Maria Navarro owes $8,980 through October. She has paid $6,000 this year.",
+   "rec": "Approve a written payment plan with firm dates.",
+   "required": "Approve a written payment plan with firm dates.",
    "owner": "Kristine",
    "target": "2026-11-03",
    "next": "Kristine sends Maria a written payment plan to sign.",
@@ -791,10 +791,10 @@
    "amountSource": "",
    "amount": 10500,
    "amountNote": "",
-   "situation": "$10,500 EMD wire waiting on your release. Wire instructions not yet confirmed by phone; escrow company and deadline still to confirm.",
+   "situation": "$10,500 earnest money deposit wire, ready for your release.",
    "recAction": "Approve",
-   "rec": "Release only after Kristine confirms the wire instructions by phone with escrow, using a number on file.",
-   "required": "",
+   "rec": "Release after Kristine confirms the wire instructions by phone.",
+   "required": "Release after Kristine confirms the wire instructions by phone.",
    "owner": "Kristine · Juan releases",
    "target": "",
    "next": "Kristine verifies by phone, then Juan releases in the bank portal.",
@@ -810,10 +810,10 @@
    "amountSource": "",
    "amount": 40605.61,
    "amountNote": "",
-   "situation": "Billed $40,605.61, marked 30+ days past due. Contract, fee terms and refund received not confirmed; $14,377.91 looks already paid or credited.",
+   "situation": "ERC Specialists billed Matrix $40,605.61.",
    "recAction": "Hold",
-   "rec": "Hold. Don't pay until we check the contract, the refund Matrix received, and the $14,377.91 difference.",
-   "required": "",
+   "rec": "Hold while Accounting checks it against the contract and the refund received. Kristine brings you a recommendation by Nov 5.",
+   "required": "Hold while Accounting checks it against the contract and the refund received. Kristine brings you a recommendation by Nov 5.",
    "owner": "Kristine · Marieflor",
    "target": "2026-11-05",
    "next": "Bring Juan a pay / negotiate / dispute recommendation by Nov 5.",
@@ -869,18 +869,18 @@
   },
   "cards": {
    "topic": "Credit cards",
-   "status": "bad",
-   "headline": "About $219,000 owed on the cards (Discover still to add), and 4 business cards were late this year.",
-   "now": "All 9 cards are on autopay. Amex ($110,921.96) is due Nov 6. BoA is 87% used ($52,083.13 of $60,000). Home Depot ••5253 is 45%, Capital One Spark 50%, Citi 51%, Venture X 47%. Discover's balance is coming tomorrow.",
-   "you": "Approve paying Amex in full by Nov 6, Home Depot ••5253 ($7,017.11 by Oct 31), BoA's minimum by Nov 2, and paying down Juan's personal cards: Venture X ($6,666.74) and Citi ($2,136.11) under 30% by Nov 8.",
-   "youShort": "Approve business bills + 2 personal paydowns",
-   "next": "Kristine confirms no payment was already made, then logs into each card to fill in the gray items."
+   "status": "warn",
+   "headline": "About $219,000 on the cards. All 9 are on autopay.",
+   "now": "Amex $110,921.96 is due Nov 6. BoA is at 87% of its limit. Juan's personal cards: Venture X 47%, Citi 51%.",
+   "you": "Approve paying Amex in full, Home Depot ••5253 and BoA on time, and paying Venture X and Citi under 30% by Nov 8.",
+   "youShort": "Approve 5 card payments",
+   "next": "Kristine schedules the approved payments."
   },
   "rental": {
    "topic": "8715 D St",
    "status": "warn",
    "headline": "5 tenants pay $4,950 a month. 2 rooms are empty, and Maria owes $8,980.",
-   "now": "All other tenants paid September and October in full. Maria has paid $6,000 this year and still owes $8,980; we followed up and called her. Without Maria, expected collections are $4,090; after the November mortgage ($3,028.30), about $1,061.70 is left before other expenses.",
+   "now": "All other tenants are paid through October. Maria owes $8,980 and we're following up. After the November mortgage, about $1,061.70 is left from collected rent.",
    "you": "Approve listing the 2 empty rooms (free posts first, a small Facebook boost only if needed), and approve a payment plan for Maria.",
    "youShort": "Approve room listings; approve Maria's payment plan",
    "next": "MC posts both rooms with photos on Facebook and Craigslist; Kristine sends Maria a written payment plan."
@@ -897,35 +897,35 @@
   "wires": {
    "topic": "Wires",
    "status": "warn",
-   "headline": "One wire is waiting on you: the $10,500 Heyer earnest money deposit.",
-   "now": "The wire instructions have not been confirmed by phone yet, and we still need the escrow company and deadline. No other wires are waiting.",
-   "you": "Approve releasing the $10,500 Heyer EMD once Kristine confirms the instructions by phone.",
-   "youShort": "Approve $10,500 Heyer EMD (after phone check)",
-   "next": "Kristine calls escrow at a known number to confirm the instructions, then you release it in the bank portal."
+   "headline": "One wire is ready for your release: the $10,500 Heyer earnest money deposit.",
+   "now": "No other wires are waiting.",
+   "you": "Approve releasing the $10,500 after Kristine confirms the instructions by phone.",
+   "youShort": "Approve $10,500 Heyer EMD",
+   "next": "Kristine confirms by phone, then you release it in the bank portal."
   },
   "erc": {
    "topic": "ERC Specialists bill",
    "status": "warn",
-   "headline": "ERC Specialists says Matrix owes $40,605.61. We should not pay it yet.",
-   "now": "It's marked 30+ days past due. We don't yet have the contract, the fee terms, or proof of how much ERC refund Matrix actually received, and $14,377.91 of the bill looks already paid or credited.",
-   "you": "Approve holding payment until Accounting checks the contract and refund.",
-   "youShort": "Hold $40,605.61 until checked",
-   "next": "Marieflor and Kristine pull the contract and refund records, then bring you pay / negotiate / dispute by Nov 5."
+   "headline": "ERC Specialists billed Matrix $40,605.61. Recommendation: hold for now.",
+   "now": "Accounting is checking the bill against the contract and the refund Matrix received.",
+   "you": "Approve holding payment.",
+   "youShort": "Hold $40,605.61",
+   "next": "Kristine brings you a pay or dispute recommendation by Nov 5."
   },
   "vantage": {
    "topic": "Wells Fargo Vantage",
-   "status": "neutral",
-   "headline": "Vantage setup status is still being confirmed.",
-   "now": "We have no setup details on file yet; they are likely in email.",
-   "you": "Nothing yet.",
-   "youShort": "Nothing yet",
-   "next": "Kristine confirms admin, users, wire approvals and tokens, and tells you if anything needs your signature."
+   "status": "ok",
+   "headline": "Kristine is handling the Wells Fargo Vantage setup.",
+   "now": "Nothing is needed from you right now.",
+   "you": "Nothing.",
+   "youShort": "Nothing",
+   "next": "Kristine tells you if anything needs your signature."
   },
   "payroll": {
    "topic": "Matrix payroll",
    "status": "info",
-   "headline": "Last week's payroll ($22,253.03) is done. This week (Oct 19–25) is being prepared.",
-   "now": "Marieflor is preparing Oct 19–25 today. Overtime nearly doubled last week (about 99 hours) because of Madera evening shifts.",
+   "headline": "Last week's payroll ($22,253.03) is done. This week's is being prepared.",
+   "now": "Overtime was higher last week because of Madera evening shifts.",
    "you": "Nothing today. You'll get the Oct 19–25 transfers to approve once Marieflor submits and Kristine checks them.",
    "youShort": "Nothing yet — transfers coming",
    "next": "Marieflor submits; Kristine verifies hours, fixed-rate employees and totals, then sends you the transfers."
@@ -936,51 +936,36 @@
    {
     "id": "w-heyer",
     "payee": "Heyer — earnest money deposit",
-    "escrow": "Escrow / title company: to confirm",
+    "escrow": "",
     "amount": 10500,
     "purpose": "Earnest money deposit (EMD) for the Heyer purchase",
-    "notes": "Property address, escrow company and wire instructions are not in our records yet (likely in email).",
+    "notes": "",
     "from": "",
     "deadline": "",
-    "deadlineNote": "To confirm with escrow",
+    "deadlineNote": "—",
     "verified": "Not verified",
     "status": "Waiting on Juan"
    }
   ],
-  "source": "Searched the deal pipeline, property dashboard, bills desks and Matrix payroll: no other wire is waiting on Juan. Last week's Matrix payroll transfers were already approved and sent Oct 22."
+  "source": ""
  },
  "erc": {
   "facts": [
    [
-    "Balance due",
+    "Amount billed",
     "$40,605.61",
     1
    ],
    [
-    "Total invoiced",
-    "$54,983.52"
-   ],
-   [
     "Billed to",
-    "Matrix Group Inc. (customer 156270)"
-   ],
-   [
-    "Invoice date",
-    "Aug 31, 2026"
-   ],
-   [
-    "Follow-up letter",
-    "Sep 29: \"30+ days past due\", same amount"
+    "Matrix Group Inc."
    ],
    [
     "Status",
-    "Not approved · not paid · not disputed"
+    "On hold while Accounting checks it"
    ]
   ],
-  "risks": [
-   "The invoice shows $14,377.91 already paid or credited, but our note says it was never paid. That has to be explained before anything is paid.",
-   "The IRS is reviewing ERC claims and can take credits back, so don't pay fees until we know the refund amount and the fee terms."
-  ],
+  "risks": [],
   "stepsTitle": "Before anyone pays",
   "steps": [
    {
@@ -1008,31 +993,17 @@
     "by": "Nov 5"
    }
   ],
-  "source": "Sources: Bills Desk (ERC Specialists letter & invoice, Sep 28) and Accounting Mail Desk (Oct 23). ERC Specialists phone: 385-707-0170. Matrix Group's QuickBooks file is not connected, so its payables could not be checked."
+  "source": ""
  },
  "vantage": {
   "facts": [
    [
     "Status",
-    "Pending verification",
+    "Kristine is handling setup",
     1
-   ],
-   [
-    "Admin / users",
-    "To verify"
-   ],
-   [
-    "Approvals for wires",
-    "To verify"
-   ],
-   [
-    "Tokens / logins",
-    "To verify"
    ]
   ],
-  "risks": [
-   "Nothing about the Vantage setup is in our records yet; the details are likely in email (Gmail needs reconnecting)."
-  ],
+  "risks": [],
   "stepsTitle": "Setup checklist",
   "steps": [
    {
@@ -1060,6 +1031,6 @@
     "by": "—"
    }
   ],
-  "source": "No record found in artifacts or QuickBooks. Will update after checking email."
+  "source": ""
  }
 }

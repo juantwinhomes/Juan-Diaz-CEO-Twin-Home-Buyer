@@ -361,10 +361,10 @@ function decisionAmount(d,K,S){S=S||K.S;
 function risks(S,K){
   const r=[];
   S.cards.forEach((c,i)=>{const nm=(c.name||'Card '+(i+1))+(c.last4?' ••'+c.last4:'');const f=cardFlag(c);
-    if(f.flag==='red')r.push({lvl:'bad',text:nm+': '+f.reasons.join(', ').toLowerCase(),sec:'cards'});
-    else if(f.flag==='yellow')r.push({lvl:'warn',text:nm+': '+f.reasons.join(', ').toLowerCase(),sec:'cards'});
+    const now=f.reasons.filter(x=>!/^Late or missed/.test(x));
+    if(now.length)r.push({lvl:f.reasons.some(x=>/Past due|Over credit/.test(x))?'bad':'warn',text:nm+': '+now.join(', ').toLowerCase(),sec:'cards'});
   });
-  {const g=S.cards.filter(c=>cardFlag(c).flag==='gray').length;if(g)r.push({lvl:'warn',text:g+' credit card'+(g>1?'s':'')+' not fully verified yet',sec:'cards'});}
+  
   if(K.outstanding>0)r.push({lvl:'warn',text:'8715 D St has '+money(K.outstanding)+' in unpaid rent',sec:'rental'});
   if(K.vacant>0)r.push({lvl:'warn',text:'8715 D St has '+K.vacant+' vacant room'+(K.vacant>1?'s':'')+' earning no rent',sec:'rental'});
   if(K.shortfall>0)r.push({lvl:'warn',text:'8715 D St is short '+money(K.shortfall)+' this month after mortgage and expenses',sec:'rental'});
@@ -511,13 +511,12 @@ function CardSnapshot(){
   const {S,go}=useContext(Ctx);if(!S.cards||!S.cards.length)return null;
   const rows=S.cards.map(c=>({c,f:cardFlag(c)}));
   return html`<section><div style=${{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:'8px',flexWrap:'wrap'}}><h3 class="grp">Credit cards</h3><button class="linkbtn" onClick=${()=>go('cards')}>Open full card report and paydown plan</button></div>
-    <div class="muted" style=${{fontSize:'.78rem',margin:'-2px 0 6px'}}>Balances are the unpaid charges on Kristine's Unpaid card charges page, not the bank's statement balance. Discover and Home Depot ••1511 / ••8087 are not on that page.</div>
     <div class="tablewrap"><table><thead><tr><th>Card</th><th class="r">Balance</th><th class="r">Limit</th><th class="r">% used</th><th>Closes</th><th>Due</th><th class="r">Minimum</th><th>Autopay</th><th>Late (12 mo)</th><th>Flag</th></tr></thead><tbody>
     ${['Business','Personal'].map(k=>html`<tr class="cgroup"><td colspan="10" style=${{background:'var(--panel)',fontWeight:700,fontSize:'.74rem',textTransform:'uppercase',letterSpacing:'.06em',color:'var(--muted)'}}>${k}</td></tr>
       ${rows.filter(x=>x.c.kind===k).map(x=>html`<tr key=${x.c.id}><td><b>${x.c.name}</b> <span class="num muted">••${x.c.last4}</span></td>
-        <td class="r num">${x.f.bal===null?html`<${PV}/>`:money(x.f.bal,{cents:true})}</td><td class="r num">${x.c.charge?'NPSL':x.f.lim===null?html`<${PV}/>`:money(x.f.lim)}</td>
-        <td class="r num">${x.c.charge?'N/A':x.f.util===null?'—':pct(x.f.util)}</td><td>${fmtDate(x.c.closeDate)||(num(x.c.minDue)===0?'—':html`<${PV}/>`)}${x.c.closeDay&&html`<div class="muted" style=${{fontSize:'.72rem'}}>every ${x.c.closeDay}</div>`}</td><td>${fmtDate(x.c.dueDate)||(num(x.c.minDue)===0?'—':html`<${PV}/>`)}${x.c.dueDay&&html`<div class="muted" style=${{fontSize:'.72rem'}}>due every ${x.c.dueDay}</div>`}</td>
-        <td class="r num">${num(x.c.minDue)===null?html`<${PV}/>`:money(num(x.c.minDue),{cents:true})}</td><td>${x.c.autopay==='On'||x.c.autopay==='Off'?x.c.autopay:'Not verified'}</td><td>${x.c.late==='Yes'||x.c.late==='No'?x.c.late:'Not verified'}</td>
+        <td class="r num">${x.f.bal===null?'—':money(x.f.bal,{cents:true})}</td><td class="r num">${x.c.charge?'NPSL':x.f.lim===null?'—':money(x.f.lim)}</td>
+        <td class="r num">${x.c.charge?'N/A':x.f.util===null?'—':pct(x.f.util)}</td><td>${fmtDate(x.c.closeDate)||(num(x.c.minDue)===0?'—':'—')}${x.c.closeDay&&html`<div class="muted" style=${{fontSize:'.72rem'}}>every ${x.c.closeDay}</div>`}</td><td>${x.c.paid==='Paid'&&x.f.dd!==null&&x.f.dd<0?'Paid':(fmtDate(x.c.dueDate)||'—')}${x.c.dueDay&&html`<div class="muted" style=${{fontSize:'.72rem'}}>due every ${x.c.dueDay}</div>`}</td>
+        <td class="r num">${x.c.charge?'Full balance':x.c.paid==='Paid'&&x.f.dd!==null&&x.f.dd<0?'—':num(x.c.minDue)===null?'—':money(num(x.c.minDue),{cents:true})}</td><td>${x.c.autopay==='On'||x.c.autopay==='Off'?x.c.autopay:'Not verified'}</td><td>${x.c.late==='Yes'||x.c.late==='No'?x.c.late:'Not verified'}</td>
         <td><${Pill} cls=${FLAG[x.f.flag].cls}>${FLAG[x.f.flag].label}<//></td></tr>`)}`)}
     </tbody></table></div></section>`;
 }
@@ -578,7 +577,7 @@ function CardRow({c,i,open,toggle}){
       <div><div class="lbl">Last verified</div><${F} path=${p+'.verified'} kind="date" empty="Not verified"/></div>
       <div style=${{gridColumn:'1/-1'}}><div class="lbl">Source</div>${edit?html`<${F} path=${p+'.source'}/>`:(c.sourceUrl?html`<a href=${c.sourceUrl} target="_blank" rel="noopener">${c.source||'Open record'}</a>`:(c.source||html`<span class="muted">No verified link yet</span>`))}</div>
       ${(c.notes||edit)&&html`<div style=${{gridColumn:'1/-1'}}><div class="lbl">Notes</div><${F} path=${p+'.notes'} kind="textarea" empty="—"/></div>`}
-      ${f.missing.length>0&&html`<div style=${{gridColumn:'1/-1'}}><div class="lbl" style=${{color:'var(--pv)'}}>Still to verify</div><div>${f.missing.join(', ')}</div></div>`}
+      ${edit&&f.missing.length>0&&html`<div style=${{gridColumn:'1/-1'}}><div class="lbl" style=${{color:'var(--pv)'}}>Still to verify</div><div>${f.missing.join(', ')}</div></div>`}
       ${edit&&html`<div><button class="btn sm danger" onClick=${()=>set('cards',S.cards.filter((_,j)=>j!==i))}>Remove card</button></div>`}
     </div></td></tr>`}`;
 }
@@ -617,7 +616,7 @@ function Cards(){
       <tbody>${group('Business')}${group('Personal')}</tbody>
       <tfoot><tr><td colspan="2">All cards</td><td class="r num">${all.bal===null?'—':money(all.bal,{cents:true})}</td><td class="r num">${all.lim===null?'—':money(all.lim)}</td><td class="r num">${all.util===null?'—':pct(all.util)}</td><td colspan="6"></td></tr></tfoot>
     </table></div>
-    <div class="muted" style=${{fontSize:'.78rem'}}><b>Balances are the unpaid charges on Kristine's Unpaid card charges page, not the bank's statement balance. Discover and Home Depot ••1511 / ••8087 are not on that page.</b> Click a card for details, source and last verified date. "Pending verification" means we don't have the figure yet; it does not mean the card is current.</div>
+    <div class="muted" style=${{fontSize:'.78rem'}}>Click a card for details, source and last verified date. "Pending verification" means we don't have the figure yet; it does not mean the card is current.</div>
     ${edit&&html`<div><button class="btn" onClick=${add}>+ Add card</button></div>`}
 
     <div class="panel"><h3>Paydown plan · Juan's personal cards</h3>
@@ -638,9 +637,9 @@ function Cards(){
       <div class="muted" style=${{fontSize:'.78rem',marginTop:'6px'}}>Before paying anything, Accounting confirms the payment hasn't already been made or scheduled.</div>
     </section>
 
-    <div class="panel"><h3>Still to verify · Accounting</h3>
+    ${edit&&html`<div class="panel"><h3>Still to verify · Accounting</h3>
       ${missing.length?html`<div class="list">${missing.map(x=>html`<div class="risk" key=${x.c.id}><b style=${{minWidth:'190px'}}>${x.c.name||'Card'} ${x.c.last4?'••'+x.c.last4:''}</b><div style=${{flex:1}}>${x.f.missing.join(', ')}</div></div>`)}</div>`:html`<div class="empty">Everything is verified.</div>`}
-    </div>
+    </div>`}
   </div>`;
 }
 
