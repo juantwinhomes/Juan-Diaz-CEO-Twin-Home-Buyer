@@ -196,15 +196,15 @@ const MISSING = "MISSING — VERIFY";
 // histAppr: Juan's earlier decision on record (email). Live decisions on this page override it; it stays visible as history.
 const CONTRACTORS = [
   {id:"gon1", acct:"relay", who:"Gonzalo", prop:"22496 Avenue 18 3/4, Madera, CA 93637", forw:"Painting", work:"Painting, work complete per Juan Oct 26", parts:[["Interior painting",3500],["Exterior painting",3500],["Roof painting",1500],["Pool and outdoor cement painting",1500]],
-   amt:10000.00, how:"ACH", inv:"", invDate:"Oct 21, 2026", invUrl:BOARD, invLabel:"Contractor board · Invoices & Photos", due:"Pay now (Juan, Oct 26)", histAppr:"Approved by Juan — email Oct 26, 5:22 AM"},
+   amt:10000.00, how:"ACH", inv:"695901", invDate:"Oct 21, 2026", invUrl:BOARD, invLabel:"Contractor board · Invoices & Photos", due:"Pay now (Juan, Oct 26)", histAppr:"Approved by Juan — email Oct 26, 5:22 AM"},
   {id:"gon2", acct:"relay", who:"Gonzalo", prop:"22496 Avenue 18 3/4, Madera, CA 93637", forw:"Demolition / cleanup balance", work:"Demolition, home and pool cleaning, daily workers. Agreed $5,900.00; $5,000.00 already paid; this is the $900.00 balance.",
-   amt:900.00, how:"ACH", inv:"", invDate:"Oct 21, 2026", invUrl:BOARD, invLabel:"Contractor board · Invoices & Photos", due:"Pay now (Juan, Oct 26)", histAppr:"Approved by Juan — email Oct 26, 5:22 AM"},
+   amt:900.00, how:"ACH", inv:"695900", invDate:"Oct 21, 2026", invUrl:BOARD, invLabel:"Contractor board · Invoices & Photos", due:"Pay now (Juan, Oct 26)", histAppr:"Approved by Juan — email Oct 26, 5:22 AM"},
   {id:"alv", acct:"relay", who:"Alvaro", prop:"22496 Avenue 18 3/4, Madera, CA 93637", forw:"Drywall", work:"Drywall install and texture",
-   amt:1200.00, how:"ACH", inv:"", invDate:"Oct 21, 2026", invUrl:"", due:"Pay now (Juan, Oct 26)", histAppr:"Approved by Juan — email Oct 26, 5:22 AM"},
+   amt:1200.00, how:"ACH", inv:"010529", invDate:"Oct 21, 2026", invUrl:"", invNone:true, due:"Pay now (Juan, Oct 26)", histAppr:"Approved by Juan — email Oct 26, 5:22 AM"},
   {id:"yuri1", acct:"wf", who:"Yuri Hernandez", prop:"170 Glenn Way, Suite 5, San Carlos, CA 94070 (office)", forw:"Office cleaning, weeks 1–3", work:"Office cleaning, weeks 1–3, $900.00 per week",
-   amt:2700.00, how:"ACH", inv:"", invDate:"", invNote:"Sent each Saturday", invUrl:BOARD, invLabel:"Contractor board · Invoices & Photos", due:"Pay now (Juan, Oct 26)", histAppr:"Approved by Juan — email Oct 26, 5:22 AM"},
+   amt:2700.00, how:"ACH", inv:"7", invDate:"Oct 19, 2026", invUrl:BOARD, invLabel:"Contractor board · Invoices & Photos", due:"Pay now (Juan, Oct 26)", histAppr:"Approved by Juan — email Oct 26, 5:22 AM"},
   {id:"yuri2", acct:"wf", who:"Yuri Hernandez", prop:"27 Prague St, San Mateo, CA 94401", forw:"Cleaning", work:"Cleaning",
-   amt:400.00, how:"ACH", inv:"", invDate:"", invNote:"Sent each Saturday", invUrl:BOARD, invLabel:"Contractor board · Invoices & Photos", due:"Pay now (Juan, Oct 26)", histAppr:"Approved by Juan — email Oct 26, 5:22 AM (approved Saturday)"},
+   amt:400.00, how:"ACH", inv:"6", invDate:"Oct 19, 2026", invUrl:BOARD, invLabel:"Contractor board · Invoices & Photos", due:"Pay now (Juan, Oct 26)", histAppr:"Approved by Juan — email Oct 26, 5:22 AM (approved Saturday)"},
   {id:"stu", acct:"wf", who:"Stuart Morgan / Remod Homes LLC", prop:"1574 Jerrold Ave, San Francisco, CA 94124", forw:"Invoice 2611", work:"Phase 1: existing and proposed floor plans for the permit set, $1,200.00. Phase 2: 3-page development-opportunity marketing flyer, $1,500.00.",
    amt:2700.00, how:"ACH", inv:"RH-2611", invDate:"Jun 9, 2026", invUrl:"https://drive.google.com/file/d/1Wn2RJdrNMPxB_gg3Nowr5kxbhvixblx6/view", invLabel:"Invoice RH-2611 (Drive)", due:"Pay now (Juan, Oct 26) · invoice marked due now", histAppr:"Approved by Juan — email Oct 26, 5:22 AM"}
 ];
@@ -254,7 +254,7 @@ const REL = {paid:["PAID","info"],await:["APPROVED — AWAITING RELEASE","ok"],h
 function matches(i){ const r=relStatus(i), a=appr(i);
   return filter==="all" || (filter==="approved"&&a==="approve") || (filter==="hold"&&r==="hold") || (filter==="await"&&r==="await") || (filter==="paid"&&r==="paid") || (filter==="blocked"&&r==="blocked"); }
 function daysTo(iso){ const t=new Date(iso+"T12:00:00-08:00"), now=new Date(); return Math.round((t-now)/864e5); }
-function missingCount(i){ if(i.kind==="card") return (i.stmtBal==null?1:0)+1; return [i.inv,i.invDate||"",i.invUrl].filter(v=>!v).length + 1; }
+function missingCount(i){ if(i.kind==="card") return (i.stmtBal==null?1:0)+1; return [i.inv,i.invDate||"",i.invUrl||i.invNone].filter(v=>!v).length; }
 
 async function write(id, patch, stampIt=true){
   const prevD = (dec[id]||{}).d;
@@ -343,7 +343,7 @@ function conRow(i,n){
   const g=el("dl","fields"), p=paid(i);
   field(g,"Payee",i.who); field(g,"Amount",money(i.amt)); field(g,"Property",i.prop); field(g,"Work done",i.work);
   field(g,"Invoice number",i.inv); field(g,"Invoice date",i.invDate, i.invDate?null:(i.invNote?(()=>{const s=el("span");s.append(i.invNote+" · exact date ",el("span","miss",MISSING));return s;})():null));
-  field(g,"Invoice / receipt",null,i.invUrl?Object.assign(el("a",null,i.invLabel||"Open"),{href:i.invUrl,target:"_blank",rel:"noopener"}):null);
+  field(g,"Invoice / receipt",i.invNone?"None":"",i.invNone?null:i.invUrl?Object.assign(el("a",null,i.invLabel||"Open"),{href:i.invUrl,target:"_blank",rel:"noopener"}):null);
   field(g,"Due",i.due); field(g,"Funding account",ACCT[i.acct]); field(g,"Payment method",i.how);
   field(g,"Approval status", appr(i)==="approve"?(liveD(i)?"Approved by "+nm(x.by)+" · "+when(x.at):i.histAppr):({hold:"On hold",info:"Information requested",pending:"Awaiting Juan"}[appr(i)]));
   field(g,"Release status",REL[r][0]); field(g,"Actual payment date",p?p.date:"", p?null:el("span","log","Not paid yet"));
