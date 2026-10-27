@@ -260,7 +260,7 @@ const DRAFT_KEY='thb-accounting-review-draft-v1';
 const SECTIONS=[
  ['overview','Executive Overview'],['cards','Credit Cards'],['contractors','Contractor Payments'],
  ['tax','PPS 2025 Tax Returns'],['honda','Honda Accord Buyout'],['rental','8715 D St Rental'],
- ['time','Clock-In / Clock-Out'],['other','Other Pending Decisions'],['summary','Final Decision Summary']];
+ ['time','Clock-In / Clock-Out'],['payroll','Matrix Payroll'],['wires','Wires to Release'],['erc','ERC Specialists Bill'],['vantage','Wells Fargo Vantage'],['other','Other Pending Decisions'],['summary','Final Decision Summary']];
 const SEC_NAME=Object.fromEntries(SECTIONS);
 
 /* ---------- helpers ---------- */
@@ -456,7 +456,7 @@ function Decisions({section,title}){
 }
 
 /* ---------- sections ---------- */
-const BRIEF_ORDER=['contractors','tax','honda','cards','rental','payroll','time','other'];
+const BRIEF_ORDER=['wires','erc','cards','payroll','rental','vantage','contractors','tax','honda','time','other'];
 const BRIEF_CLS={ok:'ok',warn:'warn',bad:'bad',info:'info'};
 function Brief({k}){
   const {S,edit}=useContext(Ctx);const b=S.briefs&&S.briefs[k];if(!b)return null;
@@ -888,9 +888,49 @@ function Payroll(){
       <div class="fact" style=${{gridColumn:'1/-1'}}><div class="lbl">Adjustments or discrepancies</div><div class="val"><${F} path="payroll.adjustments" kind="textarea" empty="None reported"/></div></div>
     </div>
     ${num(p.total)!==null&&num(p.regular)!==null&&num(p.overtime)!==null&&Math.abs(num(p.total)-num(p.regular)-num(p.overtime))>0.5&&html`<div class="banner warn">Total payroll differs from regular + overtime by ${money(num(p.total)-num(p.regular)-num(p.overtime),{cents:true})} (taxes, bonuses, or adjustments). Confirm before release.</div>`}
+    ${p.notes&&p.notes.length>0&&html`<div class="panel"><h3>Notes</h3><div class="list">${p.notes.map((n,i)=>html`<div class="risk" key=${i}><div>${n}</div></div>`)}</div></div>`}
     <${Decisions} section="payroll"/>
   </div>`;
 }
+
+function Wires(){
+  const {S,edit}=useContext(Ctx);const w=S.wires||{items:[]};
+  const total=w.items.reduce((a,x)=>a+(num(x.amount)||0),0);
+  return html`<div class="stack">
+    <${SecHead} title="Wires Waiting on Juan's Release" k="wires"/>
+    <${Brief} k="wires"/>
+    <div class="banner warn"><span class="grow"><b>Before releasing any wire:</b> confirm the wire instructions by phone, using a number you already have on file (not one from the email). Wire fraud on real estate deposits is common, and a sent wire usually can't be recalled.</span></div>
+    <div class="panel">
+      <div style=${{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'baseline',flexWrap:'wrap'}}><h3>${w.items.length} wire${w.items.length===1?'':'s'} waiting</h3><span class="num" style=${{fontWeight:600,fontSize:'1.1rem'}}>${money(total,{cents:true})}</span></div>
+      ${w.items.length?html`<div class="tablewrap" style=${{marginTop:'10px'}}><table><thead><tr><th>Pay to</th><th class="r">Amount</th><th>What it's for</th><th>From</th><th>Deadline</th><th>Instructions verified by phone</th><th>Status</th></tr></thead><tbody>
+      ${w.items.map((x,i)=>html`<tr key=${x.id}><td style=${{minWidth:'150px'}}><b>${x.payee}</b>${x.escrow&&html`<div class="muted" style=${{fontSize:'.76rem'}}>${x.escrow}</div>`}</td>
+        <td class="r num">${x.amount!=null?money(x.amount,{cents:true}):html`<${PV}/>`}</td>
+        <td style=${{minWidth:'200px'}}>${x.purpose}${x.notes&&html`<div class="muted" style=${{fontSize:'.76rem'}}>${x.notes}</div>`}</td>
+        <td>${x.from||html`<${PV}/>`}</td><td style=${{whiteSpace:'nowrap'}}>${x.deadline?fmtDate(x.deadline):(x.deadlineNote||html`<${PV}/>`)}</td>
+        <td>${edit?html`<${F} path=${'wires.items.'+i+'.verified'} kind="select" options=${['Not verified','Yes','No']}/>`:html`<${Pill} cls=${x.verified==='Yes'?'ok':x.verified==='No'?'bad':'warn'}>${x.verified==='Yes'?'Yes':x.verified==='No'?'No':'Not yet'}<//>`}</td>
+        <td>${edit?html`<${F} path=${'wires.items.'+i+'.status'} kind="select" options=${['Waiting on Juan','Released','On hold','Cancelled']}/>`:html`<${Pill} cls=${x.status==='Released'?'ok':x.status==='On hold'?'warn':'info'}>${x.status}<//>`}</td></tr>`)}
+      </tbody></table></div>`:html`<div class="empty">No wires waiting.</div>`}
+      ${w.source&&html`<p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>${w.source}</p>`}
+    </div>
+    <${Decisions} section="wires"/>
+  </div>`;
+}
+function InfoBlock({k,title}){
+  const {S}=useContext(Ctx);const d=S[k];if(!d)return null;
+  return html`<div class="stack">
+    <${SecHead} title=${title} k=${k}/>
+    <${Brief} k=${k}/>
+    ${d.facts&&html`<div class="panel facts">${d.facts.map(f=>html`<${Fact} key=${f[0]} label=${f[0]} big=${!!f[2]}>${f[1]}<//>`)}</div>`}
+    ${d.risks&&d.risks.length>0&&html`<div class="banner warn"><span class="grow"><b>Watch:</b> ${d.risks.join(' ')}</span></div>`}
+    ${d.steps&&html`<div class="panel"><h3>${d.stepsTitle||'Steps'}</h3><div class="tablewrap"><table><thead><tr><th>Step</th><th>Owner</th><th>Status</th><th>By</th></tr></thead><tbody>
+      ${d.steps.map((x,i)=>html`<tr key=${i}><td>${x.t}</td><td>${x.owner||'—'}</td><td><${Pill} cls=${x.status==='Done'?'ok':x.status==='Blocked'?'bad':x.status==='In progress'?'info':'neutral'}>${x.status}<//></td><td style=${{whiteSpace:'nowrap'}}>${x.by||'—'}</td></tr>`)}
+    </tbody></table></div></div>`}
+    ${d.source&&html`<p class="muted" style=${{fontSize:'.78rem',margin:0}}>${d.source}</p>`}
+    <${Decisions} section=${k}/>
+  </div>`;
+}
+const ERC=()=>html`<${InfoBlock} k="erc" title="ERC Specialists Bill"/>`;
+const Vantage=()=>html`<${InfoBlock} k="vantage" title="Wells Fargo Vantage Setup"/>`;
 
 function PrescottCloseout(){
   const {S}=useContext(Ctx);const p=S.prescott;
@@ -1081,7 +1121,7 @@ function App(){
   const secCount=s=>S.decisions.filter(d=>(d.section===s)&&d.status==='Pending').length;
 
   const ctx={S,K,set,edit,go,flash,setDecision,removeDecision,counts,copySummary,openReport};
-  const Sec={overview:Overview,cards:Cards,contractors:Contractors,tax:Tax,honda:Honda,rental:Rental,time:Time,payroll:Payroll,other:Other,summary:Summary}[sec];
+  const Sec={overview:Overview,cards:Cards,contractors:Contractors,tax:Tax,honda:Honda,rental:Rental,time:Time,payroll:Payroll,wires:Wires,erc:ERC,vantage:Vantage,other:Other,summary:Summary}[sec];
 
   const fmtT=iso=>new Date(iso).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   const live=art&&!readOnly;
