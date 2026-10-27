@@ -171,7 +171,7 @@
    "last4": "1511",
    "kind": "Personal",
    "balance": 0,
-   "limit": null,
+   "limit": 50000,
    "charge": false,
    "closeDate": "",
    "dueDate": "",
@@ -183,8 +183,9 @@
    "verified": "2026-10-27",
    "source": "THB Card Desk (Oct 10)",
    "sourceUrl": "https://claude.ai/artifact/987gv2Gy7howGRiAwvSD2T",
-   "notes": "No balance, so no payment due (Kristine, Oct 27). Autopay on.",
-   "closeDay": ""
+   "notes": "No balance, so no payment due. Limit $50,000; payment due the 4th of each month (Kristine, Oct 27). Autopay on.",
+   "closeDay": "",
+   "dueDay": "4th"
   },
   {
    "id": "c-hd8087",
@@ -192,7 +193,7 @@
    "last4": "8087",
    "kind": "Personal",
    "balance": 0,
-   "limit": null,
+   "limit": 50000,
    "charge": false,
    "closeDate": "",
    "dueDate": "",
@@ -204,8 +205,9 @@
    "verified": "2026-10-27",
    "source": "THB Card Desk (Oct 10)",
    "sourceUrl": "https://claude.ai/artifact/987gv2Gy7howGRiAwvSD2T",
-   "notes": "No balance, so no payment due (Kristine, Oct 27). Autopay on.",
-   "closeDay": ""
+   "notes": "No balance, so no payment due. Limit $50,000; payment due the 4th of each month (Kristine, Oct 27). Autopay on.",
+   "closeDay": "",
+   "dueDay": "4th"
   },
   {
    "id": "c-citi",
