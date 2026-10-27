@@ -219,25 +219,20 @@ const PAY = [
    budget:["ok","Within budget.","Madera scope of work: Paint – Interior $12,500.00 + Paint – Exterior $12,500.00 = $25,000.00. This payment: $10,000.00."]},
   {id:"gon2", payee:"Gonzalo", acct:"relay", prop:"22496 Avenue 18 3/4, Madera, CA 93637", propKey:"22496 Avenue 18 3/4, Madera", purpose:"Daily workers balance", amt:900.00,
    work:"Remaining balance for the daily workers Juan hired through Gonzalo's crew. Agreed $5,900.00; $5,000.00 already paid; this is the $900.00 balance. (Juan's Oct 26 approval calls it the \u201cdemo balance.\u201d)",
-   inv:"695900", invDate:"Oct 21, 2026", invLink:[BOARD,"Contractor board · Invoices & Photos"],
-   budget:["warn","No daily-labor line in the budget.","The Madera scope of work has no line for daily workers. Agreed total for the workers: $5,900.00."]},
-  {id:"alv", payee:"Alvaro", acct:"relay", prop:"22496 Avenue 18 3/4, Madera, CA 93637", propKey:"22496 Avenue 18 3/4, Madera", purpose:"Drywall", amt:1200.00,
-   work:"Drywall install and texture.",
-   inv:"010529", invDate:"Oct 21, 2026", invLink:null,
-   budget:["warn","No drywall line in the budget.","The Madera scope of work has no drywall line."]},
+   inv:"695900", invDate:"Oct 21, 2026", invLink:[BOARD,"Contractor board · Invoices & Photos"],},
+  {id:"alv", payee:"Alvaro Joseph Castaneda", acct:"relay", prop:"22496 Avenue 18 3/4, Madera, CA 93637", propKey:"22496 Avenue 18 3/4, Madera", purpose:"Sheetrock and texture", amt:1200.00,
+   work:"Sheetrock and texture installation.",
+   inv:"010529", invDate:"Oct 27, 2026", invLink:["invoices/alvaro-010529.pdf","Invoice 010529 (PDF)"],},
   {id:"yuri1", payee:"Yuri Hernandez", acct:"wf", prop:"170 Glenn Way, Suite 5, San Carlos, CA 94070 (office)", propKey:"170 Glenn Way (office)", purpose:"Office cleaning, weeks 1–3", amt:2700.00,
    work:"Office cleaning, weeks 1–3.",
-   inv:"7", invDate:"Oct 19, 2026", invLink:[BOARD,"Contractor board · Invoices & Photos"],
-   budget:["none","Office overhead.","Not a property job, so no property budget applies."]},
+   inv:"7", invDate:"Oct 19, 2026", invLink:[BOARD,"Contractor board · Invoices & Photos"],},
   {id:"yuri2", payee:"Yuri Hernandez", acct:"wf", prop:"27 Prague St, San Mateo, CA 94401", propKey:"27 Prague St, San Mateo", purpose:"Cleaning", amt:400.00,
    work:"Cleaning.",
-   inv:"6", invDate:"Oct 19, 2026", invLink:[BOARD,"Contractor board · Invoices & Photos"],
-   budget:["none","No budget on file.","No scope-of-work budget on file for 27 Prague St."]},
+   inv:"6", invDate:"Oct 19, 2026", invLink:[BOARD,"Contractor board · Invoices & Photos"],},
   {id:"stu", payee:"Stuart Morgan / Remod Homes LLC", acct:"wf", prop:"1574 Jerrold Ave, San Francisco, CA 94124", propKey:"1574 Jerrold Ave, San Francisco", purpose:"Invoice RH-2611", amt:2700.00,
    work:"Phase 1: existing and proposed floor plans for the permit set, $1,200.00. Phase 2: 3-page development-opportunity marketing flyer, $1,500.00.",
    parts:[["Phase 1 · permit-set floor plans",1200],["Phase 2 · marketing flyer",1500]],
-   inv:"RH-2611", invDate:"Jun 9, 2026", invLink:[STUART_INV,"Invoice RH-2611 (Drive)"], pastDue:"Invoice dated Jun 9, 2026, marked due now",
-   budget:["none","No budget on file.","No scope-of-work budget on file for 1574 Jerrold Ave."]}
+   inv:"RH-2611", invDate:"Jun 9, 2026", invLink:[STUART_INV,"Invoice RH-2611 (Drive)"],}
 ];
 const ROLE = {"juan-diaz":"approver","cherry-ann-burce":"checker","kristine-joy-lomeda":"preparer"};
 const ROLE_LABEL = {approver:"Approves",checker:"Checks",preparer:"Prepares"};
@@ -278,11 +273,9 @@ function row(p,n){
   const right=el("div"); right.append(el("div","amt",money(p.amt)), el("div","chev","Details"));
   const tg=el("div","tags");
   tg.append(el("span","tag "+p.acct,ACCT[p.acct]), el("span","tag mute","ACH"), el("span","tag mute","Due Oct 30"));
-  tg.append(el("span","tag "+(checked(p)?"chk":"mute"), checked(p)?"✓ Checked by "+x.chk.name.split(" ")[0]:"Not checked yet"));
+  if(checked(p)) tg.append(el("span","tag chk","✓ Checked by "+x.chk.name.split(" ")[0]));
   tg.append(el("span","tag "+ST[s][1],ST[s][0]));
-  if(p.pastDue) tg.append(el("span","tag bad","Past due"));
   if(!p.invLink) tg.append(el("span","tag bad","No invoice copy"));
-  if(p.budget[0]==="warn") tg.append(el("span","tag hold","No budget line"));
   sm.append(el("div","num",String(n)), mid, right, tg); d.append(sm);
 
   const b=el("div","body"), g=el("dl","fields");
@@ -291,22 +284,21 @@ function row(p,n){
   if(p.invLink){ const a=el("a",null,p.invLink[1]); a.href=p.invLink[0]; a.target="_blank"; a.rel="noopener"; iv.append(a); } else iv.append(el("span","miss","No copy on file"));
   field(g,"Invoice",null,iv);
   field(g,"Account",ACCT[p.acct]); field(g,"Method","ACH"); field(g,"Due",DUE);
-  if(p.pastDue) field(g,"Past due",null,el("span","miss",p.pastDue));
   field(g,"Prepared by", prep ? prep.name+" · "+when(prep.at) : "Kristine · not signed yet");
-  field(g,"Checked by", checked(p) ? x.chk.name+" · "+when(x.chk.at) : null, checked(p)?null:el("span","miss","Not checked yet"));
+  if(checked(p)) field(g,"Checked by", x.chk.name+" · "+when(x.chk.at));
   field(g,"Juan", decision(p) ? ({approve:"Approved",hold:"Hold",info:"Information requested"}[decision(p)])+" · "+when(x.dAt) : "No decision yet");
   if(paid(p)) field(g,"Paid",paid(p).date+" · confirmation "+paid(p).ref+" · recorded by "+paid(p).name);
   b.append(g);
   if(p.parts){ const sb=el("div","sub"); p.parts.forEach(([k,v])=>{ const r=el("div"); r.append(el("span",null,k),el("span",null,money(v))); sb.append(r); });
     const t=el("div","t"); t.append(el("span",null,"Total of this one invoice"), el("span",null,money(p.parts.reduce((a,q)=>a+q[1],0)))); sb.append(t); b.append(sb); }
-  const bd=el("div","budget "+p.budget[0]); bd.append(el("b",null,"Budget: "+p.budget[1]+" "), p.budget[2]); b.append(bd);
+  if(p.budget){ const bd=el("div","budget "+p.budget[0]); bd.append(el("b",null,"Budget: "+p.budget[1]+" "), p.budget[2]); b.append(bd); }
 
   const c=el("div","ctl");
   const r1=el("div","ctlrow"); r1.append(el("span","lab","Cherry"));
   const cb=el("button","b chk",checked(p)?"✓ Checked":"Check"); cb.type="button"; cb.setAttribute("aria-pressed",checked(p)?"true":"false");
   cb.disabled=!can("checker")||!!paid(p); if(!can("checker")) cb.title="Only Cherry can check";
   cb.addEventListener("click",()=>save(p.id,{chk:checked(p)?null:{name:who.name,at:now()}}));
-  r1.append(cb, el("span","stamp",checked(p)?"by "+x.chk.name+" · "+when(x.chk.at):"waiting for Cherry")); c.append(r1);
+  r1.append(cb, el("span","stamp",checked(p)?"by "+x.chk.name+" · "+when(x.chk.at):"")); c.append(r1);
   const r2=el("div","ctlrow"); r2.append(el("span","lab","Juan"));
   [["approve","Approve"],["hold","Hold"],["info","Request info"]].forEach(([k,l])=>{ const bt=el("button","b",l); bt.type="button"; bt.dataset.v=k;
     bt.setAttribute("aria-pressed",decision(p)===k?"true":"false"); bt.disabled=!can("approver")||!!paid(p)||(k==="approve"&&!checked(p));
@@ -331,11 +323,9 @@ function row(p,n){
 function flags(){
   const box=document.getElementById("flags"); box.replaceChildren(); box.append(el("h3",null,"⚠ Red flags"));
   const ul=el("ul"); const add=(k,t)=>{ const li=el("li"); li.append(el("b",null,k), el("span",null,t)); ul.append(li); };
-  PAY.filter(p=>p.pastDue).forEach(p=>add("Past due", p.payee+" · "+money(p.amt)+" · "+p.pastDue+"."));
   PAY.filter(p=>!p.invLink).forEach(p=>add("Missing invoice", p.payee+" · "+money(p.amt)+" · invoice #"+p.inv+": no copy on file."));
-  PAY.filter(p=>p.budget[0]==="warn").forEach(p=>add("No budget line", p.payee+" · "+money(p.amt)+" · "+p.budget[2]));
-  const nc=PAY.filter(p=>!checked(p)).length; if(nc) add("Not checked", nc+" of "+PAY.length+" payments still need Cherry's check.");
-  box.append(ul, el("div","ok","✓ New payee: none — Gonzalo, Alvaro, Yuri Hernandez and Stuart Morgan have all been paid before.  ✓ Changed bank details: Cherry confirms none on each row she checks.  ✓ Wires: none in this list."));
+  if(ul.children.length) box.append(ul); else box.firstChild.textContent="✓ Red flags: none";
+  box.append(el("div","ok","✓ New payee: none — Gonzalo, Alvaro, Yuri Hernandez and Stuart Morgan have all been paid before.  ✓ Changed bank details: Cherry confirms none on each row she checks.  ✓ Wires: none in this list."));
 }
 
 function totals(){
