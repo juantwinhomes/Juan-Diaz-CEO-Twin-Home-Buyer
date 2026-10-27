@@ -819,17 +819,17 @@
   {
    "id": "d-erc",
    "section": "erc",
-   "title": "ERC Specialists bill (Matrix Group)",
+   "title": "ERC Specialists fee (Matrix Group)",
    "amountSource": "",
    "amount": 40605.61,
    "amountNote": "",
-   "situation": "ERC Specialists billed Matrix $40,605.61.",
-   "recAction": "Hold",
-   "rec": "Hold while Accounting checks it against the contract and the refund received. Kristine brings you a recommendation by Nov 5.",
-   "required": "Hold while Accounting checks it against the contract and the refund received. Kristine brings you a recommendation by Nov 5.",
-   "owner": "Kristine · Marieflor",
+   "situation": "ERC Specialists' fee for the Employee Retention Credit refund Matrix received. $40,605.61, past due since May.",
+   "recAction": "Pay",
+   "rec": "Approve paying $40,605.61 once Kristine confirms the balance with ERC Specialists.",
+   "required": "Approve paying $40,605.61.",
+   "owner": "Kristine",
    "target": "2026-11-05",
-   "next": "Bring Juan a pay / negotiate / dispute recommendation by Nov 5.",
+   "next": "Kristine confirms the balance with ERC Specialists, then pays.",
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
@@ -919,11 +919,11 @@
   "erc": {
    "topic": "ERC Specialists bill",
    "status": "warn",
-   "headline": "ERC Specialists billed Matrix $40,605.61. Recommendation: hold for now.",
-   "now": "Accounting is checking the bill against the contract and the refund Matrix received.",
-   "you": "Approve holding payment.",
-   "youShort": "Hold $40,605.61",
-   "next": "Kristine brings you a pay or dispute recommendation by Nov 5."
+   "headline": "Matrix owes ERC Specialists $40,605.61 for the ERC refund it received. It's past due.",
+   "now": "ERC Specialists sent a past-due notice in May. The fee is for the Employee Retention Credit refund Matrix got.",
+   "you": "Approve paying $40,605.61.",
+   "youShort": "Approve $40,605.61 ERC fee",
+   "next": "Kristine confirms the balance with ERC Specialists and pays by Nov 5."
   },
   "vantage": {
    "topic": "Wells Fargo Vantage",
@@ -965,7 +965,7 @@
  "erc": {
   "facts": [
    [
-    "Amount billed",
+    "Balance due",
     "$40,605.61",
     1
    ],
@@ -974,39 +974,31 @@
     "Matrix Group Inc."
    ],
    [
-    "Status",
-    "On hold while Accounting checks it"
+    "What it's for",
+    "ERC Specialists' fee for the Employee Retention Credit refund Matrix received"
+   ],
+   [
+    "Past-due notice",
+    "May 2, 2026 (30+ days past due)"
    ]
   ],
   "risks": [],
-  "stepsTitle": "Before anyone pays",
+  "stepsTitle": "Next steps",
   "steps": [
    {
-    "t": "Find the ERC Specialists contract and the fee terms (e.g. % of the credit)",
-    "owner": "Marieflor",
-    "status": "In progress",
-    "by": "Nov 3"
-   },
-   {
-    "t": "Confirm whether the IRS refund was received, and how much (Matrix bank records / IRS transcript)",
+    "t": "Call ERC Specialists Accounts Receivable to confirm the balance and set the payment",
     "owner": "Kristine",
     "status": "Not started",
     "by": "Nov 3"
    },
    {
-    "t": "Explain the $14,377.91 difference (prior payment or credit?)",
-    "owner": "Marieflor",
-    "status": "Not started",
-    "by": "Nov 3"
-   },
-   {
-    "t": "Bring Juan a pay / negotiate / dispute recommendation",
+    "t": "Pay ERC Specialists once Juan approves",
     "owner": "Kristine",
     "status": "Not started",
     "by": "Nov 5"
    }
   ],
-  "source": ""
+  "source": "Source: ERC Specialists past-due letter (May 2, 2026) and invoice. AR: (385) 707-0170 · support@ercspecialists.com"
  },
  "vantage": {
   "facts": [
