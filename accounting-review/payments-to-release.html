@@ -22,12 +22,13 @@ h2{font-family:var(--f-head);font-weight:700;font-size:14px;letter-spacing:.07em
 .sh .t{font-family:var(--f-num);font-weight:600;font-variant-numeric:tabular-nums}
 .wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
 table{width:100%;border-collapse:collapse;min-width:720px;table-layout:fixed}
-col.c1{width:22%}col.c2{width:13%}col.c3{width:31%}col.c4{width:14%}col.c5{width:8%}col.c6{width:12%}
+col.c1{width:20%}col.c2{width:13%}col.c3{width:29%}col.c4{width:18%}col.c5{width:8%}col.c6{width:12%}
 th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 tr:last-child td{border-bottom:0}
 .amt{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
 .acct{font-weight:600;white-space:nowrap}
+.acct.split{font-weight:500;font-size:13px;font-family:var(--f-num)}
 .nw{white-space:nowrap}
 .pill{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;color:var(--ok);background:var(--ok-bg);white-space:nowrap}
 .muted{color:var(--muted)}
@@ -80,12 +81,9 @@ tr:last-child td{border-bottom:0}
       <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"></colgroup>
       <thead><tr><th>Card</th><th class="amt">Amount</th><th>Property / charges</th><th>Account</th><th>Due</th><th></th></tr></thead>
       <tbody>
-        <tr><td>Amex 5004</td><td class="amt">$15,212.00</td><td>Subscriptions $10,725.60 · office utilities $4,486.40</td><td class="acct">WF 8251</td><td class="nw">Nov 5</td><td></td></tr>
-        <tr><td>Amex 5004</td><td class="amt">$5,654.72</td><td>460 5th Ave, Redwood City</td><td class="acct">Relay 5776</td><td class="nw">Nov 5</td><td></td></tr>
-        <tr><td>Capital One Spark 7260</td><td class="amt">$6,971.49</td><td>972 Norton St, San Mateo</td><td class="acct">WF 8251</td><td class="nw">Nov 17</td><td></td></tr>
-        <tr><td>Capital One Spark 7260</td><td class="amt">$2,590.76</td><td>22496 Madera</td><td class="acct">Relay 5776</td><td class="nw">Nov 17</td><td></td></tr>
-        <tr><td>Venture X 1175</td><td class="amt">$6,265.78</td><td>Madera, Redwood City, Norton, personal</td><td class="acct">Relay 5776</td><td class="nw">Nov 8</td><td></td></tr>
-        <tr><td>Venture X 1175</td><td class="amt">$400.96</td><td>Sold: Santa Rosa, Prague</td><td class="acct">WF 8251</td><td class="nw">Nov 8</td><td></td></tr>
+        <tr><td>Amex 5004</td><td class="amt">$20,866.72</td><td>Subscriptions and office utilities $15,212.00 · 460 5th Ave, Redwood City $5,654.72</td><td class="acct split">2 accounts:<br>WF 8251 $15,212.00<br>Relay 5776 $5,654.72</td><td class="nw">Nov 5</td><td></td></tr>
+        <tr><td>Capital One Spark 7260</td><td class="amt">$9,562.25</td><td>972 Norton St $6,971.49 · 22496 Madera $2,590.76</td><td class="acct split">2 accounts:<br>WF 8251 $6,971.49<br>Relay 5776 $2,590.76</td><td class="nw">Nov 17</td><td></td></tr>
+        <tr><td>Venture X 1175</td><td class="amt">$6,666.74</td><td>Madera, Redwood City, Norton, personal $6,265.78 · sold: Santa Rosa, Prague $400.96</td><td class="acct split">2 accounts:<br>Relay 5776 $6,265.78<br>WF 8251 $400.96</td><td class="nw">Nov 8</td><td></td></tr>
         <tr><td>Home Depot 5253</td><td class="amt">$5,320.23</td><td>Sold: Petaluma, 27 Prague St, 751 27th Ave</td><td class="acct">WF 8251</td><td class="nw">Nov 5</td><td></td></tr>
         <tr><td>Citi 2149</td><td class="amt">$4,378.00</td><td>52 Paramount Ter</td><td class="acct">Relay Paramount</td><td class="nw">Nov 8</td><td></td></tr>
         <tr><td>Bank of America 0475</td><td class="amt">$2,000.00</td><td>519 Orizaba Ave (sold)</td><td class="acct">WF 8251</td><td class="nw">Nov 2</td><td></td></tr>
