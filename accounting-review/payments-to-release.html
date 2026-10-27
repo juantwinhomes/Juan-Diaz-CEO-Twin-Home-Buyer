@@ -189,16 +189,16 @@ details.cat[open]>summary{background:var(--wash)}
 // One payee, one line. Fields Juan asked for; "" = Kristine still has to fill it in (shows as Pending).
 const BOARD = "https://claude.ai/artifact/5qHWXTZEqBcECnDr89uHV7";   // contractor board: invoice photos live in its Invoices & Photos section
 const TODAY = [
-  {id:"wfg", acct:"wf", who:"WFG Title", prop:"5022 Heyer Ave, Castro Valley", forw:"Earnest money deposit, 2nd half", amt:10500.00, how:"Wire", inv:"Escrow #26-215725", invDate:"", invUrl:"", receipt:"After payment", due:"Oct 27",
+  {id:"wfg", acct:"wf", who:"WFG Title", prop:"5022 Heyer Ave, Castro Valley", forw:"Earnest money deposit, 2nd half", amt:10500.00, how:"Wire", inv:"Escrow #26-215725", invDate:"", invUrl:"", receipt:"None yet", due:"Oct 27",
    wire:{who:"Christina, WFG Title", phone:"", date:"Fri, Oct 23", payee:"Saved in Wells Fargo as \"WFG Stockton\", account ending 8979"}},
-  {id:"gon1", acct:"relay", who:"Gonzalo Martinez", prop:"22496 Avenue 18 3/4, Madera", forw:"Painting: interior $3,500, exterior $3,500, roof $1,500, pool and outdoor cement $1,500", amt:10000.00, how:"ACH", inv:"On invoice", invDate:"Oct 21, 2026", invUrl:BOARD, receipt:"After payment", due:"Oct 27"},
-  {id:"gon2", acct:"relay", who:"Gonzalo Martinez", prop:"22496 Avenue 18 3/4, Madera", forw:"Demolition, home and pool cleaning, daily workers: balance (agreed $5,900, paid $5,000)", amt:900.00, how:"ACH", inv:"On invoice", invDate:"Oct 21, 2026", invUrl:BOARD, receipt:"After payment", due:"Oct 27"},
-  {id:"alv", acct:"relay", who:"Alvaro", prop:"22496 Avenue 18 3/4, Madera", forw:"Drywall install and texture", amt:1200.00, how:"ACH", inv:"On invoice", invDate:"Oct 21, 2026", invUrl:"", receipt:"After payment", due:"Oct 27"},
-  {id:"yuri1", acct:"wf", who:"Yuri Hernandez", prop:"170 Glenn Way, Suite 5, San Carlos (office)", forw:"Office cleaning, 3 weeks at $900", amt:2700.00, how:"ACH", inv:"Weekly invoice", invDate:"Sent each Saturday", invUrl:BOARD, receipt:"After payment", due:"Oct 27",
-   flag:"Melio shows $3,100.00 paid to Yuri Hernandez on Oct 23 (Visa ending 0712, instant transfer). That equals these two Yuri lines. Confirm before paying again."},
-  {id:"yuri2", acct:"wf", who:"Yuri Hernandez", prop:"27 Prague St, San Mateo", forw:"Cleaning", amt:400.00, how:"ACH", inv:"Weekly invoice", invDate:"Sent each Saturday", invUrl:BOARD, receipt:"After payment", due:"Oct 27",
-   flag:"Melio shows $3,100.00 paid to Yuri Hernandez on Oct 23. See the line above. Confirm before paying again."},
-  {id:"stu", acct:"wf", who:"Stuart Morgan (Remod Homes LLC)", prop:"1574 Jerrold Ave, San Francisco", forw:"Phase 1 permit floor plans $1,200 + Phase 2 development marketing flyer $1,500", amt:2700.00, how:"ACH", inv:"RH-2611", invDate:"Jun 9, 2026", invUrl:"https://drive.google.com/file/d/1Wn2RJdrNMPxB_gg3Nowr5kxbhvixblx6/view", receipt:"After payment", due:"Oct 27"}
+  {id:"gon1", acct:"relay", who:"Gonzalo", prop:"22496 Avenue 18 3/4, Madera", forw:"Painting", amt:10000.00, how:"ACH", inv:"", invDate:"Oct 21, 2026", invUrl:BOARD, receipt:"None yet", due:"Oct 27"},
+  {id:"gon2", acct:"relay", who:"Gonzalo", prop:"22496 Avenue 18 3/4, Madera", forw:"Demolition and cleanup", amt:900.00, how:"ACH", inv:"", invDate:"Oct 21, 2026", invUrl:BOARD, receipt:"None yet", due:"Oct 27"},
+  {id:"alv", acct:"relay", who:"Alvaro", prop:"22496 Avenue 18 3/4, Madera", forw:"Drywall install and texture", amt:1200.00, how:"ACH", inv:"", invDate:"Oct 21, 2026", invUrl:"", receipt:"None yet", due:"Oct 27"},
+  {id:"yuri1", acct:"wf", who:"Yuri Hernandez", prop:"170 Glenn Way, Suite 5, San Carlos (office)", forw:"Office cleaning, 3 weeks", amt:2700.00, how:"ACH", inv:"", invDate:"Sent each Saturday", invUrl:BOARD, receipt:"None yet", due:"Oct 27",
+},
+  {id:"yuri2", acct:"wf", who:"Yuri Hernandez", prop:"27 Prague St, San Mateo", forw:"Cleaning", amt:400.00, how:"ACH", inv:"", invDate:"Sent each Saturday", invUrl:BOARD, receipt:"None yet", due:"Oct 27",
+},
+  {id:"stu", acct:"wf", who:"Stuart Morgan (RemodHomes)", prop:"1574 Jerrold Ave, San Francisco", forw:"Remodel work, invoice 2611", amt:2700.00, how:"ACH", inv:"2611", invDate:"Jun 9, 2026", invUrl:"https://drive.google.com/file/d/1Wn2RJdrNMPxB_gg3Nowr5kxbhvixblx6/view", receipt:"None yet", due:"Oct 27"}
 ];
 // Every unpaid charge per card (unpaid card sheets, Oct 26): groups Property / Overhead / Marketing -> [category, tag, total, lines[date, vendor, amount, note]].
 // tag = account Kristine recommends paying that category from; "*" = only part of it is paid now; "" = not paying now.
