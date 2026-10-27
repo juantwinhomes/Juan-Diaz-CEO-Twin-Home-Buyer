@@ -626,7 +626,7 @@ function Cards(){
         const todo=x.c.charge?'No preset limit: pay the full statement balance by each due date.':bal===null?'Get the current balance and credit limit first.':lim===null?'Credit limit needed to size the paydown; pay at least the minimum on time.':t30>0?'Pay '+money(t30,{cents:true})+' before the statement closes to get under 30%.':'Already under 30%; keep it under 10% if possible.';
         return html`<tr key=${x.c.id}><td class="num">${n+1}</td><td><b>${x.c.name}</b> <span class="num muted">••${x.c.last4}</span></td><td class="r num">${bal===null?html`<${PV}/>`:money(bal,{cents:true})}</td><td class="r num">${x.c.charge?'N/A':t30===null?'—':money(t30,{cents:true})}</td><td class="r num">${x.c.charge?'N/A':t10===null?'—':money(t10,{cents:true})}</td><td style=${{minWidth:'240px'}}>${todo}</td></tr>`})}
       </tbody></table></div>
-      <div class="muted" style=${{fontSize:'.78rem',marginTop:'6px'}}>Credit limits are known only for Home Depot ••5253 so far. The plan fills in automatically as limits are entered.</div>
+      <div class="muted" style=${{fontSize:'.78rem',marginTop:'6px'}}>Amex and Capital One Spark have no preset limit. The plan updates automatically as balances and limits are entered.</div>
     </div>
     <section><h3 class="grp">Decisions needed from Juan</h3>
       ${decs.length?html`<div class="tablewrap"><table><thead><tr><th>Card</th><th class="r">Amount</th><th>Issue</th><th>My recommendation</th><th>Decision</th></tr></thead><tbody>
