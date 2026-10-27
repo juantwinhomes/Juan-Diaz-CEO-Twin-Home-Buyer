@@ -382,7 +382,7 @@ function deadlines(S,K){
 }
 
 /* ---------- small components ---------- */
-const PV=()=>html`<span class="pv" title="Pending verification — Kristine to confirm">To verify</span>`;
+const PV=()=>html`<span class="muted">—</span>`;
 function Pill({cls,children}){return html`<span class=${'pill '+cls}>${children}</span>`}
 function StatusPill({s}){const m={Pending:'info',Approved:'ok',Hold:'warn'};return html`<${Pill} cls=${m[s]||'neutral'}>${s==='Hold'?'On hold':s}<//>`}
 
@@ -489,7 +489,7 @@ function QuickDecision({d}){
         <div class="qd-sit">${d.situation}</div>
         <div class="qd-rec"><b>Kristine recommends:</b> ${d.rec}</div>
       </div>
-      <div class="qd-amt">${a!==null?html`<span class="num">${money(a)}</span>`:d.amountNote?html`<span class="qd-note">${d.amountNote}</span>`:html`<span class="qd-note">Amount to verify</span>`}</div>
+      <div class="qd-amt">${a!==null?html`<span class="num">${money(a)}</span>`:d.amountNote?html`<span class="qd-note">${d.amountNote}</span>`:html`<span class="qd-note">—</span>`}</div>
       <div class="qd-act">
         <button class=${'act approve'+(d.status==='Approved'?' sel':'')} aria-pressed=${d.status==='Approved'} onClick=${()=>setDecision(d.id,d.status==='Approved'?'Pending':'Approved')}>${d.status==='Approved'?'✓ Approved':'Approve'}</button>
         <button class=${'act hold'+(d.status==='Hold'?' sel':'')} aria-pressed=${d.status==='Hold'} onClick=${()=>{setDecision(d.id,d.status==='Hold'?'Pending':'Hold');if(d.status!=='Hold')setOpen(true)}}>${d.status==='Hold'?'■ On hold':'Hold'}</button>
@@ -616,7 +616,7 @@ function Cards(){
       <tbody>${group('Business')}${group('Personal')}</tbody>
       <tfoot><tr><td colspan="2">All cards</td><td class="r num">${all.bal===null?'—':money(all.bal,{cents:true})}</td><td class="r num">${all.lim===null?'—':money(all.lim)}</td><td class="r num">${all.util===null?'—':pct(all.util)}</td><td colspan="6"></td></tr></tfoot>
     </table></div>
-    <div class="muted" style=${{fontSize:'.78rem'}}>Click a card for details, source and last verified date. "Pending verification" means we don't have the figure yet; it does not mean the card is current.</div>
+    <div class="muted" style=${{fontSize:'.78rem'}}>Click a card for details, source and last verified date.</div>
     ${edit&&html`<div><button class="btn" onClick=${add}>+ Add card</button></div>`}
 
     <div class="panel"><h3>Paydown plan · Juan's personal cards</h3>
@@ -827,7 +827,7 @@ function Rental(){
       <tbody>${shownU.length?'':html`<tr><td colspan="9" class="empty">No units entered yet. Kristine adds each unit with <b>Edit numbers</b>.</td></tr>`}${shownU.map(x=>{const i=x.i;return html`<tr key=${x.u.id}>
         <td><${F} path=${'rental.units.'+i+'.unit'} width="70px" empty="—"/></td><td><${F} path=${'rental.units.'+i+'.tenant'} width="120px"/></td>
         ${!edit&&x.u.status==='Vacant'?html`<td class="r muted">—</td><td class="r muted">—</td><td class="r muted">—</td><td class="r muted">—</td>`:html`
-        <td class="r"><${F} path=${'rental.units.'+i+'.rent'} kind="money"/></td><td class="r"><${F} path=${'rental.units.'+i+'.sep'} kind="money"/></td><td class="r"><${F} path=${'rental.units.'+i+'.oct'} kind="money"/></td>
+        <td class="r"><${F} path=${'rental.units.'+i+'.rent'} kind="money"/></td>${['sep','oct'].map(m=>html`<td key=${m} class="r">${!edit&&num(x.u[m])===0&&num(x.u.rent)>0?html`<span style=${{color:'var(--bad)',fontWeight:600}}>Not paid</span>`:html`<${F} path=${'rental.units.'+i+'.'+m} kind="money"/>`}</td>`)}
         <td class="r">${edit?html`<${F} path=${'rental.units.'+i+'.outstanding'} kind="money" ph=${x.auto!==null?money(x.auto):'auto'}/>`:(x.out===null?html`<${PV}/>`:html`<span class="num" style=${x.out>0?{color:'var(--bad)',fontWeight:600}:null}>${money(x.out)}</span>`)}</td>`}
         <td><${F} path=${'rental.units.'+i+'.since'} kind="date" empty="—"/></td>
         <td>${edit?html`<${F} path=${'rental.units.'+i+'.status'} kind="select" options=${statuses}/>`:html`<${Pill} cls=${x.u.status==='Current'?'ok':/Pending/.test(x.u.status)?'neutral':/Legal|Notice/.test(x.u.status)?'bad':'warn'}>${x.u.status}<//>`}</td>
@@ -844,12 +844,6 @@ function Rental(){
       <td><${F} path=${'rental.activity.'+i+'.detail'} width="160px"/></td><td><${F} path=${'rental.activity.'+i+'.by'} width="90px"/></td><td><${F} path=${'rental.activity.'+i+'.next'} width="160px"/></td><td><${F} path=${'rental.activity.'+i+'.owner'} width="90px"/></td><td><${F} path=${'rental.activity.'+i+'.due'} kind="date"/></td>
       ${edit&&html`<td><button class="btn sm danger" onClick=${()=>rm('rental.activity',i)}>Remove</button></td>`}</tr>`)}</tbody></table></div>`:html`<div class="empty">No collection activity logged yet. ${edit?'':'Turn on Edit numbers to add notices, calls, and payment plans.'}</div>`}
       ${edit&&html`<div style=${{marginTop:'8px'}}><button class="btn" onClick=${addA}>+ Log activity</button></div>`}
-    </div>
-    <div class="panel" style=${{borderColor:'var(--warn)'}}><h3>Missing QuickBooks records</h3>
-      <div class=${'tablewrap'+(edit?' editing':'')}><table><thead><tr><th>Record missing</th><th>Responsible for obtaining</th><th>Due</th>${edit&&html`<th></th>`}</tr></thead><tbody>
-      ${S.rental.qbMissing.length?S.rental.qbMissing.map((q,i)=>html`<tr key=${q.id}><td><${F} path=${'rental.qbMissing.'+i+'.record'} width="240px"/></td><td><${F} path=${'rental.qbMissing.'+i+'.owner'} width="120px"/></td><td><${F} path=${'rental.qbMissing.'+i+'.due'} kind="date"/></td>${edit&&html`<td><button class="btn sm danger" onClick=${()=>rm('rental.qbMissing',i)}>Resolved</button></td>`}</tr>`):html`<tr><td colspan="4" class="empty">No missing records flagged.</td></tr>`}
-      </tbody></table></div>
-      ${edit&&html`<div style=${{marginTop:'8px'}}><button class="btn" onClick=${addQ}>+ Flag missing record</button></div>`}
     </div>
     <${Decisions} section="rental"/>
   </div>`;
@@ -1039,7 +1033,7 @@ function Summary(){
 function summaryText(S,K){
   const lines=[`ACCOUNTING REVIEW — DECISION SUMMARY`,`${S.meta.company} · Review date ${fmtDate(S.meta.reviewDate)} · Exported ${new Date().toLocaleString('en-US')}`,''];
   S.decisions.forEach((d,n)=>{const a=decisionAmount(d,K);
-    lines.push(`${n+1}. ${d.title} — ${a!==null?money(a):(d.amountNote||'Pending verification')}`);
+    lines.push(`${n+1}. ${d.title} — ${a!==null?money(a):(d.amountNote||'—')}`);
     lines.push(`   Decision: ${d.status==='Hold'?'HOLD':d.status.toUpperCase()}${d.decidedOn?' ('+fmtDate(d.decidedOn)+')':''}`);
     lines.push(`   Recommendation: ${d.rec}`);
     if(d.status==='Hold'&&d.holdReason)lines.push(`   Hold reason: ${d.holdReason}`);
@@ -1050,7 +1044,7 @@ function summaryText(S,K){
 }
 function reportHTML(S,K){
   const c={a:0,p:0,h:0};S.decisions.forEach(d=>{if(d.status==='Approved')c.a++;else if(d.status==='Hold')c.h++;else c.p++});
-  const pv='Pending verification';
+  const pv='—';
   const row=cells=>'<tr>'+cells.map(x=>'<td>'+x+'</td>').join('')+'</tr>';
   const tbl=(head,rows)=>'<table><thead><tr>'+head.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table>';
   let h='<h1>Accounting Review &amp; Decision Summary</h1><p>'+esc(S.meta.company)+' · Review date '+esc(fmtDate(S.meta.reviewDate))+' · Prepared by '+esc(S.meta.preparedBy)+' for '+esc(S.meta.decisionMaker)+'</p>';
@@ -1173,7 +1167,7 @@ function App(){
       ${draft&&html`<div class="banner warn" style=${{marginBottom:'12px'}}><span class="grow">This device has unsaved changes from ${new Date(draft.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}.</span><button class="btn sm" onClick=${()=>{revRef.current++;setS(draft.data);setDirty(true);setDraft(null);say('Draft restored. It saves for everyone automatically.')}}>Restore draft</button><button class="btn sm" onClick=${()=>{try{localStorage.removeItem(DRAFT_KEY)}catch(e){}setDraft(null)}}>Discard</button></div>`}
       ${art===null&&!readOnly&&html`<div class="banner info no-print" style=${{marginBottom:'12px'}}><span class="grow">This copy is not live, so decisions stay on this device. Open the report from its claude.ai link to share decisions, or use <b>Export & print</b> to keep a copy.</span></div>`}
       <div class="kpis">
-        <div class="kpi info"><button onClick=${()=>go('overview')}><div class="lbl">Waiting on Juan</div><div class="v">${counts.Pending}</div><div class="s">${[pendingAmt?money(pendingAmt):'',unknownAmt?unknownAmt+' amount'+(unknownAmt===1?'':'s')+' to verify':''].filter(Boolean).join(' · ')||'decisions to make'}</div></button></div>
+        <div class="kpi info"><button onClick=${()=>go('overview')}><div class="lbl">Waiting on Juan</div><div class="v">${counts.Pending}</div><div class="s">${[pendingAmt?money(pendingAmt):'',''].filter(Boolean).join(' · ')||'decisions to make'}</div></button></div>
         <div class="kpi ok"><div class="lbl">Approved</div><div class="v">${counts.Approved}</div><div class="s">of ${S.decisions.length} decisions</div></div>
         <div class="kpi warn"><div class="lbl">On hold</div><div class="v">${counts.Hold}</div><div class="s">waiting on a condition</div></div>
         <div class="kpi"><div class="lbl">Next deadline</div><div class="v" style=${{fontSize:'1rem'}}>${nextDL?fmtDate(nextDL.date):'—'}</div><div class="s" title=${nextDL?nextDL.text:''} style=${{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>${nextDL?nextDL.text:'None dated'}</div></div>

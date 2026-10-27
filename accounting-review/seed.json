@@ -406,8 +406,8 @@
     "unit": "",
     "tenant": "Maria Navarro",
     "rent": 860,
-    "sep": null,
-    "oct": null,
+    "sep": 0,
+    "oct": 0,
     "outstanding": 8980,
     "since": "",
     "status": "Behind on rent"
@@ -505,14 +505,7 @@
     "due": ""
    }
   ],
-  "qbMissing": [
-   {
-    "id": "q1",
-    "record": "8715 D St rent deposits and property expenses for September–October (confirm what is missing)",
-    "owner": "",
-    "due": ""
-   }
-  ],
+  "qbMissing": [],
   "mortgageLabel": "November mortgage"
  },
  "time": {
@@ -751,7 +744,7 @@
    "amountSource": "rentalOutstanding",
    "amount": 8980,
    "amountNote": "",
-   "situation": "Maria Navarro owes $8,980 through October. She has paid $6,000 this year.",
+   "situation": "Maria Navarro did not pay September or October. She owes $8,980 in total and has paid $6,000 this year.",
    "rec": "Approve a written payment plan with firm dates.",
    "required": "Approve a written payment plan with firm dates.",
    "owner": "Kristine",
@@ -858,7 +851,7 @@
    "topic": "8715 D St",
    "status": "warn",
    "headline": "5 tenants pay $4,950 a month. 2 rooms are empty, and Maria owes $8,980.",
-   "now": "All other tenants are paid through October. Maria owes $8,980 and we're following up. After the November mortgage, about $1,061.70 is left from collected rent.",
+   "now": "All other tenants are paid through October. Maria did not pay September or October and owes $8,980; we're following up. After the November mortgage, about $1,061.70 is left from collected rent.",
    "you": "Approve listing the 2 empty rooms (free posts first, a small Facebook boost only if needed), and approve a payment plan for Maria.",
    "youShort": "Approve room listings; approve Maria's payment plan",
    "next": "MC posts both rooms with photos on Facebook and Craigslist; Kristine sends Maria a written payment plan."
