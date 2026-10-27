@@ -6,7 +6,7 @@ This repo holds the working rules for Claude when helping Marieflor
 ## When to touch email
 
 - Only open the inbox when Marieflor says **"start of shift"** or **"end of shift"**.
-- Shift hours are **8:00 a.m. – 5:00 p.m. Pacific Time (PT)** Never go through email outside those hours.
+- Shift hours are **8:00 a.m. – 5:00 p.m. Pacific Time (PT)**. Never go through email outside those hours.
 - No other trigger opens the inbox.
 
 ## What to check
