@@ -105,7 +105,7 @@
   {
    "id": "c-boa",
    "name": "Bank of America Visa",
-   "last4": "2406",
+   "last4": "0475",
    "kind": "Business",
    "balance": 52083.13,
    "limit": 60000,
@@ -120,7 +120,7 @@
    "verified": "2026-10-27",
    "source": "Unpaid card charges · approval (Kristine, Oct 27)",
    "sourceUrl": "https://claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ",
-   "notes": "Unpaid charges $52,083.13 (119 lines, listed as card 0475 on the unpaid charges page). Limit $60,000; due Nov 2; statement closes the 6th. Minimum $2,277.24 as of Oct 9. Autopay on.",
+   "notes": "Listed as BOA 0475 on the Unpaid card charges page (same account as ••2406). Unpaid lines run Oct 30, 2025 – Sep 5, 2026; nothing after Sep 5 is on the page. Limit $60,000; due Nov 2; closes the 6th. Minimum $2,277.24 as of Oct 9. Autopay on.",
    "closeDay": "6th"
   },
   {
@@ -619,7 +619,7 @@
   {
    "id": "dc-boa",
    "section": "cards",
-   "title": "Bank of America Visa ••2406 — pay down",
+   "title": "Bank of America Visa ••0475 — pay down",
    "amountSource": "",
    "amount": 34083.13,
    "amountNote": "",

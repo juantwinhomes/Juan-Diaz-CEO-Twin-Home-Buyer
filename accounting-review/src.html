@@ -511,6 +511,7 @@ function CardSnapshot(){
   const {S,go}=useContext(Ctx);if(!S.cards||!S.cards.length)return null;
   const rows=S.cards.map(c=>({c,f:cardFlag(c)}));
   return html`<section><div style=${{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:'8px',flexWrap:'wrap'}}><h3 class="grp">Credit cards</h3><button class="linkbtn" onClick=${()=>go('cards')}>Open full card report and paydown plan</button></div>
+    <div class="muted" style=${{fontSize:'.78rem',margin:'-2px 0 6px'}}>Balances are the unpaid charges on Kristine's Unpaid card charges page, not the bank's statement balance. Discover and Home Depot ••1511 / ••8087 are not on that page.</div>
     <div class="tablewrap"><table><thead><tr><th>Card</th><th class="r">Balance</th><th class="r">Limit</th><th class="r">% used</th><th>Closes</th><th>Due</th><th class="r">Minimum</th><th>Autopay</th><th>Late (12 mo)</th><th>Flag</th></tr></thead><tbody>
     ${['Business','Personal'].map(k=>html`<tr class="cgroup"><td colspan="10" style=${{background:'var(--panel)',fontWeight:700,fontSize:'.74rem',textTransform:'uppercase',letterSpacing:'.06em',color:'var(--muted)'}}>${k}</td></tr>
       ${rows.filter(x=>x.c.kind===k).map(x=>html`<tr key=${x.c.id}><td><b>${x.c.name}</b> <span class="num muted">••${x.c.last4}</span></td>
@@ -616,7 +617,7 @@ function Cards(){
       <tbody>${group('Business')}${group('Personal')}</tbody>
       <tfoot><tr><td colspan="2">All cards</td><td class="r num">${all.bal===null?'—':money(all.bal,{cents:true})}</td><td class="r num">${all.lim===null?'—':money(all.lim)}</td><td class="r num">${all.util===null?'—':pct(all.util)}</td><td colspan="6"></td></tr></tfoot>
     </table></div>
-    <div class="muted" style=${{fontSize:'.78rem'}}>Click a card for details, source and last verified date. "Pending verification" means we don't have the figure yet; it does not mean the card is current.</div>
+    <div class="muted" style=${{fontSize:'.78rem'}}><b>Balances are the unpaid charges on Kristine's Unpaid card charges page, not the bank's statement balance. Discover and Home Depot ••1511 / ••8087 are not on that page.</b> Click a card for details, source and last verified date. "Pending verification" means we don't have the figure yet; it does not mean the card is current.</div>
     ${edit&&html`<div><button class="btn" onClick=${add}>+ Add card</button></div>`}
 
     <div class="panel"><h3>Paydown plan · protect Juan's credit score</h3>
