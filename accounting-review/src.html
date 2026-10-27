@@ -620,14 +620,14 @@ function Cards(){
     <div class="muted" style=${{fontSize:'.78rem'}}><b>Balances are the unpaid charges on Kristine's Unpaid card charges page, not the bank's statement balance. Discover and Home Depot ••1511 / ••8087 are not on that page.</b> Click a card for details, source and last verified date. "Pending verification" means we don't have the figure yet; it does not mean the card is current.</div>
     ${edit&&html`<div><button class="btn" onClick=${add}>+ Add card</button></div>`}
 
-    <div class="panel"><h3>Paydown plan · protect Juan's credit score</h3>
-      <p class="muted" style=${{margin:'2px 0 10px',fontSize:'.84rem'}}>Goal: no late payments, minimum autopay on every card, and each card under 10% used (never over 30%) before its statement closes. No cards opened or closed without Juan's approval.</p>
+    <div class="panel"><h3>Paydown plan · Juan's personal cards</h3>
+      <p class="muted" style=${{margin:'2px 0 10px',fontSize:'.84rem'}}>Personal cards report to Juan's personal credit score, so they come first. Goal: no late payments, autopay on, and each card under 10% used (never over 30%) before its statement closes. Business cards: pay at least what's due on time. No cards opened or closed without Juan's approval.</p>
       <div class="tablewrap"><table><thead><tr><th>#</th><th>Card</th><th class="r">Balance</th><th class="r">Pay to reach 30%</th><th class="r">Pay to reach 10%</th><th>What to do</th></tr></thead><tbody>
-      ${rows.filter(x=>!(x.f.bal!==null&&x.f.bal<=0)).sort((a,b)=>FLAG[a.f.flag].rank-FLAG[b.f.flag].rank||((b.f.util||0)-(a.f.util||0))).map((x,n)=>{const lim=x.f.lim,bal=x.f.bal;const t30=lim>0&&bal!==null?Math.max(0,bal-0.3*lim):null,t10=lim>0&&bal!==null?Math.max(0,bal-0.1*lim):null;
+      ${rows.filter(x=>x.c.kind==='Personal'&&!(x.f.bal!==null&&x.f.bal<=0)).sort((a,b)=>FLAG[a.f.flag].rank-FLAG[b.f.flag].rank||((b.f.util||0)-(a.f.util||0))).map((x,n)=>{const lim=x.f.lim,bal=x.f.bal;const t30=lim>0&&bal!==null?Math.max(0,bal-0.3*lim):null,t10=lim>0&&bal!==null?Math.max(0,bal-0.1*lim):null;
         const todo=x.c.charge?'No preset limit: pay the full statement balance by each due date.':bal===null?'Get the current balance and credit limit first.':lim===null?'Credit limit needed to size the paydown; pay at least the minimum on time.':t30>0?'Pay '+money(t30,{cents:true})+' before the statement closes to get under 30%.':'Already under 30%; keep it under 10% if possible.';
         return html`<tr key=${x.c.id}><td class="num">${n+1}</td><td><b>${x.c.name}</b> <span class="num muted">••${x.c.last4}</span></td><td class="r num">${bal===null?html`<${PV}/>`:money(bal,{cents:true})}</td><td class="r num">${x.c.charge?'N/A':t30===null?'—':money(t30,{cents:true})}</td><td class="r num">${x.c.charge?'N/A':t10===null?'—':money(t10,{cents:true})}</td><td style=${{minWidth:'240px'}}>${todo}</td></tr>`})}
       </tbody></table></div>
-      <div class="muted" style=${{fontSize:'.78rem',marginTop:'6px'}}>Amex and Capital One Spark have no preset limit. The plan updates automatically as balances and limits are entered.</div>
+      <div class="muted" style=${{fontSize:'.78rem',marginTop:'6px'}}>Home Depot ••1511 and ••8087 have no balance, so they're left out. Discover is added once its balance comes in.</div>
     </div>
     <section><h3 class="grp">Decisions needed from Juan</h3>
       ${decs.length?html`<div class="tablewrap"><table><thead><tr><th>Card</th><th class="r">Amount</th><th>Issue</th><th>My recommendation</th><th>Decision</th></tr></thead><tbody>
