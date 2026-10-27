@@ -260,7 +260,7 @@ const DRAFT_KEY='thb-accounting-review-draft-v1';
 const SECTIONS=[
  ['overview','Executive Overview'],['cards','Credit Cards'],['contractors','Contractor Payments'],
  ['tax','PPS 2025 Tax Returns'],['honda','Honda Accord Buyout'],['rental','8715 D St Rental'],
- ['time','Clock-In / Clock-Out'],['payroll','Matrix Payroll'],['wires','Wires to Release'],['erc','ERC Specialists Bill'],['vantage','Wells Fargo Vantage'],['other','Other Pending Decisions'],['summary','Final Decision Summary']];
+ ['time','Clock-In / Clock-Out'],['payroll','Matrix Payroll'],['wires','Wires & Payments'],['erc','ERC Specialists Bill'],['vantage','Wells Fargo Vantage'],['other','Other Pending Decisions'],['summary','Final Decision Summary']];
 const SEC_NAME=Object.fromEntries(SECTIONS);
 
 /* ---------- helpers ---------- */
@@ -920,7 +920,7 @@ function Wires(){
   const {S,edit}=useContext(Ctx);const w=S.wires||{items:[]};
   const total=w.items.reduce((a,x)=>a+(num(x.amount)||0),0);
   return html`<div class="stack">
-    <${SecHead} title="Wires Waiting on Juan's Release" k="wires"/>
+    <${SecHead} title="Wires & Payments to Release" k="wires"/>
     <${Brief} k="wires"/>
     <div class="banner warn"><span class="grow"><b>Before releasing any wire:</b> confirm the wire instructions by phone, using a number you already have on file (not one from the email). Wire fraud on real estate deposits is common, and a sent wire usually can't be recalled.</span></div>
     <div class="panel">
@@ -935,6 +935,16 @@ function Wires(){
       </tbody></table></div>`:html`<div class="empty">No wires waiting.</div>`}
       ${w.source&&html`<p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>${w.source}</p>`}
     </div>
+    ${(()=>{const ap=(S.contractors&&S.contractors.approved)||[];const left=ap.map((x,i)=>({x,i})).filter(o=>!/^(Sent to contractor|Cleared)$/.test(o.x.status));const tot=left.reduce((a,o)=>a+(num(o.x.amount)||0),0);
+      const byAcct={};left.forEach(o=>{byAcct[o.x.source]=(byAcct[o.x.source]||0)+(num(o.x.amount)||0)});
+      return html`<div class="panel">
+      <div style=${{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'baseline',flexWrap:'wrap'}}><h3>Contractor payments to release · ${left.length}</h3><span class="num" style=${{fontWeight:600,fontSize:'1.1rem'}}>${money(tot,{cents:true})}</span></div>
+      <p class="muted" style=${{margin:'4px 0 8px',fontSize:'.82rem'}}>Already approved by Juan. ${Object.entries(byAcct).map(([k,v])=>k+' '+money(v)).join(' · ')}</p>
+      ${left.length?html`<div class="tablewrap"><table><thead><tr><th>Pay to</th><th class="r">Amount</th><th>Job</th><th>From</th><th>Status</th></tr></thead><tbody>
+      ${left.map(({x,i})=>html`<tr key=${x.id}><td><b>${x.payee}</b></td><td class="r num">${money(x.amount,{cents:true})}</td><td style=${{minWidth:'200px'}}>${x.job}</td><td style=${{whiteSpace:'nowrap'}}>${x.source}</td>
+        <td>${edit?html`<${F} path=${'contractors.approved.'+i+'.status'} kind="select" options=${['Not yet sent','Scheduled','Sent to contractor','Cleared','On hold']}/>`:html`<${Pill} cls=${x.status==='Scheduled'?'info':x.status==='On hold'?'warn':'neutral'}>${x.status}<//>`}</td></tr>`)}
+      </tbody></table></div>`:html`<div class="empty">All contractor payments are sent.</div>`}
+    </div>`})()}
     <${Decisions} section="wires"/>
   </div>`;
 }

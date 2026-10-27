@@ -10,8 +10,8 @@
  },
  "verify": {
   "cards": {
-   "asOf": "2026-10-22",
-   "source": "THB Card Desk, Twin Home Expense Ledger, 5253 Approval Desk, Bills Desk (records Oct 9–22)"
+   "asOf": "2026-10-27",
+   "source": "Unpaid card charges · approval"
   },
   "contractors": {
    "asOf": "2026-10-26",
@@ -34,8 +34,20 @@
    "source": "Deputy timesheet screen (Timesheets › Shift activity)"
   },
   "payroll": {
-   "asOf": "",
-   "source": "Deputy → Paychex Flex"
+   "asOf": "2026-10-27",
+   "source": "Matrix Payroll"
+  },
+  "wires": {
+   "asOf": "2026-10-27",
+   "source": "Contractor payments list; Heyer purchase"
+  },
+  "erc": {
+   "asOf": "2026-10-27",
+   "source": "ERC Specialists invoice"
+  },
+  "vantage": {
+   "asOf": "2026-10-27",
+   "source": "Kristine"
   }
  },
  "cards": [
@@ -897,11 +909,11 @@
   "wires": {
    "topic": "Wires",
    "status": "warn",
-   "headline": "One wire is ready for your release: the $10,500 Heyer earnest money deposit.",
-   "now": "No other wires are waiting.",
-   "you": "Approve releasing the $10,500 after Kristine confirms the instructions by phone.",
+   "headline": "To release: the $10,500 Heyer earnest money wire and $17,900 in approved contractor payments.",
+   "now": "Contractor payments: $12,100 from Relay ••5776 and $5,800 from WF ••8251, all already approved. Gonzalo's $2,000 stays on hold.",
+   "you": "Approve releasing the $10,500 Heyer wire after Kristine confirms the instructions by phone.",
    "youShort": "Approve $10,500 Heyer EMD",
-   "next": "Kristine confirms by phone, then you release it in the bank portal."
+   "next": "Kristine sends the contractor payments and marks each one sent."
   },
   "erc": {
    "topic": "ERC Specialists bill",
@@ -940,7 +952,7 @@
     "amount": 10500,
     "purpose": "Earnest money deposit (EMD) for the Heyer purchase",
     "notes": "",
-    "from": "",
+    "from": "—",
     "deadline": "",
     "deadlineNote": "—",
     "verified": "Not verified",
