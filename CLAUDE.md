@@ -32,5 +32,14 @@ For each one, work out whether Marieflor has already replied.
   that keeps her words and meaning, then puts it in the reply to that email
   (to Juan or Cherry).
 - Show her the final text before it goes out.
+- **REQUIRED for everything sent to Juan.** Juan works two ways, so every
+  email to him includes both:
+  1. An **artifact** he can click through and approve.
+  2. The **same full content** typed in the email body, or as a Google Doc/PDF
+     in Drive, because his Claude cannot read artifacts.
+  Never summarize away the details: every line item, every payee, every
+  amount to the cent. Both versions must match exactly.
+- Artifacts are private when published. Remind Marieflor to share the
+  artifact with Juan (Share menu) before the email goes out.
 - Later, once Claude has learned her tone and language from enough of her
   replies, she may let Claude start drafting. Not until she says so.
