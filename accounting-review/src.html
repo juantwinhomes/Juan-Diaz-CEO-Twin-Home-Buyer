@@ -258,7 +258,7 @@ const SEED=JSON.parse(document.getElementById('seed').textContent);
 const DRAFT_KEY='thb-accounting-review-draft-v1';
 
 const SECTIONS=[
- ['overview','Executive Overview'],['cards','Credit Cards'],['contractors','Contractor Payments'],
+ ['overview','Executive Overview'],['cards','Credit Cards'],['open','Open Items'],['contractors','Contractor Payments'],
  ['tax','PPS 2025 Tax Returns'],['honda','Honda Accord Buyout'],['rental','8715 D St Rental'],
  ['time','Clock-In / Clock-Out'],['payroll','Matrix Payroll'],['wires','Wires & Payments'],['erc','ERC Specialists Fee'],['vantage','Wells Fargo Vantage'],['other','Other Pending Decisions'],['summary','Final Decision Summary']];
 const SEC_NAME=Object.fromEntries(SECTIONS);
@@ -373,7 +373,7 @@ function risks(S,K){
 }
 function deadlines(S,K){
   const out=[];
-  out.push({date:S.meta.reviewDate,text:'Accounting review report complete',sec:'overview'});
+  out.push({date:S.meta.reviewDate,text:'Accounting session with Juan, 10:00 AM',sec:'overview'});
   S.decisions.forEach(d=>{if(d.status!=='Approved'&&d.target)out.push({date:d.target,text:d.title,sec:d.section==='other'?'other':d.section,id:d.id})});
   S.cards.forEach((c,i)=>{if(c.dueDate)out.push({date:c.dueDate,text:'Card payment due — '+(c.name||'Card '+(i+1)),sec:'cards'})});
   if(S.honda.deadline)out.push({date:S.honda.deadline,text:'Honda buyout deadline',sec:'honda'});
@@ -697,25 +697,46 @@ const PPS_OPTS=[
  {key:'A',name:'Online',cost:230,costText:'$230',rec:true,desc:'Kristine files with TaxAct. You sign two e-file forms.',pro:'Accepted in 1–3 days.',con:'Pays $230 for a $0 return.'},
  {key:'B',name:'Paper',cost:20,costText:'$20',desc:'Kristine and Jairo print and mail by Certified Mail. You sign two forms.',pro:'Cheapest.',con:'Confirmation takes 8–12 weeks.'},
  {key:'C',name:'Kaden, BEC CFO and CPA',cost:null,costText:'CPA fee',desc:'Kaden reviews and e-files. You approve his fee and sign.',pro:'CPA signature.',con:'Extra fee for finished work.'}];
+function OpenItems(){
+  const {S,set}=useContext(Ctx);const L=S.openItems||[];const t=today();
+  const late=x=>x.status!=='DONE'&&x.due&&x.due<t;
+  const n={DONE:0,DATE:0,BLOCKED:0};L.forEach(x=>n[x.status]=(n[x.status]||0)+1);const nl=L.filter(late).length;
+  return html`<div class="stack">
+    <${SecHead} title="Open Items" sub="Every request from Juan: what was asked, when, who owns it, the due date and status (DONE / DATE / BLOCKED). Past due shows red."/>
+    <div class="panel facts">
+      <${Fact} label="Open" big><span class="num">${L.length-n.DONE}</span><//>
+      <${Fact} label="Past due" big><span class="num" style=${nl?{color:'var(--bad)'}:null}>${nl}</span><//>
+      <${Fact} label="Blocked" big><span class="num">${n.BLOCKED||0}</span><//>
+      <${Fact} label="Done" big><span class="num">${n.DONE}</span><//>
+    </div>
+    <div class="panel"><div class="tablewrap"><table><thead><tr><th>What Juan asked</th><th>Asked</th><th>Owner</th><th>Due</th><th>Status</th></tr></thead><tbody>
+    ${L.map((x,i)=>html`<tr key=${x.id} style=${late(x)?{background:'color-mix(in srgb,var(--bad) 9%,transparent)'}:x.status==='DONE'?{color:'var(--muted)'}:null}>
+      <td style=${{minWidth:'260px'}}><b>${x.ask}</b>${x.note&&html`<div class="muted" style=${{fontSize:'.78rem'}}>${x.note}</div>`}</td>
+      <td style=${{whiteSpace:'nowrap'}}>${fmtDate(x.asked)}</td><td>${x.owner}</td>
+      <td style=${{whiteSpace:'nowrap',color:late(x)?'var(--bad)':null,fontWeight:late(x)?700:null}}>${x.due?fmtDate(x.due):'—'}${x.dueNote&&html`<div class="muted" style=${{fontSize:'.72rem',fontWeight:400}}>${x.dueNote}</div>`}</td>
+      <td><select class="f" value=${x.status} onChange=${e=>set('openItems.'+i+'.status',e.target.value)}>${['DATE','BLOCKED','DONE'].map(o=>html`<option key=${o} value=${o}>${o}</option>`)}</select></td></tr>`)}
+    </tbody></table></div></div>
+  </div>`;
+}
+
 function Tax(){
   const {S,set}=useContext(Ctx);const choice=S.tax&&S.tax.choice;
   return html`<div class="stack">
     <${SecHead} title="PPS 2025 Tax Returns" k="tax" sub="Peninsula Plumbing Solutions Inc., first tax year, June 28 – December 31, 2025"/>
     <${Brief} k="tax"/>
-    <div class="banner info"><span class="grow"><b>Nothing is owed. One decision is needed.</b> Both returns are prepared and checked. PPS lost money in its first year, so no tax is due.</span><a class="btn sm" href=${PPS_SRC} target="_blank" rel="noopener">Open the returns</a></div>
+    <div class="banner info"><span class="grow"><b>Nothing is owed.</b> Both returns are drafted and checked. PPS lost money in its first year, so no tax is due. BEC files them.</span><a class="btn sm" href=${PPS_SRC} target="_blank" rel="noopener">Open the returns</a></div>
     <div class="panel facts">
       <${Fact} label="IRS, Form 1120" big><span class="num">$0</span><//>
       <${Fact} label="FTB, Form 100" big><span class="num">$0</span><//>
       <${Fact} label="Loss saved for future years" big><span class="num">$45,000</span><//>
       <${Fact} label="PPS owes ETI, both books agree" big><span class="num">$65,118</span><//>
     </div>
-    <div class="panel"><h3>How should we file? <span class="muted" style=${{fontWeight:400}}>Every option ends at $0 owed. They differ only in cost and speed.</span></h3>
-      <div class="grid3">${PPS_OPTS.map(o=>html`<button key=${o.key} type="button" class=${'taxopt'+(choice===o.key?' sel':'')} aria-pressed=${choice===o.key} onClick=${()=>set('tax.choice',o.key)}>
-        <div style=${{display:'flex',justifyContent:'space-between',gap:'8px',alignItems:'baseline'}}><b style=${{fontSize:'1.02rem'}}>${o.name}</b><span class="num" style=${{fontSize:'1.15rem',fontWeight:600}}>${o.costText}</span></div>
-        ${o.rec&&html`<span class="pill info" style=${{alignSelf:'flex-start'}}>Recommended · revised Oct 26</span>`}${o.key==='B'&&html`<span class="pill neutral" style=${{alignSelf:'flex-start'}}>Original recommendation, Oct 17</span>`}
-        <span style=${{fontSize:'.86rem'}}>${o.desc} <span style=${{color:'var(--ok)'}}>${o.pro}</span> <span style=${{color:'var(--warn)'}}>${o.con}</span></span>
-        <span class="lbl" style=${{color:choice===o.key?'var(--accent)':'var(--faint)'}}>${choice===o.key?'✓ Selected':'Select'}</span>
-      </button>`)}</div>
+    <div class="panel" style=${{borderColor:'var(--accent)'}}>
+      <div style=${{display:'flex',flexWrap:'wrap',gap:'8px',alignItems:'baseline',justifyContent:'space-between'}}><h3>BEC files both returns</h3><span class="pill info">PPS is on hold, not closed</span></div>
+      <p style=${{margin:'4px 0 12px'}}>Kristine sends BEC the drafted Form 1120 and California Form 100 with all backup. These are not final returns.</p>
+      <div class="tablewrap"><table><thead><tr><th>#</th><th>Step</th><th>Who</th><th>By</th></tr></thead><tbody>
+      ${(S.tax.becSteps||[]).map((x,i)=>html`<tr key=${i} style=${x.done?{color:'var(--muted)'}:null}><td class="num">${x.done?html`<span style=${{color:'var(--ok)',fontWeight:700}}>✓</span>`:i+1}</td><td>${x.t}</td><td>${x.who}</td><td style=${{whiteSpace:'nowrap'}}>${x.done?html`<${Pill} cls="ok">Done<//>`:x.by}</td></tr>`)}
+      </tbody></table></div>
     </div>
     <div class="grid2">
       <div class="panel"><h3>The numbers</h3>
@@ -725,36 +746,11 @@ function Tax(){
           <tr><td>Taxable income</td><td class="r num">($45,000)</td><td class="r num">($18,140)</td></tr>
           <tr><td><b>Amount due</b></td><td class="r num"><b>$0</b></td><td class="r num"><b>$0</b></td></tr>
         </tbody></table></div>
-        <p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>California spreads the tools deduction over six years instead of taking it all in 2025.</p>
       </div>
       <div class="panel"><h3>What was checked</h3>
         <div class="list">${['Books reconciled to ETI','No cost deducted twice','Duplicate sales removed, missing sales added','Bank matches Relay ($12,307.15)','Matrix Group Inc listed as related company','ETI and Matrix returns need no changes','Your personal return is not affected'].map(t=>html`<div class="risk" key=${t}><span style=${{color:'var(--ok)',fontWeight:700}}>✓</span><div>${t}</div></div>`)}</div>
-        <p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>Prepared and double-checked by Kristine. Calculations reviewed with Claude, an AI assistant and not a licensed CPA.</p>
       </div>
     </div>
-    <div class="panel" style=${{borderColor:'var(--accent)'}}>
-      <div style=${{display:'flex',flexWrap:'wrap',gap:'8px',alignItems:'baseline',justifyContent:'space-between'}}><h3>Revised recommendation: file online</h3><span class="pill info">Changed from Paper on Oct 26, 2026</span></div>
-      <p style=${{margin:'4px 0 12px'}}>Both ways PPS owes $0 and pays no IRS late penalty, because that penalty is a share of tax owed. The ~$210 extra for online buys certainty with California.</p>
-      <div class="tablewrap"><table><thead><tr><th>Why online</th><th>What it protects against</th></tr></thead><tbody>
-        <tr><td><b>California requires e-file for returns prepared with tax software</b></td><td>A $100 penalty on a paper return (then $500 for each later one)</td></tr>
-        <tr><td><b>Acceptance confirmed in 1–3 days</b></td><td>Waiting 8–12 weeks with no proof; the state can suspend a corporation that hasn’t filed</td></tr>
-        <tr><td><b>Software checks the math and missing fields</b></td><td>A paper return sent back for errors, which delays filing again</td></tr>
-        <tr><td><b>The $45,000 loss carries into the 2026 return</b></td><td>Re-entering the loss and tools by hand next year</td></tr>
-      </tbody></table></div>
-      <h3 style=${{margin:'16px 0 8px'}}>Next steps</h3>
-      <div class="tablewrap"><table><thead><tr><th>#</th><th>Step</th><th>Who</th><th>By</th></tr></thead><tbody>
-        <tr><td class="num">1</td><td>Set line 15a to “No” (no 1099s; Matrix and ETI are corporations)</td><td>Kristine</td><td class="num">Oct 28</td></tr>
-        <tr><td class="num">2</td><td>Buy TaxAct Business 1120 + California at taxact.com and enter the returns</td><td>Kristine</td><td class="num">Oct 29</td></tr>
-        <tr><td class="num">3</td><td>Sign IRS Form 8879-CORP and California Form 8453-C</td><td>Juan</td><td class="num">Oct 30</td></tr>
-        <tr><td class="num">4</td><td>E-file both returns and save the acceptance emails</td><td>Kristine</td><td class="num">Oct 31</td></tr>
-      </tbody></table></div>
-      <p class="muted" style=${{fontSize:'.78rem',margin:'10px 0 0'}}>Original recommendation (Paper) and all figures above are from “PPS 2025 Taxes: Juan’s Filing Decision,” prepared by Kristine Joy Lomeda, Oct 17, 2026; that page is unchanged. Revised after reviewing California’s business e-file rule. Not reviewed by a licensed CPA.</p>
-    </div>
-    ${S.tax.closeout&&html`<div class="panel"><div style=${{display:'flex',flexWrap:'wrap',gap:'8px',justifyContent:'space-between',alignItems:'baseline'}}><h3>Closing PPS · 2026 is the final tax year</h3><${Pill} cls="warn">Needs Juan's approval<//></div>
-      <p style=${{margin:'4px 0 12px'}}>${S.tax.closeout.summary}</p>
-      <div class="tablewrap"><table><thead><tr><th>#</th><th>Step</th><th>Who</th><th>By</th></tr></thead><tbody>
-      ${S.tax.closeout.steps.map((x,i)=>html`<tr key=${i}><td class="num">${i+1}</td><td>${x.t}</td><td>${x.who}</td><td style=${{whiteSpace:'nowrap'}}>${x.by}</td></tr>`)}
-      </tbody></table></div></div>`}
     <${Decisions} section="tax"/>
   </div>`;
 }
@@ -1154,7 +1150,7 @@ function App(){
   const secCount=s=>S.decisions.filter(d=>(d.section===s)&&d.status==='Pending').length;
 
   const ctx={S,K,set,edit,go,flash,setDecision,removeDecision,counts,copySummary,openReport};
-  const Sec={overview:Overview,cards:Cards,contractors:Contractors,tax:Tax,honda:Honda,rental:Rental,time:Time,payroll:Payroll,wires:Wires,erc:ERC,vantage:Vantage,other:Other,summary:Summary}[sec];
+  const Sec={overview:Overview,cards:Cards,open:OpenItems,contractors:Contractors,tax:Tax,honda:Honda,rental:Rental,time:Time,payroll:Payroll,wires:Wires,erc:ERC,vantage:Vantage,other:Other,summary:Summary}[sec];
 
   const fmtT=iso=>new Date(iso).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   const live=art&&!readOnly;
@@ -1163,7 +1159,7 @@ function App(){
   return html`<${Ctx.Provider} value=${ctx}>
   <div class="app">
     <aside class="side">
-      <div class="brand"><h1>Accounting Review</h1><div class="co">${S.meta.company}</div><div class="co">Due ${fmtDate(S.meta.reviewDate)}</div></div>
+      <div class="brand"><h1>Accounting Review</h1><div class="co">${S.meta.company}</div><div class="co">${S.meta.session?'Session '+S.meta.session:'Due '+fmtDate(S.meta.reviewDate)}</div></div>
       <nav class="nav" aria-label="Sections">${SECTIONS.map(([k,l],i)=>html`<button key=${k} aria-current=${sec===k} onClick=${()=>go(k)}><span class="n">${String(i+1).padStart(2,'0')}</span>${l}${secCount(k)>0&&html`<span class="badge">${secCount(k)}</span>`}</button>`)}</nav>
     </aside>
     <main class="main" ref=${mainRef}>
