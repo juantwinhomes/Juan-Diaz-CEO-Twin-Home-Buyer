@@ -1,109 +1,358 @@
 <title>Payments to Release</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
-/* Layout: one sheet. Three short tables (wire, contractors, credit cards) with the same columns, then totals by account. */
+/* Layout: same as the Matrix Payroll sheet Juan already approves from: dark hero with the amount, numbered payments, each card opens to what its charges are for, then each account's breakdown. Approve + hold-by-unchecking kept from the earlier version. */
 :root{
-  --bg:#f6f6f2;--paper:#ffffff;--ink:#14181d;--muted:#5e6670;--line:#dcdfd8;--soft:#f0f1ec;
-  --ok:#1f7a4d;--ok-bg:#e3f2e9;
-  --f-head:"Archivo","Helvetica Neue",Arial,sans-serif;--f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;--f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --accent:#6D4AFF;--accent-soft:#EEEAFF;--on-accent:#ffffff;--gold:#67E8F9;
+  --amber:#D97706;--amber-soft:#FEF3C7;--blue:#2563EB;--blue-soft:#E0EAFF;--green:#059669;--green-soft:#D1FAE5;
+  --ink:#0F172A;--ink-soft:#475569;--ink-faint:#94A3B8;--line:#E2E8F0;--line-soft:#F1F5F9;--paper:#ffffff;--wash:#F8FAFC;--ground:#EEF1F8;
+  --shadow:0 24px 60px rgba(30,34,80,.18);--ai1:#7C5CFF;--ai2:#22D3EE;
+  --f-head:"Plus Jakarta Sans",Inter,sans-serif;--f-body:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111416;--paper:#181c1f;--ink:#e8ebe6;--muted:#9aa29c;--line:#2b3135;--soft:#1f2427;--ok:#7fd3a6;--ok-bg:#183326;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#111416;--paper:#181c1f;--ink:#e8ebe6;--muted:#9aa29c;--line:#2b3135;--soft:#1f2427;--ok:#7fd3a6;--ok-bg:#183326;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--accent:#A08BFF;--accent-soft:#221B4A;--on-accent:#0B1020;--amber:#FBBF24;--amber-soft:#33270B;--blue:#7AA2FF;--blue-soft:#16224A;--green:#34D399;--green-soft:#0F2E25;--ink:#E7ECF6;--ink-soft:#B9C3D9;--ink-faint:#7D89A6;--line:#232B42;--line-soft:#1A2134;--paper:#121829;--wash:#0E1424;--ground:#080B15;--shadow:0 24px 60px rgba(0,0,0,.5);color-scheme:dark}}
+:root[data-theme="dark"]{--accent:#A08BFF;--accent-soft:#221B4A;--on-accent:#0B1020;--amber:#FBBF24;--amber-soft:#33270B;--blue:#7AA2FF;--blue-soft:#16224A;--green:#34D399;--green-soft:#0F2E25;--ink:#E7ECF6;--ink-soft:#B9C3D9;--ink-faint:#7D89A6;--line:#232B42;--line-soft:#1A2134;--paper:#121829;--wash:#0E1424;--ground:#080B15;--shadow:0 24px 60px rgba(0,0,0,.5);color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
-.sheet{max-width:960px;margin:0 auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:24px clamp(16px,3vw,32px);display:grid;gap:24px}
-header{border-bottom:2px solid var(--ink);padding-bottom:12px}
-h1{font-family:var(--f-head);font-weight:800;font-size:clamp(24px,3.6vw,30px);margin:0}
-.sub{color:var(--muted);font-size:13px;margin-top:2px}
-.sh{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}
-h2{font-family:var(--f-head);font-weight:700;font-size:14px;letter-spacing:.07em;text-transform:uppercase;margin:0}
-.sh .t{font-family:var(--f-num);font-weight:600;font-variant-numeric:tabular-nums}
-.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
-table{width:100%;border-collapse:collapse;min-width:720px;table-layout:fixed}
-col.c1{width:20%}col.c2{width:13%}col.c3{width:29%}col.c4{width:18%}col.c5{width:8%}col.c6{width:12%}
-th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-tr:last-child td{border-bottom:0}
-.amt{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
-.acct{font-weight:600;white-space:nowrap}
-.acct.split{font-weight:500;font-size:13px;font-family:var(--f-num)}
-.nw{white-space:nowrap}
-.pill{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;color:var(--ok);background:var(--ok-bg);white-space:nowrap}
-.muted{color:var(--muted)}
-.totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
-.tot{border:1px solid var(--line);border-radius:4px;padding:10px 14px}
-.tot .k{font-size:12px;color:var(--muted);font-weight:600}
-.tot .v{font-family:var(--f-num);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums}
-.tot.all{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.tot.all .k{color:inherit;opacity:.75}
-.plain{display:grid;gap:4px;color:var(--muted);font-size:14px}
-.plain b{color:var(--ink);font-weight:600}
+body{font-family:var(--f-body);background:var(--ground);color:var(--ink);line-height:1.45;padding-block:26px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-variant-numeric:tabular-nums;
+  background-image:radial-gradient(900px 420px at 90% -10%,rgba(124,92,255,.16),transparent 60%),radial-gradient(700px 360px at 0% 0%,rgba(34,211,238,.10),transparent 60%)}
+.sheet{position:relative;max-width:660px;margin:0 auto;background:var(--paper);border-radius:20px;overflow:clip;box-shadow:var(--shadow);border:1px solid var(--line)}
+.sheet::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;z-index:3;background:linear-gradient(90deg,var(--ai1),var(--ai2) 55%,var(--ai1))}
+.hero{padding:34px 30px 30px;color:#fff;background:radial-gradient(120% 140% at 95% 0%,rgba(124,92,255,.55) 0%,rgba(124,92,255,0) 55%),radial-gradient(80% 120% at 0% 100%,rgba(34,211,238,.28) 0%,rgba(34,211,238,0) 60%),linear-gradient(160deg,#0B1020 0%,#161A3D 100%)}
+.eyebrow{font-size:11px;letter-spacing:.18em;font-weight:700;color:var(--gold);text-transform:uppercase}
+.hero h1{font-family:var(--f-head);font-size:31px;font-weight:800;letter-spacing:-.03em;margin:7px 0 20px;line-height:1.05}
+.fund-label{font-size:10.5px;letter-spacing:.16em;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;margin-bottom:3px}
+.fund-amount{font-family:var(--f-head);font-size:50px;font-weight:800;letter-spacing:-.03em;line-height:1;background:linear-gradient(90deg,#fff,#C4B5FD 60%,#67E8F9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.fund-note{font-size:12.5px;color:rgba(255,255,255,.8);margin-top:12px;max-width:60ch;line-height:1.55}
+.fund-note b{color:#C4B5FD;font-weight:600}
+.stats{margin-top:22px;display:grid;grid-template-columns:repeat(3,1fr);border:1px solid rgba(255,255,255,.14);border-radius:16px;overflow:hidden}
+.stat{padding:12px 14px;border-right:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);display:flex;flex-direction:column}
+.stat:nth-child(3n){border-right:none}.stat:nth-child(n+4){border-bottom:none}
+.stat .k{font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.56);font-weight:700;text-transform:uppercase;line-height:1.35}
+.stat .v{font-size:18px;font-weight:700;margin-top:auto;padding-top:6px;letter-spacing:-.01em}
+.approve{margin-top:20px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+button{font:inherit;cursor:pointer}
+.go{background:linear-gradient(90deg,var(--ai1),var(--ai2));color:#0B1020;border:0;border-radius:10px;padding:11px 18px;font-family:var(--f-head);font-weight:800;font-size:14.5px}
+.go:disabled{opacity:.5;cursor:default}
+.go:focus-visible,.link:focus-visible,.tp-step input:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.status{font-size:12px;color:rgba(255,255,255,.72)}
+.stamp{display:inline-flex;align-items:center;gap:8px;background:rgba(52,211,153,.18);color:#6EE7B7;font-weight:700;border-radius:10px;padding:9px 14px;font-size:13.5px}
+.link{background:none;border:0;color:rgba(255,255,255,.72);text-decoration:underline;padding:0;font-size:12px}
+.section{padding:22px 24px}.section+.section{border-top:1px solid var(--line)}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px}
+.sec-title{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:9px}
+.sec-title::before{content:"";width:4px;height:15px;background:linear-gradient(180deg,var(--ai1),var(--ai2));border-radius:3px;display:inline-block}
+.sec-tot{font-size:12px;color:var(--ink-soft);text-align:right;white-space:nowrap}.sec-tot b{color:var(--ink);font-weight:700}
+.lead-in{font-size:12px;color:var(--ink-soft);line-height:1.55;margin-top:2px}.lead-in b{color:var(--ink)}
+.tp-steps{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.tp-step{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;background:var(--paper);padding:12px 14px}
+.tp-step.held{opacity:.45}
+.tp-num{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:800;font-size:12px;display:grid;place-items:center;margin-top:1px}
+.tp-b{flex:1;min-width:0}
+.tp-b .h{font-weight:700;font-size:13.5px;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.tp-b .h .amt2{color:var(--accent);font-weight:800;white-space:nowrap}
+.tp-b .d{font-size:12px;color:var(--ink-soft);line-height:1.5;margin-top:3px}
+.tp-b .d b{color:var(--ink);font-weight:600}
+.tp-b .m{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;margin-top:6px}
+.tp-step input{flex:none;width:17px;height:17px;margin:4px 0 0;accent-color:var(--accent)}
+.tp-acct{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border-radius:5px;padding:1px 7px;white-space:nowrap}
+.tp-acct.wf{color:var(--amber);background:var(--amber-soft)}.tp-acct.relay{color:var(--green);background:var(--green-soft)}.tp-acct.para{color:var(--blue);background:var(--blue-soft)}
+.ok{color:var(--green);font-weight:700;font-size:11.5px}
+.due{font-size:11.5px;font-weight:700;color:var(--ink)}
+details.why{margin-top:9px}
+details.why>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:3px 11px;background:var(--accent-soft)}
+details.why>summary::-webkit-details-marker{display:none}
+details.why>summary::after{content:"";border:solid currentColor;border-width:0 2px 2px 0;padding:2.5px;transform:rotate(45deg);margin:-3px 0 0 2px;transition:transform .15s}
+details.why[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
+@media (prefers-reduced-motion:reduce){details.why>summary::after{transition:none}}
+.pick{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.pick label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:5px 10px;font-size:12px;color:var(--ink-soft);cursor:pointer}
+.pick label b{color:var(--ink)}
+.pick label.rec{border-color:var(--green)}
+.pick label:has(input:checked){background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.pick input{accent-color:var(--accent);margin:0}
+.rtag{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--green)}
+.tp-total{display:flex;justify-content:space-between;border-top:2px solid var(--line);margin-top:4px;padding-top:11px;font-weight:800;font-size:13.5px}
+.tp-total .num{color:var(--accent)}
+.bk-group{margin-top:10px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.bk-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 13px;background:var(--wash);font-weight:700;font-size:12.5px;border-bottom:1px solid var(--line)}
+.bk-head .lbl{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;min-width:0}
+.bk-sub{padding:7px 13px 3px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--ink-faint)}
+.bk-row{display:flex;justify-content:space-between;gap:12px;padding:7px 13px;font-size:12.5px;color:var(--ink-soft);border-top:1px solid var(--line-soft)}
+.bk-row b{color:var(--ink);font-weight:600}
+.bk-row .num{color:var(--ink);font-weight:600;white-space:nowrap}
+.bk-row.tot{background:var(--wash);font-weight:700;color:var(--ink)}
+.bk-row.tot .num{color:var(--accent);font-weight:800}
+.bk-note{padding:8px 13px;font-size:11.5px;color:var(--ink-soft);border-top:1px solid var(--line-soft);background:var(--amber-soft)}
+.bk-note b{color:var(--ink)}
+.tp-codes{margin-top:14px;border:1px solid var(--accent);border-radius:12px;background:var(--accent-soft);padding:12px 14px;font-size:12px;line-height:1.55}
+.notpay{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--ink-soft);margin-top:8px}
+.notpay b{color:var(--ink)}
+.foot{padding:15px 24px 26px;font-size:11px;color:var(--ink-faint);background:var(--wash);text-align:center;border-top:1px solid var(--line)}
+@media (max-width:520px){.hero{padding:26px 20px 22px}.fund-amount{font-size:38px}.hero h1{font-size:25px}.stats{grid-template-columns:repeat(2,1fr)}.stat:nth-child(3n){border-right:1px solid rgba(255,255,255,.12)}.stat:nth-child(2n){border-right:none}.stat:nth-child(n+4){border-bottom:1px solid rgba(255,255,255,.12)}.stat:nth-child(n+5){border-bottom:none}.section{padding-left:16px;padding-right:16px}.tp-step{padding:12px;gap:10px}}
 </style>
 
 <div class="sheet">
-  <header>
-    <h1>Payments to Release</h1>
-    <div class="sub">For Juan · Tuesday, Oct 27, 2026 · Prepared by Kristine, checked by Cherry</div>
-  </header>
-
-  <section>
-    <div class="sh"><h2>Wire</h2><span class="t">$10,500.00</span></div>
-    <div class="wrap"><table>
-      <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"></colgroup>
-      <thead><tr><th>Payee</th><th class="amt">Amount</th><th>Property / invoice</th><th>Account</th><th>Due</th><th>Verified</th></tr></thead>
-      <tbody>
-        <tr><td>WFG Title</td><td class="amt">$10,500.00</td><td>5022 Heyer Ave, Castro Valley · EMD 2nd half · escrow #26-215725</td><td class="acct">WF 8251</td><td class="nw">Today</td><td><span class="pill">Verified</span><div class="muted" style="font-size:12px">By phone with Christina, WFG. Saved in Wells Fargo as "WFG Stockton" (••8979)</div></td></tr>
-      </tbody>
-    </table></div>
-  </section>
-
-  <section>
-    <div class="sh"><h2>Contractors</h2><span class="t">$17,900.00</span></div>
-    <div class="wrap"><table>
-      <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"></colgroup>
-      <thead><tr><th>Payee</th><th class="amt">Amount</th><th>Property / invoice</th><th>Account</th><th>Due</th><th>Verified</th></tr></thead>
-      <tbody>
-        <tr><td>Gonzalo</td><td class="amt">$10,000.00</td><td>22496 Madera · painting</td><td class="acct">Relay 5776</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
-        <tr><td>Gonzalo</td><td class="amt">$900.00</td><td>22496 Madera · demolition / cleanup</td><td class="acct">Relay 5776</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
-        <tr><td>Alvaro</td><td class="amt">$1,200.00</td><td>22496 Madera · drywall</td><td class="acct">Relay 5776</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
-        <tr><td>Yuri Hernandez</td><td class="amt">$2,700.00</td><td>170 Glenn Way · office cleaning, 3 weeks</td><td class="acct">WF 8251</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
-        <tr><td>Yuri Hernandez</td><td class="amt">$400.00</td><td>27 Prague St · cleaning</td><td class="acct">WF 8251</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
-        <tr><td>Stuart Morgan (RemodHomes)</td><td class="amt">$2,700.00</td><td>1574 Jerrold Ave · invoice 2611</td><td class="acct">WF 8251</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
-      </tbody>
-    </table></div>
-  </section>
-
-  <section>
-    <div class="sh"><h2>Credit cards</h2><span class="t">$48,793.94</span></div>
-    <div class="wrap"><table>
-      <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"></colgroup>
-      <thead><tr><th>Card</th><th class="amt">Amount</th><th>Property / charges</th><th>Account</th><th>Due</th><th></th></tr></thead>
-      <tbody>
-        <tr><td>Amex 5004</td><td class="amt">$20,866.72</td><td>Subscriptions and office utilities $15,212.00 · 460 5th Ave, Redwood City $5,654.72</td><td class="acct split">2 accounts:<br>WF 8251 $15,212.00<br>Relay 5776 $5,654.72</td><td class="nw">Nov 5</td><td></td></tr>
-        <tr><td>Capital One Spark 7260</td><td class="amt">$9,562.25</td><td>972 Norton St $6,971.49 · 22496 Madera $2,590.76</td><td class="acct split">2 accounts:<br>WF 8251 $6,971.49<br>Relay 5776 $2,590.76</td><td class="nw">Nov 17</td><td></td></tr>
-        <tr><td>Venture X 1175</td><td class="amt">$6,666.74</td><td>Madera, Redwood City, Norton, personal $6,265.78 · sold: Santa Rosa, Prague $400.96</td><td class="acct split">2 accounts:<br>Relay 5776 $6,265.78<br>WF 8251 $400.96</td><td class="nw">Nov 8</td><td></td></tr>
-        <tr><td>Home Depot 5253</td><td class="amt">$5,320.23</td><td>Sold: Petaluma, 27 Prague St, 751 27th Ave</td><td class="acct">WF 8251</td><td class="nw">Nov 5</td><td></td></tr>
-        <tr><td>Citi 2149</td><td class="amt">$4,378.00</td><td>52 Paramount Ter</td><td class="acct">Relay Paramount</td><td class="nw">Nov 8</td><td></td></tr>
-        <tr><td>Bank of America 0475</td><td class="amt">$2,000.00</td><td>519 Orizaba Ave (sold)</td><td class="acct">WF 8251</td><td class="nw">Nov 2</td><td></td></tr>
-      </tbody>
-    </table></div>
-  </section>
-
-  <section>
-    <div class="sh"><h2>Total leaving each account</h2></div>
-    <div class="totals">
-      <div class="tot"><div class="k">WF 8251</div><div class="v">$46,204.68</div></div>
-      <div class="tot"><div class="k">Relay 5776</div><div class="v">$26,611.26</div></div>
-      <div class="tot"><div class="k">Relay Paramount</div><div class="v">$4,378.00</div></div>
-      <div class="tot all"><div class="k">Total</div><div class="v">$77,193.94</div></div>
+  <div class="hero">
+    <div class="eyebrow">Twin Home Buyer · Equity Track</div>
+    <h1>Payments to Release — Oct 27</h1>
+    <div class="fund-label">Leaving today</div>
+    <div class="fund-amount" id="hero-amt">$28,400.00</div>
+    <div class="fund-note" id="hero-note"></div>
+    <div class="stats">
+      <div class="stat"><div class="k">WF 8251 · today</div><div class="v" id="s-wf">—</div></div>
+      <div class="stat"><div class="k">Relay 5776 · today</div><div class="v" id="s-relay">—</div></div>
+      <div class="stat"><div class="k">Cards · Nov 2–17</div><div class="v" id="s-cards">—</div></div>
+      <div class="stat"><div class="k">WF 8251 · total</div><div class="v" id="s-twf">—</div></div>
+      <div class="stat"><div class="k">Relay 5776 · total</div><div class="v" id="s-trelay">—</div></div>
+      <div class="stat"><div class="k">Relay Paramount</div><div class="v" id="s-trp">—</div></div>
     </div>
-  </section>
-
-  <section>
-    <div class="plain">
-      <div><b>Not paying today:</b> ERC Specialists $36,431.36 (being verified) · Gonzalo, 460 5th Ave, $2,000 (on hold) · Matrix payroll (after review).</div>
+    <div class="approve" id="approve-area">
+      <button class="go" id="go" type="button">Approve all</button>
+      <span class="status" id="status"></span>
     </div>
-  </section>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><div class="sec-title">Today · wire and contractors</div><div class="sec-tot"><b id="g-today">$28,400.00</b></div></div>
+    <div class="lead-in">Uncheck a payment to hold it. Kristine or Cherry enters these with you; you only do the bank login and codes.</div>
+    <div class="tp-steps" id="list-today"></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><div class="sec-title">Credit cards · by due date</div><div class="sec-tot"><b id="g-cards">$48,793.94</b></div></div>
+    <div class="lead-in">Nothing goes out today. The amount shown is what Kristine recommends; where there is another option, pick it. Tap <b>What the charges are for</b> to see the numbers behind each card. Totals below use the recommended amounts.</div>
+    <div class="tp-steps" id="list-cards"></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><div class="sec-title">Total leaving each account</div><div class="sec-tot"><b id="g-all">$77,193.94</b></div></div>
+    <div id="bk"></div>
+    <div class="tp-total"><span>Total routed</span><span class="num" id="tt-all">$77,193.94</span></div>
+    <div class="tp-codes"><b>How the wire was confirmed:</b> by phone with Christina at WFG Title, on a number already on file. It is saved in Wells Fargo as "WFG Stockton" ••8979. <b>Contractors:</b> bank details were already confirmed by phone with each payee.</div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><div class="sec-title">Not paying today</div></div>
+    <div class="notpay">
+      <div><b>ERC Specialists, $36,431.36 (Matrix Group)</b> · account and amount being verified first.</div>
+      <div><b>Gonzalo, 460 5th Ave, $2,000</b> · on hold until Cherry confirms the work is done.</div>
+      <div><b>Matrix payroll, Oct 19–25</b> · to you by 3 PM today, after Kristine reviews Marieflor's work.</div>
+    </div>
+  </div>
+
+  <div class="foot">Prepared by Kristine, Controller · checked by Cherry · card charges from the unpaid card sheets, Oct 26 · account numbers show last 4 only</div>
 </div>
+
+<script>
+const TODAY = [
+  {id:"wfg", acct:"wf", who:"WFG Title", what:"5022 Heyer Ave, Castro Valley · 2nd half of earnest money · escrow #26-215725", amt:10500.00, how:"Wire", verify:"Saved payee \"WFG Stockton\" ••8979 · confirmed by phone with Christina"},
+  {id:"gon1", acct:"relay", who:"Gonzalo", what:"22496 Madera · painting", amt:10000.00, how:"Transfer", verify:"Confirmed by phone"},
+  {id:"gon2", acct:"relay", who:"Gonzalo", what:"22496 Madera · demolition / cleanup", amt:900.00, how:"Transfer", verify:"Confirmed by phone"},
+  {id:"alv", acct:"relay", who:"Alvaro", what:"22496 Madera · drywall install and texture", amt:1200.00, how:"Transfer", verify:"Confirmed by phone"},
+  {id:"yuri1", acct:"wf", who:"Yuri Hernandez", what:"170 Glenn Way · office cleaning, 3 weeks", amt:2700.00, how:"Transfer", verify:"Confirmed by phone"},
+  {id:"yuri2", acct:"wf", who:"Yuri Hernandez", what:"27 Prague St · cleaning", amt:400.00, how:"Transfer", verify:"Confirmed by phone"},
+  {id:"stu", acct:"wf", who:"Stuart Morgan (RemodHomes)", what:"1574 Jerrold Ave · invoice 2611", amt:2700.00, how:"Transfer", verify:"Confirmed by phone"}
+];
+// bk: what each card payment covers. pay = the amount paid from that account; rows = the unpaid charges behind it.
+// When rows add up to more than pay, the payment is partial and `of` names the rest.
+const CARDS = [
+  {id:"boa", who:"Bank of America ••0475", what:"519 Orizaba Ave charges (sold property)", amt:2000.00, opts:[["Under 30% used",34083.13]], due:"Nov 2", src:[["wf",2000.00]], note:"Partial payment. Paying $34,083.13 instead would bring the card under 30% used.",
+   bk:[{acct:"wf", label:"519 Orizaba Ave (sold)", pay:2000.00, rows:[["Factory Direct Floor · flooring",14126.70],["KH Plumbing Supply",144.53]], of:"Paying $2,000.00 of these $14,271.23 charges now. The rest stays on the card."}]},
+  {id:"amex", who:"Amex ••5004", what:"Redwood City office · subscriptions · office utilities", amt:20866.72, opts:[["Minimum due",20150.00]], due:"Nov 5", src:[["relay",5654.72],["wf",15212.00]], note:"Minimum due $20,150.",
+   bk:[
+    {acct:"relay", label:"460 5th Ave, Redwood City", pay:5654.72, rows:[["Materials (21 charges)",3943.47],["Gas, tolls, auto (11)",1033.07],["Meals on site (18)",622.31],["Utilities (2)",29.75],["Travel (2)",26.12]]},
+    {acct:"wf", label:"Subscriptions & software", pay:10725.60, rows:[["Google (Workspace, Voice, Cloud)",3384.76],["Anthropic (Claude)",2437.67],["QuickBooks",1380.00],["PropertyRadar",968.00],["Monday.com",560.65],["Grok (xAI)",420.00],["Zapier",267.00],["Starlink",210.01],["YouTube TV",210.00],["Apple",168.96],["Hubstaff",156.00],["Metro by T-Mobile",121.00],["16 smaller tools",441.55]]},
+    {acct:"wf", label:"Office utilities", pay:4486.40, rows:[["Comcast · internet",2391.54],["PG&E · San Carlos office",1111.68],["T-Mobile",380.91],["Comcast · office",356.97],["Starlink",204.32],["Apple",40.98]]}
+   ]},
+  {id:"hd", who:"Home Depot ••5253", what:"Sold-property invoices not covered by the Oct 31 autopay", amt:5320.23, opts:[], due:"Nov 5", src:[["wf",5320.23]], note:"On top of the $7,017.11 autopay on Oct 31, not a repeat of it.",
+   bk:[{acct:"wf", label:"Sold properties", pay:5320.23, rows:[["27 Prague St, San Mateo",3754.07],["1464 Sunrise Pkwy, Petaluma",1566.16]], of:"The $7,017.11 autopay on Oct 31 already covers the invoices due Oct 31 (Petaluma, Prague, 751 27th Ave, Glenn Way)."}]},
+  {id:"vx", who:"Capital One Venture X ••1175", what:"Business charges on personal card", amt:6666.74, opts:[], due:"Nov 8", src:[["relay",6265.78],["wf",400.96]], note:"Brings the card under 30% used.",
+   bk:[
+    {acct:"relay", label:"Open properties + other", pay:6265.78, rows:[["22496 Madera (15 charges)",11940.96],["Personal expense",2656.44],["460 5th Ave, Redwood City",1017.68],["972 Norton St",827.61],["Marketing tools",598.83],["Gas, tolls, auto",533.76],["Bank charges & fees",407.08],["Subscriptions",220.00],["Legal & professional",63.42]], of:"Paying $6,265.78 of these $18,265.78 charges now. $12,000 stays on the card (under 30% used)."},
+    {acct:"wf", label:"Sold properties", pay:400.96, rows:[["South Bay Termite · 492 Umland Dr, Santa Rosa",285.00],["AAA Rentals · 27 Prague St",115.96]]}
+   ]},
+  {id:"citi", who:"Citi ••2149", what:"52 Paramount Ter · business charges on personal card", amt:4378.00, opts:[], due:"Nov 8", src:[["para",4378.00]], note:"Takes the card from 51% to 8% used.",
+   bk:[{acct:"para", label:"52 Paramount Ter", pay:4378.00, rows:[["Home Depot · materials (4)",4347.10],["Geary Print Shop",30.90]]}]},
+  {id:"spark", who:"Capital One Spark ••7260", what:"972 Norton St · 22496 Madera", amt:9562.25, opts:[["Minimum due",9199.91]], due:"Nov 17", src:[["wf",6971.49],["relay",2590.76]], note:"Minimum due $9,199.91.",
+   bk:[
+    {acct:"wf", label:"972 Norton St", pay:6971.49, rows:[["City of San Mateo · permit",3881.72],["Home Wise Appliances",2822.80],["San Mateo service fee",141.68],["Home Depot",125.29]]},
+    {acct:"relay", label:"22496 Madera", pay:2590.76, rows:[["Home Depot · materials (3)",2019.32],["Bobcat Company",321.44],["Studio 318 Photography",250.00]]}
+   ]}
+];
+const ACCT = {wf:"WF 8251", relay:"Relay 5776", para:"Relay Paramount"};
+const money = n => "$" + n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const el = (t,c,txt) => {const e=document.createElement(t); if(c) e.className=c; if(txt!=null) e.textContent=txt; return e;};
+const pill = a => el("span","tp-acct "+a, ACCT[a]);
+
+const held = new Set();
+const opened = new Set();
+const choice = {};          // card id -> option label Juan picked; missing = recommended
+let approval = null;          // {status, held, by, at}
+let db = null, user = null, myId = null, names = {};
+
+function sums(){
+  const t = {today:{wf:0,relay:0}, cards:{wf:0,relay:0,para:0}, todayAmt:0, todayN:0, cardAmt:0};
+  TODAY.forEach(p=>{ if(held.has(p.id)) return; t.today[p.acct]+=p.amt; t.todayAmt+=p.amt; t.todayN++; });
+  CARDS.forEach(c=>{ if(held.has(c.id)) return; t.cardAmt+=c.amt; c.src.forEach(([a,v])=>t.cards[a]+=v); });
+  return t;
+}
+
+function step(n, item, head, details, meta, extra){
+  const row = el("div","tp-step"+(held.has(item.id)?" held":""));
+  const cb = document.createElement("input");
+  cb.type="checkbox"; cb.checked=!held.has(item.id); cb.disabled=!!approval;
+  cb.setAttribute("aria-label","Include "+item.who+" "+money(item.amt));
+  cb.addEventListener("change",()=>{ cb.checked?held.delete(item.id):held.add(item.id); render(); });
+  const b = el("div","tp-b");
+  const h = el("div","h"); h.append(el("span",null,head), el("span","amt2",money(item.amt)));
+  b.append(h);
+  details.forEach(d=>b.append(d));
+  const m = el("div","m"); meta.forEach(x=>m.append(x)); b.append(m);
+  if(extra) b.append(extra);
+  row.append(el("div","tp-num",String(n)), b, cb);
+  return row;
+}
+
+function cardBreakdown(c){
+  const det = el("details","why"); det.open = opened.has(c.id);
+  det.addEventListener("toggle",()=>{ det.open?opened.add(c.id):opened.delete(c.id); });
+  det.append(el("summary",null,"What the charges are for"));
+  c.bk.forEach(g=>{
+    const box = el("div","bk-group");
+    const head = el("div","bk-head"); const lbl = el("span","lbl"); lbl.append(pill(g.acct), el("span",null,g.label));
+    head.append(lbl, el("span",null,money(g.pay))); box.append(head);
+    g.rows.forEach(([name,v])=>{ const r=el("div","bk-row"); r.append(el("span",null,name), el("span","num",money(v))); box.append(r); });
+    const sum = g.rows.reduce((s,[,v])=>s+v,0);
+    if(g.rows.length>1){ const r=el("div","bk-row tot"); r.append(el("span",null,g.of && Math.abs(sum-g.pay)>.005?"Charges total":"Total"), el("span","num",money(sum))); box.append(r); }
+    if(g.of) box.append(el("div","bk-note",g.of));
+    det.append(box);
+  });
+  return det;
+}
+
+function renderLists(){
+  const lt = document.getElementById("list-today"); lt.replaceChildren();
+  TODAY.forEach((p,i)=>{
+    const d = el("div","d"); d.append(p.how+" from ", el("b",null,ACCT[p.acct]), " · "+p.what);
+    lt.append(step(i+1,p,p.who,[d],[pill(p.acct), el("span","ok","✓ "+p.verify)]));
+  });
+  const lc = document.getElementById("list-cards"); lc.replaceChildren();
+  CARDS.forEach((c,i)=>{
+    const d1 = el("div","d",c.what+" · "+c.note);
+    const pick = el("div","pick");
+    [["Recommended",c.amt]].concat(c.opts).forEach(([lab,v])=>{
+      const l = el("label",lab==="Recommended"?"rec":null); const r=document.createElement("input"); r.type="radio"; r.name="pick-"+c.id;
+      r.checked=(choice[c.id]||"Recommended")===lab; r.disabled=!!approval||held.has(c.id);
+      r.addEventListener("change",()=>{ choice[c.id]=lab; });
+      l.append(r, el("span",null,lab==="Recommended"?"":lab+" "), el("b",null,money(v)));
+      if(lab==="Recommended") l.insertBefore(el("span","rtag","Kristine recommends"), l.children[1]);
+      pick.append(l);
+    });
+
+    const meta = [el("span","due","Due "+c.due)];
+    c.src.forEach(([a,v])=>{ const s=pill(a); s.textContent=ACCT[a]+" "+money(v); meta.push(s); });
+    lc.append(step(i+1,c,c.who,c.opts.length?[d1,pick]:[d1],meta,cardBreakdown(c)));
+  });
+}
+
+function renderBreakdown(){
+  const bk = document.getElementById("bk"); bk.replaceChildren();
+  ["wf","relay","para"].forEach(a=>{
+    const today = TODAY.filter(p=>p.acct===a && !held.has(p.id));
+    const cards = CARDS.filter(c=>!held.has(c.id)).flatMap(c=>c.src.filter(([x])=>x===a).map(([,v])=>({c,v})));
+    const tot = today.reduce((s,p)=>s+p.amt,0) + cards.reduce((s,x)=>s+x.v,0);
+    const g = el("div","bk-group");
+    const head = el("div","bk-head"); head.append(el("span",null,""), el("span",null,money(tot))); head.firstChild.append(pill(a));
+    g.append(head);
+    const row=(name,sub,v)=>{ const r=el("div","bk-row"); const s=el("span"); s.append(el("b",null,name)); if(sub) s.append(" · "+sub); r.append(s, el("span","num",money(v))); return r; };
+    if(today.length){ g.append(el("div","bk-sub","Today · "+money(today.reduce((s,p)=>s+p.amt,0)))); today.forEach(p=>g.append(row(p.who.replace(/ \(.*\)$/,""), p.what.split(" · ")[0], p.amt))); }
+    if(cards.length){ g.append(el("div","bk-sub","Cards · "+money(cards.reduce((s,x)=>s+x.v,0)))); cards.forEach(x=>g.append(row(x.c.who, "due "+x.c.due, x.v))); }
+    bk.append(g);
+  });
+}
+
+function render(){
+  const t = sums();
+  const wfT = t.today.wf+t.cards.wf, relT = t.today.relay+t.cards.relay, all = wfT+relT+t.cards.para;
+  document.getElementById("hero-amt").textContent = money(t.todayAmt);
+  const note = document.getElementById("hero-note");
+  note.replaceChildren(`${t.todayN} payment${t.todayN===1?"":"s"} today, all confirmed by phone. `, el("b",null,"Cards ("+money(t.cardAmt)+")"), " are due Nov 2–17. Checked by Cherry.");
+  document.getElementById("s-wf").textContent = money(t.today.wf);
+  document.getElementById("s-relay").textContent = money(t.today.relay);
+  document.getElementById("s-cards").textContent = money(t.cardAmt);
+  document.getElementById("s-twf").textContent = money(wfT);
+  document.getElementById("s-trelay").textContent = money(relT);
+  document.getElementById("s-trp").textContent = money(t.cards.para);
+  document.getElementById("g-today").textContent = money(t.todayAmt);
+  document.getElementById("g-cards").textContent = money(t.cardAmt);
+  document.getElementById("g-all").textContent = money(all);
+  document.getElementById("tt-all").textContent = money(all);
+
+  const area = document.getElementById("approve-area"); const go = document.getElementById("go"); const status = document.getElementById("status");
+  area.querySelector(".stamp")?.remove(); area.querySelector(".link")?.remove();
+  if(approval){
+    go.hidden = true;
+    const s = el("span","stamp");
+    const who = (approval.by && names[approval.by]) || "Someone";
+    const when = approval.at ? new Date(approval.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/Los_Angeles"})+" PT" : "";
+    s.textContent = `✓ Approved by ${who}${when?" · "+when:""}`;
+    area.insertBefore(s, status);
+    const nh = (approval.held||[]).length;
+    status.textContent = nh ? `${nh} held` : "All payments approved";
+    if(user && approval.by===myId){
+      const u = el("button","link","Undo approval"); u.type="button";
+      u.addEventListener("click",()=>save(null)); area.appendChild(u);
+    }
+  } else {
+    go.hidden = false;
+    const n = t.todayN + CARDS.filter(c=>!held.has(c.id)).length;
+    go.textContent = held.size ? `Approve ${n} payments` : "Approve all";
+    go.disabled = !db || n===0;
+    status.textContent = !db ? "Open signed in to approve here, or reply \"Approved\" in chat." : (held.size ? `${held.size} held` : "");
+  }
+  renderLists();
+  renderBreakdown();
+}
+
+async function save(state){
+  if(!db) return;
+  const go = document.getElementById("go"); go.disabled = true;
+  try{
+    await db.doc("approvals/2026-10-27").set(state ? state : {status:"open", held:[], by:null, at:null});
+  }catch(e){
+    document.getElementById("status").textContent = "Couldn't save the approval. Reply \"Approved\" in chat instead.";
+    go.disabled = false;
+  }
+}
+
+document.getElementById("go").addEventListener("click",()=>{
+  if(!db) return;
+  save({status:"approved", held:[...held], choice:{...choice}, by:myId, at:new Date().toISOString()});
+});
+
+render();
+
+(async()=>{
+  const c = window.claude;
+  if(!c || !c.use) return;
+  const [d,u] = await Promise.all([c.use("db"), c.use("user")]);
+  user = u;
+  if(u){ try{ myId = await u.id(); }catch(e){} }
+  db = d;
+  render();
+  if(!db) return;
+  db.doc("approvals/2026-10-27").onSnapshot(async snap=>{
+    const data = snap.exists ? snap.data() : null;
+    if(data && data.status==="approved"){
+      approval = data;
+      held.clear(); (data.held||[]).forEach(h=>held.add(h));
+      Object.keys(choice).forEach(k=>delete choice[k]); Object.assign(choice, data.choice||{});
+      if(user && data.by){ try{ const ps = await user.profiles([data.by]); names[data.by] = (ps[data.by] && ps[data.by].name) || ""; }catch(e){} }
+    } else {
+      approval = null;
+    }
+    render();
+  }, ()=>{});
+})();
+</script>
