@@ -70,7 +70,7 @@
    "verified": "2026-10-27",
    "source": "Unpaid card charges · approval (Kristine, Oct 27)",
    "sourceUrl": "https://claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ",
-   "notes": "$20,150 due Nov 5. Unpaid charges $110,921.96. Statement closes the 12th. Autopay on.",
+   "notes": "Minimum due $20,150 by Nov 5. Unpaid charges $110,921.96. Statement closes the 12th. Autopay on.",
    "closeDay": "12th"
   },
   {
@@ -91,9 +91,9 @@
    "verified": "2026-10-27",
    "source": "Unpaid card charges · approval (Kristine, Oct 27)",
    "sourceUrl": "https://claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ",
-   "notes": "Paid in full every month. Statement amount $9,199.91 due Nov 17. Unpaid charges $10,005.88. Spending limit $20,000. Statement closes the 23rd. Autopay on.",
+   "notes": "Minimum due $9,199.91 by Nov 17. Unpaid charges $10,005.88. Spending limit $20,000. Statement closes the 23rd. Autopay on.",
    "closeDay": "23rd",
-   "payFull": true
+   "payFull": false
   },
   {
    "id": "c-hd5253",
@@ -636,10 +636,10 @@
    "amountSource": "",
    "amount": 20150,
    "amountNote": "",
-   "situation": "$20,150 due Nov 5, on autopay. $110,921.96 in charges on the card.",
+   "situation": "$110,921.96 on the card. Minimum due $20,150 by Nov 5, on autopay.",
    "recAction": "Pay",
-   "rec": "Pay $20,150 by Nov 5.",
-   "required": "Pay $20,150 by Nov 5.",
+   "rec": "Pay at least the $20,150 minimum by Nov 5.",
+   "required": "Pay the $20,150 minimum by Nov 5.",
    "owner": "Kristine",
    "target": "2026-11-04",
    "next": "Kristine pulls the October statement and confirms Pay Over Time is off.",
@@ -647,7 +647,7 @@
    "decidedOn": "",
    "notes": "",
    "holdReason": "",
-   "short": "Pay the amount due.",
+   "short": "Pay the minimum due.",
    "when": "By Nov 5"
   },
   {
@@ -657,10 +657,10 @@
    "amountSource": "",
    "amount": 9199.91,
    "amountNote": "",
-   "situation": "Paid in full every month. $9,199.91 statement due Nov 17.",
+   "situation": "$10,005.88 on the card. Minimum due $9,199.91 by Nov 17, on autopay.",
    "recAction": "Pay",
-   "rec": "Pay $9,199.91 in full by Nov 17.",
-   "required": "Pay $9,199.91 by Nov 17.",
+   "rec": "Pay at least the $9,199.91 minimum by Nov 17.",
+   "required": "Pay the $9,199.91 minimum by Nov 17.",
    "owner": "Kristine",
    "target": "2026-11-16",
    "next": "Kristine schedules the payment.",
@@ -668,7 +668,7 @@
    "decidedOn": "",
    "notes": "",
    "holdReason": "",
-   "short": "Pay the statement in full.",
+   "short": "Pay the minimum due.",
    "when": "By Nov 17"
   },
   {
@@ -927,8 +927,8 @@
    "topic": "Credit cards",
    "status": "warn",
    "headline": "About $220,000 on the cards. All 9 are on autopay.",
-   "now": "Amex $20,150 due Nov 5. Spark $9,199.91 due Nov 17. BoA is at 87% of its limit. Juan's personal cards: Venture X 47%, Citi 51%, Discover 3%.",
-   "you": "Approve paying Amex, Capital One Spark ($10,005.88 in full), Home Depot ••5253 and BoA on time, and paying Venture X and Citi under 30% by Nov 8.",
+   "now": "Amex minimum $20,150 due Nov 5. Spark minimum $9,199.91 due Nov 17. BoA is at 87% of its limit. Juan's personal cards: Venture X 47%, Citi 51%, Discover 3%.",
+   "you": "Approve the minimums on Amex, Spark and BoA, Home Depot ••5253, and paying Venture X and Citi under 30% by Nov 8.",
    "youShort": "Approve 6 card payments",
    "next": "Kristine schedules the approved payments."
   },
