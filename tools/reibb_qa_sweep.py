@@ -86,7 +86,7 @@ def parse_record(text):
 
 DEAD_DISPOS = {"out of buy box", "not interested", "listed with agent",
                "sold elsewhere", "sold to competitor", "bad number", "pass",
-               "dead", "spam lead", "invalid information"}
+               "dead", "spam lead", "invalid information", "wholesale"}
 
 # Confirmed picklists (2026-07-18). Category -> allowed leading stage numbers.
 CAT_STAGE = {"active": {"1", "2", "3", "4", "5", "7", "8"},
