@@ -267,7 +267,7 @@ const DRAFT_KEY='thb-accounting-review-draft-v1';
 
 const SECTIONS=[
  ['overview','Accounting Package',''],['cards','Credit Card Table','1'],['summary','Decision List','2'],['rental','8715 D St Rents','3'],['payroll','Matrix Payroll','4'],
- ['wires','Wires to Release','5'],['erc','ERC Specialists Bill','6'],['vantage','Wells Fargo Vantage','7'],
+ ['wires','Wires to Release','5'],['erc','ERC Specialists Bill','6'],['vantage','Wells Fargo Vantage','7'],['meeting','Meeting Summary','✓'],
  ['open','Open Items',''],['contractors','Contractor Payments',''],['tax','PPS 2025 Tax Returns',''],['honda','Honda Accord',''],['time','Clock-In / Clock-Out',''],['other','Other Pending Decisions','']];
 const SEC_NAME=Object.fromEntries(SECTIONS.map(x=>[x[0],x[1]]));
 
@@ -543,21 +543,24 @@ function SimpleDecision({d,n}){
 }
 
 function DecisionRecap(){
-  const {S,K}=useContext(Ctx);
+  const {S,K,go}=useContext(Ctx);
   const amt=d=>decisionAmount(d,K);
-  const done=S.decisions.filter(d=>d.status!=='Pending').sort((a,b)=>(a.decidedAt||a.decidedOn||'').localeCompare(b.decidedAt||b.decidedOn||''));
-  const A=done.filter(d=>d.status==='Approved'),H=done.filter(d=>d.status==='Hold');
+  const ord=S.decisionOrder||[];const rk=d=>{const i=ord.indexOf(d.id);return i<0?99:i};
+  const all=[...S.decisions].sort((a,b)=>rk(a)-rk(b));
+  const A=all.filter(d=>d.status==='Approved'),H=all.filter(d=>d.status==='Hold'),P=all.filter(d=>d.status==='Pending');
   const tot=l=>l.reduce((x,d)=>x+(amt(d)||0),0);
-  const left=S.decisions.length-done.length;
-  return html`<section id="recap"><h3 class="grp">What Juan decided</h3><div class="panel">
-    <div style=${{display:'flex',gap:'18px',flexWrap:'wrap',fontSize:'.95rem',marginBottom:'8px'}}><span><b style=${{color:'var(--ok)'}}>Approved ${A.length}</b> · ${money(tot(A),{cents:true})}</span><span><b style=${{color:'var(--warn)'}}>On hold ${H.length}</b> · ${money(tot(H),{cents:true})}</span><span class="muted">${left} still to decide</span></div>
-    ${done.length?html`<div class="tablewrap"><table><thead><tr><th>#</th><th>Item</th><th>Juan's decision</th><th class="r">Amount</th></tr></thead><tbody>
-      ${done.map((d,i)=>html`<tr key=${d.id}><td class="num">${i+1}</td><td><b>${d.title}</b><div class="muted" style=${{fontSize:'.8rem'}}>${d.status==='Hold'?(d.holdReason||d.short||d.rec):(d.short||d.rec)}${d.notes?html` · <b>Juan:</b> ${d.notes}`:''}</div></td>
-        <td><${Pill} cls=${d.status==='Approved'?'ok':'warn'}>${d.status==='Approved'?'Approved':'On hold'}<//></td>
+  const lab={Approved:['ok','Approved'],Hold:['warn','On hold'],Pending:['neutral','Not decided yet']};
+  return html`<section id="recap"><h3 class="grp">Meeting summary · Juan's decision on every item</h3><div class="panel" style=${{borderColor:'var(--accent)'}}>
+    <div style=${{display:'flex',gap:'18px',flexWrap:'wrap',fontSize:'.95rem',marginBottom:'10px'}}><span><b style=${{color:'var(--ok)'}}>Approved ${A.length}</b> · ${money(tot(A),{cents:true})}</span><span><b style=${{color:'var(--warn)'}}>On hold ${H.length}</b> · ${money(tot(H),{cents:true})}</span><span><b>Not decided yet ${P.length}</b></span></div>
+    <div class="tablewrap"><table><thead><tr><th>#</th><th>Item</th><th>Juan's decision</th><th class="r">Amount</th></tr></thead><tbody>
+      ${all.map((d,i)=>html`<tr key=${d.id} style=${d.status==='Pending'?{color:'var(--muted)'}:null}><td class="num">${i+1}</td><td><b>${d.title}</b><div class="muted" style=${{fontSize:'.8rem'}}>${d.status==='Hold'&&d.holdReason?d.holdReason:(d.short||d.rec)}${d.notes?html` · <b>Juan:</b> ${d.notes}`:''}</div></td>
+        <td style=${{whiteSpace:'nowrap'}}><${Pill} cls=${lab[d.status][0]}>${lab[d.status][1]}<//>${d.decidedOn&&html`<div class="muted" style=${{fontSize:'.72rem'}}>${fmtDate(d.decidedOn)}</div>`}</td>
         <td class="r num" style=${{whiteSpace:'nowrap'}}>${amt(d)!==null?money(amt(d),{cents:amt(d)%1!==0}):(d.amountNote||'—')}</td></tr>`)}
-    </tbody></table></div>`:html`<div class="muted">Nothing decided yet. Each item appears here as soon as Juan taps Approve or Hold.</div>`}
+    </tbody></table></div>
+    <p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>Updates live as Juan taps Approve or Hold.</p>
   </div></section>`;
 }
+function Meeting(){return html`<div class="stack"><${SecHead} title="Meeting Summary" sub="Juan's decision on every item, for the recap at the end of the session."/><${DecisionRecap}/></div>`}
 
 function PkgItem({n,k,title,extra}){
   const {S,go}=useContext(Ctx);const b=S.briefs[k];if(!b)return null;
@@ -576,7 +579,7 @@ function Overview(){
   return html`<div class="stack">
     <div class="hero">
       <div class="hero-big">${counts.Pending===0?'All decisions answered.':html`<span class="num">${counts.Pending}</span> decision${counts.Pending===1?'':'s'} for you${pendingAmt?html` · <span class="num">${money(pendingAmt)}</span>`:''}`}</div>
-      <div class="muted">Your accounting package, in the order you asked for. Tap <b>Approve</b> or <b>Hold</b> on each decision. Nothing is paid or sent from this page. <button class="linkbtn" onClick=${()=>{const e=document.getElementById('recap');if(e)e.scrollIntoView({behavior:'smooth'})}}>See what you decided ↓</button></div>
+      <div class="muted">Your accounting package, in the order you asked for. Tap <b>Approve</b> or <b>Hold</b> on each decision. Nothing is paid or sent from this page. <button class="linkbtn" onClick=${()=>{const e=document.getElementById('recap');if(e)e.scrollIntoView({behavior:'smooth'})}}>Meeting summary ↓</button></div>
     </div>
     <${CardSnapshot} n="1"/>
     <section><h3 class="grp">2. Decision list</h3><div class="panel" style=${{padding:0}}>${list.map((d,i)=>html`<${SimpleDecision} key=${d.id} d=${d} n=${i+1}/>`)}</div></section>
@@ -1196,7 +1199,7 @@ function App(){
   const secCount=s=>S.decisions.filter(d=>(d.section===s)&&d.status==='Pending').length;
 
   const ctx={S,K,set,edit,go,flash,setDecision,removeDecision,counts,copySummary,openReport};
-  const Sec={overview:Overview,cards:Cards,open:OpenItems,contractors:Contractors,tax:Tax,honda:Honda,rental:Rental,time:Time,payroll:Payroll,wires:Wires,erc:ERC,vantage:Vantage,other:Other,summary:Summary}[sec];
+  const Sec={overview:Overview,cards:Cards,open:OpenItems,contractors:Contractors,tax:Tax,honda:Honda,rental:Rental,time:Time,payroll:Payroll,wires:Wires,erc:ERC,vantage:Vantage,meeting:Meeting,other:Other,summary:Summary}[sec];
 
   const fmtT=iso=>new Date(iso).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   const live=art&&!readOnly;
