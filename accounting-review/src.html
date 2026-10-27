@@ -310,7 +310,7 @@ function cardFlag(c){
   if(c.autopay==='Off')yellow.push('Autopay off');
   const verified=bal!==null&&(c.charge||lim!==null)&&c.autopay==='On'&&c.late==='No'&&c.pastDue==='No'&&(!!c.dueDate||num(c.minDue)===0);
   const missing=[];
-  if(bal===null)missing.push('balance');if(!c.charge&&lim===null)missing.push('credit limit');if(!c.closeDate)missing.push('statement closing date');
+  if(bal===null)missing.push('balance');if(!c.charge&&lim===null)missing.push('credit limit');if(!c.closeDate&&!(num(c.minDue)===0&&num(c.balance)!==null&&num(c.balance)<=0))missing.push('statement closing date');
   const nothingDue=num(c.minDue)===0;
   if(!c.dueDate&&!nothingDue)missing.push('due date');if(num(c.minDue)===null)missing.push('minimum payment');
   if(!/^(On|Off)$/.test(c.autopay||''))missing.push('autopay status');if(!/^(Yes|No)$/.test(c.late||''))missing.push('12-month payment history');
@@ -515,7 +515,7 @@ function CardSnapshot(){
     ${['Business','Personal'].map(k=>html`<tr class="cgroup"><td colspan="10" style=${{background:'var(--panel)',fontWeight:700,fontSize:'.74rem',textTransform:'uppercase',letterSpacing:'.06em',color:'var(--muted)'}}>${k}</td></tr>
       ${rows.filter(x=>x.c.kind===k).map(x=>html`<tr key=${x.c.id}><td><b>${x.c.name}</b> <span class="num muted">••${x.c.last4}</span></td>
         <td class="r num">${x.f.bal===null?html`<${PV}/>`:money(x.f.bal,{cents:true})}</td><td class="r num">${x.c.charge?'NPSL':x.f.lim===null?html`<${PV}/>`:money(x.f.lim)}</td>
-        <td class="r num">${x.c.charge?'N/A':x.f.util===null?'—':pct(x.f.util)}</td><td>${fmtDate(x.c.closeDate)||html`<${PV}/>`}</td><td>${fmtDate(x.c.dueDate)||(num(x.c.minDue)===0?'—':html`<${PV}/>`)}</td>
+        <td class="r num">${x.c.charge?'N/A':x.f.util===null?'—':pct(x.f.util)}</td><td>${fmtDate(x.c.closeDate)||(num(x.c.minDue)===0?'—':html`<${PV}/>`)}${x.c.closeDay&&html`<div class="muted" style=${{fontSize:'.72rem'}}>every ${x.c.closeDay}</div>`}</td><td>${fmtDate(x.c.dueDate)||(num(x.c.minDue)===0?'—':html`<${PV}/>`)}</td>
         <td class="r num">${num(x.c.minDue)===null?html`<${PV}/>`:money(num(x.c.minDue),{cents:true})}</td><td>${x.c.autopay==='On'||x.c.autopay==='Off'?x.c.autopay:'Not verified'}</td><td>${x.c.late==='Yes'||x.c.late==='No'?x.c.late:'Not verified'}</td>
         <td><${Pill} cls=${FLAG[x.f.flag].cls}>${FLAG[x.f.flag].label}<//></td></tr>`)}`)}
     </tbody></table></div></section>`;
@@ -562,7 +562,7 @@ function CardRow({c,i,open,toggle}){
     <td class="r"><${F} path=${p+'.balance'} kind="money"/></td>
     <td class="r">${edit?html`<div style=${{display:'flex',gap:'6px',alignItems:'center'}}><label style=${{fontSize:'.72rem'}}><input type="checkbox" checked=${!!c.charge} onChange=${e=>set(p+'.charge',e.target.checked)}/> NPSL</label>${!c.charge&&html`<${F} path=${p+'.limit'} kind="money"/>`}</div>`:(c.charge?html`<span class="num">NPSL</span>`:html`<${F} path=${p+'.limit'} kind="money"/>`)}</td>
     <td class="r num">${c.charge?'N/A':(f.util===null?html`<${PV}/>`:html`<span style=${f.util>=0.8?{color:'var(--bad)',fontWeight:600}:null}>${pct(f.util)}</span>`)}</td>
-    <td><${F} path=${p+'.closeDate'} kind="date"/></td>
+    <td>${!edit&&!c.closeDate&&num(c.minDue)===0?'—':html`<${F} path=${p+'.closeDate'} kind="date"/>`}${!edit&&c.closeDay&&html`<div class="muted" style=${{fontSize:'.72rem'}}>every ${c.closeDay}</div>`}</td>
     <td><${F} path=${p+'.dueDate'} kind="date"/></td>
     <td class="r"><${F} path=${p+'.minDue'} kind="money"/></td>
     <td>${edit?html`<${F} path=${p+'.autopay'} kind="select" options=${['Not verified','On','Off']}/>`:html`<${Pill} cls=${c.autopay==='On'?'ok':c.autopay==='Off'?'warn':'neutral'}>${c.autopay==='On'||c.autopay==='Off'?c.autopay:'Not verified'}<//>`}</td>

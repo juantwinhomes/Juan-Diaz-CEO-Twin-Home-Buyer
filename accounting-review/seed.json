@@ -47,7 +47,7 @@
    "balance": 114000,
    "limit": null,
    "charge": true,
-   "closeDate": "",
+   "closeDate": "2026-11-12",
    "dueDate": "2026-11-06",
    "minDue": null,
    "autopay": "On",
@@ -57,7 +57,8 @@
    "verified": "2026-10-27",
    "source": "Twin Home Expense Ledger (Amex site, Oct 22)",
    "sourceUrl": "https://claude.ai/artifact/G43ef83x7Ap9S5MG1eAGP3",
-   "notes": "Balance from the Amex site Oct 22; a $10,000 payment was recorded Oct 24. The Oct 6 minimum ($30,887.76) was paid late on Oct 9. Interest $1,764.84 and a $35 fee were charged. Pay Over Time ($37,000 at 29.99%) was still on as of Oct 9; Juan asked to turn it off. Employee card ••1102 is on this account. Statement closes around the 12th; next due date not found. Kristine (Oct 27): payment due Nov 6. Autopay on (Kristine, Oct 27)."
+   "notes": "Balance from the Amex site Oct 22; a $10,000 payment was recorded Oct 24. The Oct 6 minimum ($30,887.76) was paid late on Oct 9. Interest $1,764.84 and a $35 fee were charged. Pay Over Time ($37,000 at 29.99%) was still on as of Oct 9; Juan asked to turn it off. Employee card ••1102 is on this account. Statement closes around the 12th; next due date not found. Kristine (Oct 27): payment due Nov 6. Autopay on (Kristine, Oct 27).",
+   "closeDay": "12th"
   },
   {
    "id": "c-spark",
@@ -67,7 +68,7 @@
    "balance": 20000,
    "limit": null,
    "charge": true,
-   "closeDate": "",
+   "closeDate": "2026-11-23",
    "dueDate": "2026-10-17",
    "minDue": null,
    "autopay": "On",
@@ -77,7 +78,8 @@
    "verified": "2026-10-27",
    "source": "THB Card Desk (paid Oct 19)",
    "sourceUrl": "https://claude.ai/artifact/987gv2Gy7howGRiAwvSD2T",
-   "notes": "Oct 17 payment made late: full balance $30,628.96 paid Oct 19 after Capital One restricted the card. About $18,092 was spent Oct 20–23, so the current balance needs checking. About $20,000 right now (Kristine, Oct 27). Autopay on (Kristine, Oct 27)."
+   "notes": "Oct 17 payment made late: full balance $30,628.96 paid Oct 19 after Capital One restricted the card. About $18,092 was spent Oct 20–23, so the current balance needs checking. About $20,000 right now (Kristine, Oct 27). Autopay on (Kristine, Oct 27).",
+   "closeDay": "23rd"
   },
   {
    "id": "c-hd5253",
@@ -87,7 +89,7 @@
    "balance": 22650.29,
    "limit": 50000,
    "charge": false,
-   "closeDate": "",
+   "closeDate": "2026-11-05",
    "dueDate": "2026-10-31",
    "minDue": 7017.11,
    "autopay": "On",
@@ -97,7 +99,8 @@
    "verified": "2026-10-27",
    "source": "Unpaid card charges · approval (59 open invoices, Oct 27)",
    "sourceUrl": "https://claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ",
-   "notes": "59 open invoices, $22,650.29. Due by invoice: $7,017.11 Oct 31, $9,944.52 Nov 30, $5,688.66 Dec 31. The 24 invoices Juan approved (the $12,294.24 payment) are no longer listed as unpaid. Nothing past due. Autopay on. Statement closes around the 13th."
+   "notes": "59 open invoices, $22,650.29. Due by invoice: $7,017.11 Oct 31, $9,944.52 Nov 30, $5,688.66 Dec 31. The 24 invoices Juan approved (the $12,294.24 payment) are no longer listed as unpaid. Nothing past due. Autopay on. Statement closes on the 5th (next Nov 5).",
+   "closeDay": "5th"
   },
   {
    "id": "c-boa",
@@ -107,7 +110,7 @@
    "balance": null,
    "limit": 60000,
    "charge": false,
-   "closeDate": "",
+   "closeDate": "2026-11-06",
    "dueDate": "2026-11-02",
    "minDue": 2277.24,
    "autopay": "On",
@@ -117,7 +120,8 @@
    "verified": "2026-10-27",
    "source": "THB Card Desk; Bills Desk (overdue letter)",
    "sourceUrl": "https://claude.ai/artifact/1onhP1YNgJnj4q9QcKhKEi",
-   "notes": "BoA letter dated Sep 8 said the account was overdue ($1,178.16); still unverified. Minimum $2,277.24 as of Oct 9; due date not found. Issuer balance not found (bookkeeping shows about $52,083 in unpaid charges). Kristine (Oct 27): limit $60,000; payment due Nov 2. Autopay on (Kristine, Oct 27)."
+   "notes": "BoA letter dated Sep 8 said the account was overdue ($1,178.16); still unverified. Minimum $2,277.24 as of Oct 9; due date not found. Issuer balance not found (bookkeeping shows about $52,083 in unpaid charges). Kristine (Oct 27): limit $60,000; payment due Nov 2. Autopay on (Kristine, Oct 27).",
+   "closeDay": "6th"
   },
   {
    "id": "c-discover",
@@ -127,7 +131,7 @@
    "balance": null,
    "limit": 20000,
    "charge": false,
-   "closeDate": "",
+   "closeDate": "2026-11-24",
    "dueDate": "2026-10-22",
    "minDue": 35,
    "autopay": "On",
@@ -137,7 +141,8 @@
    "verified": "2026-10-27",
    "source": "THB Card Desk (paid Oct 19)",
    "sourceUrl": "https://claude.ai/artifact/987gv2Gy7howGRiAwvSD2T",
-   "notes": "Paid in full ($177.29) Oct 19 for the Oct 22 due date. The site showed $335.27 on Oct 13, so the current balance needs checking. Limit $20,000; balance to be added Oct 28. Autopay on (Kristine, Oct 27)."
+   "notes": "Paid in full ($177.29) Oct 19 for the Oct 22 due date. The site showed $335.27 on Oct 13, so the current balance needs checking. Limit $20,000; balance to be added Oct 28. Autopay on (Kristine, Oct 27).",
+   "closeDay": "24th"
   },
   {
    "id": "c-venture",
@@ -147,7 +152,7 @@
    "balance": 27080.61,
    "limit": 40000,
    "charge": false,
-   "closeDate": "",
+   "closeDate": "2026-11-08",
    "dueDate": "2026-11-02",
    "minDue": 170,
    "autopay": "On",
@@ -157,7 +162,8 @@
    "verified": "2026-10-27",
    "source": "Twin Home Expense Ledger (Capital One site, Oct 12)",
    "sourceUrl": "https://claude.ai/artifact/G43ef83x7Ap9S5MG1eAGP3",
-   "notes": "Last statement balance $15,891.08. Fees charged: $395 annual fee, $77.37 cash advance fee, $12.08 cash advance interest. Autopay on (Kristine, Oct 27)."
+   "notes": "Last statement balance $15,891.08. Fees charged: $395 annual fee, $77.37 cash advance fee, $12.08 cash advance interest. Autopay on (Kristine, Oct 27).",
+   "closeDay": "8th"
   },
   {
    "id": "c-hd1511",
@@ -177,7 +183,8 @@
    "verified": "2026-10-27",
    "source": "THB Card Desk (Oct 10)",
    "sourceUrl": "https://claude.ai/artifact/987gv2Gy7howGRiAwvSD2T",
-   "notes": "No balance (Kristine, Oct 27). Nothing due. Autopay on (Kristine, Oct 27)."
+   "notes": "No balance, so no payment due (Kristine, Oct 27). Autopay on.",
+   "closeDay": ""
   },
   {
    "id": "c-hd8087",
@@ -197,7 +204,8 @@
    "verified": "2026-10-27",
    "source": "THB Card Desk (Oct 10)",
    "sourceUrl": "https://claude.ai/artifact/987gv2Gy7howGRiAwvSD2T",
-   "notes": "No balance (Kristine, Oct 27). Nothing due. Autopay on (Kristine, Oct 27)."
+   "notes": "No balance, so no payment due (Kristine, Oct 27). Autopay on.",
+   "closeDay": ""
   },
   {
    "id": "c-citi",
@@ -207,7 +215,7 @@
    "balance": 6160.62,
    "limit": 10000,
    "charge": false,
-   "closeDate": "",
+   "closeDate": "2026-11-08",
    "dueDate": "2026-11-06",
    "minDue": 41,
    "autopay": "On",
@@ -217,7 +225,8 @@
    "verified": "2026-10-27",
    "source": "Twin Home Expense Ledger (Citi site, Oct 12)",
    "sourceUrl": "https://claude.ai/artifact/G43ef83x7Ap9S5MG1eAGP3",
-   "notes": "Not scheduled yet. Autopay on (Kristine, Oct 27)."
+   "notes": "Not scheduled yet. Autopay on (Kristine, Oct 27).",
+   "closeDay": "8th"
   }
  ],
  "contractors": {
@@ -597,7 +606,7 @@
    "amountNote": "",
    "situation": "$22,650.29 open on a $50,000 limit (45% used). $7,017.11 is due Oct 31; autopay is on. The $12,294.24 Juan approved earlier is no longer showing as unpaid.",
    "recAction": "Pay",
-   "rec": "Confirm autopay pays the full $7,017.11 by Oct 31. To get under 30% before the Nov 13 statement, pay $7,650.29 (under 10%: $17,650.29).",
+   "rec": "Confirm autopay pays the full $7,017.11 by Oct 31. To get under 30% before the statement closes Nov 5, pay $7,650.29 (under 10%: $17,650.29).",
    "required": "Confirm autopay covers $7,017.11 by Oct 31.",
    "owner": "Kristine",
    "target": "2026-10-30",
@@ -654,11 +663,11 @@
    "amountNote": "",
    "situation": "$27,080.61 on a $40,000 limit = 68% used. Autopay covers the $170 minimum due Nov 2, but high usage hurts Juan’s credit score.",
    "recAction": "Pay",
-   "rec": "Pay $15,080.61 before the statement closes to get under 30% ($23,080.61 to get under 10%), once cash is confirmed.",
-   "required": "Pay $15,080.61 before the statement closes.",
+   "rec": "Pay $15,080.61 before the statement closes Nov 8 to get under 30% ($23,080.61 to get under 10%), once cash is confirmed.",
+   "required": "Pay $15,080.61 before Nov 8.",
    "owner": "Kristine",
-   "target": "",
-   "next": "Kristine confirms the closing date and the account to pay from.",
+   "target": "2026-11-07",
+   "next": "Kristine confirms the account to pay from.",
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
@@ -673,11 +682,11 @@
    "amountNote": "",
    "situation": "$6,160.62 on a $10,000 limit = 62% used. Autopay covers the $41 minimum due Nov 6.",
    "recAction": "Pay",
-   "rec": "Pay $3,160.62 before the statement closes to get under 30% ($5,160.62 to get under 10%), once cash is confirmed.",
-   "required": "Pay $3,160.62 before the statement closes.",
+   "rec": "Pay $3,160.62 before the statement closes Nov 8 to get under 30% ($5,160.62 to get under 10%), once cash is confirmed.",
+   "required": "Pay $3,160.62 before Nov 8.",
    "owner": "Kristine",
-   "target": "",
-   "next": "Kristine confirms the closing date and the account to pay from.",
+   "target": "2026-11-07",
+   "next": "Kristine confirms the account to pay from.",
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
