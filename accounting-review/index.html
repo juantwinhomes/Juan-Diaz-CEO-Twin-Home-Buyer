@@ -266,10 +266,10 @@ const SEED=JSON.parse(document.getElementById('seed').textContent);
 const DRAFT_KEY='thb-accounting-review-draft-v1';
 
 const SECTIONS=[
- ['overview','Juan’s Accounting Package'],['cards','1 · Credit Cards'],['rental','3 · 8715 D St Rents'],['payroll','4 · Matrix Payroll'],
- ['wires','5 · Wires to Release'],['erc','6 · ERC Specialists Bill'],['vantage','7 · Wells Fargo Vantage'],
- ['open','Open Items'],['contractors','Contractor Payments'],['tax','PPS 2025 Tax Returns'],['honda','Honda Accord'],['time','Clock-In / Clock-Out'],['other','Other Pending Decisions'],['summary','Final Decision Summary']];
-const SEC_NAME=Object.fromEntries(SECTIONS);
+ ['overview','Accounting Package',''],['cards','Credit Card Table','1'],['summary','Decision List','2'],['rental','8715 D St Rents','3'],['payroll','Matrix Payroll','4'],
+ ['wires','Wires to Release','5'],['erc','ERC Specialists Bill','6'],['vantage','Wells Fargo Vantage','7'],
+ ['open','Open Items',''],['contractors','Contractor Payments',''],['tax','PPS 2025 Tax Returns',''],['honda','Honda Accord',''],['time','Clock-In / Clock-Out',''],['other','Other Pending Decisions','']];
+const SEC_NAME=Object.fromEntries(SECTIONS.map(x=>[x[0],x[1]]));
 
 /* ---------- helpers ---------- */
 const clone=o=>JSON.parse(JSON.stringify(o));
@@ -1027,10 +1027,11 @@ function Other(){
 function Summary(){
   const {S,K,set,setDecision,go,copySummary,openReport}=useContext(Ctx);
   const [filter,setFilter]=useState('All');
-  const list=S.decisions.filter(d=>filter==='All'||d.status===filter);
+  const ord=S.decisionOrder||[];const rk=d=>{const i=ord.indexOf(d.id);return i<0?99:i};
+  const list=S.decisions.filter(d=>filter==='All'||d.status===filter).sort((a,b)=>rk(a)-rk(b));
   const [jump,setJump]=useState('');
   return html`<div class="stack">
-    <${SecHead} title="Final Decision Summary" sub="Every item that needs Juan, in one table. Changes here update the decision cards."/>
+    <${SecHead} title="Decision List" sub="Every decision for Juan, in one table."/>
     <div class="filterbar no-print">
       ${['All','Pending','Approved','Hold'].map(f=>html`<button key=${f} class=${'btn sm'+(filter===f?' on':'')} onClick=${()=>setFilter(f)}>${f==='Hold'?'On hold':f} · ${f==='All'?S.decisions.length:S.decisions.filter(d=>d.status===f).length}</button>`)}
       <span style=${{marginLeft:'auto',display:'flex',gap:'6px',flexWrap:'wrap'}}>
@@ -1183,7 +1184,7 @@ function App(){
   <div class="app">
     <aside class="side">
       <div class="brand"><h1>Accounting Review</h1><div class="co">${S.meta.company}</div><div class="co">${S.meta.session?'Session '+S.meta.session:'Due '+fmtDate(S.meta.reviewDate)}</div></div>
-      <nav class="nav" aria-label="Sections">${SECTIONS.map(([k,l],i)=>html`<button key=${k} aria-current=${sec===k} onClick=${()=>go(k)}><span class="n">${String(i+1).padStart(2,'0')}</span>${l}${secCount(k)>0&&html`<span class="badge">${secCount(k)}</span>`}</button>`)}</nav>
+      <nav class="nav" aria-label="Sections">${SECTIONS.map(([k,l,n],i)=>html`${k==='open'&&html`<div key="more" class="muted" style=${{fontSize:'.7rem',textTransform:'uppercase',letterSpacing:'.08em',padding:'12px 10px 4px'}}>More</div>`}<button key=${k} aria-current=${sec===k} onClick=${()=>go(k)}><span class="n">${n}</span>${l}${secCount(k)>0&&html`<span class="badge">${secCount(k)}</span>`}</button>`)}</nav>
     </aside>
     <main class="main" ref=${mainRef}>
       <div class="top">
