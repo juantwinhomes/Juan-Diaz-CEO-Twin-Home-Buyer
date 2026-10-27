@@ -702,7 +702,7 @@ function OpenItems(){
   const late=x=>x.status!=='DONE'&&x.due&&x.due<t;
   const n={DONE:0,DATE:0,BLOCKED:0};L.forEach(x=>n[x.status]=(n[x.status]||0)+1);const nl=L.filter(late).length;
   return html`<div class="stack">
-    <${SecHead} title="Open Items" sub="Every request from Juan: what was asked, when, who owns it, the due date and status (DONE / DATE / BLOCKED). Past due shows red."/>
+    <${SecHead} title="Open Items" sub="Accounting requests from Juan: what was asked, when, who owns it, the due date and status (DONE / DATE / BLOCKED). Past due shows red."/>
     <div class="panel facts">
       <${Fact} label="Open" big><span class="num">${L.length-n.DONE}</span><//>
       <${Fact} label="Past due" big><span class="num" style=${nl?{color:'var(--bad)'}:null}>${nl}</span><//>
@@ -945,6 +945,12 @@ function InfoBlock({k,title}){
     <${Brief} k=${k}/>
     ${d.facts&&html`<div class="panel facts">${d.facts.map(f=>html`<${Fact} key=${f[0]} label=${f[0]} big=${!!f[2]}>${f[1]}<//>`)}</div>`}
     ${d.risks&&d.risks.length>0&&html`<div class="banner warn"><span class="grow"><b>Watch:</b> ${d.risks.join(' ')}</span></div>`}
+    ${d.calc&&html`<div class="panel"><h3>${d.calcTitle||'How the amount is figured'}</h3><div class="tablewrap"><table><tbody>
+      ${d.calc.map((r,i)=>html`<tr key=${i} style=${r[2]?{fontWeight:700}:null}><td>${r[0]}</td><td class="r num" style=${{whiteSpace:'nowrap'}}>${r[1]}</td></tr>`)}
+    </tbody></table></div>${d.calcNote&&html`<p class="muted" style=${{fontSize:'.78rem',margin:'8px 0 0'}}>${d.calcNote}</p>`}</div>`}
+    ${d.options&&html`<div class="panel"><h3>${d.optionsTitle||'Options'}</h3><div class="tablewrap"><table><thead><tr><th>Option</th><th class="r">Pay now</th><th>What it means</th></tr></thead><tbody>
+      ${d.options.map((o,i)=>html`<tr key=${i} style=${o.rec?{background:'color-mix(in srgb,var(--accent) 8%,transparent)'}:null}><td style=${{minWidth:'160px'}}><b>${o.name}</b>${o.rec&&html` <span class="pill info">Recommended</span>`}</td><td class="r num" style=${{whiteSpace:'nowrap'}}>${o.amount}</td><td>${o.what}</td></tr>`)}
+    </tbody></table></div></div>`}
     ${d.steps&&html`<div class="panel"><h3>${d.stepsTitle||'Steps'}</h3><div class="tablewrap"><table><thead><tr><th>Step</th><th>Owner</th><th>Status</th><th>By</th></tr></thead><tbody>
       ${d.steps.map((x,i)=>html`<tr key=${i}><td>${x.t}</td><td>${x.owner||'—'}</td><td><${Pill} cls=${x.status==='Done'?'ok':x.status==='Blocked'?'bad':x.status==='In progress'?'info':'neutral'}>${x.status}<//></td><td style=${{whiteSpace:'nowrap'}}>${x.by||'—'}</td></tr>`)}
     </tbody></table></div></div>`}

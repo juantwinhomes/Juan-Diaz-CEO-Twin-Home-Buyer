@@ -5,7 +5,7 @@
   "reviewDate": "2026-10-27",
   "preparedBy": "Kristine, Controller",
   "decisionMaker": "Juan Diaz, CEO",
-  "savedAt": null,
+  "savedAt": "2026-10-27T06:01:34.083Z",
   "savedBy": "",
   "session": "Tue Oct 27, 10:00 AM"
  },
@@ -44,7 +44,7 @@
   },
   "erc": {
    "asOf": "2026-10-27",
-   "source": "ERC Specialists invoice"
+   "source": "ERC Specialists invoice, past-due letter and 2023 emails"
   },
   "vantage": {
    "asOf": "2026-10-27",
@@ -779,15 +779,15 @@
    "section": "erc",
    "title": "ERC Specialists fee (Matrix Group)",
    "amountSource": "",
-   "amount": 40605.61,
+   "amount": 36431.36,
    "amountNote": "",
-   "situation": "ERC Specialists' fee for the Employee Retention Credit refund Matrix received. $40,605.61, past due since May.",
+   "situation": "ERC Specialists bills $40,605.61. Their fee is 15% of the IRS checks Matrix received ($242,875.73), which is $36,431.36.",
    "recAction": "Pay",
-   "rec": "Approve paying $40,605.61 once Kristine confirms the balance with ERC Specialists.",
-   "required": "Approve paying $40,605.61.",
+   "rec": "Pay $36,431.36 now from Matrix Group. Kristine gets a quarter-by-quarter statement for the other $4,174.25 before paying any more.",
+   "required": "Approve paying $36,431.36.",
    "owner": "Kristine",
-   "target": "2026-11-05",
-   "next": "Kristine confirms the balance with ERC Specialists, then pays.",
+   "target": "2026-11-03",
+   "next": "Kristine prepares the payment from Matrix Group for Juan to release, and asks ERC Specialists for the statement.",
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
@@ -875,13 +875,13 @@
    "next": "Kristine sends the contractor payments and marks each one sent."
   },
   "erc": {
-   "topic": "ERC Specialists bill",
+   "topic": "ERC Specialists fee",
    "status": "warn",
-   "headline": "Matrix owes ERC Specialists $40,605.61 for the ERC refund it received. It's past due.",
-   "now": "ERC Specialists sent a past-due notice in May. The fee is for the Employee Retention Credit refund Matrix got.",
-   "you": "Approve paying $40,605.61.",
-   "youShort": "Approve $40,605.61 ERC fee",
-   "next": "Kristine confirms the balance with ERC Specialists and pays by Nov 5."
+   "headline": "ERC Specialists bills Matrix $40,605.61. The fee on the checks Matrix received is $36,431.36.",
+   "now": "Their fee is 15% of the credit, and they don't charge for checks not received. Matrix received $242,875.73 in IRS checks.",
+   "you": "Approve paying $36,431.36 now.",
+   "youShort": "Approve $36,431.36 ERC fee",
+   "next": "Kristine pays from Matrix Group and gets a statement for the other $4,174.25."
   },
   "vantage": {
    "topic": "Wells Fargo Vantage",
@@ -923,40 +923,95 @@
  "erc": {
   "facts": [
    [
-    "Balance due",
+    "ERC Specialists says Matrix owes",
     "$40,605.61",
     1
    ],
    [
+    "Fee owed on checks Matrix received",
+    "$36,431.36",
+    1
+   ],
+   [
+    "Difference to settle",
+    "$4,174.25",
+    1
+   ],
+   [
     "Billed to",
-    "Matrix Group Inc."
-   ],
-   [
-    "What it's for",
-    "ERC Specialists' fee for the Employee Retention Credit refund Matrix received"
-   ],
-   [
-    "Past-due notice",
-    "May 2, 2026 (30+ days past due)"
+    "Matrix Group Inc. (customer 156270)"
    ]
   ],
   "risks": [],
+  "calcTitle": "How much Matrix owes",
+  "calc": [
+   [
+    "ERC credit ERC Specialists filed for Matrix (6 quarters)",
+    "$356,990.48"
+   ],
+   [
+    "IRS checks Matrix received (3 checks, 2023)",
+    "$242,875.73"
+   ],
+   [
+    "Fee: 15% of the checks received",
+    "$36,431.36",
+    1
+   ],
+   [
+    "ERC Specialists is billing",
+    "$40,605.61"
+   ],
+   [
+    "Difference",
+    "$4,174.25",
+    1
+   ]
+  ],
+  "calcNote": "Per ERC Specialists' email of Aug 3, 2023: the fee is 15% of the credit filed, and they \"do not expect any payment for checks you have not received.\" Checks received: $83,515.24, $56,354.01 and $103,006.48. The IRS kept the Q2 2020 refund ($15,834.99) for taxes owed and sent only $259.43 for Q3 2020. Q3 2021 was resubmitted in Aug 2023.",
+  "optionsTitle": "How Juan pays",
+  "options": [
+   {
+    "name": "A. Pay the fee on checks received, settle the rest",
+    "amount": "$36,431.36",
+    "rec": true,
+    "what": "Stops the past-due notices. Kristine asks ERC Specialists in writing for a quarter-by-quarter statement for the other $4,174.25 and pays only what matches checks Matrix received."
+   },
+   {
+    "name": "B. Pay the full bill",
+    "amount": "$40,605.61",
+    "rec": false,
+    "what": "Closes it today, but may pay for a check Matrix never received."
+   },
+   {
+    "name": "C. Hold everything",
+    "amount": "$0",
+    "rec": false,
+    "what": "Risks collections. Not recommended; the bill has been past due since 2023."
+   }
+  ],
   "stepsTitle": "Next steps",
   "steps": [
    {
-    "t": "Call ERC Specialists Accounts Receivable to confirm the balance and set the payment",
-    "owner": "Kristine",
+    "t": "Juan picks an option",
+    "owner": "Juan",
+    "status": "Not started",
+    "by": "Oct 27"
+   },
+   {
+    "t": "Pay from Matrix Group by check or wire (per the invoice); Kristine prepares, Juan releases",
+    "owner": "Kristine · Juan",
     "status": "Not started",
     "by": "Nov 3"
    },
    {
-    "t": "Pay ERC Specialists once Juan approves",
+    "t": "Ask ERC Specialists in writing for a quarter-by-quarter statement of the $4,174.25",
     "owner": "Kristine",
     "status": "Not started",
-    "by": "Nov 5"
+    "by": "Oct 30"
    }
   ],
-  "source": "Source: ERC Specialists past-due letter (May 2, 2026) and invoice. AR: (385) 707-0170 · support@ercspecialists.com"
+  "source": "Sources: ERC Specialists invoice and past-due letter (May 2, 2026); ERC Specialists emails Aug–Oct 2023 (customer 156270). AR: (385) 707-0170 · support@ercspecialists.com"
  },
  "vantage": {
   "facts": [
@@ -1041,31 +1096,11 @@
    "note": ""
   },
   {
-   "id": "o3",
-   "ask": "Heyer EMD: Buyer Information form, wire instructions verified by phone, exact amount",
-   "asked": "2026-10-26",
-   "owner": "Cherry",
-   "due": "2026-10-27",
-   "dueNote": "by 9:30 AM",
-   "status": "DATE",
-   "note": "WFG Title, escrow #26-215725"
-  },
-  {
    "id": "o4",
    "ask": "Wells Fargo Vantage: setup with Yi Tang, $75 fee waiver in writing, go-live date",
    "asked": "2026-10-26",
    "owner": "Kristine",
    "due": "2026-10-27",
-   "status": "DATE",
-   "note": ""
-  },
-  {
-   "id": "o5",
-   "ask": "Accounting package in Juan’s inbox (cards, decisions, rents, payroll, wires, ERC, Vantage)",
-   "asked": "2026-10-26",
-   "owner": "Cherry · Kristine",
-   "due": "2026-10-27",
-   "dueNote": "by 9:30 AM",
    "status": "DATE",
    "note": ""
   },
@@ -1077,16 +1112,6 @@
    "due": "2026-10-27",
    "dueNote": "end of day",
    "status": "DATE",
-   "note": ""
-  },
-  {
-   "id": "o7",
-   "ask": "972 Norton: correct the PG&E application to 120 amp",
-   "asked": "2026-10-26",
-   "owner": "Kristine",
-   "due": "2026-10-27",
-   "dueNote": "1 PM update",
-   "status": "BLOCKED",
    "note": ""
   },
   {
@@ -1104,7 +1129,7 @@
    "asked": "2026-10-26",
    "owner": "Kristine",
    "due": "2026-10-26",
-   "status": "DATE",
+   "status": "DONE",
    "note": ""
   },
   {
@@ -1134,24 +1159,6 @@
    "due": "",
    "status": "DATE",
    "note": "Confirm with the store's Pro Desk"
-  },
-  {
-   "id": "o13",
-   "ask": "F-350: tow to Ford Sunnyvale, repairs, cost and ready date",
-   "asked": "2026-10-26",
-   "owner": "Marieflor · Kristine",
-   "due": "2026-10-27",
-   "status": "DATE",
-   "note": ""
-  },
-  {
-   "id": "o14",
-   "ask": "Add this open-items list to the payment-approval board",
-   "asked": "2026-10-26",
-   "owner": "Kristine",
-   "due": "2026-10-27",
-   "status": "DONE",
-   "note": ""
   }
  ]
 }
