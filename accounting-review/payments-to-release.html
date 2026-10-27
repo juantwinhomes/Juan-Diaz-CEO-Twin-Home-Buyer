@@ -81,6 +81,17 @@ details.why[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
 .rechint{font-size:11px;color:var(--ink-faint)}
 .rlab{font-size:11px;font-weight:700;color:var(--ink-faint);margin-top:1px}
 .tp-step.ok-row{border-color:var(--green)}
+.fields{display:grid;grid-template-columns:112px minmax(0,1fr);gap:3px 10px;margin:8px 0 0;font-size:12px}
+.fields dt{color:var(--ink-faint);font-weight:600}
+.fields dd{margin:0;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.pend{color:var(--amber);font-weight:700}
+.steplab{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);min-width:44px}
+.chkrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.chkbtn{border:1.5px solid var(--line);background:var(--paper);color:var(--ink-soft);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:700;min-height:34px}
+.chkbtn[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.chkbtn:disabled{opacity:.6;cursor:default}
+.dec{align-items:center}
+.byline{margin-top:0}
 .tp-total{display:flex;justify-content:space-between;border-top:2px solid var(--line);margin-top:4px;padding-top:11px;font-weight:800;font-size:13.5px}
 .tp-total .num{color:var(--accent)}
 .bk-group{margin-top:10px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -136,14 +147,14 @@ details.cat[open]>summary{background:var(--wash)}
       <div class="stat"><div class="k">Waiting on Juan</div><div class="v" id="s-wait">—</div></div>
     </div>
     <div class="approve">
-      <button class="go" id="go" type="button">Approve the rest as Kristine recommends</button>
+      <button class="go" id="go" type="button">Approve everything Cherry checked</button>
       <span class="status" id="status"></span>
     </div>
   </div>
 
   <div class="section">
     <div class="sec-head"><div class="sec-title">Today · wire and contractors</div><div class="sec-tot" id="g-today"></div></div>
-    <div class="lead-in">Juan picks <b>Approve</b>, <b>Hold</b> or <b>Note</b> on each payment. It saves right away and everyone sees it. Kristine or Cherry enters the approved ones with you; you only do the bank login and codes.</div>
+    <div class="lead-in">One payee, one line. <b>Cherry</b> taps Check first, then <b>Juan</b> picks Approve, Hold or Note. Each tap saves right away with the name and time. Kristine or Cherry enters the approved ones with you; you only do the bank login and codes.</div>
     <div class="tp-steps" id="list-today"></div>
   </div>
 
@@ -173,14 +184,16 @@ details.cat[open]>summary{background:var(--wash)}
 </div>
 
 <script>
+// One payee, one line. Fields Juan asked for; "" = Kristine still has to fill it in (shows as Pending).
 const TODAY = [
-  {id:"wfg", acct:"wf", who:"WFG Title", what:"5022 Heyer Ave, Castro Valley · 2nd half of earnest money · escrow #26-215725", amt:10500.00, how:"Wire", verify:"Saved payee \"WFG Stockton\" ••8979 · confirmed by phone with Christina"},
-  {id:"gon1", acct:"relay", who:"Gonzalo", what:"22496 Madera · painting", amt:10000.00, how:"Transfer", verify:"Confirmed by phone"},
-  {id:"gon2", acct:"relay", who:"Gonzalo", what:"22496 Madera · demolition / cleanup", amt:900.00, how:"Transfer", verify:"Confirmed by phone"},
-  {id:"alv", acct:"relay", who:"Alvaro", what:"22496 Madera · drywall install and texture", amt:1200.00, how:"Transfer", verify:"Confirmed by phone"},
-  {id:"yuri1", acct:"wf", who:"Yuri Hernandez", what:"170 Glenn Way · office cleaning, 3 weeks", amt:2700.00, how:"Transfer", verify:"Confirmed by phone"},
-  {id:"yuri2", acct:"wf", who:"Yuri Hernandez", what:"27 Prague St · cleaning", amt:400.00, how:"Transfer", verify:"Confirmed by phone"},
-  {id:"stu", acct:"wf", who:"Stuart Morgan (RemodHomes)", what:"1574 Jerrold Ave · invoice 2611", amt:2700.00, how:"Transfer", verify:"Confirmed by phone"}
+  {id:"wfg", acct:"wf", who:"WFG Title", prop:"5022 Heyer Ave, Castro Valley", forw:"Earnest money deposit, 2nd half · escrow #26-215725", amt:10500.00, how:"Wire", inv:"Escrow #26-215725", invDate:"", receipt:"", due:"Oct 27",
+   wire:{who:"Christina, WFG Title", phone:"", date:"Fri, Oct 23", payee:"Saved in Wells Fargo as \"WFG Stockton\", account ending 8979"}},
+  {id:"gon1", acct:"relay", who:"Gonzalo", prop:"22496 Avenue 18 3/4, Madera", forw:"Painting", amt:10000.00, how:"", inv:"", invDate:"", receipt:"", due:"Oct 27"},
+  {id:"gon2", acct:"relay", who:"Gonzalo", prop:"22496 Avenue 18 3/4, Madera", forw:"Demolition and cleanup", amt:900.00, how:"", inv:"", invDate:"", receipt:"", due:"Oct 27"},
+  {id:"alv", acct:"relay", who:"Alvaro", prop:"22496 Avenue 18 3/4, Madera", forw:"Drywall install and texture", amt:1200.00, how:"", inv:"", invDate:"", receipt:"", due:"Oct 27"},
+  {id:"yuri1", acct:"wf", who:"Yuri Hernandez", prop:"170 Glenn Way, Suite 5, San Carlos (office)", forw:"Office cleaning, 3 weeks", amt:2700.00, how:"", inv:"", invDate:"", receipt:"", due:"Oct 27"},
+  {id:"yuri2", acct:"wf", who:"Yuri Hernandez", prop:"27 Prague St, San Mateo", forw:"Cleaning", amt:400.00, how:"", inv:"", invDate:"", receipt:"", due:"Oct 27"},
+  {id:"stu", acct:"wf", who:"Stuart Morgan (RemodHomes)", prop:"1574 Jerrold Ave, San Francisco", forw:"Remodel work, invoice 2611", amt:2700.00, how:"", inv:"2611", invDate:"", receipt:"", due:"Oct 27"}
 ];
 // Every unpaid charge per card (unpaid card sheets, Oct 26): groups Property / Overhead / Marketing -> [category, tag, total, lines[date, vendor, amount, note]].
 // tag = account Kristine recommends paying that category from; "*" = only part of it is paid now; "" = not paying now.
@@ -233,7 +246,8 @@ function sums(){
 
 async function write(id, patch){
   if(!db) return;
-  const body = {...(dec[id]||{}), ...patch, by:myId||null, at:new Date().toISOString()};
+  const stamp = "chk" in patch ? {} : {by:myId||null, at:new Date().toISOString()};
+  const body = {...(dec[id]||{}), ...patch, ...stamp};
   dec[id] = body; render();
   try{ await db.collection(COL).doc(id).set(body); }
   catch(e){ document.getElementById("status").textContent = "Couldn't save. Check the connection, or reply in chat."; }
@@ -248,13 +262,24 @@ function decide(i, d){
   write(i.id, patch);
 }
 
+function stampTime(t){ return new Date(t).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/Los_Angeles"})+" PT"; }
+
 function controls(i){
   const x = dec[i.id]||{};
   const wrap = el("div","decwrap");
-  const box = el("div","dec");
+  const ck = el("div","chkrow");
+  const cb = el("button","chkbtn", x.chk ? "✓ Checked" : "Check"); cb.type="button";
+  cb.setAttribute("aria-pressed", x.chk ? "true":"false"); cb.disabled = !db || x.d==="approve";
+  cb.addEventListener("click",()=>write(i.id,{chk: x.chk ? null : {by:myId||null, at:new Date().toISOString()}}));
+  ck.append(el("span","steplab","Cherry"), cb);
+  if(x.chk) ck.append(el("span","byline","Checked by "+(((x.chk.by && names[x.chk.by]) || "Someone"))+" · "+stampTime(x.chk.at)));
+  else ck.append(el("span","byline","Not checked yet"));
+  wrap.append(ck);
+  const box = el("div","dec"); box.append(el("span","steplab","Juan"));
   [["approve","Approve"],["hold","Hold"],["note","Note"]].forEach(([k,lab])=>{
     const b = el("button",null,lab); b.type="button"; b.dataset.v=k;
-    b.setAttribute("aria-pressed", x.d===k ? "true":"false"); b.disabled = !db;
+    b.setAttribute("aria-pressed", x.d===k ? "true":"false"); b.disabled = !db || (k==="approve" && !x.chk && x.d!=="approve");
+    if(k==="approve" && !x.chk) b.title = "Waiting for Cherry's check";
     b.addEventListener("click",()=>decide(i,k)); box.append(b);
   });
   wrap.append(box);
@@ -278,9 +303,8 @@ function controls(i){
   }
   if(x.at && (x.d || x.note)){
     const who = (x.by && names[x.by]) || "Someone";
-    const when = new Date(x.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/Los_Angeles"});
     const lab = {approve:"Approved",hold:"On hold",note:"Note"}[x.d] || "Updated";
-    wrap.append(el("div","byline",lab+" by "+who+" · "+when+" PT"));
+    wrap.append(el("div","byline",lab+" by "+who+" · "+stampTime(x.at)));
   }
   return wrap;
 }
@@ -336,8 +360,15 @@ function cardBreakdown(c){
 function renderLists(){
   const lt = document.getElementById("list-today"); lt.replaceChildren();
   ITEMS.filter(i=>i.kind==="today").forEach((p,ix)=>{
-    const d = el("div","d"); d.append(p.how+" from ", el("b",null,ACCT[p.acct]), " · "+p.what);
-    lt.append(step(ix+1,p,[d],[pill(p.acct), el("span","ok","✓ "+p.verify)]));
+    const g = el("dl","fields");
+    const f = (k,v,raw)=>{ g.append(el("dt",null,k)); const dd = el("dd"); if(raw) dd.append(raw); else if(v) dd.textContent=v; else dd.append(el("span","pend","Pending")); g.append(dd); };
+    f("Property", p.prop); f("For", p.forw);
+    f("Invoice #", p.inv); f("Invoice date", p.invDate);
+    f("Invoice / receipt", null, p.receipt ? Object.assign(el("a",null,"Open"),{href:p.receipt,target:"_blank",rel:"noopener"}) : null);
+    f("From", null, pill(p.acct)); f("Method", p.how); f("Due", p.due);
+    if(p.wire){ f("Wire payee", p.wire.payee); f("Verified by", p.wire.who+", by phone"); f("Number used", p.wire.phone); f("Verified on", p.wire.date); }
+    f("Prepared by", "Kristine");
+    lt.append(step(ix+1,p,[g],[]));
   });
   const lc = document.getElementById("list-cards"); lc.replaceChildren();
   ITEMS.filter(i=>i.kind==="card").forEach((c,ix)=>{
@@ -362,7 +393,7 @@ function renderBreakdown(){
     g.append(el("div","bk-sub","Kristine recommends "+money(rec)+" from this account"));
     const row=(name,sub,v)=>{ const r=el("div","bk-row"); const s=el("span"); s.append(el("b",null,name)); if(sub) s.append(" · "+sub); r.append(s, el("span","num",money(v))); return r; };
     const td = rows.filter(r=>r.i.kind==="today"), cd = rows.filter(r=>r.i.kind==="card");
-    if(td.length){ g.append(el("div","bk-sub","Today · "+money(td.reduce((s,r)=>s+r.v,0)))); td.forEach(r=>g.append(row(r.i.who.replace(/ \(.*\)$/,""), r.i.what.split(" · ")[0], r.v))); }
+    if(td.length){ g.append(el("div","bk-sub","Today · "+money(td.reduce((s,r)=>s+r.v,0)))); td.forEach(r=>g.append(row(r.i.who.replace(/ \(.*\)$/,""), r.i.prop.split(",")[0]+" · "+r.i.forw, r.v))); }
     if(cd.length){ g.append(el("div","bk-sub","Cards · "+money(cd.reduce((s,r)=>s+r.v,0)))); cd.forEach(r=>g.append(row(r.i.who, "due "+r.i.due, r.v))); }
     if(!rows.length) g.append(el("div","bk-row","Nothing approved from this account yet."));
     bk.append(g);
@@ -376,7 +407,7 @@ function render(){
   pending = false;
   const t = sums(), all = t.acct.wf+t.acct.relay+t.acct.para;
   document.getElementById("hero-amt").textContent = money(all);
-  document.getElementById("hero-note").replaceChildren("Counts only what Juan approves. ", el("b",null,"Kristine recommends "+money(REC_TODAY+REC_CARDS)), " (today "+money(REC_TODAY)+" + cards "+money(REC_CARDS)+"). That is a recommendation, not a decision. Checked by Cherry.");
+  document.getElementById("hero-note").replaceChildren("Counts only what Juan approves. ", el("b",null,"Kristine recommends "+money(REC_TODAY+REC_CARDS)), " (today "+money(REC_TODAY)+" + cards "+money(REC_CARDS)+"). That is a recommendation, not a decision. Checked by Cherry: "+ITEMS.filter(i=>(dec[i.id]||{}).chk).length+" of "+ITEMS.length+".");
   document.getElementById("s-twf").textContent = money(t.acct.wf);
   document.getElementById("s-trelay").textContent = money(t.acct.relay);
   document.getElementById("s-trp").textContent = money(t.acct.para);
@@ -397,7 +428,7 @@ document.addEventListener("focusout",()=>{ setTimeout(()=>{ if(pending) render()
 
 document.getElementById("go").addEventListener("click", async ()=>{
   if(!db) return;
-  for(const i of ITEMS){ const x = dec[i.id]; if(!x || !x.d) await write(i.id,{d:"approve", amts:Object.fromEntries(i.src)}); }
+  for(const i of ITEMS){ const x = dec[i.id]; if(x && x.chk && !x.d) await write(i.id,{d:"approve", amts:Object.fromEntries(i.src)}); }
 });
 
 render();
@@ -414,7 +445,7 @@ render();
   db.collection(COL).onSnapshot(async snap=>{
     Object.keys(dec).forEach(k=>delete dec[k]);
     snap.docs.forEach(doc=>{ if(doc.exists) dec[doc.id] = {...doc.data()}; });
-    const ids = [...new Set(Object.values(dec).map(x=>x.by).filter(Boolean))].filter(id=>!(id in names));
+    const ids = [...new Set(Object.values(dec).flatMap(x=>[x.by, x.chk&&x.chk.by]).filter(Boolean))].filter(id=>!(id in names));
     if(user && ids.length){ try{ const ps = await user.profiles(ids); ids.forEach(id=>names[id]=(ps[id]&&ps[id].name)||""); }catch(e){} }
     render();
   }, ()=>{ document.getElementById("status").textContent = "Lost the connection to saved decisions. Reload the page."; });
