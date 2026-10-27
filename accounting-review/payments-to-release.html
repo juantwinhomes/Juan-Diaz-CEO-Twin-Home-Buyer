@@ -76,6 +76,9 @@ details.why[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
 .amts input{width:120px;border:1.5px solid var(--green);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px;font-weight:700;background:var(--paper);color:var(--ink)}
 .decwrap textarea{display:block;width:100%;margin-top:8px;min-height:54px;border:1.5px solid var(--accent);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;background:var(--accent-soft);color:var(--ink);resize:vertical}
 .byline{font-size:11px;color:var(--ink-faint);margin-top:6px}
+.krec{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px 5px;font-size:12px;color:var(--ink-soft);background:var(--green-soft);border-radius:8px;padding:6px 9px;margin-top:2px}
+.krec b{color:var(--ink)}
+.rechint{font-size:11px;color:var(--ink-faint)}
 .rlab{font-size:11px;font-weight:700;color:var(--ink-faint);margin-top:1px}
 .tp-step.ok-row{border-color:var(--green)}
 .tp-total{display:flex;justify-content:space-between;border-top:2px solid var(--line);margin-top:4px;padding-top:11px;font-weight:800;font-size:13.5px}
@@ -258,12 +261,12 @@ function controls(i){
   if(x.d==="approve" && i.kind==="card"){
     const am = el("div","amts"), cur = approvedAmts(i);
     i.src.forEach(([k,v])=>{
-      const l = el("label"); l.append(pill(k));
+      const l = el("label"); l.append(el("span",null,"Pay from"), pill(k));
       const inp = document.createElement("input"); inp.type="number"; inp.step="0.01"; inp.min="0"; inp.inputMode="decimal";
       inp.value = cur[k].toFixed(2); inp.disabled = !db;
       inp.setAttribute("aria-label","Amount from "+ACCT[k]+" for "+i.who);
       inp.addEventListener("change",()=>{ const n = Math.max(0, Math.round((Number(inp.value)||0)*100)/100); write(i.id,{amts:{...((dec[i.id]||{}).amts||{}), [k]:n}}); });
-      l.append(inp, el("span","rechint","rec. "+money(v))); am.append(l);
+      l.append(inp, el("span","rechint","Kristine recommends "+money(v))); am.append(l);
     });
     wrap.append(am);
   }
@@ -338,9 +341,11 @@ function renderLists(){
   });
   const lc = document.getElementById("list-cards"); lc.replaceChildren();
   ITEMS.filter(i=>i.kind==="card").forEach((c,ix)=>{
-    const d1 = el("div","d"); d1.append(el("b",null,"Recommendation: "), c.rec.replace(/^Kristine recommends paying /,""));
+    const d1 = el("div","d"); d1.append(c.rec);
     const meta = [el("span","due","Due "+c.due)];
-    c.src.forEach(([a,v])=>{ const s=pill(a); s.textContent=ACCT[a]+" rec. "+money(v); meta.push(s); });
+    const kr = el("div","krec"); kr.append(el("b",null,"Kristine recommends: "));
+    c.src.forEach(([a,v],ix)=>{ if(ix) kr.append(" + "); kr.append(el("b",null,money(v)), " from ", pill(a)); });
+    meta.push(kr);
     lc.append(step(ix+1,c,[d1],meta,cardBreakdown(c)));
   });
 }
