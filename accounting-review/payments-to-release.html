@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
-/* Layout: one sheet in Juan's order: totals by account, the payment list, the wire, what's not paid. */
+/* Layout: one sheet. Three short tables (wire, contractors, credit cards) with the same columns, then totals by account. */
 :root{
   --bg:#f6f6f2;--paper:#ffffff;--ink:#14181d;--muted:#5e6670;--line:#dcdfd8;--soft:#f0f1ec;
   --ok:#1f7a4d;--ok-bg:#e3f2e9;
@@ -13,28 +13,30 @@
 :root[data-theme="dark"]{--bg:#111416;--paper:#181c1f;--ink:#e8ebe6;--muted:#9aa29c;--line:#2b3135;--soft:#1f2427;--ok:#7fd3a6;--ok-bg:#183326;color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
-.sheet{max-width:900px;margin:0 auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:24px clamp(16px,3vw,32px);display:grid;gap:24px}
+.sheet{max-width:960px;margin:0 auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:24px clamp(16px,3vw,32px);display:grid;gap:24px}
 header{border-bottom:2px solid var(--ink);padding-bottom:12px}
 h1{font-family:var(--f-head);font-weight:800;font-size:clamp(24px,3.6vw,30px);margin:0}
 .sub{color:var(--muted);font-size:13px;margin-top:2px}
-h2{font-family:var(--f-head);font-weight:700;font-size:14px;letter-spacing:.07em;text-transform:uppercase;margin:0 0 8px}
-.totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.sh{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}
+h2{font-family:var(--f-head);font-weight:700;font-size:14px;letter-spacing:.07em;text-transform:uppercase;margin:0}
+.sh .t{font-family:var(--f-num);font-weight:600;font-variant-numeric:tabular-nums}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
+table{width:100%;border-collapse:collapse;min-width:720px;table-layout:fixed}
+col.c1{width:22%}col.c2{width:13%}col.c3{width:31%}col.c4{width:14%}col.c5{width:8%}col.c6{width:12%}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.amt{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.acct{font-weight:600;white-space:nowrap}
+.nw{white-space:nowrap}
+.pill{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;color:var(--ok);background:var(--ok-bg);white-space:nowrap}
+.muted{color:var(--muted)}
+.totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
 .tot{border:1px solid var(--line);border-radius:4px;padding:10px 14px}
 .tot .k{font-size:12px;color:var(--muted);font-weight:600}
 .tot .v{font-family:var(--f-num);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums}
 .tot.all{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .tot.all .k{color:inherit;opacity:.75}
-.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
-table{width:100%;border-collapse:collapse;min-width:640px}
-th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-tr:last-child td{border-bottom:0}
-tr.acct td{background:var(--soft);font-weight:700;font-size:13px;letter-spacing:.04em}
-.amt{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
-.nw{white-space:nowrap}
-.pill{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;color:var(--ok);background:var(--ok-bg)}
-.wire{border:1px solid var(--line);border-radius:4px;padding:12px 14px;display:grid;gap:4px}
-.wire b{font-weight:600}
 .plain{display:grid;gap:4px;color:var(--muted);font-size:14px}
 .plain b{color:var(--ink);font-weight:600}
 </style>
@@ -46,60 +48,64 @@ tr.acct td{background:var(--soft);font-weight:700;font-size:13px;letter-spacing:
   </header>
 
   <section>
-    <h2>Total leaving each account</h2>
+    <div class="sh"><h2>Wire</h2><span class="t">$10,500.00</span></div>
+    <div class="wrap"><table>
+      <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"></colgroup>
+      <thead><tr><th>Payee</th><th class="amt">Amount</th><th>Property / invoice</th><th>Account</th><th>Due</th><th>Verified</th></tr></thead>
+      <tbody>
+        <tr><td>WFG Title</td><td class="amt">$10,500.00</td><td>5022 Heyer Ave, Castro Valley · EMD 2nd half · escrow #26-215725</td><td class="acct">WF 8251</td><td class="nw">Today</td><td><span class="pill">Verified</span><div class="muted" style="font-size:12px">By phone with Christina, WFG</div></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="sh"><h2>Contractors</h2><span class="t">$17,900.00</span></div>
+    <div class="wrap"><table>
+      <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"></colgroup>
+      <thead><tr><th>Payee</th><th class="amt">Amount</th><th>Property / invoice</th><th>Account</th><th>Due</th><th>Verified</th></tr></thead>
+      <tbody>
+        <tr><td>Gonzalo</td><td class="amt">$10,000.00</td><td>22496 Madera · painting</td><td class="acct">Relay 5776</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
+        <tr><td>Gonzalo</td><td class="amt">$900.00</td><td>22496 Madera · demolition / cleanup</td><td class="acct">Relay 5776</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
+        <tr><td>Alvaro</td><td class="amt">$1,200.00</td><td>22496 Madera · drywall</td><td class="acct">Relay 5776</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
+        <tr><td>Yuri Hernandez</td><td class="amt">$2,700.00</td><td>170 Glenn Way · office cleaning, 3 weeks</td><td class="acct">WF 8251</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
+        <tr><td>Yuri Hernandez</td><td class="amt">$400.00</td><td>27 Prague St · cleaning</td><td class="acct">WF 8251</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
+        <tr><td>Stuart Morgan (RemodHomes)</td><td class="amt">$2,700.00</td><td>1574 Jerrold Ave · invoice 2611</td><td class="acct">WF 8251</td><td class="nw">Today</td><td><span class="pill">Verified</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="sh"><h2>Credit cards</h2><span class="t">$48,793.94</span></div>
+    <div class="wrap"><table>
+      <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"></colgroup>
+      <thead><tr><th>Card</th><th class="amt">Amount</th><th>Property / charges</th><th>Account</th><th>Due</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>Amex 5004</td><td class="amt">$15,212.00</td><td>Subscriptions $10,725.60 · office utilities $4,486.40</td><td class="acct">WF 8251</td><td class="nw">Nov 5</td><td></td></tr>
+        <tr><td>Amex 5004</td><td class="amt">$5,654.72</td><td>460 5th Ave, Redwood City</td><td class="acct">Relay 5776</td><td class="nw">Nov 5</td><td></td></tr>
+        <tr><td>Capital One Spark 7260</td><td class="amt">$6,971.49</td><td>972 Norton St, San Mateo</td><td class="acct">WF 8251</td><td class="nw">Nov 17</td><td></td></tr>
+        <tr><td>Capital One Spark 7260</td><td class="amt">$2,590.76</td><td>22496 Madera</td><td class="acct">Relay 5776</td><td class="nw">Nov 17</td><td></td></tr>
+        <tr><td>Venture X 1175</td><td class="amt">$6,265.78</td><td>Madera, Redwood City, Norton, personal</td><td class="acct">Relay 5776</td><td class="nw">Nov 8</td><td></td></tr>
+        <tr><td>Venture X 1175</td><td class="amt">$400.96</td><td>Sold: Santa Rosa, Prague</td><td class="acct">WF 8251</td><td class="nw">Nov 8</td><td></td></tr>
+        <tr><td>Home Depot 5253</td><td class="amt">$5,320.23</td><td>Sold: Petaluma, 27 Prague St, 751 27th Ave</td><td class="acct">WF 8251</td><td class="nw">Nov 5</td><td></td></tr>
+        <tr><td>Citi 2149</td><td class="amt">$4,378.00</td><td>52 Paramount Ter</td><td class="acct">Relay Paramount</td><td class="nw">Nov 8</td><td></td></tr>
+        <tr><td>Bank of America 0475</td><td class="amt">$2,000.00</td><td>519 Orizaba Ave (sold)</td><td class="acct">WF 8251</td><td class="nw">Nov 2</td><td></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="sh"><h2>Total leaving each account</h2></div>
     <div class="totals">
-      <div class="tot"><div class="k">WF ••8251</div><div class="v">$46,204.68</div></div>
-      <div class="tot"><div class="k">Relay ••5776</div><div class="v">$26,611.26</div></div>
+      <div class="tot"><div class="k">WF 8251</div><div class="v">$46,204.68</div></div>
+      <div class="tot"><div class="k">Relay 5776</div><div class="v">$26,611.26</div></div>
       <div class="tot"><div class="k">Relay Paramount</div><div class="v">$4,378.00</div></div>
       <div class="tot all"><div class="k">Total</div><div class="v">$77,193.94</div></div>
     </div>
   </section>
 
   <section>
-    <h2>What we're paying</h2>
-    <div class="wrap"><table>
-      <thead><tr><th>Payee</th><th class="amt">Amount</th><th>Property / invoice</th><th>Due</th></tr></thead>
-      <tbody>
-        <tr class="acct"><td>From WF ••8251</td><td class="amt">$46,204.68</td><td></td><td></td></tr>
-        <tr><td>WFG Title (wire)</td><td class="amt">$10,500.00</td><td>5022 Heyer Ave, Castro Valley · EMD 2nd half · escrow #26-215725</td><td class="nw">Today</td></tr>
-        <tr><td>Amex ••5004</td><td class="amt">$15,212.00</td><td>Subscriptions $10,725.60 · office utilities $4,486.40</td><td class="nw">Nov 5</td></tr>
-        <tr><td>Capital One Spark ••7260</td><td class="amt">$6,971.49</td><td>972 Norton St, San Mateo</td><td class="nw">Nov 17</td></tr>
-        <tr><td>Home Depot ••5253</td><td class="amt">$5,320.23</td><td>Sold properties: Petaluma, 27 Prague St, 751 27th Ave</td><td class="nw">Nov 5</td></tr>
-        <tr><td>Yuri Hernandez</td><td class="amt">$2,700.00</td><td>170 Glenn Way · office cleaning, 3 weeks</td><td class="nw">Today</td></tr>
-        <tr><td>Stuart Morgan (RemodHomes)</td><td class="amt">$2,700.00</td><td>1574 Jerrold Ave · invoice 2611</td><td class="nw">Today</td></tr>
-        <tr><td>Bank of America ••0475</td><td class="amt">$2,000.00</td><td>519 Orizaba Ave (sold property)</td><td class="nw">Nov 2</td></tr>
-        <tr><td>Yuri Hernandez</td><td class="amt">$400.00</td><td>27 Prague St · cleaning</td><td class="nw">Today</td></tr>
-        <tr><td>Capital One Venture X ••1175</td><td class="amt">$400.96</td><td>Sold properties: Santa Rosa, Prague</td><td class="nw">Nov 8</td></tr>
-
-        <tr class="acct"><td>From Relay ••5776</td><td class="amt">$26,611.26</td><td></td><td></td></tr>
-        <tr><td>Gonzalo</td><td class="amt">$10,000.00</td><td>22496 Madera · painting</td><td class="nw">Today</td></tr>
-        <tr><td>Capital One Venture X ••1175</td><td class="amt">$6,265.78</td><td>Madera, Redwood City, Norton, personal · brings card under 30%</td><td class="nw">Nov 8</td></tr>
-        <tr><td>Amex ••5004</td><td class="amt">$5,654.72</td><td>460 5th Ave, Redwood City</td><td class="nw">Nov 5</td></tr>
-        <tr><td>Capital One Spark ••7260</td><td class="amt">$2,590.76</td><td>22496 Madera</td><td class="nw">Nov 17</td></tr>
-        <tr><td>Alvaro</td><td class="amt">$1,200.00</td><td>22496 Madera · drywall install and texture</td><td class="nw">Today</td></tr>
-        <tr><td>Gonzalo</td><td class="amt">$900.00</td><td>22496 Madera · demolition / cleanup</td><td class="nw">Today</td></tr>
-
-        <tr class="acct"><td>From Relay Paramount</td><td class="amt">$4,378.00</td><td></td><td></td></tr>
-        <tr><td>Citi ••2149</td><td class="amt">$4,378.00</td><td>52 Paramount Ter charges · card goes from 51% to 8% used</td><td class="nw">Nov 8</td></tr>
-      </tbody>
-    </table></div>
-  </section>
-
-  <section>
-    <h2>Wire instructions</h2>
-    <div class="wire">
-      <div><b>WFG Title · $10,500.00</b> · escrow #26-215725 · <span class="pill">Verified by phone</span></div>
-      <div>Confirmed with Christina at WFG Title, using the number on WFG's official website. Bank name, account name and full numbers are in the email, not on this page.</div>
-      <div>Contractor payments (Gonzalo, Alvaro, Yuri, Stuart): instructions confirmed with each payee. <span class="pill">Verified</span></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Not paying today</h2>
     <div class="plain">
-      <div><b>ERC Specialists, $36,431.36</b> · being verified first.</div>
-      <div><b>Gonzalo, 460 5th Ave, $2,000</b> · on hold until the work is done.</div>
-      <div><b>Matrix payroll, Oct 19–25</b> · after Marieflor finishes and Kristine reviews it.</div>
+      <div><b>Not paying today:</b> ERC Specialists $36,431.36 (being verified) · Gonzalo, 460 5th Ave, $2,000 (on hold) · Matrix payroll (after review).</div>
     </div>
   </section>
 </div>
