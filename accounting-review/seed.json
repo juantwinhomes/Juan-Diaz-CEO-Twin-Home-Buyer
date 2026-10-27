@@ -367,7 +367,7 @@
     "done": true
    },
    {
-    "t": "Buyout amount confirmed: $17,683.90, purchase date Oct 6",
+    "t": "Buyout paid: $17,683.90 (Oct 6)",
     "done": true
    },
    {
@@ -375,15 +375,19 @@
     "done": true
    },
    {
-    "t": "DMV shows the title has been mailed",
+    "t": "DMV mailed the title in Juan Manuel Diaz's name",
     "done": true
    },
    {
-    "t": "Title received: Juan Manuel Diaz is the owner, no lienholder",
+    "t": "Title arrives: Kristine checks Juan is the owner with no lienholder",
     "done": false
    },
    {
-    "t": "Title transferred to Equity Track Inc. at the DMV",
+    "t": "Juan signs the title over to Equity Track Inc.",
+    "done": false
+   },
+   {
+    "t": "Kristine files the transfer at the DMV and records the car under Equity Track",
     "done": false
    }
   ]
@@ -877,6 +881,27 @@
    "decidedOn": "",
    "notes": "",
    "holdReason": ""
+  },
+  {
+   "id": "d-honda",
+   "section": "honda",
+   "title": "Honda Accord — title to Equity Track Inc.",
+   "amountSource": "",
+   "amount": null,
+   "amountNote": "Your signature",
+   "situation": "2024 Honda Accord LX (VIN ••001462). Buyout of $17,683.90 paid Oct 6 to Honda Financial Services. The DMV mailed the title in Juan's name.",
+   "recAction": "Approve",
+   "rec": "Approve moving the car to Equity Track Inc. Sign the title over when it arrives; Kristine files it at the DMV.",
+   "short": "Sign the title over to Equity Track Inc. when it arrives. Kristine handles the DMV.",
+   "when": "When title arrives",
+   "required": "Sign the title over to Equity Track Inc.",
+   "owner": "Kristine · Juan signs",
+   "target": "",
+   "next": "Kristine checks the title has no lienholder, then brings it to Juan to sign.",
+   "status": "Pending",
+   "decidedOn": "",
+   "notes": "",
+   "holdReason": ""
   }
  ],
  "info": [
@@ -917,11 +942,11 @@
   "honda": {
    "topic": "Honda Accord",
    "status": "info",
-   "headline": "Kristine owns the Honda buyout start to finish.",
-   "now": "Payoff was $17,683.90. The DMV mailed the title in Juan's name.",
-   "you": "Nothing, unless a signature is needed.",
-   "youShort": "Nothing (signature only if needed)",
-   "next": "Kristine calls Honda Financial Services to confirm where the buyout and paperwork stand, then transfers the title to Equity Track Inc."
+   "headline": "Car is paid off ($17,683.90). The title is in the mail in your name.",
+   "now": "Kristine is tracking it with Honda Financial Services and the DMV.",
+   "you": "Sign the title over to Equity Track Inc. when it arrives.",
+   "youShort": "Sign the title over to Equity Track Inc. when it arrives",
+   "next": "Kristine checks the title has no lienholder, brings it to you to sign, then files the transfer at the DMV."
   },
   "cards": {
    "topic": "Credit cards",
@@ -1288,6 +1313,7 @@
   "dc-venture",
   "dc-citi",
   "d-erc",
+  "d-honda",
   "d-agile",
   "d-biberk",
   "d-tax",
@@ -1296,11 +1322,6 @@
   "d-gonzalo"
  ],
  "handled": [
-  {
-   "t": "Honda Accord",
-   "note": "Paid off. Title is coming in your name; Kristine transfers it to Equity Track.",
-   "sec": "honda"
-  },
   {
    "t": "Clock-in / clock-out",
    "note": "Photo and 100-yard check working for everyone.",
