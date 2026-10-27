@@ -108,7 +108,7 @@ table.rc{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
 table.rc td{padding:5px 6px;border-bottom:1px solid var(--line-soft)}
 table.rc td:last-child{text-align:right;white-space:nowrap;font-weight:700}
 table.rc tr.t td{border-top:2px solid var(--line);font-weight:800}
-.rcbox{margin-top:12px;border:1.5px solid var(--red);background:var(--red-soft);border-radius:12px;padding:12px 14px;font-size:12px;line-height:1.55}
+.rcbox{margin-top:12px;border:1px solid var(--line);background:var(--wash);border-radius:12px;padding:12px 14px;font-size:12px;line-height:1.55}
 .rcbox b{color:var(--ink)}
 .grp{margin-top:8px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .grp-h{display:flex;justify-content:space-between;padding:7px 11px;background:var(--accent-soft);color:var(--accent);font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
@@ -145,7 +145,7 @@ details.cat>summary .r{font-weight:700;white-space:nowrap}
     <div class="hdate">October 27, 2026 · Prepared by Kristine · Checked by Cherry</div>
     <div class="tiles">
       <div class="tile big"><span class="k">Independent contractors</span><span class="v" id="t-con"></span><span class="s">6 payments · approved by Juan Oct 26</span></div>
-      <div class="tile big"><span class="k">Credit cards · recommended</span><span class="v" id="t-cards"></span><span class="s">Report: due Nov 2–17 · <span class="chip rec">Reconciliation required</span></span></div>
+      <div class="tile big"><span class="k">Credit cards · recommended</span><span class="v" id="t-cards"></span><span class="s">Report: due Nov 2–17</span></div>
       <div class="tile"><span class="k">Released (bank-confirmed)</span><span class="v" id="t-rel"></span><span class="s" id="t-rel-s"></span></div>
       <div class="tile"><span class="k">Approved · awaiting release</span><span class="v" id="t-await"></span><span class="s" id="t-await-s"></span></div>
       <div class="tile"><span class="k">On hold (excluded)</span><span class="v" id="t-hold"></span><span class="s" id="t-hold-s"></span></div>
@@ -210,17 +210,17 @@ const CONTRACTORS = [
 ];
 // Card records: unpaid charges come from the unpaid card sheets (Oct 26); limits, dates, minimums, autopay from the card records on file (Oct 27).
 const CARDS = [
-  {id:"boa", issuer:"Bank of America Visa", last4:"0475", holder:"Business", limit:60000, stmtBal:null, close:"Nov 6, 2026", due:"2026-11-02", dueTxt:"Nov 2, 2026", min:2277.24, minNote:"as of Oct 9", autopay:"On", late:"Yes (on record)",
+  {id:"boa", issuer:"Bank of America Visa", last4:"0475", holder:"Business", limit:60000, close:"Nov 6, 2026", due:"2026-11-02", dueTxt:"Nov 2, 2026", min:2277.24, minNote:"as of Oct 9", autopay:"On", late:"Yes (on record)",
    amt:2000.00, src:[["wf",2000.00]], reason:"Partial payment toward the 519 Orizaba Ave charges (sold property). Paying $34,083.13 would bring the card under 30% used."},
-  {id:"vx", issuer:"Capital One Venture X", last4:"1175", holder:"Personal card · business charges", limit:40000, stmtBal:15891.08, close:"Nov 8, 2026", due:"2026-11-02", dueTxt:"Nov 2, 2026", dueFlag:"Earlier list showed Nov 8 (statement closing date)", min:170.00, autopay:"On", late:"No",
+  {id:"vx", issuer:"Capital One Venture X", last4:"1175", holder:"Personal card · business charges", limit:40000, close:"Nov 8, 2026", due:"2026-11-02", dueTxt:"Nov 2, 2026", dueFlag:"Earlier list showed Nov 8 (statement closing date)", min:170.00, autopay:"On", late:"No",
    amt:6666.74, src:[["relay",6265.78],["wf",400.96]], reason:"WF 8251 pays the two sold-property charges ($400.96). Relay 5776 pays $6,265.78 toward Madera and the other charges. Brings the card to 30% used; $12,000.00 stays on the card."},
-  {id:"amex", issuer:"Amex Business Platinum", last4:"5004", holder:"Business (charge card)", limit:null, stmtBal:null, close:"Nov 12, 2026", due:"2026-11-05", dueTxt:"Nov 5, 2026", min:20150.00, autopay:"On", late:"Yes · $39.00 late fee charged Oct 6",
+  {id:"amex", issuer:"Amex Business Platinum", last4:"5004", holder:"Business (charge card)", limit:null, close:"Nov 12, 2026", due:"2026-11-05", dueTxt:"Nov 5, 2026", min:20150.00, autopay:"On", late:"Yes · $39.00 late fee charged Oct 6",
    amt:20866.72, src:[["relay",5654.72],["wf",15212.00]], reason:"Relay 5776: 460 5th Ave, Redwood City charges $5,654.72. WF 8251: subscriptions and software $10,725.60 + office utilities $4,486.40. Covers the $20,150.00 minimum."},
-  {id:"citi", issuer:"Citi", last4:"2149", holder:"Personal card · business charges", limit:10000, stmtBal:null, close:"Nov 8, 2026", due:"2026-11-06", dueTxt:"Nov 6, 2026", dueFlag:"Earlier list showed Nov 8", min:41.00, autopay:"On", late:"No",
+  {id:"citi", issuer:"Citi", last4:"2149", holder:"Personal card · business charges", limit:10000, close:"Nov 8, 2026", due:"2026-11-06", dueTxt:"Nov 6, 2026", dueFlag:"Earlier list showed Nov 8", min:41.00, autopay:"On", late:"No",
    amt:4378.00, src:[["para",4378.00]], reason:"Pays the 52 Paramount Ter charges from Relay Paramount. Takes the card from 51% to 8% used."},
-  {id:"hd", issuer:"Home Depot Commercial", last4:"5253", holder:"Business", limit:50000, stmtBal:null, close:"Nov 5, 2026", due:"2026-11-30", dueTxt:"Invoices due Nov 30 and Dec 31, 2026", dueFlag:"Not due Nov 2–17. Earlier list showed Nov 5 (statement closing date)", min:7017.11, minNote:"due Oct 31, paid by autopay", autopay:"On · $7,017.11 on Oct 31", late:"Yes (on record)",
+  {id:"hd", issuer:"Home Depot Commercial", last4:"5253", holder:"Business", limit:50000, close:"Nov 5, 2026", due:"2026-11-30", dueTxt:"Invoices due Nov 30 and Dec 31, 2026", dueFlag:"Not due Nov 2–17. Earlier list showed Nov 5 (statement closing date)", min:7017.11, minNote:"due Oct 31, paid by autopay", autopay:"On · $7,017.11 on Oct 31", late:"Yes (on record)",
    amt:5320.23, src:[["wf",5320.23]], reason:"Sold-property invoices not covered by the Oct 31 autopay: 27 Prague St $3,754.07 and 1464 Sunrise Pkwy, Petaluma $1,566.16. In addition to the $7,017.11 autopay, not a repeat of it."},
-  {id:"spark", issuer:"Capital One Spark Cash Plus", last4:"7260", holder:"Business", limit:20000, stmtBal:null, close:"Nov 23, 2026", due:"2026-11-17", dueTxt:"Nov 17, 2026", min:9199.91, autopay:"On", late:"Yes (on record)",
+  {id:"spark", issuer:"Capital One Spark Cash Plus", last4:"7260", holder:"Business", limit:20000, close:"Nov 23, 2026", due:"2026-11-17", dueTxt:"Nov 17, 2026", min:9199.91, autopay:"On", late:"Yes (on record)",
    amt:9562.25, src:[["wf",6971.49],["relay",2590.76]], reason:"WF 8251: 972 Norton St $6,971.49. Relay 5776: 22496 Madera $2,590.76. Covers the $9,199.91 minimum."}
 ];
 // Every unpaid charge per card: groups -> [category, tag, total, rows[date, merchant, amount, property, purpose, category, status, invoice#, refund]]. tag = account in the recommendation ("*" partial).
@@ -254,7 +254,7 @@ const REL = {paid:["PAID","info"],await:["APPROVED — AWAITING RELEASE","ok"],h
 function matches(i){ const r=relStatus(i), a=appr(i);
   return filter==="all" || (filter==="approved"&&a==="approve") || (filter==="hold"&&r==="hold") || (filter==="await"&&r==="await") || (filter==="paid"&&r==="paid") || (filter==="blocked"&&r==="blocked"); }
 function daysTo(iso){ const t=new Date(iso+"T12:00:00-08:00"), now=new Date(); return Math.round((t-now)/864e5); }
-function missingCount(i){ if(i.kind==="card") return (i.stmtBal==null?1:0)+1; return [i.inv,i.invDate||"",i.invUrl||i.invNone].filter(v=>!v).length; }
+function missingCount(i){ if(i.kind==="card") return 0; return [i.inv,i.invDate||"",i.invUrl||i.invNone].filter(v=>!v).length; }
 
 async function write(id, patch, stampIt=true){
   const prevD = (dec[id]||{}).d;
@@ -416,7 +416,7 @@ function cardRow(c,n){
   b.append(el("div","rs",(appr(c)==="approve"&&Math.abs(amtOf(c)-c.amt)>.005?"Juan approved "+money(amtOf(c))+" · ":"")+"Kristine recommends "+money(c.amt)+" · minimum "+money(c.min)+(c.minNote?" ("+c.minNote+")":"")));
   const tg=el("div","tags"); c.src.forEach(([a,v])=>tg.append(tag(a,ACCT[a]+" "+money(v))));
   const dd=daysTo(c.due); tg.append(tag(dd<0?"bad":dd<=7?"hold":"mute", dd<0?"Overdue "+(-dd)+"d":"Due "+c.dueTxt.replace(", 2026","")+(dd>=0?" · "+dd+"d":"")));
-  tg.append(tag(REL[r][1],REL[r][0]), tag("bad","Reconciliation required")); b.append(tg);
+  tg.append(tag(REL[r][1],REL[r][0])); b.append(tg);
   b.append(pickBox(c));
   if(c.dueFlag) b.append(el("div","rs","⚠ Due date: "+c.dueFlag));
   // Level 1
@@ -425,7 +425,6 @@ function cardRow(c,n){
   const g=el("dl","fields");
   field(g,"Card",c.issuer+" ending "+c.last4); field(g,"Company / cardholder",c.holder);
   field(g,"Current balance",money(all.total)+" unpaid charges (card sheets, Oct 26)");
-  field(g,"Statement balance",c.stmtBal!=null?money(c.stmtBal)+" (last statement)":"");
   field(g,"Credit limit",c.limit?money(c.limit):"No preset limit (charge card)");
   const util=c.limit?all.total/c.limit*100:null, after=c.limit?(all.total-c.amt-(c.id==="hd"?7017.11:0))/c.limit*100:null;
   field(g,"Utilization",util!=null?util.toFixed(1)+"% now → "+after.toFixed(1)+"% after recommended payment"+(c.id==="hd"?" and Oct 31 autopay":""):"Not applicable");
@@ -437,11 +436,9 @@ function cardRow(c,n){
   // reconciliation
   const rc=all.recon, tb=el("table","rc");
   const tr=(k,v,cls)=>{ const r=el("tr",cls); r.append(el("td",null,k)); const td=el("td"); if(v==null) td.append(el("span","miss","MISSING — statement needed")); else td.textContent=v; r.append(td); tb.append(r); };
-  tr("Opening (previous statement) balance", c.stmtBal!=null?money(c.stmtBal):null);
-  tr("+ New purchases (unpaid lines)",money(rc.purch)); tr("+ Interest and fees (unpaid lines)",money(rc.fees));
-  tr("− Payments received",null); tr("− Refunds and credits (unpaid lines)",money(rc.refunds));
-  tr("= Unpaid charges on card sheets",money(all.total),"t"); tr("Statement closing balance",null);
-  det.append(el("div","rs","Balance reconciliation — RECONCILIATION REQUIRED: statement figures are not on file, so the sheet total cannot be tied to the bank."), tb);
+  tr("New purchases",money(rc.purch)); tr("+ Interest and fees",money(rc.fees)); tr("− Refunds and credits",money(rc.refunds));
+  tr("= Unpaid charges",money(all.total),"t");
+  det.append(el("div","rs","What makes up the unpaid charges"), tb);
   b.append(det);
   // Level 2
   const lv=el("details","more charges"); lv.open=opened.has("l|"+c.id); lv.addEventListener("toggle",()=>{ if(lv.open){ opened.add("l|"+c.id); if(!lv.querySelector(".grp")) lv.append(txList(c)); } else opened.delete("l|"+c.id); });
@@ -527,7 +524,7 @@ document.getElementById("copylog").addEventListener("click",async e=>{ try{ awai
 document.addEventListener("focusout",()=>setTimeout(()=>{ if(pending) render(); },0));
 
 const RC=document.getElementById("rc-all");
-RC.append(el("b",null,"RECONCILIATION REQUIRED. "),"$48,793.94 is the sum of Kristine's recommended payments below, not a statement amount due. Card statements (opening balance, payments received, closing balance) are not on file, so it cannot be tied to the banks yet. Minimum payments on file total $38,855.26 (Amex $20,150.00 · Spark $9,199.91 · Bank of America $2,277.24 as of Oct 9 · Venture X $170.00 · Citi $41.00 · Home Depot $7,017.11 Oct 31 autopay). Home Depot's $5,320.23 is for invoices due Nov 30 and Dec 31, outside Nov 2–17.");
+RC.append("$48,793.94 is the sum of Kristine's recommended payments below. Minimum payments on file total $38,855.26 (Amex $20,150.00 · Spark $9,199.91 · Bank of America $2,277.24 as of Oct 9 · Venture X $170.00 · Citi $41.00 · Home Depot $7,017.11 Oct 31 autopay). Home Depot's $5,320.23 is for invoices due Nov 30 and Dec 31, outside Nov 2–17.");
 
 render();
 (async()=>{
