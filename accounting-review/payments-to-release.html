@@ -91,6 +91,19 @@ details.more[open]>summary::before{content:"−"}
 .rel input[type=text]{width:190px}
 .hold-row{border:1.5px dashed var(--amber);background:var(--amber-soft);border-radius:12px;padding:12px 14px;margin-top:12px}
 .hold-row .st{font-weight:800;color:var(--amber);font-size:12px;margin-top:4px}
+details.more.charges>summary{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;width:100%;margin-top:4px;padding:10px 14px;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:13.5px;font-weight:800;box-shadow:0 0 0 3px var(--accent-soft)}
+details.more.charges>summary::before{display:none}
+details.more.charges>summary .cw{display:inline-block;transition:transform .15s}
+details.more.charges[open]>summary .cw{transform:rotate(180deg)}
+details.more.charges>summary .cn{margin-left:auto;font-weight:700;font-size:12px;opacity:.9}
+@media (prefers-reduced-motion:reduce){details.more.charges>summary .cw{transition:none}}
+.pickbox{margin-top:8px;padding:8px 10px;border-radius:9px;background:var(--wash);font-size:12px;color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.pickbox.on{background:var(--accent-soft);color:var(--ink)}
+.pickbox b{color:var(--ink)}
+.pickbox select{border:1.5px solid var(--line);border-radius:8px;padding:4px 6px;font:inherit;font-size:12px;background:var(--paper);color:var(--ink)}
+.b.pay{padding:3px 11px;min-height:28px;font-size:11.5px;margin-top:4px}
+.b.pay.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.catbar{padding:4px 11px 0;background:var(--wash)}
 table.rc{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
 table.rc td{padding:5px 6px;border-bottom:1px solid var(--line-soft)}
 table.rc td:last-child{text-align:right;white-space:nowrap;font-weight:700}
@@ -163,6 +176,7 @@ details.cat>summary .r{font-weight:700;white-space:nowrap}
 
   <div class="section" id="sec-cards">
     <div class="sec-head"><div class="sec-title">Credit card payment review | $48,793.94</div><div class="sec-tot">Recommended <b id="cards-tot"></b></div></div>
+    <div class="lead">Each card has a purple <b>▼ Tap to see every charge</b> button. It opens the full list, grouped by Property, Overhead and Marketing. Tap <b>Pay</b> on any charge to add it to that card's payment.</div>
     <div class="rcbox" id="rc-all"></div>
     <div class="rows" id="card-rows"></div>
   </div>
@@ -227,7 +241,12 @@ const nm = id => (id && names[id]) || "Someone";
 const when = t => new Date(t).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/Los_Angeles"})+" PT";
 function liveD(i){ const d=(dec[i.id]||{}).d; return d==="note" ? "info" : (d||""); }
 function appr(i){ return liveD(i) || (i.histAppr ? "approve" : "pending"); }
-function amts(i){ const x=dec[i.id]||{}; const a={}; i.src.forEach(([k,v])=>{ const n = x.amts && k in x.amts ? Number(x.amts[k]) : v; a[k]=isFinite(n)?n:v; }); return a; }
+function picks(i){ return (dec[i.id]||{}).picks||{}; }
+function pickSum(i){ return Object.values(picks(i)).reduce((s,v)=>s+Number(v||0),0); }
+function pickAcct(i){ return (dec[i.id]||{}).pickAcct || i.src[0][0]; }
+// Recommended split (or Juan's typed amounts) plus any charges Juan picked with Pay, added to the account he chose for them.
+function amts(i){ const x=dec[i.id]||{}; const a={}; i.src.forEach(([k,v])=>{ const n = x.amts && k in x.amts ? Number(x.amts[k]) : v; a[k]=isFinite(n)?n:v; });
+  const ps=pickSum(i); if(ps){ const k=pickAcct(i); a[k]=Math.round(((a[k]||0)+ps)*100)/100; } return a; }
 function amtOf(i){ return Object.values(amts(i)).reduce((s,v)=>s+v,0); }
 function paid(i){ const p=(dec[i.id]||{}).paid; return p && p.ref ? p : null; }
 function relStatus(i){ if(paid(i)) return "paid"; const a=appr(i); return a==="approve"?"await":a==="hold"?"hold":a==="info"?"blocked":"pending"; }
@@ -336,8 +355,12 @@ function conRow(i,n){
   return row;
 }
 
+function setPicks(c, changes){ const cur={...picks(c)}; Object.entries(changes).forEach(([k,v])=>{ if(v==null) delete cur[k]; else cur[k]=v; });
+  write(c.id,{picks:cur,pickAcct:pickAcct(c),pickBy:myId||null,pickAt:new Date().toISOString()},false); }
+function payBtn(on,label,fn){ const b=el("button","b pay"+(on?" on":""),label); b.type="button"; b.setAttribute("aria-pressed",on?"true":"false"); b.disabled=!db||!!paid(c0); b.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); fn(); }); return b; }
+let c0=null;
 function txList(c){
-  const all=ALL[c.id], box=el("div");
+  const all=ALL[c.id], box=el("div"); c0=c; const pk=picks(c);
   all.groups.forEach(([g,gt,cats])=>{
     const grp=el("div","grp"); const gh=el("div","grp-h"); gh.append(el("span",null,g), el("span",null,money(gt))); grp.append(gh);
     cats.forEach(([cat,tg,ct,rows])=>{
@@ -345,11 +368,21 @@ function txList(c){
       const cd=el("details","cat"); cd.open=opened.has(key);
       const sm=el("summary"), l=el("span","l");
       if(tg){ l.append(acctTag(tg.replace("*",""))); if(tg.endsWith("*")) l.append(tag("hold","part")); } else l.append(tag("mute","not in payment"));
+      const npk=rows.filter((_,ix)=>(g+"|"+cat+"|"+tg+"|"+ix) in pk).length; if(npk) l.append(tag("info","Juan added "+npk));
       l.append(el("span",null,cat+" ("+rows.length+")")); sm.append(l, el("span","r",money(ct))); cd.append(sm);
+      const fullRec = tg && !tg.endsWith("*");
+      const keys = rows.map((_,ix)=>g+"|"+cat+"|"+tg+"|"+ix);
+      const payable = keys;   // whole category, refunds included, so it nets to the category total
+      if(!fullRec && payable.length){ const allOn=payable.every(k=>k in pk);
+        const bar=el("div","catbar"); bar.append(payBtn(allOn, allOn?"✓ Paying all in this category":"Pay all in this category", ()=>{ const ch={}; payable.forEach(k=>{ const ix=keys.indexOf(k); ch[k]=allOn?null:rows[ix][2]; }); setPicks(c,ch); }));
+        cd.append(bar); }
       const fill=()=>{ if(cd.querySelector(".tx")) return; const tx=el("div","tx");
-        rows.forEach(([dt,who,v,prop,purpose,catl,status,inv,ref])=>{
+        rows.forEach(([dt,who,v,prop,purpose,catl,status,inv,ref],rix)=>{
           const t=el("div","t1"), a=el("div","a"), lft=el("span"); lft.append(dt+" · ", el("b",null,who)); if(ref) lft.append(" ",tag("info","refund / credit"));
           a.append(lft, el("span","m"+(v<0?" neg":""),money(v))); t.append(a);
+          const key=g+"|"+cat+"|"+tg+"|"+rix;
+          if(fullRec) t.append(el("div","z","In Kristine's recommendation"));
+          else if(v>0){ const on=key in pk; t.append(payBtn(on, on?"✓ Juan pays this":"Pay", ()=>setPicks(c,{[key]:on?null:v}))); }
           const z=[prop, purpose?("Purpose: "+purpose):"Purpose: "+MISSING, catl, status?("Status: "+status):"", inv?("Invoice #"+inv):"Receipt: "+MISSING].filter(Boolean).join(" · ");
           t.append(el("div","z",z)); tx.append(t); });
         cd.append(tx); };
@@ -362,15 +395,29 @@ function txList(c){
   return box;
 }
 
+// Charges Juan picked with Pay: added on top of the recommendation, from the account he chooses.
+function pickBox(c){
+  const n=Object.keys(picks(c)).length, box=el("div","pickbox"+(n?" on":""));
+  if(!n){ box.style.display="block"; box.append("Want a specific charge paid? Tap the purple ",el("b",null,"see every charge")," button below and tap ",el("b",null,"Pay")," next to it."); return box; }
+  const x=dec[c.id]||{};
+  box.append(el("b",null,"Juan added "+n+" charge"+(n===1?"":"s")+": +"+money(pickSum(c))), " · total for this card "+money(c.amt+pickSum(c))+" · pay the added charges from ");
+  const sel=document.createElement("select"); sel.setAttribute("aria-label","Account for the added charges"); sel.disabled=!db||!!paid(c);
+  ["wf","relay","para"].forEach(a=>{ const o=el("option",null,ACCT[a]); o.value=a; if(pickAcct(c)===a) o.selected=true; sel.append(o); });
+  sel.addEventListener("change",()=>write(c.id,{pickAcct:sel.value},false)); box.append(sel);
+  if(x.pickAt) box.append(el("div","log","Last change by "+nm(x.pickBy)+" · "+when(x.pickAt)+(appr(c)==="approve"?"":" · counts in the totals once the card is approved")));
+  const clr=el("button","b","Clear added charges"); clr.type="button"; clr.disabled=!db||!!paid(c); clr.addEventListener("click",()=>write(c.id,{picks:{}},false)); box.append(clr);
+  return box;
+}
 function cardRow(c,n){
   const r=relStatus(c), x=dec[c.id]||{}, all=ALL[c.id];
   const row=el("div","row st-"+(r==="paid"?"paid":appr(c)==="approve"?"approve":appr(c)==="hold"?"hold":appr(c)==="info"?"info":"x"));
   const h=el("div","rh"), b=el("div","rb");
-  const t=el("div","rt"); t.append(el("span","who",c.issuer+" ••"+c.last4), el("span","amt",money(appr(c)==="approve"?amtOf(c):c.amt))); b.append(t);
+  const t=el("div","rt"); t.append(el("span","who",c.issuer+" ••"+c.last4), el("span","amt",money(appr(c)==="approve"?amtOf(c):c.amt+pickSum(c)))); b.append(t);
   b.append(el("div","rs",(appr(c)==="approve"&&Math.abs(amtOf(c)-c.amt)>.005?"Juan approved "+money(amtOf(c))+" · ":"")+"Kristine recommends "+money(c.amt)+" · minimum "+money(c.min)+(c.minNote?" ("+c.minNote+")":"")));
   const tg=el("div","tags"); c.src.forEach(([a,v])=>tg.append(tag(a,ACCT[a]+" "+money(v))));
   const dd=daysTo(c.due); tg.append(tag(dd<0?"bad":dd<=7?"hold":"mute", dd<0?"Overdue "+(-dd)+"d":"Due "+c.dueTxt.replace(", 2026","")+(dd>=0?" · "+dd+"d":"")));
   tg.append(tag(REL[r][1],REL[r][0]), tag("bad","Reconciliation required")); b.append(tg);
+  b.append(pickBox(c));
   if(c.dueFlag) b.append(el("div","rs","⚠ Due date: "+c.dueFlag));
   // Level 1
   const det=el("details","more"); det.open=opened.has("d|"+c.id); det.addEventListener("toggle",()=>{ det.open?opened.add("d|"+c.id):opened.delete("d|"+c.id); });
@@ -397,8 +444,8 @@ function cardRow(c,n){
   det.append(el("div","rs","Balance reconciliation — RECONCILIATION REQUIRED: statement figures are not on file, so the sheet total cannot be tied to the bank."), tb);
   b.append(det);
   // Level 2
-  const lv=el("details","more"); lv.open=opened.has("l|"+c.id); lv.addEventListener("toggle",()=>{ if(lv.open){ opened.add("l|"+c.id); if(!lv.querySelector(".grp")) lv.append(txList(c)); } else opened.delete("l|"+c.id); });
-  lv.append(el("summary",null,"Every charge on this card ("+all.n+") · "+money(all.total)));
+  const lv=el("details","more charges"); lv.open=opened.has("l|"+c.id); lv.addEventListener("toggle",()=>{ if(lv.open){ opened.add("l|"+c.id); if(!lv.querySelector(".grp")) lv.append(txList(c)); } else opened.delete("l|"+c.id); });
+  const ls=el("summary"); ls.append(el("span","cw","▼"), el("span",null,"Tap to see every charge on this card"), el("span","cn",all.n+" charges · "+money(all.total))); lv.append(ls);
   if(lv.open) lv.append(txList(c));
   b.append(lv);
   b.append(controls(c));
@@ -456,12 +503,12 @@ function renderAcct(t){
   const hr=el("tr"); ["","Scheduled","Approved","Released"].forEach(h=>hr.append(el("th",null,h))); tb.append(hr);
   const line=(k,s,a,r,cls)=>{ const tr=el("tr",cls); [k,s,a,r].forEach(v=>tr.append(el("td",null,v))); tb.append(tr); };
   const sec=(acct,list)=>{ line(ACCT[acct],"","","","sh");
-    let S=0,A=0,R=0; list.forEach(i=>{ const v=Object.fromEntries(i.src)[acct]; const a=amts(i)[acct]; const st=relStatus(i);
+    let S=0,A=0,R=0; list.forEach(i=>{ const v=(Object.fromEntries(i.src)[acct]||0)+(i.kind==="card"&&pickAcct(i)===acct?pickSum(i):0); const a=amts(i)[acct]||0; const st=relStatus(i);
       const ap = (st==="await"||st==="paid") ? a : 0, rl = st==="paid" ? a : 0; S+=v; A+=ap; R+=rl;
       line(i.kind==="con"?i.who+" — "+i.forw:i.who, money(v), money(ap), money(rl)); });
     line("Subtotal "+ACCT[acct],money(S),money(A),money(R),"gt"); return [S,A,R]; };
   const G=[0,0,0];
-  ["relay","wf","para"].forEach(a=>{ const list=ITEMS.filter(i=>i.src.some(([k])=>k===a)); if(list.length){ const r=sec(a,list); G[0]+=r[0];G[1]+=r[1];G[2]+=r[2]; } });
+  ["relay","wf","para"].forEach(a=>{ const list=ITEMS.filter(i=>i.src.some(([k])=>k===a) || (i.kind==="card" && pickSum(i) && pickAcct(i)===a)); if(list.length){ const r=sec(a,list); G[0]+=r[0];G[1]+=r[1];G[2]+=r[2]; } });
   line("Grand total (contractors + recommended card payments)",money(G[0]),money(G[1]),money(G[2]),"gt");
 }
 
@@ -471,6 +518,7 @@ function logText(){
     L.push(i.who+(i.forw?" — "+i.forw:"")+" — "+money(i.kind==="card"&&appr(i)==="approve"?amtOf(i):i.amt));
     L.push("  Cherry: "+(x.chk?"checked by "+nm(x.chk.by)+" "+when(x.chk.at):"not checked"));
     L.push("  Juan: "+(liveD(i)?({approve:"Approved",hold:"Hold",info:"Information requested"}[liveD(i)])+" by "+nm(x.by)+" "+when(x.at):(i.histAppr||"no decision")));
+    if(pickSum(i)) L.push("  Juan added "+Object.keys(picks(i)).length+" charges: +"+money(pickSum(i))+" from "+ACCT[pickAcct(i)]);
     if(x.note) L.push("  Comment: "+x.note);
     L.push("  Release: "+(p?"Paid "+p.date+" conf "+p.ref:REL[relStatus(i)][0])); });
   return L.join("\n");
@@ -491,7 +539,7 @@ render();
   db.collection(COL).onSnapshot(async snap=>{
     Object.keys(dec).forEach(k=>delete dec[k]);
     snap.docs.forEach(doc=>{ if(doc.exists) dec[doc.id]={...doc.data()}; });
-    const ids=[...new Set(Object.values(dec).flatMap(x=>[x.by,x.chk&&x.chk.by,x.paid&&x.paid.by]).filter(Boolean))].filter(id=>!(id in names));
+    const ids=[...new Set(Object.values(dec).flatMap(x=>[x.by,x.chk&&x.chk.by,x.paid&&x.paid.by,x.pickBy]).filter(Boolean))].filter(id=>!(id in names));
     if(user&&ids.length){ try{ const ps=await user.profiles(ids); ids.forEach(id=>names[id]=(ps[id]&&ps[id].name)||""); }catch(e){} }
     render();
   },()=>{ saveState="error"; paintSave(); });
