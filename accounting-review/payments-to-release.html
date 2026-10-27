@@ -84,6 +84,8 @@ details.why[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
 .fields{display:grid;grid-template-columns:112px minmax(0,1fr);gap:3px 10px;margin:8px 0 0;font-size:12px}
 .fields dt{color:var(--ink-faint);font-weight:600}
 .fields dd{margin:0;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.flag{margin-top:8px;padding:8px 10px;border-radius:8px;background:#FEE4E2;color:#912018;font-size:12px;font-weight:700;line-height:1.45}
+.fields a{color:var(--accent);font-weight:700}
 .pend{color:var(--amber);font-weight:700}
 .steplab{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);min-width:44px}
 .chkrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
@@ -185,15 +187,18 @@ details.cat[open]>summary{background:var(--wash)}
 
 <script>
 // One payee, one line. Fields Juan asked for; "" = Kristine still has to fill it in (shows as Pending).
+const BOARD = "https://claude.ai/artifact/5qHWXTZEqBcECnDr89uHV7";   // contractor board: invoice photos live in its Invoices & Photos section
 const TODAY = [
-  {id:"wfg", acct:"wf", who:"WFG Title", prop:"5022 Heyer Ave, Castro Valley", forw:"Earnest money deposit, 2nd half · escrow #26-215725", amt:10500.00, how:"Wire", inv:"Escrow #26-215725", invDate:"", receipt:"", due:"Oct 27",
+  {id:"wfg", acct:"wf", who:"WFG Title", prop:"5022 Heyer Ave, Castro Valley", forw:"Earnest money deposit, 2nd half", amt:10500.00, how:"Wire", inv:"Escrow #26-215725", invDate:"", invUrl:"", receipt:"After payment", due:"Oct 27",
    wire:{who:"Christina, WFG Title", phone:"", date:"Fri, Oct 23", payee:"Saved in Wells Fargo as \"WFG Stockton\", account ending 8979"}},
-  {id:"gon1", acct:"relay", who:"Gonzalo", prop:"22496 Avenue 18 3/4, Madera", forw:"Painting", amt:10000.00, how:"", inv:"", invDate:"", receipt:"", due:"Oct 27"},
-  {id:"gon2", acct:"relay", who:"Gonzalo", prop:"22496 Avenue 18 3/4, Madera", forw:"Demolition and cleanup", amt:900.00, how:"", inv:"", invDate:"", receipt:"", due:"Oct 27"},
-  {id:"alv", acct:"relay", who:"Alvaro", prop:"22496 Avenue 18 3/4, Madera", forw:"Drywall install and texture", amt:1200.00, how:"", inv:"", invDate:"", receipt:"", due:"Oct 27"},
-  {id:"yuri1", acct:"wf", who:"Yuri Hernandez", prop:"170 Glenn Way, Suite 5, San Carlos (office)", forw:"Office cleaning, 3 weeks", amt:2700.00, how:"", inv:"", invDate:"", receipt:"", due:"Oct 27"},
-  {id:"yuri2", acct:"wf", who:"Yuri Hernandez", prop:"27 Prague St, San Mateo", forw:"Cleaning", amt:400.00, how:"", inv:"", invDate:"", receipt:"", due:"Oct 27"},
-  {id:"stu", acct:"wf", who:"Stuart Morgan (RemodHomes)", prop:"1574 Jerrold Ave, San Francisco", forw:"Remodel work, invoice 2611", amt:2700.00, how:"", inv:"2611", invDate:"", receipt:"", due:"Oct 27"}
+  {id:"gon1", acct:"relay", who:"Gonzalo Martinez", prop:"22496 Avenue 18 3/4, Madera", forw:"Painting: interior $3,500, exterior $3,500, roof $1,500, pool and outdoor cement $1,500", amt:10000.00, how:"ACH", inv:"On invoice", invDate:"Oct 21, 2026", invUrl:BOARD, receipt:"After payment", due:"Oct 27"},
+  {id:"gon2", acct:"relay", who:"Gonzalo Martinez", prop:"22496 Avenue 18 3/4, Madera", forw:"Demolition, home and pool cleaning, daily workers: balance (agreed $5,900, paid $5,000)", amt:900.00, how:"ACH", inv:"On invoice", invDate:"Oct 21, 2026", invUrl:BOARD, receipt:"After payment", due:"Oct 27"},
+  {id:"alv", acct:"relay", who:"Alvaro", prop:"22496 Avenue 18 3/4, Madera", forw:"Drywall install and texture", amt:1200.00, how:"ACH", inv:"On invoice", invDate:"Oct 21, 2026", invUrl:"", receipt:"After payment", due:"Oct 27"},
+  {id:"yuri1", acct:"wf", who:"Yuri Hernandez", prop:"170 Glenn Way, Suite 5, San Carlos (office)", forw:"Office cleaning, 3 weeks at $900", amt:2700.00, how:"ACH", inv:"Weekly invoice", invDate:"Sent each Saturday", invUrl:BOARD, receipt:"After payment", due:"Oct 27",
+   flag:"Melio shows $3,100.00 paid to Yuri Hernandez on Oct 23 (Visa ending 0712, instant transfer). That equals these two Yuri lines. Confirm before paying again."},
+  {id:"yuri2", acct:"wf", who:"Yuri Hernandez", prop:"27 Prague St, San Mateo", forw:"Cleaning", amt:400.00, how:"ACH", inv:"Weekly invoice", invDate:"Sent each Saturday", invUrl:BOARD, receipt:"After payment", due:"Oct 27",
+   flag:"Melio shows $3,100.00 paid to Yuri Hernandez on Oct 23. See the line above. Confirm before paying again."},
+  {id:"stu", acct:"wf", who:"Stuart Morgan (Remod Homes LLC)", prop:"1574 Jerrold Ave, San Francisco", forw:"Phase 1 permit floor plans $1,200 + Phase 2 development marketing flyer $1,500", amt:2700.00, how:"ACH", inv:"RH-2611", invDate:"Jun 9, 2026", invUrl:"https://drive.google.com/file/d/1Wn2RJdrNMPxB_gg3Nowr5kxbhvixblx6/view", receipt:"After payment", due:"Oct 27"}
 ];
 // Every unpaid charge per card (unpaid card sheets, Oct 26): groups Property / Overhead / Marketing -> [category, tag, total, lines[date, vendor, amount, note]].
 // tag = account Kristine recommends paying that category from; "*" = only part of it is paid now; "" = not paying now.
@@ -364,11 +369,13 @@ function renderLists(){
     const f = (k,v,raw)=>{ g.append(el("dt",null,k)); const dd = el("dd"); if(raw) dd.append(raw); else if(v) dd.textContent=v; else dd.append(el("span","pend","Pending")); g.append(dd); };
     f("Property", p.prop); f("For", p.forw);
     f("Invoice #", p.inv); f("Invoice date", p.invDate);
-    f("Invoice / receipt", null, p.receipt ? Object.assign(el("a",null,"Open"),{href:p.receipt,target:"_blank",rel:"noopener"}) : null);
+    f("Invoice", null, p.invUrl ? Object.assign(el("a",null,p.invUrl===BOARD?"Open on contractor board":"Open invoice"),{href:p.invUrl,target:"_blank",rel:"noopener"}) : null);
+    f("Receipt", p.receipt);
     f("From", null, pill(p.acct)); f("Method", p.how); f("Due", p.due);
     if(p.wire){ f("Wire payee", p.wire.payee); f("Verified by", p.wire.who+", by phone"); f("Number used", p.wire.phone); f("Verified on", p.wire.date); }
     f("Prepared by", "Kristine");
-    lt.append(step(ix+1,p,[g],[]));
+    const det = [g]; if(p.flag) det.unshift(el("div","flag","⚠ "+p.flag));
+    lt.append(step(ix+1,p,det,[]));
   });
   const lc = document.getElementById("list-cards"); lc.replaceChildren();
   ITEMS.filter(i=>i.kind==="card").forEach((c,ix)=>{
