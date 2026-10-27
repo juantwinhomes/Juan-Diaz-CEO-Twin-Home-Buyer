@@ -543,22 +543,19 @@ function SimpleDecision({d,n}){
 }
 
 function DecisionRecap(){
-  const {S,K,go}=useContext(Ctx);
-  const ord=S.decisionOrder||[];const rk=d=>{const i=ord.indexOf(d.id);return i<0?99:i};
-  const all=[...S.decisions].sort((a,b)=>rk(a)-rk(b));
-  const grp=st=>all.filter(d=>d.status===st);
+  const {S,K}=useContext(Ctx);
   const amt=d=>decisionAmount(d,K);
-  const tot=l=>l.reduce((a,d)=>a+(amt(d)||0),0);
-  const A=grp('Approved'),H=grp('Hold'),P=grp('Pending');
-  const row=(d,extra)=>html`<tr key=${d.id}><td><b>${d.title}</b>${extra&&html`<div class="muted" style=${{fontSize:'.8rem'}}>${extra}</div>`}</td><td class="r num" style=${{whiteSpace:'nowrap'}}>${amt(d)!==null?money(amt(d),{cents:amt(d)%1!==0}):(d.amountNote||'—')}</td><td style=${{whiteSpace:'nowrap'}}>${d.decidedOn?fmtDate(d.decidedOn):'—'}</td></tr>`;
-  const block=(title,cls,l,note)=>html`<div style=${{marginTop:'12px'}}><div style=${{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:'8px'}}><h3 style=${{margin:0}}><${Pill} cls=${cls}>${title} · ${l.length}<//></h3><span class="num" style=${{fontWeight:600}}>${money(tot(l),{cents:true})}</span></div>
-    ${l.length?html`<div class="tablewrap" style=${{marginTop:'6px'}}><table><thead><tr><th>Item</th><th class="r">Amount</th><th>Decided</th></tr></thead><tbody>${l.map(d=>row(d,note(d)))}</tbody></table></div>`:html`<div class="muted" style=${{fontSize:'.85rem',marginTop:'4px'}}>None.</div>`}</div>`;
-  return html`<section><h3 class="grp">Summary of Juan's decisions</h3><div class="panel">
-    <div class="facts"><${Fact} label="Approved" big><span class="num" style=${{color:'var(--ok)'}}>${A.length}</span> · ${money(tot(A),{cents:true})}<//><${Fact} label="On hold" big><span class="num">${H.length}</span> · ${money(tot(H),{cents:true})}<//><${Fact} label="Not decided yet" big><span class="num">${P.length}</span><//></div>
-    ${block('Approved','ok',A,d=>[d.short||d.rec,d.notes?'Juan: '+d.notes:''].filter(Boolean).join(' · '))}
-    ${block('On hold','warn',H,d=>[d.holdReason||d.short||d.rec,d.notes?'Juan: '+d.notes:''].filter(Boolean).join(' · '))}
-    ${P.length>0&&block('Not decided yet','neutral',P,d=>d.when||'')}
-    <p class="muted" style=${{fontSize:'.78rem',margin:'10px 0 0'}}>Updates as Juan taps Approve or Hold. Approve or Hold only records the decision; Kristine makes each payment.</p>
+  const done=S.decisions.filter(d=>d.status!=='Pending').sort((a,b)=>(a.decidedAt||a.decidedOn||'').localeCompare(b.decidedAt||b.decidedOn||''));
+  const A=done.filter(d=>d.status==='Approved'),H=done.filter(d=>d.status==='Hold');
+  const tot=l=>l.reduce((x,d)=>x+(amt(d)||0),0);
+  const left=S.decisions.length-done.length;
+  return html`<section id="recap"><h3 class="grp">What Juan decided</h3><div class="panel">
+    <div style=${{display:'flex',gap:'18px',flexWrap:'wrap',fontSize:'.95rem',marginBottom:'8px'}}><span><b style=${{color:'var(--ok)'}}>Approved ${A.length}</b> · ${money(tot(A),{cents:true})}</span><span><b style=${{color:'var(--warn)'}}>On hold ${H.length}</b> · ${money(tot(H),{cents:true})}</span><span class="muted">${left} still to decide</span></div>
+    ${done.length?html`<div class="tablewrap"><table><thead><tr><th>#</th><th>Item</th><th>Juan's decision</th><th class="r">Amount</th></tr></thead><tbody>
+      ${done.map((d,i)=>html`<tr key=${d.id}><td class="num">${i+1}</td><td><b>${d.title}</b><div class="muted" style=${{fontSize:'.8rem'}}>${d.status==='Hold'?(d.holdReason||d.short||d.rec):(d.short||d.rec)}${d.notes?html` · <b>Juan:</b> ${d.notes}`:''}</div></td>
+        <td><${Pill} cls=${d.status==='Approved'?'ok':'warn'}>${d.status==='Approved'?'Approved':'On hold'}<//></td>
+        <td class="r num" style=${{whiteSpace:'nowrap'}}>${amt(d)!==null?money(amt(d),{cents:amt(d)%1!==0}):(d.amountNote||'—')}</td></tr>`)}
+    </tbody></table></div>`:html`<div class="muted">Nothing decided yet. Each item appears here as soon as Juan taps Approve or Hold.</div>`}
   </div></section>`;
 }
 
@@ -579,7 +576,7 @@ function Overview(){
   return html`<div class="stack">
     <div class="hero">
       <div class="hero-big">${counts.Pending===0?'All decisions answered.':html`<span class="num">${counts.Pending}</span> decision${counts.Pending===1?'':'s'} for you${pendingAmt?html` · <span class="num">${money(pendingAmt)}</span>`:''}`}</div>
-      <div class="muted">Your accounting package, in the order you asked for. Tap <b>Approve</b> or <b>Hold</b> on each decision. Nothing is paid or sent from this page.</div>
+      <div class="muted">Your accounting package, in the order you asked for. Tap <b>Approve</b> or <b>Hold</b> on each decision. Nothing is paid or sent from this page. <button class="linkbtn" onClick=${()=>{const e=document.getElementById('recap');if(e)e.scrollIntoView({behavior:'smooth'})}}>See what you decided ↓</button></div>
     </div>
     <${CardSnapshot} n="1"/>
     <section><h3 class="grp">2. Decision list</h3><div class="panel" style=${{padding:0}}>${list.map((d,i)=>html`<${SimpleDecision} key=${d.id} d=${d} n=${i+1}/>`)}</div></section>
@@ -1053,7 +1050,6 @@ function Summary(){
   const [jump,setJump]=useState('');
   return html`<div class="stack">
     <${SecHead} title="Decision List" sub="Every decision for Juan, in one table."/>
-    <${DecisionRecap}/>
     <div class="filterbar no-print">
       ${['All','Pending','Approved','Hold'].map(f=>html`<button key=${f} class=${'btn sm'+(filter===f?' on':'')} onClick=${()=>setFilter(f)}>${f==='Hold'?'On hold':f} · ${f==='All'?S.decisions.length:S.decisions.filter(d=>d.status===f).length}</button>`)}
       <span style=${{marginLeft:'auto',display:'flex',gap:'6px',flexWrap:'wrap'}}>
@@ -1116,7 +1112,7 @@ function App(){
   const [edit,setEdit]=useState(false);
   const [sec,setSec]=useState(()=>{const h=(location.hash||'').slice(1);return SEC_NAME[h]?h:'overview'});
   const [flash,setFlash]=useState(null);
-  const [dirty,setDirty]=useState(false);
+  const [dirty,setDirty]=useState(false);const dirtyRef=useRef(false);dirtyRef.current=dirty;
   const [saveMsg,setSaveMsg]=useState('');
   const [toast,setToast]=useState('');
   const [modal,setModal]=useState(null);
@@ -1142,6 +1138,10 @@ function App(){
         if(d&&d.data&&d.data.decisions&&JSON.stringify(d.data)!==JSON.stringify(base)&&(!base.meta.savedAt||d.at>base.meta.savedAt))setDraft(d);}}catch(e){}
     });
     return()=>{live=false}},[]);
+  // live refresh: pick up decisions saved from another screen
+  useEffect(()=>{if(!loaded)return;const t=setInterval(()=>{if(dirtyRef.current||savingRef.current)return;
+    fetch('state.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null).then(sh=>{if(!sh||!sh.decisions||!sh.meta)return;const cur=sRef.current;
+      if(sh.meta.savedAt&&(!cur.meta.savedAt||sh.meta.savedAt>cur.meta.savedAt)&&!dirtyRef.current)setS(sh)})},8000);return()=>clearInterval(t)},[loaded]);
   // capability
   useEffect(()=>{let n=0;const tryUse=()=>{if(window.claude&&window.claude.use){window.claude.use('artifact').then(a=>setArt(a||null)).catch(()=>setArt(null))}else if(n++<20)setTimeout(tryUse,150);else setArt(null)};tryUse()},[]);
   // autosave draft locally
@@ -1150,7 +1150,7 @@ function App(){
   useEffect(()=>{const f=()=>{const h=(location.hash||'').slice(1);if(SEC_NAME[h])setSec(h)};window.addEventListener('hashchange',f);return()=>window.removeEventListener('hashchange',f)},[]);
 
   const set=useCallback((path,v)=>{revRef.current++;setS(s=>setAt(s,path.split('.'),v));setDirty(true)},[]);
-  const setDecision=useCallback((id,status)=>{revRef.current++;fastRef.current=true;setS(s=>({...s,decisions:s.decisions.map(d=>d.id!==id?d:{...d,status,decidedOn:status==='Pending'?'':today()})}));setDirty(true);
+  const setDecision=useCallback((id,status)=>{revRef.current++;fastRef.current=true;setS(s=>({...s,decisions:s.decisions.map(d=>d.id!==id?d:{...d,status,decidedOn:status==='Pending'?'':today(),decidedAt:status==='Pending'?'':new Date().toISOString()})}));setDirty(true);
     if(status==='Hold')setTimeout(()=>{const el=document.getElementById('hr-'+id);if(el)el.focus()},50)},[]);
   const removeDecision=id=>{revRef.current++;setS(s=>({...s,decisions:s.decisions.filter(d=>d.id!==id)}));setDirty(true)};
   const go=(s,id)=>{const target=s==='other'?'other':s;setSec(target);try{history.replaceState(null,'','#'+target)}catch(e){}
