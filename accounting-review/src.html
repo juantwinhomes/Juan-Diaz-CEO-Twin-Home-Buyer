@@ -202,6 +202,14 @@ textarea.f{resize:vertical;min-height:56px;line-height:1.4}
 .live.busy{color:var(--info)} .live.busy i{background:var(--info)}
 .live.err,.live.off{color:var(--warn)} .live.err i,.live.off i{background:var(--warn)}
 /* Juan's decision list */
+.sd{display:grid;grid-template-columns:28px minmax(0,1fr) 130px 210px;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)}
+.sd:first-child{border-top:0}
+.sd-n{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.sd-t{font-weight:600}.sd-r{font-size:.86rem;color:var(--muted);margin-top:2px}
+.sd-a{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}.sd-w{display:block;font-size:.74rem;color:var(--muted);font-weight:400}
+.sd .act{padding:8px 10px}
+.sd.st-Approved{background:color-mix(in srgb,var(--ok) 7%,transparent)}.sd.st-Hold{background:color-mix(in srgb,var(--warn) 8%,transparent)}
+@media (max-width:760px){.sd{grid-template-columns:24px minmax(0,1fr)}.sd-a{text-align:left;grid-column:2}.sd .qd-act{grid-column:1/-1}}
 .hero{display:flex;flex-direction:column;gap:6px;padding-block:4px 2px}
 .hero-big{font-family:var(--f-display);font-size:1.7rem;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
 .hero-note{font-size:.82rem;color:var(--pv);background:var(--pv-soft);border-radius:5px;padding:4px 9px;align-self:flex-start}
@@ -521,35 +529,32 @@ function CardSnapshot(){
     </tbody></table></div></section>`;
 }
 
+function SimpleDecision({d,n}){
+  const {K,setDecision,go}=useContext(Ctx);const a=decisionAmount(d,K);
+  return html`<div id=${'q-'+d.id} class=${'sd st-'+d.status}>
+    <div class="sd-n">${n}</div>
+    <div><div class="sd-t">${d.title}</div><div class="sd-r">${d.short||d.rec} <button class="linkbtn" style=${{fontSize:'.8rem'}} onClick=${()=>go(d.section,d.id)}>Details</button></div></div>
+    <div class="sd-a">${a!==null?money(a,{cents:a%1!==0}):html`<span class="muted" style=${{fontWeight:400}}>${d.amountNote||'—'}</span>`}${d.when&&html`<span class="sd-w">${d.when}</span>`}</div>
+    <div class="qd-act">
+      <button class=${'act approve'+(d.status==='Approved'?' sel':'')} aria-pressed=${d.status==='Approved'} onClick=${()=>setDecision(d.id,d.status==='Approved'?'Pending':'Approved')}>${d.status==='Approved'?'✓ Approved':'Approve'}</button>
+      <button class=${'act hold'+(d.status==='Hold'?' sel':'')} aria-pressed=${d.status==='Hold'} onClick=${()=>setDecision(d.id,d.status==='Hold'?'Pending':'Hold')}>${d.status==='Hold'?'■ On hold':'Hold'}</button>
+    </div>
+  </div>`;
+}
+
 function Overview(){
   const {S,K,go,counts}=useContext(Ctx);
-  const R=risks(S,K);const D=deadlines(S,K).slice(0,6);
-  const groups=[['Pending','Decisions waiting on you'],['Hold','On hold'],['Approved','Approved']];
+  const order=S.decisionOrder||[];const rank=d=>{const i=order.indexOf(d.id);return i<0?99:i};
+  const list=[...S.decisions].sort((a,b)=>rank(a)-rank(b));
   const pendingAmt=S.decisions.filter(d=>d.status==='Pending').reduce((a,d)=>a+(decisionAmount(d,K)||0),0);
-  const toVerify=S.decisions.filter(d=>decisionAmount(d,K)===null&&!d.amountNote).length;
   return html`<div class="stack">
     <div class="hero">
-      <div class="hero-big">${counts.Pending===0?'All decisions answered.':html`<span class="num">${counts.Pending}</span> decision${counts.Pending===1?'':'s'} waiting on you${pendingAmt?html` · <span class="num">${money(pendingAmt)}</span>`:''}`}</div>
-      <div class="muted">Read Kristine's recommendation, then tap <b>Approve</b> or <b>Hold</b>. Tap again to undo. These buttons only record your decision; nothing is paid or sent.</div>
-      ${toVerify>0&&html`<div class="hero-note">${toVerify} amount${toVerify===1?' is':'s are'} still being verified by Kristine.</div>`}
+      <div class="hero-big">${counts.Pending===0?'All decisions answered.':html`<span class="num">${counts.Pending}</span> decision${counts.Pending===1?'':'s'} for you${pendingAmt?html` · <span class="num">${money(pendingAmt)}</span>`:''}`}</div>
+      <div class="muted">Tap <b>Approve</b> or <b>Hold</b> on each one. Nothing is paid or sent from this page.</div>
     </div>
     <${CardSnapshot}/>
-    <${Glance}/>
-    ${groups.map(([st,label])=>{const list=S.decisions.filter(d=>d.status===st);if(!list.length)return null;
-      return html`<section key=${st}><h3 class="grp">${label} <span class="muted num">${list.length}</span></h3><div class="qlist">${list.map(d=>html`<${QuickDecision} key=${d.id} d=${d}/>`)}</div></section>`})}
-    <div class="grid2">
-      <div class="panel"><h3>Risks to know about</h3>
-        ${R.length?html`<div class="list">${R.map((r,i)=>html`<div class="risk" key=${i}><${Pill} cls=${r.lvl}>${r.lvl==='bad'?'Critical':'Watch'}<//><div style=${{flex:1}}>${r.text} · <button class="linkbtn" onClick=${()=>go(r.sec)}>Open</button></div></div>`)}</div>`:html`<div class="empty">No critical risks flagged.</div>`}
-      </div>
-      <div class="panel"><h3>Upcoming deadlines</h3>
-        ${D.length?html`<div class="list">${D.map((x,i)=>{const dd=daysUntil(x.date);return html`<div class="risk" key=${i}><span class="num" style=${{minWidth:'96px'}}>${fmtDate(x.date)}</span><div style=${{flex:1}}>${x.text}</div><${Pill} cls=${dd<0?'bad':dd<=3?'warn':'neutral'}>${dd<0?Math.abs(dd)+'d late':dd===0?'Today':dd+'d'}<//></div>`})}</div>`:html`<div class="empty">No dated deadlines yet.</div>`}
-      </div>
-    </div>
-    <div class="panel"><h3>Handled by Kristine as Controller · no decision needed</h3>
-      <div class="facts"><${Fact} label="Contractor payments approved" big><span class="num">${money(K.contractorsApproved)}</span><//><${Fact} label="Payments">${S.contractors.approved.length} payments<//><${Fact} label="Completion verified">${S.contractors.approved.filter(p=>p.status==='Cleared').length} of ${S.contractors.approved.length}<//></div>
-      <div style=${{marginTop:'8px'}}><button class="linkbtn" onClick=${()=>go('contractors')}>See contractor payments</button></div>
-      ${S.info.length>0&&html`<div class="list" style=${{marginTop:'10px',borderTop:'1px solid var(--line)'}}>${S.info.map(x=>html`<div class="risk" key=${x.id}><${Pill} cls="info">FYI<//><div style=${{flex:1}}><b>${x.item}</b> · ${x.note}</div></div>`)}</div>`}
-    </div>
+    <section><h3 class="grp">Your decisions</h3><div class="panel" style=${{padding:0}}>${list.map((d,i)=>html`<${SimpleDecision} key=${d.id} d=${d} n=${i+1}/>`)}</div></section>
+    ${S.handled&&S.handled.length>0&&html`<section><h3 class="grp">Handled by Kristine · no decision needed</h3><div class="panel"><div class="list">${S.handled.map((x,i)=>html`<div class="risk" key=${i}><span style=${{color:'var(--ok)',fontWeight:700}}>✓</span><div style=${{flex:1}}><b>${x.t}</b> · ${x.note}${x.sec&&html` <button class="linkbtn" onClick=${()=>go(x.sec)}>Open</button>`}</div></div>`)}</div></div></section>`}
   </div>`;
 }
 

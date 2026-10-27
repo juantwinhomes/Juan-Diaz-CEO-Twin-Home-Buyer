@@ -590,7 +590,7 @@
   {
    "id": "dc-hd5253",
    "section": "cards",
-   "title": "Home Depot Commercial ••5253",
+   "title": "Home Depot ••5253",
    "amountSource": "",
    "amount": 7650.29,
    "amountNote": "",
@@ -604,12 +604,14 @@
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
-   "holdReason": ""
+   "holdReason": "",
+   "short": "Pay $7,650.29 to bring it under 30%. Autopay covers the $7,017.11 due Oct 31.",
+   "when": "By Nov 5"
   },
   {
    "id": "dc-boa",
    "section": "cards",
-   "title": "Bank of America Visa ••0475",
+   "title": "Bank of America ••0475",
    "amountSource": "",
    "amount": 2277.24,
    "amountNote": "",
@@ -623,15 +625,17 @@
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
-   "holdReason": ""
+   "holdReason": "",
+   "short": "Pay the minimum.",
+   "when": "By Nov 2"
   },
   {
    "id": "dc-amex",
    "section": "cards",
-   "title": "Amex Business Platinum ••5004",
+   "title": "Amex ••5004",
    "amountSource": "",
    "amount": null,
-   "amountNote": "Amount due by Nov 6",
+   "amountNote": "Amount due",
    "situation": "$110,921.96 on the card. Payment due Nov 6, on autopay.",
    "recAction": "Pay",
    "rec": "Pay the amount due by Nov 6.",
@@ -642,7 +646,9 @@
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
-   "holdReason": ""
+   "holdReason": "",
+   "short": "Pay the amount due.",
+   "when": "By Nov 6"
   },
   {
    "id": "dc-spark",
@@ -661,12 +667,14 @@
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
-   "holdReason": ""
+   "holdReason": "",
+   "short": "Pay in full.",
+   "when": "By due date"
   },
   {
    "id": "dc-venture",
    "section": "cards",
-   "title": "Capital One Venture X ••1175",
+   "title": "Venture X ••1175 (personal)",
    "amountSource": "",
    "amount": 6666.74,
    "amountNote": "",
@@ -680,12 +688,14 @@
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
-   "holdReason": ""
+   "holdReason": "",
+   "short": "Pay down to under 30% to protect your credit score.",
+   "when": "By Nov 8"
   },
   {
    "id": "dc-citi",
    "section": "cards",
-   "title": "Citi ••2149",
+   "title": "Citi ••2149 (personal)",
    "amountSource": "",
    "amount": 2136.11,
    "amountNote": "",
@@ -699,12 +709,14 @@
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
-   "holdReason": ""
+   "holdReason": "",
+   "short": "Pay down to under 30% to protect your credit score.",
+   "when": "By Nov 8"
   },
   {
    "id": "d-gonzalo",
    "section": "contractors",
-   "title": "Gonzalo — 460 5th Ave interior balance",
+   "title": "Gonzalo, 460 5th Ave",
    "amountSource": "",
    "amount": 2000,
    "amountNote": "",
@@ -717,12 +729,14 @@
    "status": "Hold",
    "decidedOn": "",
    "notes": "",
-   "holdReason": "Waiting for Cherry to confirm the interior work is complete."
+   "holdReason": "Waiting for Cherry to confirm the interior work is complete.",
+   "short": "Keep on hold until Cherry confirms the work is done.",
+   "when": ""
   },
   {
    "id": "d-tax",
    "section": "tax",
-   "title": "PPS 2025 tax returns — BEC files",
+   "title": "PPS 2025 tax returns",
    "amountSource": "",
    "amount": null,
    "amountNote": "BEC's price",
@@ -736,15 +750,17 @@
    "decidedOn": "",
    "notes": "",
    "holdReason": "",
-   "recAction": "Approve"
+   "recAction": "Approve",
+   "short": "Approve BEC's price to file. PPS owes $0.",
+   "when": ""
   },
   {
    "id": "d-vacancy",
    "section": "rental",
-   "title": "8715 D St — find 2 tenants for the 2 empty rooms",
+   "title": "2 empty rooms, 8715 D St",
    "amountSource": "",
    "amount": null,
-   "amountNote": "Free to post · small boost only if needed",
+   "amountNote": "Free",
    "situation": "Unit 2 Downstairs and Unit 3 Downstairs are empty and earning nothing.",
    "rec": "Post both rooms with photos on Facebook and Craigslist for free first. If there are few inquiries, boost the Facebook post for a few dollars.",
    "required": "Approve listing both rooms, with a small Facebook boost (a few dollars, well under $100) only if needed.",
@@ -754,12 +770,14 @@
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
-   "holdReason": ""
+   "holdReason": "",
+   "short": "Post free on Facebook and Craigslist; small boost only if needed.",
+   "when": ""
   },
   {
    "id": "d-collect",
    "section": "rental",
-   "title": "8715 D St — collect Maria Navarro's overdue rent",
+   "title": "Maria Navarro, 8715 D St",
    "amountSource": "rentalOutstanding",
    "amount": 8980,
    "amountNote": "",
@@ -772,12 +790,14 @@
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
-   "holdReason": ""
+   "holdReason": "",
+   "short": "Approve a written payment plan for the $8,980 she owes.",
+   "when": ""
   },
   {
    "id": "d-heyer",
    "section": "wires",
-   "title": "5022 Heyer Ave — second half of earnest money (wire)",
+   "title": "5022 Heyer Ave earnest money (wire)",
    "amountSource": "",
    "amount": 10500,
    "amountNote": "",
@@ -791,12 +811,14 @@
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
-   "holdReason": ""
+   "holdReason": "",
+   "short": "Release after Cherry confirms the wire by phone with WFG Title.",
+   "when": "Today"
   },
   {
    "id": "d-erc",
    "section": "erc",
-   "title": "ERC Specialists fee (Matrix Group)",
+   "title": "ERC Specialists fee (Matrix)",
    "amountSource": "",
    "amount": 36431.36,
    "amountNote": "",
@@ -810,7 +832,9 @@
    "status": "Pending",
    "decidedOn": "",
    "notes": "",
-   "holdReason": ""
+   "holdReason": "",
+   "short": "Pay 15% of the IRS checks Matrix received. The other $4,174.25 waits for their statement.",
+   "when": "By Nov 3"
   }
  ],
  "info": [
@@ -1178,6 +1202,47 @@
    "due": "",
    "status": "DATE",
    "note": "Confirm with the store's Pro Desk"
+  }
+ ],
+ "decisionOrder": [
+  "d-heyer",
+  "dc-hd5253",
+  "dc-boa",
+  "dc-amex",
+  "dc-spark",
+  "dc-venture",
+  "dc-citi",
+  "d-erc",
+  "d-tax",
+  "d-collect",
+  "d-vacancy",
+  "d-gonzalo"
+ ],
+ "handled": [
+  {
+   "t": "Contractor payments",
+   "note": "$17,900 approved, being sent (Relay $12,100 · WF $5,800).",
+   "sec": "wires"
+  },
+  {
+   "t": "Matrix payroll",
+   "note": "Last week's $22,253.03 is done. This week is being prepared; you'll get the transfers to approve.",
+   "sec": "payroll"
+  },
+  {
+   "t": "Wells Fargo Vantage",
+   "note": "Setup in progress with Yi Tang. You sign the paperwork when it comes.",
+   "sec": "vantage"
+  },
+  {
+   "t": "Honda Accord",
+   "note": "Paid off. Title is coming in your name; Kristine transfers it to Equity Track.",
+   "sec": "honda"
+  },
+  {
+   "t": "Clock-in / clock-out",
+   "note": "Photo and 100-yard check working for everyone.",
+   "sec": "time"
   }
  ]
 }
