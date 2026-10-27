@@ -266,9 +266,9 @@ const SEED=JSON.parse(document.getElementById('seed').textContent);
 const DRAFT_KEY='thb-accounting-review-draft-v1';
 
 const SECTIONS=[
- ['overview','Executive Overview'],['cards','Credit Cards'],['open','Open Items'],['contractors','Contractor Payments'],
- ['tax','PPS 2025 Tax Returns'],['honda','Honda Accord Buyout'],['rental','8715 D St Rental'],
- ['time','Clock-In / Clock-Out'],['payroll','Matrix Payroll'],['wires','Wires & Payments'],['erc','ERC Specialists Fee'],['vantage','Wells Fargo Vantage'],['other','Other Pending Decisions'],['summary','Final Decision Summary']];
+ ['overview','Juan’s Accounting Package'],['cards','1 · Credit Cards'],['rental','3 · 8715 D St Rents'],['payroll','4 · Matrix Payroll'],
+ ['wires','5 · Wires to Release'],['erc','6 · ERC Specialists Bill'],['vantage','7 · Wells Fargo Vantage'],
+ ['open','Open Items'],['contractors','Contractor Payments'],['tax','PPS 2025 Tax Returns'],['honda','Honda Accord'],['time','Clock-In / Clock-Out'],['other','Other Pending Decisions'],['summary','Final Decision Summary']];
 const SEC_NAME=Object.fromEntries(SECTIONS);
 
 /* ---------- helpers ---------- */
@@ -515,10 +515,10 @@ function QuickDecision({d}){
     </div>`}
   </div>`;
 }
-function CardSnapshot(){
+function CardSnapshot({n}){
   const {S,go}=useContext(Ctx);if(!S.cards||!S.cards.length)return null;
   const rows=S.cards.map(c=>({c,f:cardFlag(c)}));
-  return html`<section><div style=${{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:'8px',flexWrap:'wrap'}}><h3 class="grp">Credit cards</h3><span style=${{display:'flex',gap:'14px',flexWrap:'wrap'}}><a class="linkbtn" href="https://claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ" target="_blank" rel="noopener">Card charges, line by line</a><button class="linkbtn" onClick=${()=>go('cards')}>Open full card report and paydown plan</button></span></div>
+  return html`<section><div style=${{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:'8px',flexWrap:'wrap'}}><h3 class="grp">${n?n+". ":""}Credit card table</h3><span style=${{display:'flex',gap:'14px',flexWrap:'wrap'}}><a class="linkbtn" href="https://claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ" target="_blank" rel="noopener">Card charges, line by line</a><button class="linkbtn" onClick=${()=>go('cards')}>Open full card report and paydown plan</button></span></div>
     <div class="tablewrap"><table><thead><tr><th>Card</th><th class="r">Balance</th><th class="r">Limit</th><th class="r">% used</th><th>Closes</th><th>Due</th><th class="r">Minimum</th><th>Autopay</th><th>Late (12 mo)</th><th>Flag</th></tr></thead><tbody>
     ${['Business','Personal'].map(k=>html`<tr class="cgroup"><td colspan="10" style=${{background:'var(--panel)',fontWeight:700,fontSize:'.74rem',textTransform:'uppercase',letterSpacing:'.06em',color:'var(--muted)'}}>${k}</td></tr>
       ${rows.filter(x=>x.c.kind===k).map(x=>html`<tr key=${x.c.id}><td><b>${x.c.name}</b> <span class="num muted">••${x.c.last4}</span></td>
@@ -542,19 +542,36 @@ function SimpleDecision({d,n}){
   </div>`;
 }
 
+function PkgItem({n,k,title,extra}){
+  const {S,go}=useContext(Ctx);const b=S.briefs[k];if(!b)return null;
+  return html`<section><div style=${{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:'8px',flexWrap:'wrap'}}><h3 class="grp">${n}. ${title}</h3><button class="linkbtn" onClick=${()=>go(k)}>Open</button></div>
+    <div class="panel"><div style=${{fontWeight:600,marginBottom:'4px'}}>${b.headline}</div>${b.now&&html`<div class="muted" style=${{fontSize:'.9rem'}}>${b.now}</div>`}${extra}
+    <div style=${{marginTop:'8px',fontSize:'.9rem'}}><b>Your part:</b> ${b.youShort||b.you}</div></div></section>`;
+}
+
 function Overview(){
   const {S,K,go,counts}=useContext(Ctx);
   const order=S.decisionOrder||[];const rank=d=>{const i=order.indexOf(d.id);return i<0?99:i};
   const list=[...S.decisions].sort((a,b)=>rank(a)-rank(b));
   const pendingAmt=S.decisions.filter(d=>d.status==='Pending').reduce((a,d)=>a+(decisionAmount(d,K)||0),0);
+  const ap=(S.contractors&&S.contractors.approved||[]).filter(p=>!/^(Sent to contractor|Cleared)$/.test(p.status));
+  const wireTot=(S.wires&&S.wires.items||[]).reduce((a,x)=>a+(num(x.amount)||0),0)+ap.reduce((a,p)=>a+(num(p.amount)||0),0);
   return html`<div class="stack">
     <div class="hero">
       <div class="hero-big">${counts.Pending===0?'All decisions answered.':html`<span class="num">${counts.Pending}</span> decision${counts.Pending===1?'':'s'} for you${pendingAmt?html` · <span class="num">${money(pendingAmt)}</span>`:''}`}</div>
-      <div class="muted">Tap <b>Approve</b> or <b>Hold</b> on each one. Nothing is paid or sent from this page.</div>
+      <div class="muted">Your accounting package, in the order you asked for. Tap <b>Approve</b> or <b>Hold</b> on each decision. Nothing is paid or sent from this page.</div>
     </div>
-    <${CardSnapshot}/>
-    <section><h3 class="grp">Your decisions</h3><div class="panel" style=${{padding:0}}>${list.map((d,i)=>html`<${SimpleDecision} key=${d.id} d=${d} n=${i+1}/>`)}</div></section>
-    ${S.handled&&S.handled.length>0&&html`<section><h3 class="grp">Handled by Kristine · no decision needed</h3><div class="panel"><div class="list">${S.handled.map((x,i)=>html`<div class="risk" key=${i}><span style=${{color:'var(--ok)',fontWeight:700}}>✓</span><div style=${{flex:1}}><b>${x.t}</b> · ${x.note}${x.sec&&html` <button class="linkbtn" onClick=${()=>go(x.sec)}>Open</button>`}</div></div>`)}</div></div></section>`}
+    <${CardSnapshot} n="1"/>
+    <section><h3 class="grp">2. Decision list</h3><div class="panel" style=${{padding:0}}>${list.map((d,i)=>html`<${SimpleDecision} key=${d.id} d=${d} n=${i+1}/>`)}</div></section>
+    <${PkgItem} n="3" k="rental" title="8715 D St rents" extra=${html`<div class="facts" style=${{marginTop:'10px'}}><${Fact} label="Monthly rent">${money(K.expected)}<//><${Fact} label="Collected (Oct)">${money(K.octRcv)}<//><${Fact} label="Owed">${money(K.outstanding)}<//><${Fact} label="Empty rooms">${K.vacant}<//></div>`}/>
+    <${PkgItem} n="4" k="payroll" title="Matrix payroll"/>
+    <${PkgItem} n="5" k="wires" title="Wires waiting on your release" extra=${html`<div class="tablewrap" style=${{marginTop:'10px'}}><table><tbody>
+      ${(S.wires&&S.wires.items||[]).map(w=>html`<tr key=${w.id}><td><b>${w.payee}</b></td><td class="r num">${money(w.amount,{cents:true})}</td></tr>`)}
+      ${ap.map(p=>html`<tr key=${p.id}><td>${p.payee} <span class="muted">· ${p.source}</span></td><td class="r num">${money(p.amount,{cents:true})}</td></tr>`)}
+      <tr><td><b>Total</b></td><td class="r num"><b>${money(wireTot,{cents:true})}</b></td></tr></tbody></table></div>`}/>
+    <${PkgItem} n="6" k="erc" title="ERC Specialists bill"/>
+    <${PkgItem} n="7" k="vantage" title="Wells Fargo Vantage setup"/>
+    ${S.handled&&S.handled.length>0&&html`<section><h3 class="grp">Also handled by Kristine · no decision needed</h3><div class="panel"><div class="list">${S.handled.map((x,i)=>html`<div class="risk" key=${i}><span style=${{color:'var(--ok)',fontWeight:700}}>✓</span><div style=${{flex:1}}><b>${x.t}</b> · ${x.note}${x.sec&&html` <button class="linkbtn" onClick=${()=>go(x.sec)}>Open</button>`}</div></div>`)}</div></div></section>`}
   </div>`;
 }
 

@@ -1220,21 +1220,6 @@
  ],
  "handled": [
   {
-   "t": "Contractor payments",
-   "note": "$17,900 approved, being sent (Relay $12,100 · WF $5,800).",
-   "sec": "wires"
-  },
-  {
-   "t": "Matrix payroll",
-   "note": "Last week's $22,253.03 is done. This week is being prepared; you'll get the transfers to approve.",
-   "sec": "payroll"
-  },
-  {
-   "t": "Wells Fargo Vantage",
-   "note": "Setup in progress with Yi Tang. You sign the paperwork when it comes.",
-   "sec": "vantage"
-  },
-  {
    "t": "Honda Accord",
    "note": "Paid off. Title is coming in your name; Kristine transfers it to Equity Track.",
    "sec": "honda"
