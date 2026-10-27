@@ -54,7 +54,9 @@ button{font:inherit;cursor:pointer}
 .tp-b .d{font-size:12px;color:var(--ink-soft);line-height:1.5;margin-top:3px}
 .tp-b .d b{color:var(--ink);font-weight:600}
 .tp-b .m{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;margin-top:6px}
-.tp-step input{flex:none;width:17px;height:17px;margin:4px 0 0;accent-color:var(--accent)}
+.apv{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--green);cursor:pointer;min-width:44px}
+.tp-step.held .apv{color:var(--amber)}
+.tp-step input{flex:none;width:20px;height:20px;margin:2px 0 0;accent-color:var(--green)}
 .tp-acct{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border-radius:5px;padding:1px 7px;white-space:nowrap}
 .tp-acct.wf{color:var(--amber);background:var(--amber-soft)}.tp-acct.relay{color:var(--green);background:var(--green-soft)}.tp-acct.para{color:var(--blue);background:var(--blue-soft)}
 .ok{color:var(--green);font-weight:700;font-size:11.5px}
@@ -65,13 +67,6 @@ details.why>summary::-webkit-details-marker{display:none}
 details.why>summary::after{content:"";border:solid currentColor;border-width:0 2px 2px 0;padding:2.5px;transform:rotate(45deg);margin:-3px 0 0 2px;transition:transform .15s}
 details.why[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
 @media (prefers-reduced-motion:reduce){details.why>summary::after{transition:none}}
-.pick{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
-.pick label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:5px 10px;font-size:12px;color:var(--ink-soft);cursor:pointer}
-.pick label b{color:var(--ink)}
-.pick label.rec{border-color:var(--green)}
-.pick label:has(input:checked){background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
-.pick input{accent-color:var(--accent);margin:0}
-.rtag{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--green)}
 .tp-total{display:flex;justify-content:space-between;border-top:2px solid var(--line);margin-top:4px;padding-top:11px;font-weight:800;font-size:13.5px}
 .tp-total .num{color:var(--accent)}
 .bk-group{margin-top:10px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -80,6 +75,8 @@ details.why[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
 .bk-sub{padding:7px 13px 3px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--ink-faint)}
 .bk-row{display:flex;justify-content:space-between;gap:12px;padding:7px 13px;font-size:12.5px;color:var(--ink-soft);border-top:1px solid var(--line-soft)}
 .bk-row b{color:var(--ink);font-weight:600}
+.bk-row .lbl{display:flex;flex-wrap:wrap;gap:4px 7px;align-items:center;min-width:0}
+.part{font-size:9.5px;font-weight:800;text-transform:uppercase;color:var(--amber)}
 .bk-row .num{color:var(--ink);font-weight:600;white-space:nowrap}
 .bk-row.tot{background:var(--wash);font-weight:700;color:var(--ink)}
 .bk-row.tot .num{color:var(--accent);font-weight:800}
@@ -115,13 +112,13 @@ details.why[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
 
   <div class="section">
     <div class="sec-head"><div class="sec-title">Today · wire and contractors</div><div class="sec-tot"><b id="g-today">$28,400.00</b></div></div>
-    <div class="lead-in">Uncheck a payment to hold it. Kristine or Cherry enters these with you; you only do the bank login and codes.</div>
+    <div class="lead-in">Each payment is set to <b>Approve</b>. Juan unchecks any one to <b>Hold</b> it, then taps Approve at the top. Kristine or Cherry enters these with you; you only do the bank login and codes.</div>
     <div class="tp-steps" id="list-today"></div>
   </div>
 
   <div class="section">
     <div class="sec-head"><div class="sec-title">Credit cards · by due date</div><div class="sec-tot"><b id="g-cards">$48,793.94</b></div></div>
-    <div class="lead-in">Nothing goes out today. The amount shown is what Kristine recommends; where there is another option, pick it. Tap <b>What the charges are for</b> to see the numbers behind each card. Totals below use the recommended amounts.</div>
+    <div class="lead-in">Nothing goes out today. Each amount is what Kristine recommends paying; Juan approves or holds each card. Tap <b>All charges on this card</b> to see every unpaid charge, grouped by property and category.</div>
     <div class="tp-steps" id="list-cards"></div>
   </div>
 
@@ -154,40 +151,30 @@ const TODAY = [
   {id:"yuri2", acct:"wf", who:"Yuri Hernandez", what:"27 Prague St · cleaning", amt:400.00, how:"Transfer", verify:"Confirmed by phone"},
   {id:"stu", acct:"wf", who:"Stuart Morgan (RemodHomes)", what:"1574 Jerrold Ave · invoice 2611", amt:2700.00, how:"Transfer", verify:"Confirmed by phone"}
 ];
-// bk: what each card payment covers. pay = the amount paid from that account; rows = the unpaid charges behind it.
-// When rows add up to more than pay, the payment is partial and `of` names the rest.
+// all: every unpaid charge on the card, grouped by property or category (from the unpaid card sheets, Oct 26).
+// Row tag = account Kristine recommends paying that group from; "*" = only part of it is paid now; "" = not paying now.
+const ALL = {"amex":{"total":110921.96,"n":525,"rows":[["Subscriptions & software",10725.6,"wf",65],["460 5th Ave, Redwood City",5654.72,"relay",54],["Office utilities (internet, PG&E, phone)",4486.4,"wf",14],["22496 Madera",29438.44,"",49],["52 Paramount Ter",14490.64,"",19],["972 Norton St",9828.55,"",19],["Travel",8833.53,"",43],["Marketing",8036.57,"",26],["Gas, tolls, auto",6037.6,"",41],["Meals & entertainment",2856.44,"",85],["Rent",2307.11,"",1],["Office supplies",1926.61,"",14],["820 28th St",1592.61,"",9],["492 Umland Dr",1076.95,"",12],["Matrix (payroll-related)",1074.02,"",4],["Card interest",977.71,"",2],["Insurance",880.56,"",2],["Bank charges & fees",875.58,"",7],["170 Glenn Way",726.48,"",3],["27 Prague St",629.12,"",9],["Other office expenses",446.29,"",9],["Advertising",441.61,"",2],["Personal expense",437.62,"",5],["Tools",218.65,"",1],["Legal & professional",216.0,"",3],["100 Palm Ave",71.47,"",2],["Marketing Tools",50.0,"",1],["Hotel",47.9,"",2],["Service fees",42.23,"",1],["Permits & fees",30.0,"",1],["Other",18.2,"",5],["751 27th Ave",-31.55,"",3],["519 Orizaba Ave",-389.68,"",1],["1464 Sunrise Pkwy",-1451.74,"",5],["Credits / refunds",-1680.28,"",6]]},"boa":{"total":52083.13,"n":119,"rows":[["519 Orizaba Ave",14271.23,"wf*",2],["Insurance",16682.28,"",2],["1574 Jerrold Ave",6080.33,"",8],["Marketing",5073.37,"",11],["1202 Via Lucas",2462.71,"",1],["460 5th Ave, Redwood City",2016.51,"",3],["Meals & entertainment",1845.51,"",41],["Personal expense",1323.15,"",11],["Other office expenses",680.34,"",1],["915 52nd St",595.0,"",1],["Other",478.71,"",1],["7426 Mulholland Dr",442.04,"",3],["Phone",387.79,"",2],["170 Glenn Way",333.78,"",1],["Gas, tolls, auto",141.1,"",2],["Subscriptions & software",117.64,"",4],["Travel",116.09,"",6],["255 Amber Dr San Francisco",-39.82,"",1],["2352 Menalto Ave",-347.82,"",5],["17221 Via Estrella",-576.81,"",13]]},"spark":{"total":10005.88,"n":21,"rows":[["972 Norton St",6971.49,"wf",4],["22496 Madera",2590.76,"relay",5],["Meals & entertainment",199.48,"",6],["Gas, tolls, auto",142.35,"",3],["Office supplies",51.77,"",2],["Travel",50.03,"",1]]},"vx":{"total":18666.74,"n":36,"rows":[["22496 Madera",11940.96,"relay*",15],["Personal expense",2656.44,"relay*",2],["460 5th Ave, Redwood City",1017.68,"relay*",2],["972 Norton St",827.61,"relay*",2],["Marketing",598.83,"relay*",1],["Gas, tolls, auto",533.76,"relay*",5],["Bank charges & fees",407.08,"relay*",2],["492 Umland Dr",285.0,"wf",1],["Subscriptions & software",220.0,"relay*",2],["27 Prague St",115.96,"wf",3],["Legal & professional",63.42,"relay*",1]]},"citi":{"total":5136.11,"n":8,"rows":[["52 Paramount Ter",4378.0,"para",5],["22496 Madera",1163.07,"",1],["27 Prague St",-12.23,"",1],["460 5th Ave, Redwood City",-392.73,"",1]]},"hd":{"total":22650.29,"n":59,"rows":[["27 Prague St \u00b7 due Nov 30\u2013Dec 31",3754.07,"wf",11],["1464 Sunrise Pkwy \u00b7 due Nov 30\u2013Dec 31",1566.16,"wf",4],["1464 Sunrise Pkwy \u00b7 paid by Oct 31 autopay",5797.76,"",11],["52 Paramount Ter",5693.82,"",11],["460 5th Ave, Redwood City",4448.8,"",13],["751 27th Ave \u00b7 paid by Oct 31 autopay",635.73,"",2],["27 Prague St \u00b7 paid by Oct 31 autopay",486.75,"",3],["170 Glenn Way",170.33,"",2],["170 Glenn Way \u00b7 paid by Oct 31 autopay",96.87,"",2]]}};
 const CARDS = [
-  {id:"boa", who:"Bank of America ••0475", what:"519 Orizaba Ave charges (sold property)", amt:2000.00, opts:[["Under 30% used",34083.13]], due:"Nov 2", src:[["wf",2000.00]], note:"Partial payment. Paying $34,083.13 instead would bring the card under 30% used.",
-   bk:[{acct:"wf", label:"519 Orizaba Ave (sold)", pay:2000.00, rows:[["Factory Direct Floor · flooring",14126.70],["KH Plumbing Supply",144.53]], of:"Paying $2,000.00 of these $14,271.23 charges now. The rest stays on the card."}]},
-  {id:"amex", who:"Amex ••5004", what:"Redwood City office · subscriptions · office utilities", amt:20866.72, opts:[["Minimum due",20150.00]], due:"Nov 5", src:[["relay",5654.72],["wf",15212.00]], note:"Minimum due $20,150.",
-   bk:[
-    {acct:"relay", label:"460 5th Ave, Redwood City", pay:5654.72, rows:[["Materials (21 charges)",3943.47],["Gas, tolls, auto (11)",1033.07],["Meals on site (18)",622.31],["Utilities (2)",29.75],["Travel (2)",26.12]]},
-    {acct:"wf", label:"Subscriptions & software", pay:10725.60, rows:[["Google (Workspace, Voice, Cloud)",3384.76],["Anthropic (Claude)",2437.67],["QuickBooks",1380.00],["PropertyRadar",968.00],["Monday.com",560.65],["Grok (xAI)",420.00],["Zapier",267.00],["Starlink",210.01],["YouTube TV",210.00],["Apple",168.96],["Hubstaff",156.00],["Metro by T-Mobile",121.00],["16 smaller tools",441.55]]},
-    {acct:"wf", label:"Office utilities", pay:4486.40, rows:[["Comcast · internet",2391.54],["PG&E · San Carlos office",1111.68],["T-Mobile",380.91],["Comcast · office",356.97],["Starlink",204.32],["Apple",40.98]]}
-   ]},
-  {id:"hd", who:"Home Depot ••5253", what:"Sold-property invoices not covered by the Oct 31 autopay", amt:5320.23, opts:[], due:"Nov 5", src:[["wf",5320.23]], note:"On top of the $7,017.11 autopay on Oct 31, not a repeat of it.",
-   bk:[{acct:"wf", label:"Sold properties", pay:5320.23, rows:[["27 Prague St, San Mateo",3754.07],["1464 Sunrise Pkwy, Petaluma",1566.16]], of:"The $7,017.11 autopay on Oct 31 already covers the invoices due Oct 31 (Petaluma, Prague, 751 27th Ave, Glenn Way)."}]},
-  {id:"vx", who:"Capital One Venture X ••1175", what:"Business charges on personal card", amt:6666.74, opts:[], due:"Nov 8", src:[["relay",6265.78],["wf",400.96]], note:"Brings the card under 30% used.",
-   bk:[
-    {acct:"relay", label:"Open properties + other", pay:6265.78, rows:[["22496 Madera (15 charges)",11940.96],["Personal expense",2656.44],["460 5th Ave, Redwood City",1017.68],["972 Norton St",827.61],["Marketing tools",598.83],["Gas, tolls, auto",533.76],["Bank charges & fees",407.08],["Subscriptions",220.00],["Legal & professional",63.42]], of:"Paying $6,265.78 of these $18,265.78 charges now. $12,000 stays on the card (under 30% used)."},
-    {acct:"wf", label:"Sold properties", pay:400.96, rows:[["South Bay Termite · 492 Umland Dr, Santa Rosa",285.00],["AAA Rentals · 27 Prague St",115.96]]}
-   ]},
-  {id:"citi", who:"Citi ••2149", what:"52 Paramount Ter · business charges on personal card", amt:4378.00, opts:[], due:"Nov 8", src:[["para",4378.00]], note:"Takes the card from 51% to 8% used.",
-   bk:[{acct:"para", label:"52 Paramount Ter", pay:4378.00, rows:[["Home Depot · materials (4)",4347.10],["Geary Print Shop",30.90]]}]},
-  {id:"spark", who:"Capital One Spark ••7260", what:"972 Norton St · 22496 Madera", amt:9562.25, opts:[["Minimum due",9199.91]], due:"Nov 17", src:[["wf",6971.49],["relay",2590.76]], note:"Minimum due $9,199.91.",
-   bk:[
-    {acct:"wf", label:"972 Norton St", pay:6971.49, rows:[["City of San Mateo · permit",3881.72],["Home Wise Appliances",2822.80],["San Mateo service fee",141.68],["Home Depot",125.29]]},
-    {acct:"relay", label:"22496 Madera", pay:2590.76, rows:[["Home Depot · materials (3)",2019.32],["Bobcat Company",321.44],["Studio 318 Photography",250.00]]}
-   ]}
+  {id:"boa", who:"Bank of America ••0475", amt:2000.00, due:"Nov 2", src:[["wf",2000.00]],
+   rec:"Kristine recommends paying $2,000.00 from WF 8251 toward the 519 Orizaba Ave charges (sold property). The rest stays on the card. Paying $34,083.13 would bring the card under 30% used."},
+  {id:"amex", who:"Amex ••5004", amt:20866.72, due:"Nov 5", src:[["relay",5654.72],["wf",15212.00]],
+   rec:"Kristine recommends paying $20,866.72: Redwood City (460 5th Ave) $5,654.72 from Relay 5776, and subscriptions $10,725.60 + office utilities $4,486.40 from WF 8251. Minimum due is $20,150.00."},
+  {id:"hd", who:"Home Depot ••5253", amt:5320.23, due:"Nov 5", src:[["wf",5320.23]],
+   rec:"Kristine recommends paying $5,320.23 from WF 8251 for the sold properties: 27 Prague St and Petaluma. The invoices due Oct 31 are already paid by the $7,017.11 autopay."},
+  {id:"vx", who:"Capital One Venture X ••1175", amt:6666.74, due:"Nov 8", src:[["relay",6265.78],["wf",400.96]],
+   rec:"Kristine recommends paying $6,666.74: $400.96 from WF 8251 for the sold properties, and $6,265.78 from Relay 5776 toward Madera and the other charges. This brings the card under 30% used; $12,000.00 stays on the card."},
+  {id:"citi", who:"Citi ••2149", amt:4378.00, due:"Nov 8", src:[["para",4378.00]],
+   rec:"Kristine recommends paying $4,378.00 from Relay Paramount for 52 Paramount Ter. This takes the card from 51% to 8% used."},
+  {id:"spark", who:"Capital One Spark ••7260", amt:9562.25, due:"Nov 17", src:[["wf",6971.49],["relay",2590.76]],
+   rec:"Kristine recommends paying $9,562.25: 972 Norton St $6,971.49 from WF 8251, and 22496 Madera $2,590.76 from Relay 5776. Minimum due is $9,199.91."}
 ];
 const ACCT = {wf:"WF 8251", relay:"Relay 5776", para:"Relay Paramount"};
-const money = n => "$" + n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const money = n => (n<0?"−$":"$") + Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const el = (t,c,txt) => {const e=document.createElement(t); if(c) e.className=c; if(txt!=null) e.textContent=txt; return e;};
 const pill = a => el("span","tp-acct "+a, ACCT[a]);
 
 const held = new Set();
 const opened = new Set();
-const choice = {};          // card id -> option label Juan picked; missing = recommended
 let approval = null;          // {status, held, by, at}
 let db = null, user = null, myId = null, names = {};
 
@@ -210,24 +197,34 @@ function step(n, item, head, details, meta, extra){
   details.forEach(d=>b.append(d));
   const m = el("div","m"); meta.forEach(x=>m.append(x)); b.append(m);
   if(extra) b.append(extra);
-  row.append(el("div","tp-num",String(n)), b, cb);
+  const apv = el("label","apv"); apv.append(cb, el("span",null,held.has(item.id)?"Hold":"Approve"));
+  row.append(el("div","tp-num",String(n)), b, apv);
   return row;
 }
 
 function cardBreakdown(c){
+  const all = ALL[c.id];
   const det = el("details","why"); det.open = opened.has(c.id);
   det.addEventListener("toggle",()=>{ det.open?opened.add(c.id):opened.delete(c.id); });
-  det.append(el("summary",null,"What the charges are for"));
-  c.bk.forEach(g=>{
-    const box = el("div","bk-group");
-    const head = el("div","bk-head"); const lbl = el("span","lbl"); lbl.append(pill(g.acct), el("span",null,g.label));
-    head.append(lbl, el("span",null,money(g.pay))); box.append(head);
-    g.rows.forEach(([name,v])=>{ const r=el("div","bk-row"); r.append(el("span",null,name), el("span","num",money(v))); box.append(r); });
-    const sum = g.rows.reduce((s,[,v])=>s+v,0);
-    if(g.rows.length>1){ const r=el("div","bk-row tot"); r.append(el("span",null,g.of && Math.abs(sum-g.pay)>.005?"Charges total":"Total"), el("span","num",money(sum))); box.append(r); }
-    if(g.of) box.append(el("div","bk-note",g.of));
-    det.append(box);
-  });
+  det.append(el("summary",null,"All charges on this card · "+money(all.total)));
+  const box = el("div","bk-group");
+  const head = el("div","bk-head"); head.append(el("span",null,"Unpaid charges ("+all.n+")"), el("span",null,money(all.total))); box.append(head);
+  const pay = all.rows.filter(r=>r[2]), rest = all.rows.filter(r=>!r[2]);
+  const add = (title, rows) => {
+    if(!rows.length) return;
+    box.append(el("div","bk-sub",title+" · "+money(rows.reduce((s,r)=>s+r[1],0))));
+    rows.forEach(([name,v,tag,n])=>{
+      const r=el("div","bk-row"); const l=el("span","lbl");
+      if(tag){ const a=tag.replace("*",""); l.append(pill(a)); if(tag.endsWith("*")) l.append(el("span","part","part")); }
+      l.append(el("span",null,name+" ("+n+")"));
+      r.append(l, el("span","num",money(v))); box.append(r);
+    });
+  };
+  add("Recommended to pay now", pay);
+  add("Not paying now", rest);
+  const t=el("div","bk-row tot"); t.append(el("span",null,"Kristine recommends paying"), el("span","num",money(c.amt))); box.append(t);
+  box.append(el("div","bk-note",c.rec));
+  det.append(box);
   return det;
 }
 
@@ -239,20 +236,10 @@ function renderLists(){
   });
   const lc = document.getElementById("list-cards"); lc.replaceChildren();
   CARDS.forEach((c,i)=>{
-    const d1 = el("div","d",c.what+" · "+c.note);
-    const pick = el("div","pick");
-    [["Recommended",c.amt]].concat(c.opts).forEach(([lab,v])=>{
-      const l = el("label",lab==="Recommended"?"rec":null); const r=document.createElement("input"); r.type="radio"; r.name="pick-"+c.id;
-      r.checked=(choice[c.id]||"Recommended")===lab; r.disabled=!!approval||held.has(c.id);
-      r.addEventListener("change",()=>{ choice[c.id]=lab; });
-      l.append(r, el("span",null,lab==="Recommended"?"":lab+" "), el("b",null,money(v)));
-      if(lab==="Recommended") l.insertBefore(el("span","rtag","Kristine recommends"), l.children[1]);
-      pick.append(l);
-    });
-
+    const d1 = el("div","d"); d1.append(el("b",null,"Recommended: "), c.rec.replace(/^Kristine recommends paying /,"").replace(/^\$[\d,.]+:? ?/,m=>m));
     const meta = [el("span","due","Due "+c.due)];
     c.src.forEach(([a,v])=>{ const s=pill(a); s.textContent=ACCT[a]+" "+money(v); meta.push(s); });
-    lc.append(step(i+1,c,c.who,c.opts.length?[d1,pick]:[d1],meta,cardBreakdown(c)));
+    lc.append(step(i+1,c,c.who,[d1],meta,cardBreakdown(c)));
   });
 }
 
@@ -328,7 +315,7 @@ async function save(state){
 
 document.getElementById("go").addEventListener("click",()=>{
   if(!db) return;
-  save({status:"approved", held:[...held], choice:{...choice}, by:myId, at:new Date().toISOString()});
+  save({status:"approved", held:[...held], by:myId, at:new Date().toISOString()});
 });
 
 render();
@@ -347,7 +334,6 @@ render();
     if(data && data.status==="approved"){
       approval = data;
       held.clear(); (data.held||[]).forEach(h=>held.add(h));
-      Object.keys(choice).forEach(k=>delete choice[k]); Object.assign(choice, data.choice||{});
       if(user && data.by){ try{ const ps = await user.profiles([data.by]); names[data.by] = (ps[data.by] && ps[data.by].name) || ""; }catch(e){} }
     } else {
       approval = null;
