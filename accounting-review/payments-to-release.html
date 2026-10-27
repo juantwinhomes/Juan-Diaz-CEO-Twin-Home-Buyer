@@ -356,8 +356,10 @@ function renderBreakdown(){
     const rows = ITEMS.map(i=>({i, v:(approvedAmts(i)||{})[a]})).filter(r=>r.v!=null);
     const tot = rows.reduce((s,r)=>s+r.v,0);
     const g = el("div","bk-group");
-    const head = el("div","bk-head"); head.append(el("span",null,""), el("span",null,money(tot))); head.firstChild.append(pill(a));
+    const rec = ITEMS.reduce((s,i)=>s+i.src.filter(([k])=>k===a).reduce((x,[,v])=>x+v,0),0);
+    const head = el("div","bk-head"); head.append(el("span",null,""), el("span",null,"Approved "+money(tot))); head.firstChild.append(pill(a));
     g.append(head);
+    g.append(el("div","bk-sub","Kristine recommends "+money(rec)+" from this account"));
     const row=(name,sub,v)=>{ const r=el("div","bk-row"); const s=el("span"); s.append(el("b",null,name)); if(sub) s.append(" · "+sub); r.append(s, el("span","num",money(v))); return r; };
     const td = rows.filter(r=>r.i.kind==="today"), cd = rows.filter(r=>r.i.kind==="card");
     if(td.length){ g.append(el("div","bk-sub","Today · "+money(td.reduce((s,r)=>s+r.v,0)))); td.forEach(r=>g.append(row(r.i.who.replace(/ \(.*\)$/,""), r.i.what.split(" · ")[0], r.v))); }
