@@ -1,0 +1,111 @@
+<title>Payments to Release</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one sheet, a short header line, then four tight ledgers and a total. Nothing else. */
+:root{
+  --bg:#f6f6f2;--paper:#ffffff;--ink:#14181d;--muted:#5e6670;--line:#dcdfd8;--soft:#f0f1ec;
+  --accent:#1f5f4a;--ok:#1f7a4d;--ok-bg:#e3f2e9;--warn:#9a5b00;--warn-bg:#fbefd8;--bad:#a8322a;--bad-bg:#f9e2df;
+  --f-head:"Archivo","Helvetica Neue",Arial,sans-serif;--f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;--f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111416;--paper:#181c1f;--ink:#e8ebe6;--muted:#9aa29c;--line:#2b3135;--soft:#1f2427;--accent:#6fc3a3;--ok:#7fd3a6;--ok-bg:#183326;--warn:#f0b65a;--warn-bg:#3a2b12;--bad:#f08a80;--bad-bg:#3d1d1a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111416;--paper:#181c1f;--ink:#e8ebe6;--muted:#9aa29c;--line:#2b3135;--soft:#1f2427;--accent:#6fc3a3;--ok:#7fd3a6;--ok-bg:#183326;--warn:#f0b65a;--warn-bg:#3a2b12;--bad:#f08a80;--bad-bg:#3d1d1a;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.sheet{max-width:1040px;margin:0 auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:24px clamp(16px,3vw,32px);display:grid;gap:22px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:10px 24px;border-bottom:2px solid var(--ink);padding-bottom:14px}
+h1{font-family:var(--f-head);font-weight:800;font-size:clamp(22px,3.4vw,30px);letter-spacing:-.01em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px;margin-top:2px}
+.grand{text-align:right}
+.grand .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.grand .v{font-family:var(--f-num);font-weight:600;font-size:26px;font-variant-numeric:tabular-nums}
+section{display:grid;gap:8px}
+.sh{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+h2{font-family:var(--f-head);font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;margin:0}
+.sh .t{font-family:var(--f-num);font-weight:600;font-variant-numeric:tabular-nums}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.amt,th.amt{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.amt{font-weight:600}
+.who{font-weight:600}
+.for{color:var(--muted);font-size:12.5px}
+.acct{font-family:var(--f-num);font-size:13px;white-space:nowrap}
+.nw{white-space:nowrap}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.pill.ok{color:var(--ok);background:var(--ok-bg)}.pill.warn{color:var(--warn);background:var(--warn-bg)}.pill.bad{color:var(--bad);background:var(--bad-bg)}.pill.na{color:var(--muted);background:var(--soft)}
+.fill{color:var(--bad);font-weight:600;font-size:12.5px}
+.notpay{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.notpay b{color:var(--ink);font-weight:600}
+footer{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 20px;font-size:12.5px;color:var(--muted)}
+</style>
+
+<div class="sheet">
+  <header>
+    <div>
+      <h1>Payments to Release</h1>
+      <div class="sub">For Juan · Tuesday, Oct 27, 2026 · Prepared and checked by Kristine, Controller</div>
+    </div>
+    <div class="grand"><div class="lbl">Total to pay</div><div class="v">$116,132.36</div></div>
+  </header>
+
+  <section>
+    <div class="sh"><h2>1 · Wires and transfers you release</h2><span class="t">$28,400.00</span></div>
+    <div class="wrap"><table>
+      <thead><tr><th>Pay to</th><th class="amt">Amount</th><th>From account</th><th>How</th><th>Wire instructions</th><th>By</th></tr></thead>
+      <tbody>
+        <tr><td><div class="who">WFG Title · escrow #26-215725</div><div class="for">5022 Heyer Ave, Castro Valley · second half of earnest money</div></td><td class="amt">$10,500.00</td><td><span class="fill">Kristine: fill</span></td><td>Wire</td><td><span class="pill warn">Not verified yet</span><div class="for">Cherry calls WFG at the number on its official website</div></td><td class="nw">Today</td></tr>
+        <tr><td><div class="who">Gonzalo</div><div class="for">22496 Madera · painting</div></td><td class="amt">$10,000.00</td><td class="acct">Relay ••5776</td><td>Transfer</td><td><span class="fill">Kristine: fill</span></td><td class="nw">Today</td></tr>
+        <tr><td><div class="who">Gonzalo</div><div class="for">22496 Madera · demolition / cleanup</div></td><td class="amt">$900.00</td><td class="acct">Relay ••5776</td><td>Transfer</td><td><span class="fill">Kristine: fill</span></td><td class="nw">Today</td></tr>
+        <tr><td><div class="who">Alvaro</div><div class="for">22496 Madera · drywall install and texture</div></td><td class="amt">$1,200.00</td><td class="acct">Relay ••5776</td><td>Transfer</td><td><span class="fill">Kristine: fill</span></td><td class="nw">Today</td></tr>
+        <tr><td><div class="who">Yuri Hernandez</div><div class="for">170 Glenn Way · office cleaning, 3 weeks</div></td><td class="amt">$2,700.00</td><td class="acct">WF ••8251</td><td>Transfer</td><td><span class="fill">Kristine: fill</span></td><td class="nw">Today</td></tr>
+        <tr><td><div class="who">Yuri Hernandez</div><div class="for">27 Prague St · cleaning</div></td><td class="amt">$400.00</td><td class="acct">WF ••8251</td><td>Transfer</td><td><span class="fill">Kristine: fill</span></td><td class="nw">Today</td></tr>
+        <tr><td><div class="who">Stuart Morgan (RemodHomes)</div><div class="for">1574 Jerrold Ave · invoice 2611</div></td><td class="amt">$2,700.00</td><td class="acct">WF ••8251</td><td>Transfer</td><td><span class="fill">Kristine: fill</span></td><td class="nw">Today</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="sh"><h2>2 · Credit cards</h2><span class="t">$48,886.26</span></div>
+    <div class="wrap"><table>
+      <thead><tr><th>Card</th><th class="amt">Amount</th><th>From account</th><th>Why this amount</th><th>By</th></tr></thead>
+      <tbody>
+        <tr><td><div class="who">Amex ••5004</div></td><td class="amt">$20,150.00</td><td><span class="fill">Kristine: fill</span></td><td>Minimum due. Pay more if cash allows; it is the card we use most.</td><td class="nw">Nov 5</td></tr>
+        <tr><td><div class="who">Capital One Spark ••7260</div></td><td class="amt">$10,005.88</td><td><span class="fill">Kristine: fill</span></td><td>Full balance (minimum is $9,199.91). Main business card, $20,000 limit.</td><td class="nw">Nov 17</td></tr>
+        <tr><td><div class="who">Home Depot ••5253</div></td><td class="amt">$7,650.29</td><td><span class="fill">Kristine: fill</span></td><td>Brings it under 30% before the statement closes. Autopay covers the $7,017.11 due Oct 31.</td><td class="nw">Nov 5</td></tr>
+        <tr><td><div class="who">Capital One Venture X ••1175</div><div class="for">Personal</div></td><td class="amt">$6,666.74</td><td><span class="fill">Kristine: fill</span></td><td>Brings it under 30% to protect your credit score.</td><td class="nw">Nov 8</td></tr>
+        <tr><td><div class="who">Bank of America ••0475</div></td><td class="amt">$2,277.24</td><td><span class="fill">Kristine: fill</span></td><td>Minimum due.</td><td class="nw">Nov 2</td></tr>
+        <tr><td><div class="who">Citi ••2149</div><div class="for">Personal</div></td><td class="amt">$2,136.11</td><td><span class="fill">Kristine: fill</span></td><td>Brings it under 30% to protect your credit score.</td><td class="nw">Nov 8</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="sh"><h2>3 · Bills</h2><span class="t">$38,846.10</span></div>
+    <div class="wrap"><table>
+      <thead><tr><th>Pay to</th><th class="amt">Amount</th><th>From account</th><th>How</th><th>Wire instructions</th><th>By</th></tr></thead>
+      <tbody>
+        <tr><td><div class="who">ERC Specialists</div><div class="for">Matrix Group fee: 15% of the $242,875.73 in IRS checks received. Their bill is $40,605.61; the other $4,174.25 waits for their statement.</div></td><td class="amt">$36,431.36</td><td>Matrix Group <span class="fill">· Kristine: fill</span></td><td>Check or wire</td><td><span class="pill warn">Not verified yet</span><div class="for">If by wire, call (385) 707-0170 first</div></td><td class="nw">Nov 3</td></tr>
+        <tr><td><div class="who">BEC</div><div class="for">PPS 2025 tax returns (not final; PPS is on hold)</div></td><td class="amt">$1,300.00</td><td><span class="fill">Kristine: fill</span></td><td><span class="fill">Kristine: fill</span></td><td><span class="pill na">—</span></td><td class="nw">Before filing</td></tr>
+        <tr><td><div class="who">Agile Premium Finance</div><div class="for">PPS liability insurance · $1,065.43 past due + $49.31 late charge</div></td><td class="amt">$1,114.74</td><td><span class="fill">Kristine: fill</span></td><td><span class="fill">Kristine: fill</span></td><td><span class="pill na">—</span></td><td class="nw">Oct 31</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>4 · Not paying</h2>
+    <div class="notpay">
+      <div><b>Gonzalo, 460 5th Ave, $2,000</b> · on hold until Cherry confirms the work is done.</div>
+      <div><b>biBERK workers' comp, $526</b> · not renewing; Equity Track has no employees.</div>
+      <div><b>Matrix payroll, Oct 19–25</b> · comes to you after Kristine reviews Marieflor's work.</div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Every wire is released only after its instructions are confirmed by phone at a number we already have.</span>
+    <span>Account numbers show last 4 only.</span>
+  </footer>
+</div>
