@@ -73,8 +73,8 @@ Pending" when the call said reschedule).
 Hard rules regardless of matrix state:
 - Disposition indicating a dead/disqualified lead (e.g., "Out of Buy Box",
   "Not Interested", "Listed with Agent", "Sold to Competitor", "Spam Lead",
-  "Invalid Information", "Wholesale" [caller was a wholesaler, not a seller] —
-  values confirmed live in the account) → Stage must
+  "Invalid Information", "Wholesale" [caller was a wholesaler, not a seller],
+  "DNC Requested" — values confirmed live in the account) → Stage must
   be 0, 6, or 9 and Category must be `Lost/Dead` — not "1 New Lead" / `Active`.
 - Disposition mentions reschedule/cancel → Stage must NOT still say
   booked/confirmed.
