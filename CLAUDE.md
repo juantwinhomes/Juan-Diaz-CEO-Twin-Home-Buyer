@@ -126,6 +126,14 @@ at the start of substantive work and keep it current as you learn more. Key
 files: `juan-grok-prompting-profile.md` (how Juan communicates — match it),
 `deal-pattern-buybox.md` (deal screening), `marketing-postcard-kpis.md`.
 
+## Team Hub training modules
+
+`training/`: modules in the Training tab of the live Juan AI · Team Hub
+(https://claude.ai/artifact/M1UaSSbpkaTjaFd3Z9vVsY). Module 1 = Juan's Oct 19,
+2026 method session. Sign in → train → pass quiz (all right) → cleared to go
+live; every attempt logged by name in `training_attempts`. Juan's words only.
+See `training/README.md` before adding or changing a module.
+
 ## Construction Control dashboard (live artifact)
 
 `apps/construction-dashboard/` — live property-ops board at
