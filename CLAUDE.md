@@ -32,6 +32,9 @@ For each one, work out whether Marieflor has already replied.
   that keeps her words and meaning, then puts it in the reply to that email
   (to Juan or Cherry).
 - Show her the final text before it goes out.
+- **When she gives the exact text and says to send it, send it word for word.**
+  Do not fix, complete, or reword anything. If something looks wrong (a cut-off
+  sentence, a typo), ask her first and wait for her answer before sending.
 - **REQUIRED for everything sent to Juan.** Juan works two ways, so every
   email to him includes both:
   1. An **artifact** he can click through and approve.
