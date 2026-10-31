@@ -120,6 +120,7 @@ Sheet setup (done Oct 31):
 - Header A1:N1 as in the table above. A:C formatted as plain text so `+1…` numbers keep the plus.
 - **Passed** in O1, whole-column so rows Zapier inserts stay covered:
   `=ARRAYFORMULA(IF(ROW(A:A)=1,"Passed",IF(LEN(A:A),LOWER(F:F&G:G&H:H&I:I&J:J&K:K)="truetruetruetruetruetrue",)))`
-- The whole Calls tab is protected (editors: Seth only; Zapier writes as Seth).
+- No protection on the Calls tab: a protected range (Seth-only) blocked Zapier's Google account
+  ("You are trying to edit a protected cell"), so it was removed Oct 31.
 - Sharing stays as is: the twinhomebuyer.com domain can view, which the page needs (it reads
   with each trainee's own Google account).
