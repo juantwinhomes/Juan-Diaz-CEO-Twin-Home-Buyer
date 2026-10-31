@@ -29,6 +29,8 @@ homes beautiful and improving the communities he grew up in." Never state an age
 - Module 5: AI practice calls (the `sample` capability plays one of three sellers from the notes).
   A call passes only when all six checks pass; any "25 years" / "since 2002" / "24 years" from the
   rep fails the story check in code. One passed call opens the Module 5 quiz.
+- Module 5 also has phone practice: call Rob Walker, a Retell AI seller, at (510) 767-0799; the
+  score lands in the Seller practice calls sheet. Setup: `retell-setup.md`.
 - After Module 6: Cherry or Thea logs the mock call (Passed / Needs another try, notes required).
 - Juan's Team progress shows a Certify button once a mock call has passed.
 
@@ -53,5 +55,5 @@ Read it with `ArtifactData` (`list` on any collection above).
   `seller-call-training.html` plus the typed version `seller-call-training.md` (published next to
   the page as `seller-call-training.md`, the file Claude reads).
 - `test/test.js` + `test/mock.js`: headless end-to-end test against an in-memory board and a stub
-  AI (31 checks). Run `python3 build.py && python3 -c "import json,content;json.dump(content.DATA,open('content.json','w'),ensure_ascii=False)"`, then
+  AI. Run `python3 build.py && python3 -c "import json,content;json.dump(content.DATA,open('content.json','w'),ensure_ascii=False)"`, then
   `cd test && NODE_PATH=$(npm root -g) node test.js /tmp/shots`.
