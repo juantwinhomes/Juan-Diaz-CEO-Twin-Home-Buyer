@@ -126,13 +126,15 @@ at the start of substantive work and keep it current as you learn more. Key
 files: `juan-grok-prompting-profile.md` (how Juan communicates — match it),
 `deal-pattern-buybox.md` (deal screening), `marketing-postcard-kpis.md`.
 
-## Team Hub training modules
+## Seller-Call Training (live artifact)
 
-`training/`: modules in the Training tab of the live Juan AI · Team Hub
-(https://claude.ai/artifact/M1UaSSbpkaTjaFd3Z9vVsY). Module 1 = Juan's Oct 19,
-2026 method session. Sign in → train → pass quiz (all right) → cleared to go
-live; every attempt logged by name in `training_attempts`. Juan's words only.
-See `training/README.md` before adding or changing a module.
+`apps/seller-call-training/`: separate training page at
+https://claude.ai/artifact/8QTi2eRgZ75pFnhJZDx6We (not in the Team Hub). Six
+modules in order from Juan's Oct 19 session, quiz per module, AI practice calls,
+mock call with Cherry or Thea, Juan's Certify. Every answer saved by name on the
+artifact's database. Juan's story is told only as written in that README; never
+state an age for the company ("25 years", "since 2002" and "24 years" are wrong).
+Edit content in `content.py` only, then rebuild and run the test.
 
 ## Construction Control dashboard (live artifact)
 

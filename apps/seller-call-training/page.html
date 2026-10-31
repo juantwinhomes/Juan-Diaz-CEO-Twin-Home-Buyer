@@ -1,0 +1,484 @@
+<title>Seller-Call Training</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Same family as the Juan AI Team Hub: navy band, yellow "hat" for the next action, teal for passed, red for missed. One column of cards, phone first. */
+:root{
+  --bg:#EEF2F5;--card:#FFFFFF;--wash:#F6F8FA;--ink:#15202B;--ink2:#46535F;--mute:#6E7B87;--line:#D8E0E7;
+  --band:#16324F;--band2:#1F4B6E;--on-band:#FFFFFF;--on-band2:#C9D9E8;
+  --hat:#FFC233;--hat-soft:#FFF3D1;--hat-ink:#3A2A00;
+  --teal:#0B8A7A;--teal-soft:#DCF2EE;--late:#D93A3A;--late-soft:#FBE3E3;--blue:#2563C9;--blue-soft:#E2EBFA;
+  --shadow:0 8px 24px rgba(22,50,79,.10);
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1822;--card:#16222E;--wash:#1B2936;--ink:#EAF1F7;--ink2:#B4C2CF;--mute:#8A9AA8;--line:#2A3A49;
+  --band:#0B2236;--band2:#123553;--on-band:#FFFFFF;--on-band2:#9FB8CE;
+  --hat:#FFC94D;--hat-soft:#3A2F12;--hat-ink:#2A1F00;
+  --teal:#38C2AE;--teal-soft:#123A35;--late:#FF6B6B;--late-soft:#43191B;--blue:#6EA2FF;--blue-soft:#172C4D;
+  --shadow:0 8px 24px rgba(0,0,0,.4);color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0E1822;--card:#16222E;--wash:#1B2936;--ink:#EAF1F7;--ink2:#B4C2CF;--mute:#8A9AA8;--line:#2A3A49;
+  --band:#0B2236;--band2:#123553;--on-band:#FFFFFF;--on-band2:#9FB8CE;
+  --hat:#FFC94D;--hat-soft:#3A2F12;--hat-ink:#2A1F00;
+  --teal:#38C2AE;--teal-soft:#123A35;--late:#FF6B6B;--late-soft:#43191B;--blue:#6EA2FF;--blue-soft:#172C4D;
+  --shadow:0 8px 24px rgba(0,0,0,.4);color-scheme:dark;}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 60px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--band)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--hat);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.hidden{display:none!important}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+body.locked main,body.locked .band,body.locked nav{filter:blur(12px);pointer-events:none;user-select:none;max-height:100vh;overflow:hidden}
+/* gate */
+.gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(10,24,38,.62);backdrop-filter:blur(4px)}
+.gcard{width:100%;max-width:420px;background:var(--card);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;max-height:92vh;overflow-y:auto}
+.gtop{background:var(--band);color:var(--on-band);padding:22px}
+.gtop h2{font-size:26px;font-weight:800}
+.gtop p{margin:6px 0 0;color:var(--on-band2);font-size:14px}
+.gbody{padding:18px 22px 22px;display:flex;flex-direction:column;gap:10px}
+.gnames{display:grid;gap:8px;max-height:340px;overflow-y:auto;padding-right:2px}
+#g-find{font-size:18px;padding:14px 16px;min-height:52px}
+.gnm{display:flex;align-items:center;gap:12px;text-align:left;font-weight:700;font-size:18px;min-height:58px;width:100%;background:var(--wash);border:2px solid var(--line);border-radius:14px;padding:10px 16px;cursor:pointer;touch-action:manipulation}
+.gnm.on{border-color:var(--teal);background:var(--teal-soft)}
+.gnm small{display:block;font-weight:400;color:var(--mute);font-size:12.5px}
+.av{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--band2);color:var(--on-band)}
+input.code{letter-spacing:.35em;font-size:22px;text-align:center;font-weight:700}
+.in,input.code,textarea.in,select.in{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px}
+textarea.in{min-height:80px;resize:vertical}
+.btn{font-weight:700;border:none;border-radius:10px;padding:11px 16px;cursor:pointer;background:var(--band);color:var(--on-band)}
+.btn.hat{background:var(--hat);color:var(--hat-ink)}
+.btn.teal{background:var(--teal);color:#fff}
+.btn.ghost{background:var(--wash);color:var(--ink);border:1.5px solid var(--line)}
+.btn.red{background:var(--late);color:#fff}
+.btn.sm{padding:7px 11px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.link{background:none;border:none;color:var(--blue);font-weight:700;padding:2px 0;cursor:pointer;text-align:left}
+.msg{font-size:14px;color:var(--ink2);min-height:1em}
+.msg.err{color:var(--late)}.msg.ok{color:var(--teal)}
+.bnr{display:none;margin:0 0 14px;padding:14px 16px;border-radius:12px;font-size:17px;font-weight:700;line-height:1.4;border:2px solid transparent}
+.bnr.on{display:block}.bnr.err{background:var(--late-soft);color:var(--late);border-color:var(--late)}.bnr.ok{background:var(--teal-soft);color:var(--teal);border-color:var(--teal)}
+.bnr .small{font-weight:600;color:var(--ink2);margin-top:6px}
+/* band */
+.band{background:var(--band);color:var(--on-band)}
+.band .wrap{padding-block:18px 22px}
+.top{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-weight:800;font-size:18px}
+.brand span{color:var(--hat)}
+.chip{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--on-band2)}
+.chip button{background:transparent;border:1.5px solid var(--on-band2);color:var(--on-band);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px}
+.hello{margin-top:18px;display:flex;gap:18px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.hello h1{font-size:clamp(28px,6vw,42px);font-weight:800;line-height:1.05}
+.hello p{margin:6px 0 0;color:var(--on-band2)}
+.clock{background:var(--hat);color:var(--hat-ink);border-radius:18px;padding:12px 18px;min-width:200px}
+.clock b{display:block;font-family:var(--f-display);font-size:28px;font-weight:800;line-height:1.1}
+.clock.done{background:var(--teal);color:#fff}
+.court{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
+.court span{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;background:var(--band2);color:var(--on-band2);border:2px solid transparent}
+.court span.ok{background:var(--hat);color:var(--hat-ink)}
+.court span.now{border-color:var(--hat);color:var(--on-band)}
+/* nav */
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:4px;overflow-x:auto;padding-block:0}
+.tab{background:none;border:none;border-bottom:3px solid transparent;padding:13px 12px 10px;font-weight:700;color:var(--ink2);cursor:pointer;white-space:nowrap}
+.tab.on{color:var(--ink);border-bottom-color:var(--hat)}
+.tab .n{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:var(--late);color:#fff;font-size:12px;margin-left:4px}
+main{padding-top:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;min-width:0}
+.card h2{font-size:21px;font-weight:800;margin-bottom:4px}
+.lead{color:var(--ink2);margin:0 0 12px}
+.next{border-left:6px solid var(--hat);background:var(--hat-soft)}
+.next.ok{border-left-color:var(--teal);background:var(--teal-soft)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.small{font-size:13px;color:var(--mute)}
+.red{color:var(--late);font-weight:700}.green{color:var(--teal);font-weight:700}
+.pill{display:inline-block;font-size:12.5px;font-weight:700;border-radius:20px;padding:2px 10px;white-space:nowrap}
+.p-ok{background:var(--teal-soft);color:var(--teal)}.p-no{background:var(--late-soft);color:var(--late)}.p-open{background:var(--hat-soft);color:var(--ink)}.p-lock{background:var(--wash);color:var(--mute);border:1px solid var(--line)}
+/* module list */
+.mods{display:grid;gap:10px}
+.mod{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px;cursor:pointer}
+.mod .num{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:18px;background:var(--wash);color:var(--ink2);border:2px solid var(--line)}
+.mod.ok .num{background:var(--teal);color:#fff;border-color:var(--teal)}
+.mod.now{border-color:var(--hat);background:var(--hat-soft)}
+.mod.now .num{background:var(--hat);color:var(--hat-ink);border-color:var(--hat)}
+.mod.lock{cursor:not-allowed;opacity:.7}
+.mod .t{font-weight:700;font-size:17px}
+.mod .g{font-size:14px;color:var(--ink2)}
+/* lesson */
+.pts{margin:8px 0 0;padding-left:22px;font-size:17px;line-height:1.6;display:grid;gap:4px}
+.say{margin:10px 0 4px;padding:14px 16px;border-radius:12px;background:var(--band);color:var(--on-band);font-size:18px;line-height:1.5;font-weight:700}
+.src{font-size:13.5px;color:var(--ink2);margin-top:12px;padding:8px 12px;border-left:3px solid var(--hat);background:var(--wash);border-radius:6px;display:grid;gap:4px}
+.src b{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.q{margin-top:14px}
+.q label{display:flex;gap:8px;align-items:flex-start;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;margin-top:6px;cursor:pointer;background:var(--wash)}
+.q label.wrong{border-color:var(--late);background:var(--late-soft)}
+.q .key{margin-top:4px;font-size:15px}
+/* roleplay */
+.chat{display:flex;flex-direction:column;gap:10px;margin:10px 0 12px}
+.bub{max-width:88%;padding:11px 14px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.bub.me{align-self:flex-end;background:var(--band);color:var(--on-band);border-bottom-right-radius:4px}
+.bub.ai{align-self:flex-start;background:var(--wash);border:1px solid var(--line);border-bottom-left-radius:4px}
+.bub .who{display:block;font-size:12px;font-weight:700;opacity:.75;margin-bottom:2px}
+.scen{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.scen button{text-align:left;background:var(--wash);border:2px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
+.scen button.on{border-color:var(--teal);background:var(--teal-soft)}
+.chk{display:grid;grid-template-columns:24px 1fr;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);font-size:15px}
+/* tables + feed */
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14.5px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-weight:700;color:var(--ink2);padding:8px;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.item{border:1.5px solid var(--line);border-radius:12px;padding:12px;margin-top:10px;background:var(--wash);min-width:0}
+.item .meta{font-size:14px;color:var(--ink2);margin-top:2px}
+.tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:10px}
+.tot div{border-radius:12px;padding:12px;text-align:center;border:1.5px solid var(--line);background:var(--wash)}
+.tot b{display:block;font-size:26px;font-family:var(--f-display)}
+.typed{white-space:pre-wrap;font-size:14.5px;line-height:1.55;background:var(--wash);border:1px solid var(--line);border-radius:12px;padding:14px;overflow-wrap:anywhere}
+.codebox{background:var(--hat-soft);border:2px dashed var(--hat);border-radius:12px;padding:10px;text-align:center}
+/* on-page confirm (the viewer blocks browser pop-ups) */
+.cfm{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(10,24,38,.62)}
+.cfm-card{width:100%;max-width:420px;background:var(--card);color:var(--ink);border-radius:16px;box-shadow:var(--shadow);padding:18px}
+.cfm-card p{margin:0 0 14px;white-space:pre-wrap;font-size:16px}
+@media (max-width:560px){.mod{grid-template-columns:40px 1fr}.mod .st{grid-column:2}.mod .num{width:40px;height:40px}}
+@media (prefers-reduced-motion:no-preference){.court span.ok{animation:pop .4s ease-out}@keyframes pop{from{transform:scale(.6)}to{transform:scale(1)}}}
+</style>
+
+<div class="gate" id="gate">
+  <div class="gcard">
+    <div class="gtop"><h2>Who’s training?</h2><p><b>1.</b> Start typing your name, then tap it.<br><b>2.</b> Type your 6-digit code. It’s the same code as the Team Hub.<br><b>3.</b> Tap Sign in.<br>Every answer you give here is saved under your name.</p></div>
+    <div class="gbody">
+      <input class="in" id="g-find" placeholder="Type your name…" autocomplete="off" aria-label="Find your name">
+      <div class="gnames" id="g-names"><div class="msg">Connecting to the shared board…</div></div>
+      <input class="code" id="g-code" inputmode="numeric" maxlength="6" placeholder="••••••" disabled aria-label="6-digit code">
+      <button class="btn" id="g-go" disabled>Sign in</button>
+      <div class="msg" id="g-msg"></div>
+      <div class="small">Not on the list? Ask Juan to add you.</div>
+      <button class="btn ghost hidden" id="g-retry">Try again</button>
+    </div>
+  </div>
+</div>
+<div class="cfm hidden" id="cfm" role="dialog" aria-modal="true" aria-labelledby="cfm-t"><div class="cfm-card"><p id="cfm-t"></p><div class="row"><button class="btn teal" id="cfm-y">Yes</button><button class="btn ghost" id="cfm-n">Cancel</button></div></div></div>
+
+<header class="band">
+  <div class="wrap">
+    <div class="top"><div class="brand">Twin Home Buyer · <span>Seller-Call Training</span></div><div class="chip" id="chip"></div></div>
+    <div class="hello" id="hello"></div>
+    <div id="court"></div>
+  </div>
+</header>
+<nav><div class="wrap" id="tabs"></div></nav>
+<main><div class="wrap" id="view"></div></main>
+
+<script>
+(function(){
+"use strict";
+var D=__DATA__;
+document.body.classList.add("locked");
+var MODS=D.modules,STORY=D.story,SCEN=D.scenarios,COACHES=D.coaches,TZ="America/Los_Angeles";
+var RULES=[["price","No price over the phone"],["source","“According to Redfin,” never “I know”"],["visit","Booked a 15-minute visit with Juan"],["honest","Honest advice about listing"],["pressure","No pressure"],["story","Juan’s story as written, no company age"]];
+var BANNED=/\b2[45]\s*\+?\s*years\b|since\s+2002/i;
+/* ---------- helpers ---------- */
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
+function slug(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);}
+function initials(n){return String(n||"?").split(" ").filter(Boolean).map(function(w){return w[0];}).slice(0,2).join("").toUpperCase();}
+function first(n){return String(n||"").split(" ")[0];}
+function dt(ts){return new Date(ts).toLocaleString("en-US",{timeZone:TZ,weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+" PT";}
+function ago(ts){if(!ts)return"never";var m=Math.round((Date.now()-ts)/6e4);if(m<1)return"just now";if(m<60)return m+" min ago";var h=Math.round(m/60);if(h<48)return h+" h ago";return Math.round(h/24)+" days ago";}
+function plural(n,w){return n+" "+w+(n===1?"":"s");}
+function clip(s,n){s=String(s||"");return s.length>n?s.slice(0,n-1)+"…":s;}
+function h(html){var d=document.createElement("div");d.innerHTML=html;return d;}
+function say(el,t,c){el.textContent=t||"";el.className="msg"+(c?" "+c:"");}
+function errTxt(e){if(!e)return"unknown error";return(e.code?e.code+": ":"")+(e.message||String(e));}
+function withTimeout(p,ms){return Promise.race([p,new Promise(function(_,rej){setTimeout(function(){rej(new Error("no answer after "+(ms/1000)+"s"));},ms);})]);}
+function newCode(){var a=new Uint32Array(1);crypto.getRandomValues(a);return String(100000+(a[0]%900000));}
+function newSalt(){var a=new Uint8Array(12);crypto.getRandomValues(a);return Array.prototype.map.call(a,function(b){return("0"+b.toString(16)).slice(-2);}).join("");}
+async function hash(salt,code){var k=await crypto.subtle.importKey("raw",new TextEncoder().encode(String(code).trim()),"PBKDF2",false,["deriveBits"]);var bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:new TextEncoder().encode(salt),iterations:150000},k,256);return Array.prototype.map.call(new Uint8Array(bits),function(b){return("0"+b.toString(16)).slice(-2);}).join("");}
+function sure(msg,yes){return new Promise(function(res){var box=$("cfm"),y=$("cfm-y"),n=$("cfm-n");$("cfm-t").textContent=msg;y.textContent=yes||"Yes";box.classList.remove("hidden");
+  function key(e){if(e.key==="Escape")done(false);}
+  function done(v){box.classList.add("hidden");y.onclick=n.onclick=null;document.removeEventListener("keydown",key);res(v);}
+  y.onclick=function(){done(true);};n.onclick=function(){done(false);};document.addEventListener("keydown",key);try{n.focus();}catch(_){}});}
+
+/* ---------- state ---------- */
+var db=null,user=null,uid=null,canEdit=false,me=null,picked="",fails=0,rosterLoaded=false,lastSlug=null;
+var roster={},people={},answers=[],roleplays=[],mocks=[],certs={},codes={},logs=[];
+var view="train",openMod=null,quizAns={},quizTried={},flash=null,busy=false,who="all",sampleP=null;
+var rp={sc:null,turns:[],busy:false,result:null,err:"",draft:""},mockDraft={};
+function isJuan(){return!!me&&me.role==="owner";}
+function isCoach(){return!!me&&(isJuan()||COACHES.indexOf(me.slug)>=0);}
+function team(){return Object.keys(roster).map(function(k){return roster[k];}).filter(function(r){return r.role!=="owner";}).sort(function(a,b){return a.name.localeCompare(b.name);});}
+function attemptsOf(sl,mid){return answers.filter(function(a){return a.slug===sl&&a.module===mid;}).sort(function(a,b){return a.ts-b.ts;});}
+function passedMod(sl,mid){return attemptsOf(sl,mid).some(function(a){return a.passed;})||!!((((people[sl]||{}).prog)||{})[mid]||{}).passed;}
+function rpOf(sl){return roleplays.filter(function(r){return r.slug===sl;}).sort(function(a,b){return a.ts-b.ts;});}
+function rpPassed(sl){return rpOf(sl).some(function(r){return r.pass;})||!!(people[sl]||{}).rpPassed;}
+function nextIdx(sl){for(var i=0;i<MODS.length;i++){if(!passedMod(sl,MODS[i].id))return i;}return MODS.length;}
+function mocksOf(sl){return mocks.filter(function(m){return m.slug===sl;}).sort(function(a,b){return b.ts-a.ts;});}
+function mockPass(sl){return mocksOf(sl).filter(function(m){return m.result==="pass";})[0]||null;}
+function modIdx(id){for(var i=0;i<MODS.length;i++)if(MODS[i].id===id)return i;return -1;}
+
+/* ---------- writes ---------- */
+function logIt(a){if(!db||!me)return Promise.resolve();return db.collection("log").add({ts:Date.now(),n:me.name,slug:me.slug,a:String(a).slice(0,200)}).catch(function(){});}
+var pChain=Promise.resolve();
+function savePerson(patch){pChain=pChain.then(async function(){var ref=db.doc("people/"+me.slug);var s=await ref.get();var d=s.exists?(s.data()||{}):{};var body=Object.assign({},d,{name:me.name},patch);await ref.set(body);people[me.slug]=body;}).catch(function(){});return pChain;}
+function upsert(list,v){var i=-1;list.forEach(function(x,j){if(x.id===v.id)i=j;});if(i<0)list.push(v);else list[i]=v;}
+
+/* ---------- gate ---------- */
+function lockedMsg(t){$("g-code").disabled=true;$("g-go").disabled=true;say($("g-msg"),t,"err");$("g-names").innerHTML="";$("g-retry").classList.remove("hidden");}
+$("g-retry").onclick=function(){location.reload();};
+function fold(t){return String(t||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();}
+function fillNames(){var q=fold(($("g-find").value||"").trim());var list=Object.keys(roster).map(function(k){return roster[k];}).sort(function(a,b){return a.name.localeCompare(b.name);});
+  if(q)list=list.filter(function(r){return fold(r.name).split(/\s+/).some(function(w){return w.indexOf(q)===0;})||fold(r.name).indexOf(q)===0;});
+  if(lastSlug&&roster[lastSlug]&&!q)list=[roster[lastSlug]].concat(list.filter(function(r){return r.slug!==lastSlug;}));
+  if(q&&list.length===1&&picked!==list[0].slug){picked=list[0].slug;$("g-code").disabled=false;$("g-go").disabled=false;}
+  var box=$("g-names");box.innerHTML="";
+  if(!list.length){box.innerHTML='<div class="msg">'+(q?"No name matches. Try fewer letters.":"No one is set up yet. Ask Juan.")+'</div>';return;}
+  list.forEach(function(r){var b=document.createElement("button");b.type="button";b.className="gnm"+(picked===r.slug?" on":"");b.innerHTML='<span class="av">'+esc(initials(r.name))+'</span><span>'+esc(r.name)+'<small>'+esc(r.title||"")+'</small></span>';
+    b.onclick=function(){picked=r.slug;fillNames();say($("g-msg"),"");$("g-code").disabled=false;$("g-go").disabled=false;$("g-code").focus();};box.appendChild(b);});}
+async function signIn(){var r=roster[picked],code=($("g-code").value||"").trim(),m=$("g-msg");
+  if(!r){say(m,"Tap your name first.","err");return;}
+  if(!/^\d{6}$/.test(code)){say(m,"Type your 6-digit code.","err");return;}
+  if(fails>=5){say(m,"Too many wrong codes. Reload the page, or ask Juan for a new code.","err");return;}
+  $("g-go").disabled=true;say(m,"Checking…");
+  try{var hh=await hash(r.salt,code);
+    if(hh!==r.hash){fails++;say(m,"Wrong code for "+r.name+". "+(5-fails)+" tries left.","err");$("g-go").disabled=false;return;}
+    me={name:r.name,slug:r.slug,role:r.role,title:r.title};
+    try{var p=people[r.slug]||{};await db.doc("people/"+r.slug).set(Object.assign({},p,{name:r.name,lastIn:Date.now(),count:(p.count||0)+1}));}
+    catch(e){me=null;say(m,"Your sign-in couldn’t be saved, so the page stays locked. Ask Seth to share this page with you as Contributor.","err");$("g-go").disabled=false;return;}
+    try{db.collection("data/users/"+uid).doc("me").set({slug:r.slug,ts:Date.now()}).catch(function(){});}catch(x){}
+    logIt("Signed in");$("g-code").value="";$("gate").classList.add("hidden");document.body.classList.remove("locked");
+    view=isJuan()?"team":"train";render();
+  }catch(e){me=null;say(m,"Couldn’t check the code in this view. The page stays locked.","err");$("g-go").disabled=false;}}
+$("g-go").onclick=signIn;$("g-code").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();signIn();}});
+$("g-find").oninput=fillNames;$("g-find").onkeydown=function(e){if(e.key==="Enter"&&picked){e.preventDefault();$("g-code").focus();}};
+
+/* ---------- boot ---------- */
+setTimeout(function(){if(!rosterLoaded&&!$("gate").classList.contains("hidden"))lockedMsg("Still can’t reach the shared board. Check your internet and that you’re signed in to Claude, then tap Try again.");},12000);
+function docsOf(s){return((s&&s.docs)||[]).map(function(d){var v=Object.assign({},d.data()||{});v.id=d.id;return v;});}
+/* each collection two ways (live feed + one plain read), merged by id */
+function live(col,apply){try{db.collection(col).onSnapshot(function(s){apply(docsOf(s));},function(){});}catch(e){}
+  withTimeout(db.collection(col).get(),10000).then(function(s){apply(docsOf(s));}).catch(function(){});}
+(async function boot(){var c=window.claude;
+  if(!c||typeof c.use!=="function"){lockedMsg("Open this page in Claude to sign in.");return;}
+  try{var res=await Promise.all([c.use("db"),c.use("user")]);db=res[0];user=res[1];
+    if(!db){lockedMsg("Can’t reach the shared board from this view. Open it in the Claude app or claude.ai while signed in.");return;}
+    if(!user){lockedMsg("Claude didn’t say who you are. Sign in to Claude, then tap Try again.");return;}
+    var u=await user.me();uid=u&&u.id;canEdit=!!(u&&u.canEdit);if(!uid){lockedMsg("Sign in to Claude to open this page.");return;}
+  }catch(e){lockedMsg("Can’t connect to the shared board. The page stays locked.");return;}
+  live("roster",function(list){if(!list.length&&rosterLoaded)return;roster={};list.forEach(function(v){if(v.name&&v.hash)roster[v.id]={slug:v.id,name:v.name,role:v.role||"team",title:v.title||"",salt:v.salt,hash:v.hash};});
+    if(list.length||!rosterLoaded){rosterLoaded=true;$("g-retry").classList.add("hidden");fillNames();if(me)soft();}});
+  try{db.collection("data/users/"+uid).doc("me").get().then(function(d){var v=d&&d.exists?d.data():null;if(v&&v.slug){lastSlug=v.slug;if(!picked){picked=v.slug;$("g-code").disabled=false;$("g-go").disabled=false;}if(rosterLoaded)fillNames();}}).catch(function(){});}catch(x){}
+  live("people",function(list){list.forEach(function(v){people[v.id]=v;});soft();});
+  live("answers",function(list){list.forEach(function(v){upsert(answers,v);});soft();});
+  live("roleplays",function(list){list.forEach(function(v){upsert(roleplays,v);});soft();});
+  live("mockcalls",function(list){list.forEach(function(v){upsert(mocks,v);});soft();});
+  live("certs",function(list){list.forEach(function(v){certs[v.id]=v;});soft();});
+  if(canEdit)live("roster_codes",function(list){list.forEach(function(v){if(v.code)codes[v.id]=v.code;});soft();});
+})();
+
+/* ---------- render ---------- */
+function soft(){if(!me)return;var a=document.activeElement;if(a&&a.matches&&a.matches("input,textarea,select")&&a.offsetParent!==null)return;render();}
+function tabsFor(){
+  if(isJuan()){var ready=team().filter(function(r){return mockPass(r.slug)&&!certs[r.slug];}).length;
+    return[["team","Team progress",ready],["answers","Every answer"],["mock","Mock calls"],["train","The training"],["typed","Typed version"],["access","People & codes"]];}
+  var t=[["train","My training"]];if(isCoach()){var wait=team().filter(function(r){return r.slug!==me.slug&&nextIdx(r.slug)>=MODS.length&&!mockPass(r.slug);}).length;t.push(["mock","Mock calls",wait]);}
+  t.push(["typed","Typed version"]);return t;}
+function render(){if(!me)return;
+  var tb=tabsFor();if(!tb.some(function(x){return x[0]===view;}))view=tb[0][0];
+  $("tabs").innerHTML=tb.map(function(t){return'<button class="tab'+(t[0]===view?" on":"")+'" data-v="'+t[0]+'">'+esc(t[1])+(t[2]?'<span class="n">'+t[2]+'</span>':"")+'</button>';}).join("");
+  $("tabs").querySelectorAll(".tab").forEach(function(b){b.onclick=function(){view=b.dataset.v;openMod=null;render();window.scrollTo(0,0);};});
+  $("chip").innerHTML="";var cs=document.createElement("span");cs.textContent=me.name;var so=document.createElement("button");so.textContent="Sign out";so.onclick=function(){logIt("Signed out").then(function(){location.reload();});};$("chip").appendChild(cs);$("chip").appendChild(so);
+  renderHello();
+  var v=$("view");v.innerHTML="";
+  var map={train:trainView,typed:typedView,mock:mockView,team:teamView,answers:answersView,access:accessView};
+  v.appendChild((map[view]||trainView)());}
+function renderHello(){
+  if(isJuan()){var t=team(),started=t.filter(function(r){return answers.some(function(a){return a.slug===r.slug;});}).length,cert=t.filter(function(r){return certs[r.slug];}).length;
+    $("hello").innerHTML='<div><h1>Seller-call training</h1><p>Six modules in order, a final mock call with Cherry or Thea, then your Certify.</p></div><div class="clock'+(cert?" done":"")+'"><b>'+cert+' certified</b>'+started+' of '+t.length+' started</div>';$("court").innerHTML="";return;}
+  var n=nextIdx(me.slug),c=certs[me.slug],mp=mockPass(me.slug);
+  var big=c?"Certified":n>=MODS.length?(mp?"Mock call passed":"Mock call next"):"Module "+(n+1)+" of "+MODS.length;
+  var sub=c?"by "+(c.by||"Juan")+", "+new Date(c.ts).toLocaleDateString("en-US",{timeZone:TZ,month:"short",day:"numeric"}):n>=MODS.length?(mp?"Waiting for Juan to certify":"Ask Cherry or Thea"):MODS[n].title;
+  $("hello").innerHTML='<div><h1>Hi, '+esc(first(me.name))+'.</h1><p>One skill at a time. Reps and correction.</p></div><div class="clock'+(c||mp?" done":"")+'"><b>'+esc(big)+'</b>'+esc(sub)+'</div>';
+  $("court").innerHTML='<div class="court" aria-label="Progress">'+MODS.map(function(m,i){return'<span class="'+(i<n?"ok":i===n?"now":"")+'" title="Module '+(i+1)+': '+esc(m.title)+'">'+(i+1)+'</span>';}).join("")+'<span class="'+(mp?"ok":n>=MODS.length?"now":"")+'" title="Mock call">MC</span><span class="'+(c?"ok":"")+'" title="Certified">✓</span></div>';}
+
+/* ---------- trainee: module list ---------- */
+function trainView(){if(openMod!=null)return moduleView(openMod);
+  var w=document.createElement("div"),n=isJuan()?MODS.length:nextIdx(me.slug);
+  if(flash&&Date.now()-flash.ts<600000&&flash.list)w.appendChild(h('<div class="bnr on '+(flash.ok?"ok":"err")+'">'+esc(flash.t)+'</div>'));
+  w.appendChild(h('<div class="card"><h2>'+(isJuan()?"The training, as the team sees it":"Your six modules")+'</h2><p class="lead" style="margin:0">'+(isJuan()?"Every module is open for you, with the answer key marked.":"In order. Each module ends with a quiz: get every answer right to open the next one. Every answer is saved under your name.")+'</p></div>'));
+  var s='<div class="mods">'+MODS.map(function(m,i){var ok=!isJuan()&&i<n,now=!isJuan()&&i===n,lock=!isJuan()&&i>n,tries=isJuan()?0:attemptsOf(me.slug,m.id).length;
+    var st=ok?'<span class="pill p-ok">Passed</span>':now?'<span class="pill p-open">'+(tries?"Try again":"Start here")+'</span>':lock?'<span class="pill p-lock">Pass Module '+i+' first</span>':'<span class="pill p-open">Open</span>';
+    return'<button class="mod'+(ok?" ok":now?" now":lock?" lock":"")+'" data-m="'+i+'"'+(lock?' aria-disabled="true"':"")+'><span class="num">'+(ok?"✓":i+1)+'</span><span><span class="t">Module '+(i+1)+' · '+esc(m.title)+'</span><br><span class="g">'+esc(m.goal)+'</span></span><span class="st">'+st+'</span></button>';}).join("")+'</div>';
+  w.appendChild(h(s));
+  if(!isJuan())w.appendChild(h(finalCard()));
+  setTimeout(function(){w.querySelectorAll("[data-m]").forEach(function(b){b.onclick=function(){var i=+b.dataset.m;if(!isJuan()&&i>nextIdx(me.slug))return;openMod=i;flash=null;render();window.scrollTo(0,0);};});},0);
+  return w;}
+function finalCard(){var n=nextIdx(me.slug),c=certs[me.slug],mp=mockPass(me.slug),last=mocksOf(me.slug)[0];
+  if(c)return'<div class="card next ok"><h2>Certified ✓</h2><p class="lead" style="margin:0">Juan certified you on '+esc(dt(c.ts))+'.</p></div>';
+  if(n<MODS.length)return'<div class="card"><h2>Final mock call</h2><p class="lead" style="margin:0">After Module 6: a mock call with Cherry or Thea. Then Juan certifies you.</p></div>';
+  if(mp)return'<div class="card next ok"><h2>Mock call passed</h2><p class="lead" style="margin:0">'+esc(mp.by)+' passed your mock call on '+esc(dt(mp.ts))+'. Waiting for Juan to certify you.</p>'+(mp.notes?'<div class="src"><b>Notes</b>'+esc(mp.notes)+'</div>':"")+'</div>';
+  return'<div class="card next"><h2>Next: your final mock call</h2><p class="lead" style="margin:0">All six modules passed. Ask Cherry or Thea for a mock call. They log the result here, and then Juan certifies you.</p>'+(last?'<div class="src"><b>Last mock call · '+esc(last.by)+' · '+esc(dt(last.ts))+'</b>Needs another try. '+esc(last.notes||"")+'</div>':"")+'</div>';}
+
+/* ---------- module ---------- */
+function partHtml(p,i){var tag=p.ol?"ol":"ul";
+  return'<div class="card"><h2>'+esc(p.h)+'</h2>'+(p.say?'<div class="say">“'+esc(p.say)+'”</div>':"")+'<'+tag+' class="pts">'+p.pts.map(function(x){return"<li>"+esc(x)+"</li>";}).join("")+'</'+tag+'><div class="src"><b>Where this comes from</b>'+p.from.map(function(f){return'<div>'+esc(f.s)+': “'+esc(f.t)+'”</div>';}).join("")+'</div></div>';}
+function moduleView(i){var m=MODS[i],w=document.createElement("div"),juan=isJuan(),passed=!juan&&passedMod(me.slug,m.id),tries=juan?[]:attemptsOf(me.slug,m.id);
+  w.appendChild(h('<div class="row" style="margin-bottom:12px"><button class="link" id="back">← All modules</button></div>'));
+  if(flash&&Date.now()-flash.ts<600000&&!flash.list)w.appendChild(h('<div class="bnr on '+(flash.ok?"ok":"err")+'" id="flash">'+esc(flash.t)+(flash.sub?'<div class="small">'+esc(flash.sub)+'</div>':"")+'</div>'));
+  w.appendChild(h('<div class="card next'+(passed?" ok":"")+'"><div class="small">MODULE '+(i+1)+' OF '+MODS.length+'</div><h2 style="font-size:26px">'+esc(m.title)+'</h2><p class="lead" style="margin:4px 0 0;font-size:17px">'+esc(m.goal)+'</p>'+(passed?'<p class="green" style="margin:8px 0 0">Passed on attempt '+esc((tries.filter(function(a){return a.passed;})[0]||{}).attempt||tries.length)+'.</p>':"")+'</div>'));
+  w.appendChild(h(m.parts.map(partHtml).join("")));
+  if(m.roleplay&&!juan)w.appendChild(roleplayCard());
+  if(m.roleplay&&juan)w.appendChild(h('<div class="card"><h2>Practice calls</h2><p class="lead" style="margin:0">The AI plays one of the three practice sellers above. A call passes only when all six checks pass: '+RULES.map(function(r){return esc(r[1]);}).join(", ")+'. Every call is saved; see <b>Every answer</b>.</p></div>'));
+  w.appendChild(quizCard(m,i,passed));
+  if(tries.length)w.appendChild(h('<div class="card"><h2>Your attempts</h2>'+tries.slice().reverse().map(function(a){return'<div class="meta">'+(a.passed?'<span class="green">Passed</span>':'<span class="red">Not passed</span>')+' · attempt '+esc(a.attempt)+' · '+esc(a.score)+'/'+esc(a.total)+' · '+esc(dt(a.ts))+'</div>';}).join("")+'</div>'));
+  setTimeout(function(){$("back").onclick=function(){openMod=null;flash=null;render();window.scrollTo(0,0);};wireQuiz(m,i);wireRoleplay();var f=$("flash");if(f&&flash&&Date.now()-flash.ts<3000)try{f.scrollIntoView({behavior:"smooth",block:"center"});}catch(_){}},0);
+  return w;}
+function quizCard(m,i,passed){var n=m.quiz.length,juan=isJuan();
+  if(juan)return h('<div class="card"><h2>Quiz: '+n+' questions · answer key</h2>'+m.quiz.map(function(x,k){return'<div class="q"><b>'+(k+1)+'. '+esc(x.q)+'</b>'+x.o.map(function(o,j){return'<div class="key'+(j===x.a?" green":"")+'">'+(j===x.a?"✓ ":"• ")+esc(o)+'</div>';}).join("")+'<div class="small">Why: '+esc(x.why)+'</div></div>';}).join("")+'</div>');
+  if(passed){var nx=i+1<MODS.length?'<button class="btn hat" id="go-next">Go to Module '+(i+2)+'</button>':'<button class="btn hat" id="go-next">See your final step</button>';
+    return h('<div class="card next ok"><h2>Quiz passed</h2><p class="lead">All '+n+' right.</p><div class="row">'+nx+'</div></div>');}
+  if(m.roleplay&&!rpPassed(me.slug))return h('<div class="card"><h2>Quiz: '+n+' questions</h2><p class="lead" style="margin:0"><span class="pill p-lock">Locked</span> Pass one practice call above to open this quiz.</p></div>');
+  var ans=quizAns[m.id]||(quizAns[m.id]={}),tried=quizTried[m.id];
+  return h('<div class="card" id="quiz"><h2>Quiz: '+n+' questions</h2><p class="lead">Get all '+n+' right to pass'+(i+1<MODS.length?" and open Module "+(i+2):"")+'. Wrong answers turn red with the reason. Fix them and try again.</p>'+m.quiz.map(function(x,k){
+      return'<div class="q"><b>'+(k+1)+'. '+esc(x.q)+'</b>'+x.o.map(function(o,j){var wrong=tried&&ans[k]===j&&j!==x.a;return'<label class="'+(wrong?"wrong":"")+'"><input type="radio" name="q'+k+'" value="'+j+'"'+(ans[k]===j?" checked":"")+'> <span>'+esc(o)+'</span></label>';}).join("")+(tried&&ans[k]!==x.a?'<div class="small red">'+esc(x.why)+'</div>':"")+'</div>';}).join("")+
+    '<div class="bnr" id="q-b" role="alert" style="margin-top:14px"></div><div class="row" style="margin-top:14px"><button class="btn hat" id="q-go">Check my answers</button></div></div>');}
+function wireQuiz(m,i){var nx=$("go-next");if(nx)nx.onclick=function(){openMod=i+1<MODS.length?i+1:null;flash=null;render();window.scrollTo(0,0);};
+  var go=$("q-go");if(!go)return;var ans=quizAns[m.id];
+  document.querySelectorAll('#quiz input[type=radio]').forEach(function(r){r.onchange=function(){ans[+r.name.slice(1)]=+r.value;};});
+  go.onclick=async function(){if(busy)return;var b=$("q-b"),n=m.quiz.length,blank=[],wrong=[];
+    m.quiz.forEach(function(x,k){if(ans[k]==null)blank.push(k+1);else if(ans[k]!==x.a)wrong.push(k+1);});
+    if(blank.length){b.textContent="Answer every question first. Still blank: "+blank.join(", ")+".";b.className="bnr on err";return;}
+    busy=true;go.disabled=true;go.textContent="Saving…";
+    var score=n-wrong.length,passed=!wrong.length,att=attemptsOf(me.slug,m.id).length+1,now=Date.now();
+    var rec={slug:me.slug,name:me.name,uid:uid,module:m.id,moduleNo:i+1,title:m.title,ts:now,attempt:att,score:score,total:n,passed:passed,missed:wrong,
+      answers:m.quiz.map(function(x,k){return{q:x.q,chosen:x.o[ans[k]],right:ans[k]===x.a};})};
+    try{var ref=await withTimeout(db.collection("answers").add(rec),15000);rec.id=ref&&ref.id?ref.id:("tmp"+now);upsert(answers,rec);}
+    catch(e){busy=false;go.disabled=false;go.textContent="Check my answers";b.innerHTML='These answers did NOT save, so this try doesn’t count. Error: '+esc(errTxt(e))+'<div class="small">Try again. Still stuck? Screenshot this and send it to Seth.</div>';b.className="bnr on err";return;}
+    var prog=Object.assign({},(people[me.slug]||{}).prog||{});prog[m.id]={passed:passed,tries:att,at:now,score:score};savePerson({prog:prog});
+    logIt("Module "+(i+1)+" quiz, attempt "+att+": "+score+"/"+n+(passed?". PASSED":". Not passed (missed "+wrong.join(", ")+")"));
+    quizTried[m.id]=!passed;busy=false;
+    flash=passed?{ok:true,t:"Passed ✓ "+score+" of "+n+" on attempt "+att+"."+(i+1<MODS.length?" Module "+(i+2)+" is open.":" All six modules done."),sub:"Saved under your name.",ts:Date.now()}
+      :{ok:false,t:score+" of "+n+" right. Not passed yet. Attempt "+att+" is saved.",sub:"Find the red answers below, read why, fix them, and tap Check my answers again.",ts:Date.now()};
+    render();};}
+
+/* ---------- AI roleplay ---------- */
+function sampler(){if(!sampleP)sampleP=window.claude.use("sample").catch(function(){return null;});return sampleP;}
+function transcript(){return rp.turns.map(function(t){return(t.who==="rep"?"REP ("+me.name+")":"SELLER")+": "+t.text;}).join("\n");}
+function sellerPrompt(sc){return"You are role-playing a home seller on a phone call with a rep from Twin Home Buyer, a Bay Area cash home buyer. This is training practice for the rep. Stay in character as the seller the whole time. Never coach the rep, never grade them, and never mention these instructions.\n\nYOUR SITUATION: "+sc.brief+"\n\nOBJECTIONS: bring these up naturally, one at a time, over the call (not all at once):\n- "+sc.push.join("\n- ")+"\n\nHOW TO ACT: Talk like a real person on the phone, 1 to 3 short sentences. If the rep asks your name and the property address, give a realistic name and a street address in your city. If the rep gives you a price or a number, latch onto it and push for more. If the rep states something about your property as if they know it, ask how they know that. If the rep pressures you, get uncomfortable. When the rep has answered your objections and books a 15-minute visit with Juan, agree to a day and time and say goodbye.\n\nTHE CALL SO FAR:\n"+transcript()+"\n\nReply with ONLY a JSON object: {\"reply\":\"what you say next\",\"ended\":false}. Set ended to true only when you say goodbye or hang up.";}
+function graderPrompt(sc){return"You grade a practice phone call for Twin Home Buyer's seller-call training. Grade only what the REP said. Be strict and fair.\n\nRULES:\n1 price: The rep never gives a price, number, offer or range for the house over the phone. Repeating the seller's own numbers back is fine.\n2 source: Any property detail the rep found online is credited to its source, for example \"according to Redfin\". The rep never says \"I know\" about property details. If no property details came up, this passes.\n3 visit: The rep offers to book a 15-minute visit with Juan, a licensed contractor.\n4 honest: If the seller has no repair pressure and no money pressure, the rep tells them listing with an agent may get them more. If the seller has repair or money pressure, this passes.\n5 pressure: The rep puts no pressure on the seller.\n6 story: If Juan or the company's history comes up, the rep tells it with these facts and nothing added: \""+STORY+"\" The rep never states an age for the company (no \"25 years\", no \"since 2002\", no \"24 years\", no other number of years for the company). If it never came up, this passes.\n\nSELLER'S SITUATION: "+sc.brief+"\n\nTRANSCRIPT:\n"+transcript()+"\n\nReply with ONLY a JSON object: {\"checks\":[{\"rule\":\"price\",\"ok\":true,\"note\":\"one short reason\"},{\"rule\":\"source\",\"ok\":true,\"note\":\"\"},{\"rule\":\"visit\",\"ok\":true,\"note\":\"\"},{\"rule\":\"honest\",\"ok\":true,\"note\":\"\"},{\"rule\":\"pressure\",\"ok\":true,\"note\":\"\"},{\"rule\":\"story\",\"ok\":true,\"note\":\"\"}],\"feedback\":\"2 or 3 plain sentences to the rep: what to fix first, or what went well\"}";}
+function roleplayCard(){var w=document.createElement("div"),passedAny=rpPassed(me.slug),tries=rpOf(me.slug);
+  var s='<div class="card" id="rp"><h2>Practice call</h2>';
+  if(passedAny&&!rp.sc&&!rp.result)s+='<p class="green" style="margin:0 0 10px">You passed a practice call. The quiz below is open. Practice more anytime.</p>';
+  s+='<p class="lead">'+plural(tries.length,"practice call")+' so far'+(tries.length?", "+tries.filter(function(r){return r.pass;}).length+" passed":"")+'. Every call is saved under your name.</p>';
+  if(rp.result){var r=rp.result;s+='<div class="bnr on '+(r.pass?"ok":"err")+'">'+(r.pass?"Passed ✓ This call passed all six checks.":"Not passed yet. Practice again.")+'</div>'+RULES.map(function(x){var c=(r.checks||[]).filter(function(k){return k.rule===x[0];})[0]||{};return'<div class="chk"><span class="'+(c.ok?"green":"red")+'">'+(c.ok?"✓":"✗")+'</span><span><b>'+esc(x[1])+'</b>'+(c.note?'<br><span class="small">'+esc(c.note)+'</span>':"")+'</span></div>';}).join("")+(r.feedback?'<div class="src"><b>Coach’s note</b>'+esc(r.feedback)+'</div>':"")+'<div class="row" style="margin-top:12px"><button class="btn hat" id="rp-again">'+(r.pass?"Practice again":"Try another call")+'</button></div>';}
+  else if(!rp.sc){s+='<p style="margin:0 0 8px"><b>Pick a seller.</b></p><div class="scen">'+SCEN.map(function(sc){return'<button data-sc="'+sc.id+'"><b>'+esc(sc.name)+'</b><br><span class="small">'+esc(clip(sc.brief,110))+'</span></button>';}).join("")+'</div>';}
+  else{s+='<div class="small">Practice seller: <b>'+esc(rp.sc.name)+'</b>. Type what you would say on the phone.</div><div class="chat" id="chat">'+rp.turns.map(function(t){return'<div class="bub '+(t.who==="rep"?"me":"ai")+'"><span class="who">'+(t.who==="rep"?"You":"Seller")+'</span>'+esc(t.text)+'</div>';}).join("")+(rp.busy?'<div class="bub ai">…</div>':"")+'</div>'+
+    (rp.err?'<div class="bnr on err">'+esc(rp.err)+'</div>':"")+'<label class="small" for="rp-in">Your words</label><textarea class="in" id="rp-in" placeholder="e.g. Thanks for calling. Can I get your name and the property address?"'+(rp.busy?" disabled":"")+'>'+esc(rp.draft)+'</textarea><div class="row" style="margin-top:8px"><button class="btn hat" id="rp-say"'+(rp.busy?" disabled":"")+'>Say it</button><button class="btn ghost" id="rp-end"'+(rp.busy||!rp.turns.some(function(t){return t.who==="rep";})?" disabled":"")+'>End call and get scored</button><button class="link" id="rp-x">Start over</button></div>';}
+  w.appendChild(h(s+'</div>'));return w;}
+function wireRoleplay(){document.querySelectorAll("[data-sc]").forEach(function(b){b.onclick=function(){var sc=SCEN.filter(function(x){return x.id===b.dataset.sc;})[0];rp={sc:sc,turns:[{who:"seller",text:sc.open}],busy:false,result:null,err:"",draft:""};render();var el=$("rp");if(el)try{el.scrollIntoView({block:"start"});}catch(_){}};});
+  var ag=$("rp-again");if(ag)ag.onclick=function(){rp={sc:null,turns:[],busy:false,result:null,err:"",draft:""};render();};
+  var x=$("rp-x");if(x)x.onclick=function(){rp={sc:null,turns:[],busy:false,result:null,err:"",draft:""};render();};
+  var inp=$("rp-in");if(inp){inp.oninput=function(){rp.draft=inp.value;};inp.onkeydown=function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();rpSay();}};}
+  var sy=$("rp-say");if(sy)sy.onclick=rpSay;var en=$("rp-end");if(en)en.onclick=rpScore;
+  var ch=$("chat");if(ch&&ch.lastElementChild)try{ch.lastElementChild.scrollIntoView({block:"nearest"});}catch(_){}}
+function sampleErr(e){return e&&e.code==="not_granted"?"Claude wasn’t allowed to run on this page. Allow it, then try again.":e&&e.code==="rate_limited"?"Too many requests at once. Wait a minute and try again.":"The AI didn’t answer. Try again.";}
+async function rpSay(){var t=(rp.draft||"").trim();if(!t||rp.busy)return;var sm=await sampler();if(!sm){rp.err="The AI isn’t available in this view. Open the page in Claude and allow it.";render();return;}
+  rp.turns.push({who:"rep",text:t.slice(0,1000)});rp.draft="";rp.err="";rp.busy=true;render();
+  try{var out=await sm.json(sellerPrompt(rp.sc),{modelTier:"default",cache:false});var reply=String((out&&out.reply)||"").trim()||"Sorry, can you say that again?";rp.turns.push({who:"seller",text:reply.slice(0,1000)});rp.busy=false;
+    if(out&&out.ended||rp.turns.length>=40){render();return rpScore();}render();var i2=$("rp-in");if(i2)i2.focus();}
+  catch(e){rp.busy=false;rp.err=sampleErr(e);render();}}
+async function rpScore(){if(rp.busy)return;var sm=await sampler();if(!sm){rp.err="The AI isn’t available in this view.";render();return;}
+  rp.busy=true;rp.err="";render();var out=null;
+  try{out=await sm.json(graderPrompt(rp.sc),{modelTier:"default",cache:false});}catch(e){rp.busy=false;rp.err=sampleErr(e)+" Your call is still here. Tap End call and get scored again.";render();return;}
+  var checks=RULES.map(function(r){var c=((out&&out.checks)||[]).filter(function(k){return k&&k.rule===r[0];})[0];return{rule:r[0],ok:!!(c&&c.ok===true),note:c&&c.note?String(c.note).slice(0,300):(c?"":"Not scored")};});
+  var repText=rp.turns.filter(function(t){return t.who==="rep";}).map(function(t){return t.text;}).join("\n");
+  if(BANNED.test(repText)){checks.forEach(function(c){if(c.rule==="story"){c.ok=false;c.note="You stated an age for the company. Never do that.";}});}
+  var pass=checks.every(function(c){return c.ok;}),now=Date.now();
+  var rec={slug:me.slug,name:me.name,uid:uid,ts:now,scenario:rp.sc.id,scenarioName:rp.sc.name,turns:rp.turns,pass:pass,checks:checks,feedback:String((out&&out.feedback)||"").slice(0,800)};
+  try{var ref=await withTimeout(db.collection("roleplays").add(rec),15000);rec.id=ref&&ref.id?ref.id:("tmp"+now);upsert(roleplays,rec);}
+  catch(e){rp.busy=false;rp.err="This call’s score did NOT save: "+errTxt(e)+". Tap End call and get scored again.";render();return;}
+  if(pass)savePerson({rpPassed:true});
+  logIt("Practice call ("+rp.sc.name+"): "+(pass?"PASSED":"not passed, missed "+checks.filter(function(c){return!c.ok;}).map(function(c){return c.rule;}).join(", ")));
+  rp.busy=false;rp.result={pass:pass,checks:checks,feedback:rec.feedback};render();var el=$("rp");if(el)try{el.scrollIntoView({block:"start"});}catch(_){}}
+
+/* ---------- mock calls (Cherry, Thea, Juan) ---------- */
+function mockView(){var w=document.createElement("div");
+  if(!isCoach()){w.appendChild(h('<div class="card"><p class="lead" style="margin:0">Only Cherry, Thea and Juan log mock calls.</p></div>'));return w;}
+  var ready=team().filter(function(r){return r.slug!==me.slug&&nextIdx(r.slug)>=MODS.length;});
+  var s='<div class="card"><h2>Final mock calls</h2><p class="lead" style="margin:0">People who passed all six modules. Do the mock call, then log the result here. Notes are required either way.</p></div>';
+  if(!ready.length)s+='<div class="card"><p class="lead" style="margin:0">Nobody has finished all six modules yet.</p></div>';
+  ready.sort(function(a,b){return(!!mockPass(a.slug)-!!mockPass(b.slug))||a.name.localeCompare(b.name);}).forEach(function(r){var mp=mockPass(r.slug),hist=mocksOf(r.slug),c=certs[r.slug],d=mockDraft[r.slug]||{};
+    s+='<div class="card"><div class="row" style="justify-content:space-between"><h2>'+esc(r.name)+'</h2>'+(c?'<span class="pill p-ok">Certified</span>':mp?'<span class="pill p-ok">Mock call passed</span>':'<span class="pill p-open">Waiting for mock call</span>')+'</div>'+hist.map(function(m){return'<div class="item"><b>'+(m.result==="pass"?'<span class="green">Passed</span>':'<span class="red">Needs another try</span>')+'</b> · '+esc(m.by)+' · '+esc(dt(m.ts))+'<div class="meta">'+esc(m.notes)+'</div></div>';}).join("");
+    if(!mp)s+='<div style="margin-top:12px"><div class="row"><label class="row"><input type="radio" name="mr-'+esc(r.slug)+'" value="pass"'+(d.r==="pass"?" checked":"")+'> Passed</label><label class="row"><input type="radio" name="mr-'+esc(r.slug)+'" value="again"'+(d.r==="again"?" checked":"")+'> Needs another try</label></div><textarea class="in" style="margin-top:8px" id="mn-'+esc(r.slug)+'" data-mn="'+esc(r.slug)+'" placeholder="What went well, and what to fix">'+esc(d.n||"")+'</textarea><div class="row" style="margin-top:8px"><button class="btn hat" data-ms="'+esc(r.slug)+'">Save mock call</button><span class="msg" id="mm-'+esc(r.slug)+'"></span></div></div>';
+    s+='</div>';});
+  w.appendChild(h(s));
+  setTimeout(function(){w.querySelectorAll("input[type=radio][name^=mr-]").forEach(function(x){x.onchange=function(){var sl=x.name.slice(3);mockDraft[sl]=Object.assign({},mockDraft[sl],{r:x.value});};});
+    w.querySelectorAll("[data-mn]").forEach(function(t){t.oninput=function(){mockDraft[t.dataset.mn]=Object.assign({},mockDraft[t.dataset.mn],{n:t.value});};});
+    w.querySelectorAll("[data-ms]").forEach(function(b){b.onclick=async function(){var sl=b.dataset.ms,d=mockDraft[sl]||{},m=$("mm-"+sl),r=roster[sl];
+      if(!d.r){say(m,"Pick Passed or Needs another try.","err");return;}if((d.n||"").trim().length<10){say(m,"Write a short note (what went well, what to fix).","err");return;}
+      b.disabled=true;var rec={slug:sl,name:r.name,result:d.r,notes:d.n.trim().slice(0,800),by:me.name,bySlug:me.slug,uid:uid,ts:Date.now()};
+      try{var ref=await withTimeout(db.collection("mockcalls").add(rec),15000);rec.id=ref&&ref.id?ref.id:("tmp"+rec.ts);upsert(mocks,rec);delete mockDraft[sl];logIt("Mock call for "+r.name+": "+(d.r==="pass"?"PASSED":"needs another try"));render();}
+      catch(e){b.disabled=false;say(m,"Did NOT save: "+errTxt(e),"err");}};});},0);
+  return w;}
+
+/* ---------- Juan: team progress + Certify ---------- */
+function teamView(){var w=document.createElement("div"),t=team();
+  var rows=t.map(function(r){var n=nextIdx(r.slug),qa=answers.filter(function(a){return a.slug===r.slug;}),rps=rpOf(r.slug);return{r:r,n:n,qa:qa.length,last:Math.max(0,Math.max.apply(null,qa.map(function(a){return a.ts;}).concat(rps.map(function(x){return x.ts;}),[0]))),rps:rps.length,rpp:rps.filter(function(x){return x.pass;}).length,mp:mockPass(r.slug),lm:mocksOf(r.slug)[0],c:certs[r.slug]};});
+  rows.sort(function(a,b){return(!!b.mp&&!b.c)-(!!a.mp&&!a.c)||(b.n-a.n)||(b.last-a.last)||a.r.name.localeCompare(b.r.name);});
+  var started=rows.filter(function(x){return x.qa||x.rps;}).length,done6=rows.filter(function(x){return x.n>=MODS.length;}).length,mp=rows.filter(function(x){return x.mp;}).length,cert=rows.filter(function(x){return x.c;}).length;
+  var s='<div class="card"><h2>Where everyone is</h2><p class="lead">Modules must be passed in order. Certify unlocks after a passed mock call with Cherry or Thea.</p><div class="tot"><div><b>'+started+'</b>started</div><div><b>'+done6+'</b>passed all 6</div><div><b>'+mp+'</b>mock call passed</div><div><b>'+cert+'</b>certified</div></div></div>';
+  s+='<div class="card"><div class="scroll"><table><thead><tr><th>Person</th><th>Modules</th><th>Quiz tries</th><th>Practice calls</th><th>Mock call</th><th>Certify</th></tr></thead><tbody>'+rows.map(function(x){
+    var mods=x.n>=MODS.length?'<span class="green">All 6 passed</span>':x.qa||x.rps?'On Module '+(x.n+1)+'<div class="small">'+esc(MODS[x.n].title)+'</div>':'<span class="small">Not started</span>';
+    var mock=x.mp?'<span class="green">Passed</span><div class="small">'+esc(x.mp.by)+' · '+esc(ago(x.mp.ts))+'</div>':x.lm?'<span class="red">Needs another try</span><div class="small">'+esc(x.lm.by)+'</div>':x.n>=MODS.length?'<span class="small">Waiting</span>':"—";
+    var cert=x.c?'<span class="green">Certified</span><div class="small">'+esc(dt(x.c.ts))+'</div>':x.mp?'<button class="btn teal sm" data-cert="'+esc(x.r.slug)+'">Certify</button>':'<span class="small">After mock call</span>';
+    return'<tr><td><b>'+esc(x.r.name)+'</b><div class="small">'+esc(x.r.title)+'</div></td><td>'+mods+'</td><td>'+x.qa+'</td><td>'+(x.rps?x.rps+' <span class="small">('+x.rpp+' passed)</span>':"—")+'</td><td>'+mock+'</td><td>'+cert+'</td></tr>';}).join("")+'</tbody></table></div></div>';
+  w.appendChild(h(s));
+  setTimeout(function(){w.querySelectorAll("[data-cert]").forEach(function(b){b.onclick=async function(){var sl=b.dataset.cert,r=roster[sl],mp=mockPass(sl);if(!mp)return;
+    if(!(await sure("Certify "+r.name+"?\n\nAll six modules passed, and "+mp.by+" passed the mock call. This saves your certification with today’s date.","Certify")))return;
+    b.disabled=true;var rec={slug:sl,name:r.name,by:me.name,uid:uid,ts:Date.now(),mockBy:mp.by,mockAt:mp.ts};
+    try{await withTimeout(db.doc("certs/"+sl).set(rec),15000);rec.id=sl;certs[sl]=rec;logIt("Certified "+r.name);render();}catch(e){b.disabled=false;alert("Did NOT save: "+errTxt(e));}};});},0);
+  return w;}
+
+/* ---------- Juan: every answer ---------- */
+function answersView(){var w=document.createElement("div");
+  var ev=[];answers.forEach(function(a){ev.push({k:"q",ts:a.ts,slug:a.slug,v:a});});roleplays.forEach(function(r){ev.push({k:"rp",ts:r.ts,slug:r.slug,v:r});});mocks.forEach(function(m){ev.push({k:"mc",ts:m.ts,slug:m.slug,v:m});});Object.keys(certs).forEach(function(k){ev.push({k:"c",ts:certs[k].ts,slug:k,v:certs[k]});});
+  ev=ev.filter(function(e){return who==="all"||e.slug===who;}).sort(function(a,b){return b.ts-a.ts;}).slice(0,150);
+  var s='<div class="card"><div class="row" style="justify-content:space-between"><h2>Every answer, by name</h2><select class="in" id="who" style="width:auto"><option value="all">Everyone</option>'+team().map(function(r){return'<option value="'+esc(r.slug)+'"'+(who===r.slug?" selected":"")+'>'+esc(r.name)+'</option>';}).join("")+'</select></div><p class="lead">Quiz answers, practice calls, mock calls and certifications. Newest first.</p>';
+  if(!ev.length)s+='<p class="small">Nothing yet'+(who==="all"?"":" from this person")+'.</p>';
+  ev.forEach(function(e){var v=e.v;
+    if(e.k==="q")s+='<div class="item"><div class="row" style="justify-content:space-between"><b>'+esc(v.name)+' · Module '+esc(v.moduleNo)+' quiz</b><span><span class="pill '+(v.passed?"p-ok":"p-no")+'">'+(v.passed?"PASSED":"NOT PASSED")+'</span> <span class="small">'+esc(dt(v.ts))+'</span></span></div><div class="meta">Attempt '+esc(v.attempt)+' · '+esc(v.score)+'/'+esc(v.total)+'</div><details style="margin-top:6px"><summary class="small" style="cursor:pointer">Their answers</summary>'+(v.answers||[]).map(function(a,k){return'<div class="meta" style="margin-top:4px">'+(a.right?'<span class="green">✓</span>':'<span class="red">✗</span>')+' '+(k+1)+'. '+esc(a.q)+'<br><span style="padding-left:18px;display:inline-block">'+esc(a.chosen)+'</span></div>';}).join("")+'</details></div>';
+    else if(e.k==="rp")s+='<div class="item"><div class="row" style="justify-content:space-between"><b>'+esc(v.name)+' · practice call ('+esc(v.scenarioName)+')</b><span><span class="pill '+(v.pass?"p-ok":"p-no")+'">'+(v.pass?"PASSED":"NOT PASSED")+'</span> <span class="small">'+esc(dt(v.ts))+'</span></span></div>'+(v.feedback?'<div class="meta">'+esc(v.feedback)+'</div>':"")+'<div class="meta">'+(v.checks||[]).filter(function(c){return!c.ok;}).map(function(c){return'<span class="red">✗ '+esc((RULES.filter(function(r){return r[0]===c.rule;})[0]||[c.rule,c.rule])[1])+'</span>';}).join(" · ")+'</div><details style="margin-top:6px"><summary class="small" style="cursor:pointer">Transcript</summary>'+(v.turns||[]).map(function(t){return'<div class="meta" style="margin-top:4px"><b>'+(t.who==="rep"?esc(first(v.name)):"Seller")+':</b> '+esc(t.text)+'</div>';}).join("")+'</details></div>';
+    else if(e.k==="mc")s+='<div class="item"><div class="row" style="justify-content:space-between"><b>'+esc(v.name)+' · mock call with '+esc(v.by)+'</b><span><span class="pill '+(v.result==="pass"?"p-ok":"p-no")+'">'+(v.result==="pass"?"PASSED":"NEEDS ANOTHER TRY")+'</span> <span class="small">'+esc(dt(v.ts))+'</span></span></div><div class="meta">'+esc(v.notes)+'</div></div>';
+    else s+='<div class="item"><b>'+esc(v.name)+' · certified by '+esc(v.by)+'</b> <span class="small">'+esc(dt(v.ts))+'</span></div>';});
+  w.appendChild(h(s+'</div>'));setTimeout(function(){$("who").onchange=function(){who=this.value;render();};},0);return w;}
+
+/* ---------- typed version ---------- */
+function typedText(){var o=["SELLER-CALL TRAINING · Twin Home Buyer","Source: "+D.source+".","","How it works: sign in with your name and 6-digit code. Six modules, in order, no skipping ahead. Each module ends with a quiz: every answer right opens the next module. Module 5 also needs one passed AI practice call. Every answer is saved by name. After Module 6: a final mock call with Cherry or Thea, then Juan certifies.","","JUAN’S STORY (the only way it is told):","“"+STORY+"”","Never state an age for the company.",""];
+  MODS.forEach(function(m,i){o.push("MODULE "+(i+1)+": "+m.title.toUpperCase());o.push(m.goal);m.parts.forEach(function(p){o.push("");o.push(p.h);if(p.say)o.push("   “"+p.say+"”");p.pts.forEach(function(x,k){o.push((p.ol?"   "+(k+1)+") ":"   - ")+x);});o.push("   Source: "+p.from.map(function(f){return f.s+": “"+f.t+"”";}).join(" / "));});
+    if(m.roleplay){o.push("");o.push("Practice call checks (all six must pass): "+RULES.map(function(r){return r[1];}).join("; ")+".");}
+    o.push("");o.push("Quiz ("+m.quiz.length+" questions, all must be right):");m.quiz.forEach(function(q,k){o.push((k+1)+". "+q.q);q.o.forEach(function(a,j){o.push("   "+"ABC"[j]+". "+a);});o.push("   Answer: "+"ABC"[q.a]+". Why: "+q.why);});o.push("");});
+  o.push("FINAL STEP: mock call with Cherry or Thea (Passed / Needs another try, with notes), then Juan’s Certify.");return o.join("\n");}
+function typedView(){var w=document.createElement("div");
+  w.appendChild(h('<div class="card"><h2>Typed version</h2><p class="lead">The whole training as plain text, the same words as the modules. Claude reads the file version: <a href="seller-call-training.md" target="_blank" rel="noopener">seller-call-training.md</a>.</p><div class="row"><button class="btn ghost sm" id="cp">Copy text</button><span class="msg" id="cp-m"></span></div><div class="typed" id="tt" style="margin-top:10px">'+esc(typedText())+'</div></div>'));
+  setTimeout(function(){$("cp").onclick=function(){var t=typedText();try{navigator.clipboard.writeText(t).then(function(){say($("cp-m"),"Copied.","ok");},function(){sel();});}catch(e){sel();}function sel(){var r=document.createRange();r.selectNodeContents($("tt"));var s=window.getSelection();s.removeAllRanges();s.addRange(r);say($("cp-m"),"Selected. Press Ctrl+C or Cmd+C.");}};},0);
+  return w;}
+
+/* ---------- Juan: people & codes ---------- */
+async function makePerson(name,role,title){var s=slug(name);var code=newCode(),salt=newSalt(),hh=await hash(salt,code);
+  await db.doc("roster/"+s).set({name:name,role:role,title:title||"",salt:salt,hash:hh,ts:Date.now()});await db.doc("roster_codes/"+s).set({code:code,ts:Date.now()});codes[s]=code;return{slug:s,code:code};}
+function accessView(){var w=document.createElement("div");
+  if(!canEdit){w.appendChild(h('<div class="card"><h2>People & codes</h2><p class="lead" style="margin:0">Everyone signs in with the same 6-digit code they use for the Team Hub. Only editors of this page can see or change codes here.</p></div>'));return w;}
+  var ppl=Object.keys(roster).map(function(k){return roster[k];}).sort(function(a,b){return a.name.localeCompare(b.name);});
+  var s='<div class="card"><h2>People and codes</h2><p class="lead">Codes start the same as the Team Hub. A new code here works only on this page and replaces the old one right away.</p><div class="scroll"><table><thead><tr><th>Name</th><th>Role</th><th>Code</th><th></th></tr></thead><tbody>'+ppl.map(function(r){return'<tr><td><b>'+esc(r.name)+'</b>'+(COACHES.indexOf(r.slug)>=0?' <span class="pill p-open">Mock calls</span>':"")+'</td><td>'+esc(r.title)+'</td><td><b>'+esc(codes[r.slug]||"Team Hub code")+'</b></td><td>'+(r.role==="owner"?"":'<button class="btn ghost sm" data-nc="'+esc(r.slug)+'">New code</button>')+'</td></tr>';}).join("")+'</tbody></table></div><div class="row" style="margin-top:12px"><input class="in" id="np-n" placeholder="Full name" style="flex:1;min-width:160px"><input class="in" id="np-t" placeholder="Role" style="flex:1;min-width:140px"><button class="btn" id="np-go">Add</button></div><div class="msg" id="np-m"></div></div>';
+  w.appendChild(h(s));
+  setTimeout(function(){w.querySelectorAll("[data-nc]").forEach(function(b){b.onclick=async function(){var r=roster[b.dataset.nc];if(!(await sure("Give "+r.name+" a new code for this page? The old one stops working here.","New code")))return;try{await makePerson(r.name,r.role,r.title);logIt("New code for "+r.name);render();}catch(e){alert("Did NOT save: "+errTxt(e));}};});
+    $("np-go").onclick=async function(){var n=($("np-n").value||"").trim().replace(/\s+/g," ");if(n.length<3){say($("np-m"),"Type the full name.","err");return;}if(roster[slug(n)]){say($("np-m"),"Already on the list.","err");return;}try{var p=await makePerson(n,"team",($("np-t").value||"").trim());logIt("Added "+n);say($("np-m"),n+" added. Code: "+p.code,"ok");}catch(e){say($("np-m"),"Did NOT save: "+errTxt(e),"err");}};},0);
+  return w;}
+function alert(msg){var b=h('<div class="bnr on err" style="position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:70;max-width:560px;margin:0 auto">'+esc(msg)+'</div>').firstChild;document.body.appendChild(b);setTimeout(function(){b.remove();},8000);}
+})();
+</script>

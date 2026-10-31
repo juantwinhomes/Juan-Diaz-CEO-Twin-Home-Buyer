@@ -1,0 +1,53 @@
+const {chromium}=require('playwright');const path=require('path');
+const FILE='file://'+path.resolve(__dirname,'..','seller-call-training.html'),OUT=process.argv[2];const D=require(path.resolve(__dirname,'..','content.json'));
+let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console.log('ok:',m);};
+(async()=>{const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1000,height:900}});await ctx.addInitScript({path:path.join(__dirname,'mock.js')});
+  const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>{if(m.type()==='error')errs.push(m.text());});
+  const dump=()=>p.evaluate(()=>__dump());const col=async c=>Object.entries(await dump()).filter(([k])=>k.startsWith(c+'/')).map(([,v])=>v);
+  async function signIn(name){await p.waitForSelector('.gnm');await p.click(`.gnm:has-text("${name}")`);await p.fill('#g-code','123456');await p.click('#g-go');await p.waitForSelector('#tabs .tab');}
+  async function reload(){const snap=await p.evaluate(()=>__snap());await ctx.addInitScript(s=>{window.__MOCKSNAP=s;},snap);await p.reload();}
+  async function passQuiz(i){const m=D.modules[i];for(let k=0;k<m.quiz.length;k++)await p.check(`input[name="q${k}"][value="${m.quiz[k].a}"]`);await p.click('#q-go');await p.waitForSelector('#flash');}
+  await p.goto(FILE);await p.fill('#g-find','van');await p.fill('#g-code','111111');await p.click('#g-go');await p.waitForFunction(()=>/Wrong code/.test(document.querySelector('#g-msg').textContent));ok(true,'wrong code refused');
+  await p.fill('#g-code','123456');await p.click('#g-go');await p.waitForSelector('#tabs .tab');
+  let tabs=await p.$$eval('#tabs .tab',t=>t.map(x=>x.textContent));ok(tabs.join('|')==='My training|Typed version','trainee tabs: '+tabs.join('|'));
+  ok((await p.textContent('.mod[data-m="1"]')).includes('Pass Module 1 first'),'Module 2 locked');
+  await p.click('.mod[data-m="1"]',{force:true});ok(!(await p.$('#back')),'clicking a locked module does nothing');
+  await p.screenshot({path:OUT+'/1-list.png',fullPage:true});
+  await p.click('.mod[data-m="0"]');await p.waitForSelector('#quiz');
+  await p.click('#q-go');ok((await p.textContent('#q-b')).includes('Still blank'),'blank submit blocked');ok((await col('answers')).length===0,'blank submit not saved');
+  for(let k=0;k<4;k++)await p.check(`input[name="q${k}"][value="2"]`);await p.click('#q-go');await p.waitForSelector('#flash');
+  let a=await col('answers');ok(a.length===1&&!a[0].passed&&a[0].answers.length===4&&a[0].name==='Vanessa Miller'&&a[0].answers[2].right===true,'fail attempt saved with every answer by name');
+  ok((await p.$$('#quiz label.wrong')).length===3,'wrong answers marked red');await p.screenshot({path:OUT+'/2-m1-fail.png',fullPage:true});
+  await passQuiz(0);a=await col('answers');ok(a.length===2&&a.find(x=>x.attempt===2).passed,'attempt 2 passed');ok((await p.textContent('#flash')).includes('Module 2 is open'),'flash says Module 2 open');
+  for(const i of [1,2,3]){await p.click('#go-next');await p.waitForSelector('#quiz');await passQuiz(i);}
+  await p.click('#go-next');await p.waitForSelector('#rp');ok((await p.textContent('#view')).includes('Pass one practice call above to open this quiz'),'M5 quiz locked until practice call passes');
+  await p.click('[data-sc="lily"]');await p.fill('#rp-in','We could pay $900,000 cash.');await p.click('#rp-say');await p.waitForFunction(()=>!document.querySelector('#rp-say')||!document.querySelector('#rp-say').disabled);
+  await p.click('#rp-end');await p.waitForSelector('#rp-again');let r=await col('roleplays');ok(r.length===1&&r[0].pass===false&&r[0].turns.length>=3&&r[0].checks.find(c=>c.rule==='price').ok===false,'failed practice call saved with transcript and checks');
+  await p.screenshot({path:OUT+'/3-rp-fail.png',fullPage:true});
+  await p.click('#rp-again');await p.click('[data-sc="sanmateo"]');await p.fill('#rp-in',"Thanks! We've been in business 25 years. According to Redfin it's 3 bedrooms. Can we book a 15-minute visit with Juan, a licensed contractor?");await p.click('#rp-say');await p.waitForSelector('#rp-again');
+  r=await col('roleplays');ok(r.length===2&&r[1].pass===false&&r[1].checks.find(c=>c.rule==='story').ok===false,'company age in a call fails the story check');
+  await p.click('#rp-again');await p.click('[data-sc="nopressure"]');await p.fill('#rp-in',"Can I get your name and address? According to Redfin it's 3 bedrooms. Listing with an agent may get you more. Let's book a 15-minute visit with Juan, a licensed contractor.");await p.click('#rp-say');await p.waitForSelector('#rp-again');
+  r=await col('roleplays');ok(r.length===3&&r[2].pass===true,'passing practice call saved');ok(!!(await p.$('#quiz')),'M5 quiz opens after a passed call');
+  await p.screenshot({path:OUT+'/4-rp-pass.png',fullPage:true});
+  await passQuiz(4);await p.click('#go-next');await p.waitForSelector('#quiz');await passQuiz(5);
+  await p.click('#go-next');await p.waitForSelector('.mods');ok((await p.textContent('#view')).includes('Next: your final mock call'),'final card asks for mock call');
+  ok((await p.textContent('#hello')).includes('Mock call next'),'header shows mock call next');
+  await p.click('.tab[data-v="typed"]');ok((await p.textContent('#tt')).includes('MODULE 6: HOW A DEAL CLOSES'),'typed version renders');
+  await p.setViewportSize({width:390,height:844});await p.click('.tab[data-v="train"]');await p.click('.mod[data-m="4"]');await p.waitForSelector('#rp');
+  ok(await p.evaluate(()=>document.documentElement.scrollWidth)<=390,'no sideways scroll on phone');await p.screenshot({path:OUT+'/5-phone.png'});await p.setViewportSize({width:1000,height:900});
+  await reload();await signIn('Cherry Burce');tabs=await p.$$eval('#tabs .tab',t=>t.map(x=>x.textContent));ok(tabs.includes('Mock calls1'),'Cherry sees Mock calls with 1 waiting: '+tabs.join('|'));
+  await p.click('.tab[data-v="mock"]');await p.click('[data-ms="vanessa-miller"]');ok((await p.textContent('#mm-vanessa-miller')).includes('Pick Passed'),'mock call needs a result');
+  await p.check('input[name="mr-vanessa-miller"][value="again"]');await p.fill('#mn-vanessa-miller','Gave a number when pushed. Redo the price objection.');await p.click('[data-ms="vanessa-miller"]');await p.waitForFunction(()=>/Needs another try/.test(document.querySelector('#view').textContent));
+  await p.check('input[name="mr-vanessa-miller"][value="pass"]');await p.fill('#mn-vanessa-miller','Booked the 15-minute visit, no price, story word for word.');await p.click('[data-ms="vanessa-miller"]');await p.waitForFunction(()=>/Mock call passed/.test(document.querySelector('#view').textContent));
+  let mc=await col('mockcalls');ok(mc.length===2&&mc.some(m=>m.result==='pass'&&m.by==='Cherry Burce'),'both mock calls saved by name');
+  await reload();await signIn('Juan Diaz');tabs=await p.$$eval('#tabs .tab',t=>t.map(x=>x.textContent));ok(tabs[0]==='Team progress1','Juan sees 1 ready to certify: '+tabs.join('|'));
+  const certBtns=await p.$$('[data-cert]');ok(certBtns.length===1,'exactly one Certify button');await p.screenshot({path:OUT+'/6-juan-team.png',fullPage:true});
+  await p.click('[data-cert="vanessa-miller"]');await p.click('#cfm-n');ok(!(await col('certs')).length,'cancel does not certify');
+  await p.click('[data-cert="vanessa-miller"]');await p.click('#cfm-y');await p.waitForFunction(()=>/Certified/.test(document.querySelector('#view').textContent));
+  let c=await col('certs');ok(c.length===1&&c[0].by==='Juan Diaz'&&c[0].mockBy==='Cherry Burce','certification saved by Juan');
+  await p.click('.tab[data-v="answers"]');const at=await p.textContent('#view');ok(at.includes('Module 1 quiz')&&at.includes('practice call (Lily)')&&at.includes('mock call with Cherry Burce')&&at.includes('certified by Juan Diaz'),'Every answer shows quizzes, practice calls, mock calls, certification');
+  await p.screenshot({path:OUT+'/7-juan-answers.png',fullPage:true});
+  await p.click('.tab[data-v="train"]');await p.click('.mod[data-m="2"]');ok((await p.textContent('#view')).includes('answer key'),'Juan sees the answer key');
+  await reload();await signIn('Vanessa Miller');ok((await p.textContent('#view')).includes('Certified ✓'),'Vanessa sees Certified');
+  const logs=await col('log');ok(logs.some(l=>/Module 1 quiz, attempt 1: 1\/4/.test(l.a))&&logs.some(l=>/Certified Vanessa/.test(l.a)),'activity log by name');
+  ok(errs.length===0,'no page errors '+JSON.stringify(errs.slice(0,3)));console.log(fails?fails+' FAILED':'ALL PASSED');await b.close();})();
