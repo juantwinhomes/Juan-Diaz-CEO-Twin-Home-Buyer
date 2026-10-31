@@ -8,7 +8,7 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   async function reload(){const snap=await p.evaluate(()=>__snap());await ctx.addInitScript(s=>{window.__MOCKSNAP=s;},snap);await p.reload();}
   async function passQuiz(i){const m=D.modules[i];for(let k=0;k<m.quiz.length;k++)await p.check(`input[name="q${k}"][value="${m.quiz[k].a}"]`);await p.click('#q-go');await p.waitForSelector('#flash');}
   await p.goto(FILE);await p.fill('#g-find','van');await p.fill('#g-code','111111');await p.click('#g-go');await p.waitForFunction(()=>/Wrong code/.test(document.querySelector('#g-msg').textContent));ok(true,'wrong code refused');
-  await p.fill('#g-code','123456');await p.click('#g-go');await p.waitForSelector('#tabs .tab');
+  await p.fill('#g-code','654321');await p.click('#g-go');await p.waitForSelector('#tabs .tab');ok(true,'training-only code signs Vanessa in');
   let tabs=await p.$$eval('#tabs .tab',t=>t.map(x=>x.textContent));ok(tabs.join('|')==='My training|Typed version','trainee tabs: '+tabs.join('|'));
   ok((await p.textContent('.mod[data-m="1"]')).includes('Pass Module 1 first'),'Module 2 locked');
   await p.click('.mod[data-m="1"]',{force:true});ok(!(await p.$('#back')),'clicking a locked module does nothing');
@@ -48,6 +48,6 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   await p.click('.tab[data-v="answers"]');const at=await p.textContent('#view');ok(at.includes('Module 1 quiz')&&at.includes('practice call (Lily)')&&at.includes('mock call with Cherry Burce')&&at.includes('certified by Juan Diaz'),'Every answer shows quizzes, practice calls, mock calls, certification');
   await p.screenshot({path:OUT+'/7-juan-answers.png',fullPage:true});
   await p.click('.tab[data-v="train"]');await p.click('.mod[data-m="2"]');ok((await p.textContent('#view')).includes('answer key'),'Juan sees the answer key');
-  await reload();await signIn('Vanessa Miller');ok((await p.textContent('#view')).includes('Certified ✓'),'Vanessa sees Certified');
+  await reload();await signIn('Vanessa Miller');ok(true,'Team Hub code still signs Vanessa in');ok((await p.textContent('#view')).includes('Certified ✓'),'Vanessa sees Certified');
   const logs=await col('log');ok(logs.some(l=>/Module 1 quiz, attempt 1: 1\/4/.test(l.a))&&logs.some(l=>/Certified Vanessa/.test(l.a)),'activity log by name');
   ok(errs.length===0,'no page errors '+JSON.stringify(errs.slice(0,3)));console.log(fails?fails+' FAILED':'ALL PASSED');await b.close();})();

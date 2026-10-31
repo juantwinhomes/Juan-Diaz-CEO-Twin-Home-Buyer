@@ -151,7 +151,7 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 
 <div class="gate" id="gate">
   <div class="gcard">
-    <div class="gtop"><h2>Who’s training?</h2><p><b>1.</b> Start typing your name, then tap it.<br><b>2.</b> Type your 6-digit code. It’s the same code as the Team Hub.<br><b>3.</b> Tap Sign in.<br>Every answer you give here is saved under your name.</p></div>
+    <div class="gtop"><h2>Who’s training?</h2><p><b>1.</b> Start typing your name, then tap it.<br><b>2.</b> Type your 6-digit code: your Team Hub code, or the training code you were given.<br><b>3.</b> Tap Sign in.<br>Every answer you give here is saved under your name.</p></div>
     <div class="gbody">
       <input class="in" id="g-find" placeholder="Type your name…" autocomplete="off" aria-label="Find your name">
       <div class="gnames" id="g-names"><div class="msg">Connecting to the shared board…</div></div>
@@ -245,8 +245,10 @@ async function signIn(){var r=roster[picked],code=($("g-code").value||"").trim()
   if(!/^\d{6}$/.test(code)){say(m,"Type your 6-digit code.","err");return;}
   if(fails>=5){say(m,"Too many wrong codes. Reload the page, or ask Juan for a new code.","err");return;}
   $("g-go").disabled=true;say(m,"Checking…");
-  try{var hh=await hash(r.salt,code);
-    if(hh!==r.hash){fails++;say(m,"Wrong code for "+r.name+". "+(5-fails)+" tries left.","err");$("g-go").disabled=false;return;}
+  try{var hh=await hash(r.salt,code),good=hh===r.hash;
+    /* a person can also have a training-only code (salt2/hash2) next to their Team Hub code */
+    if(!good&&r.hash2)good=(await hash(r.salt2||r.salt,code))===r.hash2;
+    if(!good){fails++;say(m,"Wrong code for "+r.name+". "+(5-fails)+" tries left.","err");$("g-go").disabled=false;return;}
     me={name:r.name,slug:r.slug,role:r.role,title:r.title};
     try{var p=people[r.slug]||{};await db.doc("people/"+r.slug).set(Object.assign({},p,{name:r.name,lastIn:Date.now(),count:(p.count||0)+1}));}
     catch(e){me=null;say(m,"Your sign-in couldn’t be saved, so the page stays locked. Ask Seth to share this page with you as Contributor.","err");$("g-go").disabled=false;return;}
@@ -270,7 +272,7 @@ function live(col,apply){try{db.collection(col).onSnapshot(function(s){apply(doc
     if(!user){lockedMsg("Claude didn’t say who you are. Sign in to Claude, then tap Try again.");return;}
     var u=await user.me();uid=u&&u.id;canEdit=!!(u&&u.canEdit);if(!uid){lockedMsg("Sign in to Claude to open this page.");return;}
   }catch(e){lockedMsg("Can’t connect to the shared board. The page stays locked.");return;}
-  live("roster",function(list){if(!list.length&&rosterLoaded)return;roster={};list.forEach(function(v){if(v.name&&v.hash)roster[v.id]={slug:v.id,name:v.name,role:v.role||"team",title:v.title||"",salt:v.salt,hash:v.hash};});
+  live("roster",function(list){if(!list.length&&rosterLoaded)return;roster={};list.forEach(function(v){if(v.name&&v.hash)roster[v.id]={slug:v.id,name:v.name,role:v.role||"team",title:v.title||"",salt:v.salt,hash:v.hash,salt2:v.salt2||"",hash2:v.hash2||""};});
     if(list.length||!rosterLoaded){rosterLoaded=true;$("g-retry").classList.add("hidden");fillNames();if(me)soft();}});
   try{db.collection("data/users/"+uid).doc("me").get().then(function(d){var v=d&&d.exists?d.data():null;if(v&&v.slug){lastSlug=v.slug;if(!picked){picked=v.slug;$("g-code").disabled=false;$("g-go").disabled=false;}if(rosterLoaded)fillNames();}}).catch(function(){});}catch(x){}
   live("people",function(list){list.forEach(function(v){people[v.id]=v;});soft();});
@@ -470,7 +472,7 @@ function typedView(){var w=document.createElement("div");
 
 /* ---------- Juan: people & codes ---------- */
 async function makePerson(name,role,title){var s=slug(name);var code=newCode(),salt=newSalt(),hh=await hash(salt,code);
-  await db.doc("roster/"+s).set({name:name,role:role,title:title||"",salt:salt,hash:hh,ts:Date.now()});await db.doc("roster_codes/"+s).set({code:code,ts:Date.now()});codes[s]=code;return{slug:s,code:code};}
+  await db.doc("roster/"+s).set({name:name,role:role,title:title||"",salt:salt,hash:hh,ts:Date.now()});/* a new code replaces both the Team Hub code and any training code on this page */await db.doc("roster_codes/"+s).set({code:code,ts:Date.now()});codes[s]=code;return{slug:s,code:code};}
 function accessView(){var w=document.createElement("div");
   if(!canEdit){w.appendChild(h('<div class="card"><h2>People & codes</h2><p class="lead" style="margin:0">Everyone signs in with the same 6-digit code they use for the Team Hub. Only editors of this page can see or change codes here.</p></div>'));return w;}
   var ppl=Object.keys(roster).map(function(k){return roster[k];}).sort(function(a,b){return a.name.localeCompare(b.name);});

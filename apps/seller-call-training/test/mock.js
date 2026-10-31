@@ -1,7 +1,7 @@
 (function(){
   var store=new Map(),listeners=[],idc=0,ready=false,saved=null;
   function boot(){if(ready)return;ready=true;var snap=window.__MOCKSNAP;if(snap){store=new Map(snap.entries);idc=snap.idc;}else seed();}
-  function seed(){[["juan-diaz","Juan Diaz","owner","Founder & CEO"],["vanessa-miller","Vanessa Miller","team","Lead Reactivation"],["cherry-burce","Cherry Burce","team","COO"],["thea-margate","Thea Margate","team","Lead Manager"],["other-rep","Other Rep","team","Acquisitions"]].forEach(function(r){store.set("roster/"+r[0],{name:r[1],role:r[2],title:r[3],salt:"s",hash:"ebec7b09aa75d343fe3e2df50edd6e5a74e892ffb69c873b3a38757a27a9fae5"});});}
+  function seed(){[["juan-diaz","Juan Diaz","owner","Founder & CEO"],["vanessa-miller","Vanessa Miller","team","Lead Reactivation"],["cherry-burce","Cherry Burce","team","COO"],["thea-margate","Thea Margate","team","Lead Manager"],["other-rep","Other Rep","team","Acquisitions"]].forEach(function(r){store.set("roster/"+r[0],{name:r[1],role:r[2],title:r[3],salt:"s",hash:"ebec7b09aa75d343fe3e2df50edd6e5a74e892ffb69c873b3a38757a27a9fae5"});});store.set("roster/vanessa-miller",Object.assign({},store.get("roster/vanessa-miller"),{salt2:"t",hash2:"4b1f932b7f128e6d7ceaeb72ff0266de9d1c0f31531581ca89b72c841bc21cdd"}));}
   function cp(v){return v==null?v:JSON.parse(JSON.stringify(v));}
   function colOf(p){var a=p.split("/");a.pop();return a.join("/");}
   function docsIn(col){var out=[];store.forEach(function(v,k){if(colOf(k)===col)out.push({id:k.split("/").pop(),data:function(){return cp(v);}});});return out;}
