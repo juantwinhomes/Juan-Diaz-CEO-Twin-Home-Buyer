@@ -19,6 +19,10 @@
     var last=rep(p).split("\n").pop()||"";return{reply:/15-minute/.test(last)?"Okay, Tuesday at 10 works. Bye.":"Hmm, why should I?",ended:/15-minute/.test(last)};}};
   window.__snap=function(){boot();return{entries:Array.from(store.entries()),idc:idc};};
   window.__put=function(p,v){boot();store.set(p,cp(v));notify();};
+  var sheet={values:[]},watchers=[];window.__mcpErr=null;
+  window.__sheetSet=function(rows){sheet.values=rows;watchers.forEach(function(h){h({type:"data",result:{content:[],payload:{range:"Calls!A2:N",values:rows}}});});};
+  var mcp={callTool:async function(srv,tool,inp){window.__mcpCalls=(window.__mcpCalls||[]).concat([[srv,tool,inp]]);if(window.__mcpErr)throw window.__mcpErr;return{content:[],payload:{range:"Calls!A2:N",values:sheet.values}};},
+    watchTool:function(srv,tool,inp,h){watchers.push(h);return function(){};}};
   window.__dump=function(){boot();var o={};store.forEach(function(v,k){o[k]=v;});return o;};
-  window.claude={use:async function(n){boot();return n==="db"?db:n==="user"?{me:async function(){return{id:"u1",canEdit:true};}}:n==="sample"?sample:null;}};
+  window.claude={use:async function(n){boot();return n==="db"?db:n==="user"?{me:async function(){return{id:"u1",canEdit:true};}}:n==="sample"?sample:n==="mcp"?mcp:null;}};
 })();

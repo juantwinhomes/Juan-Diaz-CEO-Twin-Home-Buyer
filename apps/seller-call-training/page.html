@@ -252,7 +252,7 @@ function team(){return Object.keys(roster).map(function(k){return roster[k];}).f
 function attemptsOf(sl,mid){return answers.filter(function(a){return a.slug===sl&&a.module===mid;}).sort(function(a,b){return a.ts-b.ts;});}
 function passedMod(sl,mid){if(preview&&me&&sl===me.slug)return!!prevPass[mid];return attemptsOf(sl,mid).some(function(a){return a.passed;})||!!((((people[sl]||{}).prog)||{})[mid]||{}).passed;}
 function rpOf(sl){return roleplays.filter(function(r){return r.slug===sl;}).sort(function(a,b){return a.ts-b.ts;});}
-function rpPassed(sl){if(preview&&me&&sl===me.slug)return prevRp;return rpOf(sl).some(function(r){return r.pass;})||!!(people[sl]||{}).rpPassed;}
+function rpPassed(sl){if(preview&&me&&sl===me.slug)return prevRp;return rpOf(sl).some(function(r){return r.pass;})||phoneCalls(sl).some(function(r){return r.pass;})||!!(people[sl]||{}).rpPassed;}
 function nextIdx(sl){if(preview&&me&&sl===me.slug)return MODS.length;for(var i=0;i<MODS.length;i++){if(!passedMod(sl,MODS[i].id))return i;}return MODS.length;}
 function mocksOf(sl){return mocks.filter(function(m){return m.slug===sl;}).sort(function(a,b){return b.ts-a.ts;});}
 function mockPass(sl){return mocksOf(sl).filter(function(m){return m.result==="pass";})[0]||null;}
@@ -389,10 +389,48 @@ function moduleView(i){var m=MODS[i],w=document.createElement("div"),staff=isSta
   else{w.appendChild(quizCard(m,i,passed,qLock));
     if(tries.length)w.appendChild(h('<div class="card"><h2>Your attempts</h2>'+tries.slice().reverse().map(function(a){return'<div class="meta">'+(a.passed?'<span class="green">Passed</span>':'<span class="red">Not passed</span>')+' · attempt '+esc(a.attempt)+' · '+esc(a.score)+'/'+esc(a.total)+' · '+esc(dt(a.ts))+'</div>';}).join("")+'</div>'));}
   return w;}
-/* phone practice: Retell AI seller. Retell -> Zapier, which fires a Claude scheduled task with the call's data;
-   the task writes it into `roleplays` (via:"phone", doc id "phone-<callId>") within minutes. Trainees see only their own here. */
-var phMsg={};
-function phoneCalls(sl){return roleplays.filter(function(r){return r.via==="phone"&&(sl==null||r.slug===sl);}).sort(function(a,b){return b.ts-a.ts;});}
+/* phone practice: Retell AI seller -> Zapier -> the "Seller practice calls" Google Sheet. The page reads the sheet with
+   the VIEWER's Google Sheets connector (mcp capability), shows each trainee only their own rows, and copies those rows
+   into `roleplays` (doc id "phone-<callId>", via:"phone") so every call is saved by name. Staff copy every row. */
+var phMsg={},GS="Google Sheets",ph={state:"idle",rows:[],err:null,at:0,started:false,unwatch:null,retried:false},phBusy={},mcpP=null;
+function mcpNS(){if(!mcpP)mcpP=window.claude.use("mcp").catch(function(){return null;});return mcpP;}
+function tf(v){v=String(v==null?"":v).trim().toLowerCase();return v==="true"?true:v==="false"?false:null;}
+function parseTs(v){var t=String(v==null?"":v).trim();if(!t)return 0;var n=Number(t.replace(/,/g,""));if(isFinite(n)&&n>0)return n<1e11?n*1000:n;var d=Date.parse(t);return isNaN(d)?0:d;}
+function turnsOf(t){var out=[];String(t||"").split(/\r?\n/).forEach(function(l){var m=l.match(/^\s*(Agent|User)\s*:\s*(.*)$/i);if(m)out.push({who:/^agent$/i.test(m[1])?"seller":"rep",text:m[2]});else if(l.trim()&&out.length)out[out.length-1].text+=" "+l.trim();});return out;}
+function nameKey(n){return String(n||"").trim().toLowerCase().split(/\s+/)[0].replace(/[^a-zñ]/g,"");}
+function matchRep(n){var f=nameKey(n);if(!f)return"";var hits=Object.keys(roster).filter(function(k){return nameKey(roster[k].name)===f;});return hits.length===1?hits[0]:"";}
+function rowRec(r){if(!r)return null;var cid=String(r[0]||"").trim();if(!cid)return null;var ck=[5,6,7,8,9,10].map(function(k){return tf(r[k]);});if(ck.some(function(x){return x===null;}))return null;
+  var turns=turnsOf(r[12]),sl=matchRep(r[3]),checks=RULES.map(function(x,k){return{rule:x[0],ok:ck[k],note:""};});
+  if(BANNED.test(turns.filter(function(t){return t.who==="rep";}).map(function(t){return t.text;}).join("\n")))checks[5]={rule:"story",ok:false,note:"You stated an age for the company. Never do that."};
+  return{id:"phone-"+cid.replace(/[^A-Za-z0-9_\-.~:@+]/g,"_").slice(0,190),via:"phone",callId:cid,slug:sl,name:sl?roster[sl].name:"",heardName:String(r[3]||"").trim(),uid:null,ts:parseTs(r[4]),scenario:"phone",scenarioName:"Phone call with Rob Walker",turns:turns,pass:checks.every(function(c){return c.ok;}),checks:checks,feedback:String(r[11]||"").slice(0,800),unmatched:!sl};}
+function phoneCalls(sl){var have={},out=roleplays.filter(function(r){if(r.via!=="phone")return false;have[r.id]=1;return sl==null||r.slug===sl;});
+  ph.rows.forEach(function(r){if(!have[r.id]&&(sl==null||r.slug===sl))out.push(r);});return out.sort(function(a,b){return(b.ts||0)-(a.ts||0);});}
+function phoneInput(){return{spreadsheetId:D.phone.sheetId,range:D.phone.range};}
+function phoneData(res){var p=res&&res.payload,vals=(p&&Array.isArray(p.values))?p.values:[];ph.rows=vals.map(rowRec).filter(Boolean);ph.state="ok";ph.err=null;ph.at=(res&&res.cache&&res.cache.storedAt)||Date.now();phoneSave();soft();}
+var PH_DENY=["needs_reauth","server_not_connected","blocked_by_policy","approval_required","not_in_manifest","selection_required","consent_required","not_granted","capability_disabled","capability_removed"];
+function phoneErr(e){e=e||{};if(PH_DENY.indexOf(e.code)>=0)ph.rows=[];ph.err=e;ph.state="err";soft();
+  if(e.retryable&&!ph.retried){ph.retried=true;setTimeout(function(){phoneCheck(false);},Math.min(60000,e.retryAfterMs||(2000+Math.random()*3000)));}}
+async function phoneCheck(force){var mcp=await mcpNS();if(!mcp){ph.state="err";ph.err={code:"no_mcp"};soft();return;}
+  if(!ph.rows.length){ph.state="loading";soft();}
+  try{phoneData(await mcp.callTool(GS,"get_values",phoneInput(),{cache:{staleTime:0,gcTime:300000,refresh:!!force}}));}catch(e){phoneErr(e);return;}
+  if(!ph.unwatch){try{ph.unwatch=mcp.watchTool(GS,"get_values",phoneInput(),function(ev){if(ev.type==="data")phoneData(ev.result);else phoneErr(ev.error);},{cache:{staleTime:0,gcTime:300000},refetchInterval:30000});}catch(e){}}}
+function phoneStart(){if(ph.started)return;ph.started=true;phoneCheck(false);}
+/* copy sheet rows into the board: a trainee copies their own, staff copy all; never overwrite a row already saved */
+async function phoneSave(){if(preview||!me)return;var staffV=isStaff();for(var k=0;k<ph.rows.length;k++){var rec=ph.rows[k];
+  if(phBusy[rec.id]||roleplays.some(function(x){return x.id===rec.id;}))continue;if(!staffV&&rec.slug!==me.slug)continue;phBusy[rec.id]=1;
+  try{var ref=db.doc("roleplays/"+rec.id),ex=await withTimeout(ref.get(),15000);if(!ex.exists){var d=Object.assign({},rec);delete d.id;await withTimeout(ref.set(d),15000);var v=Object.assign({},d,{id:rec.id});upsert(roleplays,v);}}catch(e){phBusy[rec.id]=0;}}}
+function phoneStatus(staffV){var e=ph.err||{},c=e.code,fix="";
+  if(ph.state==="loading"||ph.state==="idle")return'<p class="small" id="ph-st" style="margin:6px 0 0">Checking the call sheet…</p>';
+  if(ph.state==="ok")return'<p class="small" id="ph-st" style="margin:6px 0 0">Checked '+esc(new Date(ph.at).toLocaleTimeString("en-US",{timeZone:TZ,hour:"numeric",minute:"2-digit"}))+' PT. Checks again every 30 seconds while this tab is open. <button class="link" id="ph-check">Check now</button></p>';
+  if(c==="server_not_connected")fix="Connect <b>Google Sheets</b> in claude.ai Settings → Connectors, then come back and tap Check now.";
+  else if(c==="needs_reauth")fix="Your Google Sheets connection expired. Reconnect it in claude.ai Settings → Connectors, then tap Check now.";
+  else if(c==="selection_required")fix="You have more than one Google Sheets connection. Pick one in the prompt claude.ai shows, then tap Check now.";
+  else if(c==="approval_required"||c==="not_in_manifest"||c==="consent_required")fix="This page needs your OK to read the call sheet with Google Sheets. Tap Check now and choose Allow.";
+  else if(c==="blocked_by_policy")fix="Your organization blocks Google Sheets for this page. Tell Seth.";
+  else if(c==="tool_error")fix="Google Sheets couldn’t open the call sheet for you"+(e.message?" (“"+esc(String(e.message).slice(0,160))+"”)":"")+". Make sure you’re signed in with your twinhomebuyer.com Google account, or tell Seth.";
+  else if(c==="server_unavailable"||c==="upstream_error"||c==="rate_limited")fix="Google Sheets didn’t answer just now. Tap Check now to try again.";
+  else fix="Phone scores can’t load in this view. Open the page in claude.ai.";
+  return'<div class="bnr on err" id="ph-st" style="margin-top:8px">'+fix+(c==="no_mcp"||c==="not_granted"||c==="capability_disabled"||c==="capability_removed"||c==="blocked_by_policy"?"":' <button class="link" id="ph-check">Check now</button>')+'</div>';}
 function phoneItem(r,staffV){
   var head=staffV?(r.slug?'<b>'+esc(r.name)+'</b>':'<b class="red">Not matched</b> <span class="small">(heard “'+esc(r.heardName||"no name")+'”)</span>')+' <span class="small">· '+esc(dt(r.ts))+'</span>':'<b>'+esc(dt(r.ts))+'</b>';
   var s='<div class="item phc" data-ph="'+esc(r.id)+'"><div class="row" style="justify-content:space-between">'+'<span>'+head+'</span><span class="pill '+(r.pass?"p-ok":"p-no")+'">'+(r.pass?"PASSED":"NOT PASSED")+'</span></div>'+
@@ -402,15 +440,17 @@ function phoneItem(r,staffV){
   if(staffV)s+='<div class="row" style="margin-top:10px"><select class="in" data-asg="'+esc(r.id)+'" style="width:auto"><option value="">'+(r.slug?"Move to…":"Assign to…")+'</option>'+team().map(function(p){return'<option value="'+esc(p.slug)+'"'+(p.slug===r.slug?" selected":"")+'>'+esc(p.name)+'</option>';}).join("")+'</select><button class="btn ghost sm" data-asgo="'+esc(r.id)+'">Save</button><span class="msg'+(phMsg.id===r.id?" "+phMsg.c:"")+'" data-asgm="'+esc(r.id)+'">'+(phMsg.id===r.id?esc(phMsg.t):"")+'</span></div>';
   return s+'</div>';}
 function phoneCard(staffV){var P=D.phone,mine=staffV?phoneCalls(null):phoneCalls(me.slug);
-  var s='<div class="card" id="phone"><h2>Practice by phone</h2><p class="lead">'+esc(P.seller)+', an AI seller, answers. Same six rules. A passed phone call opens the Module 5 quiz too.</p><ol class="pts"><li>Open <b>Google Voice</b>.</li><li>Call <b class="tel">'+esc(P.number)+'</b> <button class="btn ghost sm" id="tel-cp">Copy number</button> <span class="msg" id="tel-m"></span></li><li>When Rob answers, introduce yourself with your real first name: “Hi Rob, this is [your first name] from Twin Home Buyer…” Your first name is how your score finds you.</li><li>Hang up when you’re done. Your score shows up '+(staffV?"on the trainee’s page":"below")+' <b>a few minutes later</b>. No need to refresh.</li></ol>';
-  if(staffV)s+='<p style="margin:16px 0 0"><b>Phone calls, everyone</b> <span class="small">('+mine.length+'). Calls the AI couldn’t match to a name say <b>Not matched</b>: listen to who it was, then assign it.</span></p>';
+  var s='<div class="card" id="phone"><h2>Practice by phone</h2><p class="lead">'+esc(P.seller)+', an AI seller, answers. Same six rules. A passed phone call opens the Module 5 quiz too.</p><ol class="pts"><li>Open <b>Google Voice</b>.</li><li>Call <b class="tel">'+esc(P.number)+'</b> <button class="btn ghost sm" id="tel-cp">Copy number</button> <span class="msg" id="tel-m"></span></li><li>When Rob answers, introduce yourself with your real first name: “Hi Rob, this is [your first name] from Twin Home Buyer…” Your first name is how your score finds you.</li><li>Hang up when you’re done. Your score shows up '+(staffV?"on the trainee’s page":"below")+' <b>a few minutes later</b>. No need to refresh. The page reads it from the call sheet with your Google Sheets connection; the first time, claude.ai asks you to allow that.</li></ol>'+phoneStatus(staffV);
+  if(staffV)s+='<p style="margin:16px 0 0"><b>Phone calls, everyone</b> <span class="small">('+mine.length+'). Matched by the first name the rep said. Calls with no match say <b>Not matched</b>: check the transcript, then assign it.</span></p>';
   else s+='<p style="margin:16px 0 0"><b>Your phone calls</b>'+(mine.length?' <span class="small">('+mine.length+', newest first)</span>':"")+'</p>';
-  s+=mine.length?mine.map(function(r){return phoneItem(r,staffV);}).join(""):'<p class="small" style="margin:4px 0 0">'+(staffV?"No phone calls yet.":"No phone calls yet. No score 15 minutes after a call? Tell Seth. The AI may not have caught your name.")+'</p>';
+  s+=mine.length?mine.map(function(r){return phoneItem(r,staffV);}).join(""):'<p class="small" style="margin:4px 0 0">'+(staffV?"No phone calls yet.":"No phone calls yet. No score 15 minutes after a call? Tell Seth. The AI may not have caught your first name.")+'</p>';
   return h(s+'</div>');}
 async function assignPhone(id){var sel=document.querySelector('[data-asg="'+id+'"]'),m=document.querySelector('[data-asgm="'+id+'"]'),sl=sel&&sel.value,r=roster[sl];if(!r){say(m,"Pick a name first.","err");return;}phMsg={};
-  try{await withTimeout(db.collection("roleplays").doc(id).update({slug:sl,name:r.name,unmatched:false}),15000);phMsg={id:id,t:"Saved to "+r.name+".",c:"ok"};say(m,phMsg.t,"ok");logIt("Phone call assigned to "+r.name);}
+  try{var inDb=roleplays.some(function(x){return x.id===id;}),src=ph.rows.filter(function(x){return x.id===id;})[0];
+    if(inDb)await withTimeout(db.collection("roleplays").doc(id).update({slug:sl,name:r.name,unmatched:false}),15000);
+    else if(src){var d=Object.assign({},src,{slug:sl,name:r.name,unmatched:false});delete d.id;await withTimeout(db.doc("roleplays/"+id).set(d),15000);}else throw new Error("call not found");phMsg={id:id,t:"Saved to "+r.name+".",c:"ok"};say(m,phMsg.t,"ok");logIt("Phone call assigned to "+r.name);}
   catch(e){say(m,"Didn’t save: "+errTxt(e),"err");}}
-function wirePhone(){document.querySelectorAll("[data-asgo]").forEach(function(b){b.onclick=function(){assignPhone(b.dataset.asgo);};});var b=$("tel-cp");if(!b)return;b.onclick=function(){var t=D.phone.number;try{navigator.clipboard.writeText(t).then(function(){say($("tel-m"),"Copied.","ok");},sel);}catch(e){sel();}function sel(){var el=document.querySelector("#phone .tel");var r=document.createRange();r.selectNodeContents(el);var s=window.getSelection();s.removeAllRanges();s.addRange(r);say($("tel-m"),"Selected. Press Ctrl+C or Cmd+C.");}};}
+function wirePhone(){if($("phone"))phoneStart();var pc=$("ph-check");if(pc)pc.onclick=function(){ph.retried=false;ph.state=ph.rows.length?"ok":"loading";phoneCheck(true);};document.querySelectorAll("[data-asgo]").forEach(function(b){b.onclick=function(){assignPhone(b.dataset.asgo);};});var b=$("tel-cp");if(!b)return;b.onclick=function(){var t=D.phone.number;try{navigator.clipboard.writeText(t).then(function(){say($("tel-m"),"Copied.","ok");},sel);}catch(e){sel();}function sel(){var el=document.querySelector("#phone .tel");var r=document.createRange();r.selectNodeContents(el);var s=window.getSelection();s.removeAllRanges();s.addRange(r);say($("tel-m"),"Selected. Press Ctrl+C or Cmd+C.");}};}
 function wirePane(){wirePhone();document.querySelectorAll("[data-pane]").forEach(function(b){b.onclick=function(){pane=b.dataset.pane;flash=null;render();goTop();};});
   var i=openMod;if(typeof i!=="number")return;wireQuiz(MODS[i],i);wireRoleplay();var f=$("flash");if(f&&flash&&Date.now()-flash.ts<3000)try{f.scrollIntoView({behavior:"smooth",block:"center"});}catch(_){}}
 function quizCard(m,i,passed,qLock){var n=m.quiz.length;

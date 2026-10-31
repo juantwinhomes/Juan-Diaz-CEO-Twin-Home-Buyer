@@ -30,11 +30,16 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   r=await col('roleplays');ok(r.length===2&&r[1].pass===false&&r[1].checks.find(c=>c.rule==='story').ok===false,'company age in a call fails the story check');
   await p.click('#rp-again');await p.click('[data-sc="nopressure"]');await p.fill('#rp-in',"Can I get your name and address? According to Redfin it's 3 bedrooms. Listing with an agent may get you more. Let's book a 15-minute visit with Juan, a licensed contractor.");await p.click('#rp-say');await p.waitForSelector('#rp-again');
   r=await col('roleplays');ok(r.length===3&&r[2].pass===true,'passing practice call saved');await quizTab();ok(!!(await p.$('#quiz')),'M5 quiz opens after a passed call');await p.click('.subtabs [data-pane="practice"]');
-  const T0=Date.parse('2026-10-31T21:05:00Z'),CK=(f)=>['price','source','visit','honest','pressure','story'].map(k=>({rule:k,ok:k!==f,note:''}));
-  await p.evaluate(([T0,a,b])=>{__put('roleplays/phone-call_v1',{via:'phone',callId:'call_v1',slug:'vanessa-miller',name:'Vanessa Miller',heardName:'Vanessa',uid:null,ts:T0,scenario:'phone',scenarioName:'Phone call with Rob Walker',turns:[{who:'seller',text:'Hello, this is Rob.'},{who:'rep',text:'Hi Rob, this is Vanessa from Twin Home Buyer.'}],pass:false,checks:a,feedback:'Offer the 15-minute visit with Juan.',unmatched:false});
-    __put('roleplays/phone-call_x9',{via:'phone',callId:'call_x9',slug:'',name:'',heardName:'Jon',uid:null,ts:T0+60000,scenario:'phone',scenarioName:'Phone call with Rob Walker',turns:[],pass:true,checks:b,feedback:'Good call.',unmatched:true});},[T0,CK('visit'),CK('')]);
+  const ROWS=[['call_v1','Seller — rep calls','+15550000001','Vanessa','1793479384121','TRUE','TRUE','FALSE','TRUE','TRUE','TRUE','Offer the 15-minute visit with Juan.','Agent: Hello, this is Rob.\nUser: Hi Rob, this is Vanessa from Twin Home Buyer.\nAgent: Okay.',''],
+    ['call_x9','Seller — rep calls','+15550000002','Jon','1793479444121','TRUE','TRUE','TRUE','TRUE','TRUE','TRUE','Good call.','Agent: Hello, this is Rob.\nUser: Hi, Jon here.',''],
+    ['call_bad','Seller — rep calls','+15550000003','Vanessa','1793479504121','0.13','TRUE','TRUE','TRUE','TRUE','TRUE','','','']];
+  const mcalls=await p.evaluate(()=>window.__mcpCalls||[]);ok(mcalls.length>=1&&mcalls[0][0]==='Google Sheets'&&mcalls[0][1]==='get_values'&&mcalls[0][2].spreadsheetId===D.phone.sheetId,'page reads the call sheet with the viewer\'s Google Sheets connector');
+  await p.evaluate(rows=>__sheetSet(rows),ROWS);
   await p.click('.subtabs [data-pane="practice"]');await p.waitForSelector('#phone .phc');let ph=await p.textContent('#phone');
-  ok((await p.$$('#phone .phc')).length===1&&ph.includes('NOT PASSED')&&ph.includes('Offer the 15-minute visit')&&!ph.includes('Jon'),'trainee sees only her own phone call, with checks and coach note');await p.screenshot({path:OUT+'/4b-phone-calls.png',fullPage:true});await quizTab();
+  ok((await p.$$('#phone .phc')).length===1&&ph.includes('NOT PASSED')&&ph.includes('Offer the 15-minute visit')&&!ph.includes('Jon')&&ph.includes('Checked'),'trainee sees only her own phone call from the sheet, with checks and coach note');
+  await p.waitForFunction(()=>!!__dump()['roleplays/phone-call_v1']);let dd=await dump();
+  ok(dd['roleplays/phone-call_v1'].slug==='vanessa-miller'&&dd['roleplays/phone-call_v1'].turns.length===3&&!dd['roleplays/phone-call_x9']&&!dd['roleplays/phone-call_bad'],'her phone call is saved by name; others\' and bad rows are not');
+  await p.screenshot({path:OUT+'/4b-phone-calls.png',fullPage:true});await quizTab();
   await p.screenshot({path:OUT+'/4-rp-pass.png',fullPage:true});
   await passQuiz(4);await p.click('#go-next');await p.waitForSelector('.subtabs');await passQuiz(5);
   await p.click('#go-next');await p.waitForSelector('#pane');ok((await p.textContent('#pane')).includes('Next: your mock call'),'final step asks for mock call');
@@ -52,8 +57,9 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   ok(!(await p.textContent('#view')).includes('Seth Concepcion')||(await p.$$eval('td b',b=>b.map(x=>x.textContent))).indexOf('Seth Concepcion')<0,'admin is not counted as a trainee');
   await p.click('.tab[data-v="mock"]');ok(!(await p.$('[data-ms]'))&&(await p.textContent('#view')).includes('You see the results'),'admin mock calls are read-only');
   await p.click('.tab[data-v="train"]');await p.click('.sitem[data-m="5"]');await quizTab();ok((await p.textContent('#view')).includes('answer key'),'admin sees all modules with answer key');
-  await p.click('.tab[data-v="train"]');await p.click('.sitem[data-m="4"]');await p.click('.subtabs [data-pane="practice"]');await p.waitForSelector('#phone .phc');ph=await p.textContent('#phone');
+  await p.evaluate(rows=>__sheetSet(rows),ROWS);await p.click('.tab[data-v="train"]');await p.click('.sitem[data-m="4"]');await p.click('.subtabs [data-pane="practice"]');await p.waitForSelector('#phone .phc');ph=await p.textContent('#phone');
   ok((await p.$$('#phone .phc')).length===2&&ph.includes('Not matched')&&ph.includes('heard “Jon”')&&ph.includes('Vanessa Miller'),'admin sees every phone call, unmatched flagged');
+  await p.waitForFunction(()=>!!__dump()['roleplays/phone-call_x9']);ok((await dump())['roleplays/phone-call_x9'].unmatched===true,'staff view saves unmatched calls to the board');
   await p.selectOption('[data-asg="phone-call_x9"]','other-rep');await p.click('[data-asgo="phone-call_x9"]');await p.waitForFunction(()=>{const m=document.querySelector('[data-asgm="phone-call_x9"]');return !m||m.textContent.includes('Saved');});
   const x9=(await dump())['roleplays/phone-call_x9'];ok(x9.slug==='other-rep'&&x9.name==='Other Rep'&&x9.unmatched===false,'admin assigns an unmatched phone call to a person');
   await p.click('.tab[data-v="answers"]');ok((await p.textContent('#view')).includes('Other Rep · phone call with Rob'),'Every answer lists phone calls by name');
@@ -74,6 +80,8 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   await p.click('[data-cert="vanessa-miller"]');await p.click('#cfm-y');await p.waitForFunction(()=>/Certified/.test(document.querySelector('#view').textContent));
   let c=await col('certs');ok(c.length===1&&c[0].by==='Juan Diaz'&&c[0].mockBy==='Cherry Burce','certification saved by Juan');
   await p.click('.tab[data-v="answers"]');const at=await p.textContent('#view');ok(at.includes('Module 1 quiz')&&at.includes('practice call (Lily)')&&at.includes('mock call with Cherry Burce')&&at.includes('certified by Juan Diaz'),'Every answer shows quizzes, practice calls, mock calls, certification');
+  await reload();await p.evaluate(()=>{window.__mcpErr={code:'server_not_connected',message:'not connected'};});await signIn('Juan Diaz');await p.click('.tab[data-v="train"]');await p.click('.sitem[data-m="4"]');await p.click('.subtabs [data-pane="practice"]');
+  await p.waitForFunction(()=>{const e=document.getElementById('ph-st');return e&&!/Checking/.test(e.textContent);});ok((await p.textContent('#ph-st')).includes('Connect Google Sheets'),'no Google Sheets connection shows how to connect it');
   await p.screenshot({path:OUT+'/7-juan-answers.png',fullPage:true});
   await p.click('.tab[data-v="train"]');await p.click('.sitem[data-m="2"]');await quizTab();ok((await p.textContent('#view')).includes('answer key'),'Juan sees the answer key');
   await reload();await signIn('Vanessa Miller');ok(true,'Team Hub code still signs Vanessa in');ok((await p.textContent('#view')).includes('Certified ✓'),'Vanessa sees Certified');
