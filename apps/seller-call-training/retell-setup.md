@@ -2,22 +2,22 @@
 
 A trainee calls a phone number, an AI seller named Rob Walker answers by voice, and the call is
 scored on the same six rules as the training page's practice call. The score lands as one row in
-a private Google Sheet, and an hourly Claude task copies it onto the training page, where each
-trainee sees only their own calls. **Trainees never open the sheet** (Seth's rule, Oct 31).
+a private Google Sheet, and Zapier fires a Claude scheduled task that puts it on the training
+page within minutes, where each trainee sees only their own calls. **Trainees never open the sheet** (Seth's rule, Oct 31).
 
 | Piece | Setting |
 |---|---|
 | Number | **(510) 767-0799** (`+15107670799`), inbound agent: **Seller — rep calls** |
 | Agent | GPT 4.1, voice Leland (male), English US, about 13¢ per minute |
 | Sheet | [Seller practice calls](https://docs.google.com/spreadsheets/d/1jPa-aEglY1N3wRY-rHAW-7l3nDVa48efAQycyidMfko/edit), tab **Calls**, owned by Seth |
-| Pipe | Retell webhook → Zapier Catch Hook → Filter → Google Sheets "Create Spreadsheet Row" → hourly sync → page |
-| Sync | Scheduled task "Seller-call phone scores to training page" (`trig_014Ryf7TQfboKgBJefoR5xsy`, hourly at :43). Prompt: `phone-sync-prompt.md` |
+| Pipe | Retell webhook → Zapier Catch Hook → Filter → Google Sheets row (private log) → Webhooks POST to the task's Fire URL → page |
+| Sync | Scheduled task "Seller-call phone scores to training page" (`trig_01XY5Gy2Huqocz6N9mvEKksC`), no schedule, API trigger only. Prompt: `phone-sync-prompt.md`. Tested Oct 31: one call written in about 17 seconds, about 12¢ |
 
 Training page: Module 5 → Practice call shows the number and **Your phone calls** (`phone` in
-`content.py`). The page can't read the sheet itself (artifact pages can't fetch other sites), so
-the sync writes each call into the page's `roleplays` collection as `phone-<Call ID>` with
+`content.py`). The page can't read the sheet or Retell itself (artifact pages can't fetch other
+sites), so the task writes each call into the page's `roleplays` collection as `phone-<Call ID>` with
 `via: "phone"`. A passed phone call opens the Module 5 quiz like a passed typed call. Calls the
-sync can't match to a roster name show as **Not matched** in the staff view of the same tab,
+task can't match to a roster name show as **Not matched** in the staff view of the same tab,
 where Seth or Juan assigns them.
 
 ## How a trainee uses it
@@ -26,8 +26,8 @@ where Seth or Juan assigns them.
 2. Call (510) 767-0799.
 3. When Rob answers ("Hello, this is Rob."), introduce yourself with your real first name:
    "Hi Rob, this is Vanessa from Twin Home Buyer…". `rep_name` matches the call to the person.
-4. Within the hour, the score shows on the page under **Your phone calls**: passed or not, the
-   six rules, the coach's note and the transcript. No score after an hour: tell Seth.
+4. A few minutes later, the score shows on the page under **Your phone calls**: passed or not,
+   the six rules, the coach's note and the transcript. No score after 15 minutes: tell Seth.
 
 ## Agent prompt (Rob Walker, v2)
 
@@ -118,3 +118,36 @@ Sheet setup (done Oct 31):
 - The whole Calls tab is protected (editors: Seth only; Zapier writes as Seth).
 - Sharing must be **Restricted** (Seth only): Share → General access → Restricted, and remove
   anyone else. Trainees see their scores on the page, never in the sheet.
+
+## Scores onto the page (Zapier → Claude scheduled task)
+
+A scheduled task fired from outside can't use the Google Sheets connector, so Zapier sends the
+call's data straight to the task instead. The task needs no connector: it writes to the page's
+database. Limit: 30 fires per hour for this task.
+
+1. claude.ai/code/routines → **Seller-call phone scores to training page** → menu → **Edit** →
+   **Trigger +** → **API**. Copy the **Fire URL**, click **Generate token**, copy the token (shown
+   once). The token takes effect right away.
+2. Zapier, after the Google Sheets step: **Webhooks by Zapier → POST**.
+   - URL: the Fire URL.
+   - Payload Type: `json`.
+   - Data: one key, `text`, with this value (map each `{{…}}` from the Catch Hook step):
+     ```
+     call_id: {{Call Call Id}}
+     rep_name: {{Call Call Analysis Custom Analysis Data Rep Name}}
+     start_timestamp: {{Call Start Timestamp}}
+     no_price: {{… No Price}}
+     according_to_source: {{… According To Source}}
+     visit_booked: {{… Visit Booked}}
+     honest_advice: {{… Honest Advice}}
+     no_pressure: {{… No Pressure}}
+     story_ok: {{… Story Ok}}
+     coach_note: {{… Coach Note}}
+     transcript:
+     {{Call Transcript}}
+     ```
+   - Headers: `Authorization` = `Bearer <token>`, `anthropic-beta` =
+     `experimental-cc-routine-2026-04-01`, `anthropic-version` = `2023-06-01`.
+3. Test the step. Zapier should get back `"type": "routine_fire"` and a session URL. The run ends
+   with one line like `Added call_… for Vanessa Miller: PASSED.`
+

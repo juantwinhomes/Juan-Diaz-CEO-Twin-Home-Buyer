@@ -291,10 +291,10 @@ Practice by phone
    1) Open Google Voice.
    2) Call (510) 767-0799.
    3) When Rob answers (“Hello, this is Rob.”), introduce yourself with your real first name: “Hi Rob, this is [your first name] from Twin Home Buyer…” Your first name is how your score finds you.
-   4) Hang up when you’re done. Your score shows up on this page within the hour, under Your phone calls in Module 5’s Practice call tab: passed or not, all six rules, and a coach’s note.
+   4) Hang up when you’re done. Your score shows up on this page a few minutes later, under Your phone calls in Module 5’s Practice call tab: passed or not, all six rules, and a coach’s note.
    5) A passed phone call counts like a passed practice call here: it opens the Module 5 quiz.
-   6) No score an hour after your call? Tell Seth. The AI may not have caught your name.
-   Source: This training: “Phone practice: a Retell AI seller on (510) 767-0799, scored on the same six rules; scores post to this page every hour”
+   6) No score 15 minutes after your call? Tell Seth. The AI may not have caught your name.
+   Source: This training: “Phone practice: a Retell AI seller on (510) 767-0799, scored on the same six rules; scores post to this page a few minutes after the call”
 
 How a practice call here works
    1) Pick a practice seller.
