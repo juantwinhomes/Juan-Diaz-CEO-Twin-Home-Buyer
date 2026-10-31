@@ -65,6 +65,7 @@ textarea.in{min-height:80px;resize:vertical}
 .bnr{display:none;margin:0 0 14px;padding:14px 16px;border-radius:12px;font-size:17px;font-weight:700;line-height:1.4;border:2px solid transparent}
 .bnr.on{display:block}.bnr.err{background:var(--late-soft);color:var(--late);border-color:var(--late)}.bnr.ok{background:var(--teal-soft);color:var(--teal);border-color:var(--teal)}
 .bnr .small{font-weight:600;color:var(--ink2);margin-top:6px}
+.bnr.prev{background:var(--hat-soft);color:var(--ink);border-color:var(--hat);font-size:15.5px}
 /* band */
 .band{background:var(--band);color:var(--on-band)}
 .band .wrap{padding-block:18px 22px}
@@ -241,14 +242,17 @@ var rp={sc:null,turns:[],busy:false,result:null,err:"",draft:""},mockDraft={};
 function isJuan(){return!!me&&me.role==="owner";}
 /* admin = sees everything Juan sees except Certify (Juan: "a single Certify button for me") */
 function isAdmin(){return!!me&&me.role==="admin";}
-function isStaff(){return isJuan()||isAdmin();}
-function isCoach(){return!!me&&(isJuan()||COACHES.indexOf(me.slug)>=0);}
+/* preview: an admin sees the trainee view with every module open; nothing is saved */
+var preview=false,prevPass={},prevRp=false,prevTries={};
+function realStaff(){return isJuan()||isAdmin();}
+function isStaff(){return!preview&&realStaff();}
+function isCoach(){return!!me&&!preview&&(isJuan()||COACHES.indexOf(me.slug)>=0);}
 function team(){return Object.keys(roster).map(function(k){return roster[k];}).filter(function(r){return r.role!=="owner"&&r.role!=="admin";}).sort(function(a,b){return a.name.localeCompare(b.name);});}
 function attemptsOf(sl,mid){return answers.filter(function(a){return a.slug===sl&&a.module===mid;}).sort(function(a,b){return a.ts-b.ts;});}
-function passedMod(sl,mid){return attemptsOf(sl,mid).some(function(a){return a.passed;})||!!((((people[sl]||{}).prog)||{})[mid]||{}).passed;}
+function passedMod(sl,mid){if(preview&&me&&sl===me.slug)return!!prevPass[mid];return attemptsOf(sl,mid).some(function(a){return a.passed;})||!!((((people[sl]||{}).prog)||{})[mid]||{}).passed;}
 function rpOf(sl){return roleplays.filter(function(r){return r.slug===sl;}).sort(function(a,b){return a.ts-b.ts;});}
-function rpPassed(sl){return rpOf(sl).some(function(r){return r.pass;})||!!(people[sl]||{}).rpPassed;}
-function nextIdx(sl){for(var i=0;i<MODS.length;i++){if(!passedMod(sl,MODS[i].id))return i;}return MODS.length;}
+function rpPassed(sl){if(preview&&me&&sl===me.slug)return prevRp;return rpOf(sl).some(function(r){return r.pass;})||!!(people[sl]||{}).rpPassed;}
+function nextIdx(sl){if(preview&&me&&sl===me.slug)return MODS.length;for(var i=0;i<MODS.length;i++){if(!passedMod(sl,MODS[i].id))return i;}return MODS.length;}
 function mocksOf(sl){return mocks.filter(function(m){return m.slug===sl;}).sort(function(a,b){return b.ts-a.ts;});}
 function mockPass(sl){return mocksOf(sl).filter(function(m){return m.result==="pass";})[0]||null;}
 function modIdx(id){for(var i=0;i<MODS.length;i++)if(MODS[i].id===id)return i;return -1;}
@@ -318,19 +322,23 @@ function live(col,apply){try{db.collection(col).onSnapshot(function(s){apply(doc
 function soft(){if(!me)return;var a=document.activeElement;if(a&&a.matches&&a.matches("input,textarea,select")&&a.offsetParent!==null)return;render();}
 function tabsFor(){
   if(isStaff()){var ready=team().filter(function(r){return mockPass(r.slug)&&!certs[r.slug];}).length;
-    return[["team","Team progress",ready],["answers","Every answer"],["mock","Mock calls"],["train","The training"],["typed","Typed version"],["access","People & codes"]];}
+    return[["team","Team progress",ready],["answers","Every answer"],["mock","Mock calls"],["train","The training"],["preview","Preview as trainee"],["typed","Typed version"],["access","People & codes"]];}
   var t=[["train","My training"]];if(isCoach()){var wait=team().filter(function(r){return r.slug!==me.slug&&nextIdx(r.slug)>=MODS.length&&!mockPass(r.slug);}).length;t.push(["mock","Mock calls",wait]);}
   t.push(["typed","Typed version"]);return t;}
 function render(){if(!me)return;
   var tb=tabsFor();if(!tb.some(function(x){return x[0]===view;}))view=tb[0][0];
   $("tabs").innerHTML=tb.map(function(t){return'<button class="tab'+(t[0]===view?" on":"")+'" data-v="'+t[0]+'">'+esc(t[1])+(t[2]?'<span class="n">'+t[2]+'</span>':"")+'</button>';}).join("");
-  $("tabs").querySelectorAll(".tab").forEach(function(b){b.onclick=function(){if(view!==b.dataset.v){openMod=null;pane="lesson";}view=b.dataset.v;render();window.scrollTo(0,0);};});
-  $("chip").innerHTML="";var cs=document.createElement("span");cs.textContent=me.name;var so=document.createElement("button");so.textContent="Sign out";so.onclick=function(){logIt("Signed out").then(function(){location.reload();});};$("chip").appendChild(cs);$("chip").appendChild(so);
+  $("tabs").querySelectorAll(".tab").forEach(function(b){b.onclick=function(){if(b.dataset.v==="preview"){startPreview();return;}if(view!==b.dataset.v){openMod=null;pane="lesson";}view=b.dataset.v;render();window.scrollTo(0,0);};});
+  $("chip").innerHTML="";var cs=document.createElement("span");cs.textContent=me.name;var so=document.createElement("button");so.textContent="Sign out";so.onclick=function(){logIt("Signed out").then(function(){location.reload();});};$("chip").appendChild(cs);if(preview){var px=document.createElement("button");px.textContent="Exit preview";px.onclick=endPreview;$("chip").appendChild(px);}$("chip").appendChild(so);
   renderHello();
   var v=$("view");v.innerHTML="";
+  if(preview){v.appendChild(h('<div class="bnr on prev">Preview as a trainee: every module is open, and nothing you do here is saved. <button class="link" id="pv-x">Exit preview</button></div>'));setTimeout(function(){var x=$("pv-x");if(x)x.onclick=endPreview;},0);}
   var map={train:trainView,typed:typedView,mock:mockView,team:teamView,answers:answersView,access:accessView};
   v.appendChild((map[view]||trainView)());}
+function startPreview(){preview=true;prevPass={};prevRp=false;prevTries={};quizAns={};quizTried={};flash=null;rp={sc:null,turns:[],busy:false,result:null,err:"",draft:""};view="train";openMod=0;pane="lesson";render();window.scrollTo(0,0);}
+function endPreview(){preview=false;quizAns={};quizTried={};flash=null;rp={sc:null,turns:[],busy:false,result:null,err:"",draft:""};view="team";openMod=null;pane="lesson";render();window.scrollTo(0,0);}
 function renderHello(){
+  if(preview){$("hello").innerHTML='<div><h1>Hi, '+esc(first(me.name))+'.</h1><p>One skill at a time. Reps and correction.</p></div><div class="clock"><b>Preview</b>Everything open. Nothing saved.</div>';$("court").innerHTML="";return;}
   if(isStaff()){var t=team(),started=t.filter(function(r){return answers.some(function(a){return a.slug===r.slug;});}).length,cert=t.filter(function(r){return certs[r.slug];}).length;
     $("hello").innerHTML='<div><h1>Seller-call training</h1><p>Six modules in order, a final mock call with Cherry or Thea, then '+(isJuan()?"your":"Juan’s")+' Certify.</p></div><div class="clock'+(cert?" done":"")+'"><b>'+cert+' certified</b>'+started+' of '+t.length+' started</div>';$("court").innerHTML="";return;}
   var n=nextIdx(me.slug),c=certs[me.slug],mp=mockPass(me.slug);
@@ -341,11 +349,11 @@ function renderHello(){
 
 /* ---------- trainee: sidebar of modules + one lesson at a time ---------- */
 var pane="lesson";
-function defaultMod(){var n=nextIdx(me.slug);return isStaff()?0:n>=MODS.length?"final":n;}
+function defaultMod(){if(preview)return 0;var n=nextIdx(me.slug);return isStaff()?0:n>=MODS.length?"final":n;}
 function trainView(){var w=document.createElement("div"),staff=isStaff(),n=staff?MODS.length:nextIdx(me.slug);
   if(openMod==null||(openMod!=="final"&&!staff&&openMod>n)||(openMod==="final"&&staff))openMod=defaultMod();
   var side='<aside class="side" aria-label="Modules">'+MODS.map(function(m,i){var ok=!staff&&passedMod(me.slug,m.id),lock=!staff&&i>n,cur=openMod===i;
-      var sub=staff?"Answer key":ok?"Passed":lock?"Locked":"In progress";
+      var sub=staff?"Answer key":ok?"Passed":lock?"Locked":preview?"Open":"In progress";
       return'<button class="sitem'+(cur?" on":"")+(ok?" ok":"")+(lock?" lock":"")+'" data-m="'+i+'"'+(lock?' aria-disabled="true" title="Pass Module '+i+' first"':"")+'><span class="num">'+(ok?"✓":i+1)+'</span><span class="st"><b>'+esc(m.title)+'</b><small>'+sub+'</small></span></button>';}).join("")+
     (staff?"":'<button class="sitem'+(openMod==="final"?" on":"")+(certs[me.slug]?" ok":"")+(n<MODS.length?" lock":"")+'" data-m="final"'+(n<MODS.length?' aria-disabled="true" title="Pass all six modules first"':"")+'><span class="num">'+(certs[me.slug]?"✓":"★")+'</span><span class="st"><b>Mock call &amp; certify</b><small>'+(certs[me.slug]?"Certified":mockPass(me.slug)?"Waiting for Juan":n<MODS.length?"After Module 6":"Next step")+'</small></span></button>')+'</aside>';
   var lay=h('<div class="layout">'+side+'<div class="pane" id="pane"></div></div>').firstChild;
@@ -354,7 +362,7 @@ function trainView(){var w=document.createElement("div"),staff=isStaff(),n=staff
   setTimeout(function(){w.querySelectorAll(".sitem").forEach(function(b){b.onclick=function(){if(b.classList.contains("lock"))return;var v=b.dataset.m;openMod=v==="final"?"final":+v;pane="lesson";flash=null;render();goTop();};});wirePane();},0);
   return w;}
 function goTop(){var p=$("pane");if(p&&window.innerWidth<760){try{p.scrollIntoView({block:"start"});}catch(_){}}else window.scrollTo(0,0);}
-function finalCard(){var n=nextIdx(me.slug),c=certs[me.slug],mp=mockPass(me.slug),last=mocksOf(me.slug)[0];
+function finalCard(){if(preview)return'<div class="card"><h2>Mock call and certification</h2><p class="lead" style="margin:0">After Module 6, a trainee sees their mock call status here: waiting for Cherry or Thea, passed, or needs another try. Then “Certified” once Juan certifies them.</p></div>';var n=nextIdx(me.slug),c=certs[me.slug],mp=mockPass(me.slug),last=mocksOf(me.slug)[0];
   if(c)return'<div class="card next ok"><h2>Certified ✓</h2><p class="lead" style="margin:0">Juan certified you on '+esc(dt(c.ts))+'.</p></div>';
   if(n<MODS.length)return'<div class="card"><h2>Mock call and certification</h2><p class="lead" style="margin:0">After Module 6: a mock call with Cherry or Thea. Then Juan certifies you.</p></div>';
   if(mp)return'<div class="card next ok"><h2>Mock call passed</h2><p class="lead" style="margin:0">'+esc(mp.by)+' passed your mock call on '+esc(dt(mp.ts))+'. Waiting for Juan to certify you.</p>'+(mp.notes?'<div class="src"><b>Notes</b>'+esc(mp.notes)+'</div>':"")+'</div>';
@@ -400,6 +408,8 @@ function wireQuiz(m,i){var nx=$("go-next");if(nx)nx.onclick=function(){openMod=i
     if(blank.length){b.textContent="Answer every question first. Still blank: "+blank.join(", ")+".";b.className="bnr on err";return;}
     busy=true;go.disabled=true;go.textContent="Saving…";
     var score=n-wrong.length,passed=!wrong.length,att=attemptsOf(me.slug,m.id).length+1,now=Date.now();
+    if(preview){busy=false;prevTries[m.id]=(prevTries[m.id]||0)+1;if(passed)prevPass[m.id]=true;quizTried[m.id]=!passed;
+      flash=passed?{ok:true,t:"Passed ✓ "+score+" of "+n+".",sub:"Preview: nothing is saved.",ts:Date.now()}:{ok:false,t:score+" of "+n+" right. Not passed yet.",sub:"Preview: nothing is saved. The red answers below show the reason.",ts:Date.now()};render();return;}
     var rec={slug:me.slug,name:me.name,uid:uid,module:m.id,moduleNo:i+1,title:m.title,ts:now,attempt:att,score:score,total:n,passed:passed,missed:wrong,
       answers:m.quiz.map(function(x,k){return{q:x.q,chosen:x.o[ans[k]],right:ans[k]===x.a};})};
     try{var ref=await withTimeout(db.collection("answers").add(rec),15000);rec.id=ref&&ref.id?ref.id:("tmp"+now);upsert(answers,rec);}
@@ -419,7 +429,7 @@ function graderPrompt(sc){return"You grade a practice phone call for Twin Home B
 function roleplayCard(){var w=document.createElement("div"),passedAny=rpPassed(me.slug),tries=rpOf(me.slug);
   var s='<div class="card" id="rp"><h2>Practice call</h2>';
   if(passedAny&&!rp.sc&&!rp.result)s+='<p class="green" style="margin:0 0 10px">You passed a practice call, so the quiz is open. Practice more anytime.</p>';
-  s+='<p class="lead">'+plural(tries.length,"practice call")+' so far'+(tries.length?", "+tries.filter(function(r){return r.pass;}).length+" passed":"")+'. Every call is saved under your name.</p>';
+  s+=preview?'<p class="lead">Preview: this runs the real AI seller, but the call isn’t saved.</p>':'<p class="lead">'+plural(tries.length,"practice call")+' so far'+(tries.length?", "+tries.filter(function(r){return r.pass;}).length+" passed":"")+'. Every call is saved under your name.</p>';
   if(rp.result){var r=rp.result;s+='<div class="bnr on '+(r.pass?"ok":"err")+'">'+(r.pass?"Passed ✓ This call passed all six checks.":"Not passed yet. Practice again.")+'</div>'+RULES.map(function(x){var c=(r.checks||[]).filter(function(k){return k.rule===x[0];})[0]||{};return'<div class="chk"><span class="'+(c.ok?"green":"red")+'">'+(c.ok?"✓":"✗")+'</span><span><b>'+esc(x[1])+'</b>'+(c.note?'<br><span class="small">'+esc(c.note)+'</span>':"")+'</span></div>';}).join("")+(r.feedback?'<div class="src"><b>Coach’s note</b>'+esc(r.feedback)+'</div>':"")+'<div class="row" style="margin-top:12px">'+(r.pass?'<button class="btn hat" data-pane="quiz">Take the quiz →</button><button class="btn ghost" id="rp-again">Practice again</button>':'<button class="btn hat" id="rp-again">Try another call</button>')+'</div>';}
   else if(!rp.sc){s+='<p style="margin:0 0 8px"><b>Pick a seller.</b></p><div class="scen">'+SCEN.map(function(sc){return'<button data-sc="'+sc.id+'"><b>'+esc(sc.name)+'</b><br><span class="small">'+esc(clip(sc.brief,110))+'</span></button>';}).join("")+'</div>';}
   else{s+='<div class="small">Practice seller: <b>'+esc(rp.sc.name)+'</b>. Type what you would say on the phone.</div><div class="chat" id="chat">'+rp.turns.map(function(t){return'<div class="bub '+(t.who==="rep"?"me":"ai")+'"><span class="who">'+(t.who==="rep"?"You":"Seller")+'</span>'+esc(t.text)+'</div>';}).join("")+(rp.busy?'<div class="bub ai">…</div>':"")+'</div>'+
@@ -444,6 +454,7 @@ async function rpScore(){if(rp.busy)return;var sm=await sampler();if(!sm){rp.err
   var repText=rp.turns.filter(function(t){return t.who==="rep";}).map(function(t){return t.text;}).join("\n");
   if(BANNED.test(repText)){checks.forEach(function(c){if(c.rule==="story"){c.ok=false;c.note="You stated an age for the company. Never do that.";}});}
   var pass=checks.every(function(c){return c.ok;}),now=Date.now();
+  if(preview){if(pass)prevRp=true;rp.busy=false;rp.result={pass:pass,checks:checks,feedback:String((out&&out.feedback)||"").slice(0,800)};render();var pe=$("rp");if(pe)try{pe.scrollIntoView({block:"start"});}catch(_){}return;}
   var rec={slug:me.slug,name:me.name,uid:uid,ts:now,scenario:rp.sc.id,scenarioName:rp.sc.name,turns:rp.turns,pass:pass,checks:checks,feedback:String((out&&out.feedback)||"").slice(0,800)};
   try{var ref=await withTimeout(db.collection("roleplays").add(rec),15000);rec.id=ref&&ref.id?ref.id:("tmp"+now);upsert(roleplays,rec);}
   catch(e){rp.busy=false;rp.err="This call’s score did NOT save: "+errTxt(e)+". Tap End call and get scored again.";render();return;}
