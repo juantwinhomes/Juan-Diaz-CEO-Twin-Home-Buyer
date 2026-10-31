@@ -30,9 +30,10 @@ homes beautiful and improving the communities he grew up in." Never state an age
   A call passes only when all six checks pass; any "25 years" / "since 2002" / "24 years" from the
   rep fails the story check in code. One passed call opens the Module 5 quiz.
 - Module 5 also has phone practice: call Rob Walker, a Retell AI seller, at (510) 767-0799. The
-  score goes to a private sheet, and Zapier fires a Claude scheduled task that writes it into
-  `roleplays` (`via: "phone"`) within minutes, so each trainee sees only their own calls on the page. Staff assign unmatched calls in
-  the same tab. Setup: `retell-setup.md`, sync prompt: `phone-sync-prompt.md`.
+  score goes to the Seller practice calls sheet, and the page reads it with each viewer's own
+  Google Sheets connector (`mcp` capability), shows trainees only their own calls, and saves them
+  into `roleplays` (`via: "phone"`). Staff assign unmatched calls in the same tab. Setup:
+  `retell-setup.md`.
 - After Module 6: Cherry or Thea logs the mock call (Passed / Needs another try, notes required).
 - Juan's Team progress shows a Certify button once a mock call has passed.
 
