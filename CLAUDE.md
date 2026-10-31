@@ -126,6 +126,13 @@ at the start of substantive work and keep it current as you learn more. Key
 files: `juan-grok-prompting-profile.md` (how Juan communicates — match it),
 `deal-pattern-buybox.md` (deal screening), `marketing-postcard-kpis.md`.
 
+## Receipt Agent (daily receipt matching)
+
+`apps/receipt-agent/`: Seth builds, Kristine runs it under accounting@, Juan gets the
+daily report. Seth never logs into QuickBooks. Claude's QuickBooks connector can't read
+card charges or attach receipts, so receipts reach QuickBooks through its receipt email
+address via the helper script. Start with that app's README.
+
 ## Construction Control dashboard (live artifact)
 
 `apps/construction-dashboard/` — live property-ops board at
