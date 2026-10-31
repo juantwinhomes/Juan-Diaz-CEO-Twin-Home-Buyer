@@ -2,19 +2,23 @@
 
 A trainee calls a phone number, an AI seller named Rob Walker answers by voice, and the call is
 scored on the same six rules as the training page's practice call. The score lands as one row in
-a Google Sheet that the team can view.
+a private Google Sheet, and an hourly Claude task copies it onto the training page, where each
+trainee sees only their own calls. **Trainees never open the sheet** (Seth's rule, Oct 31).
 
 | Piece | Setting |
 |---|---|
 | Number | **(510) 767-0799** (`+15107670799`), inbound agent: **Seller — rep calls** |
 | Agent | GPT 4.1, voice Leland (male), English US, about 13¢ per minute |
 | Sheet | [Seller practice calls](https://docs.google.com/spreadsheets/d/1jPa-aEglY1N3wRY-rHAW-7l3nDVa48efAQycyidMfko/edit), tab **Calls**, owned by Seth |
-| Pipe | Retell webhook → Zapier Catch Hook → Filter → Google Sheets "Create Spreadsheet Row" |
+| Pipe | Retell webhook → Zapier Catch Hook → Filter → Google Sheets "Create Spreadsheet Row" → hourly sync → page |
+| Sync | Scheduled task "Seller-call phone scores to training page" (`trig_014Ryf7TQfboKgBJefoR5xsy`, hourly at :43). Prompt: `phone-sync-prompt.md` |
 
-Training page: Module 5 → Practice call shows the number and the sheet link
-(`phone` in `content.py`). Phone calls are extra reps. The Module 5 quiz still opens only after a
-passed practice call on the page, because the page can't read the sheet (artifact pages can't
-fetch other sites).
+Training page: Module 5 → Practice call shows the number and **Your phone calls** (`phone` in
+`content.py`). The page can't read the sheet itself (artifact pages can't fetch other sites), so
+the sync writes each call into the page's `roleplays` collection as `phone-<Call ID>` with
+`via: "phone"`. A passed phone call opens the Module 5 quiz like a passed typed call. Calls the
+sync can't match to a roster name show as **Not matched** in the staff view of the same tab,
+where Seth or Juan assigns them.
 
 ## How a trainee uses it
 
@@ -22,8 +26,8 @@ fetch other sites).
 2. Call (510) 767-0799.
 3. When Rob answers ("Hello, this is Rob."), introduce yourself with your real first name:
    "Hi Rob, this is Vanessa from Twin Home Buyer…". `rep_name` matches the call to the person.
-4. About a minute after hanging up, open the sheet, find your name, check **Passed** (TRUE = all
-   six rules) and read the **Coach note**. Refresh if it isn't there yet.
+4. Within the hour, the score shows on the page under **Your phone calls**: passed or not, the
+   six rules, the coach's note and the transcript. No score after an hour: tell Seth.
 
 ## Agent prompt (Rob Walker, v2)
 
@@ -111,5 +115,6 @@ Sheet setup (done Oct 31):
 - Header A1:N1 as in the table above. A:C formatted as plain text so `+1…` numbers keep the plus.
 - **Passed** in O1, whole-column so rows Zapier inserts stay covered:
   `=ARRAYFORMULA(IF(ROW(A:A)=1,"Passed",IF(LEN(A:A),LOWER(F:F&G:G&H:H&I:I&J:J&K:K)="truetruetruetruetruetrue",)))`
-- The whole Calls tab is protected (editors: Seth only; Zapier writes as Seth). The team sees it
-  through the folder's domain sharing but can't edit scores.
+- The whole Calls tab is protected (editors: Seth only; Zapier writes as Seth).
+- Sharing must be **Restricted** (Seth only): Share → General access → Restricted, and remove
+  anyone else. Trainees see their scores on the page, never in the sheet.

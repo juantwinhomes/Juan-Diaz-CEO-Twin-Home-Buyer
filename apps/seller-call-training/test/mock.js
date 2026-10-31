@@ -18,6 +18,7 @@
       return{checks:["price","source","visit","honest","pressure","story"].map(function(k){return{rule:k,ok:k==="price"?!/\$\s?\d/.test(r):ok,note:"stub"};}),feedback:ok?"Good call.":"Book the visit with Juan and don't give a number."};}
     var last=rep(p).split("\n").pop()||"";return{reply:/15-minute/.test(last)?"Okay, Tuesday at 10 works. Bye.":"Hmm, why should I?",ended:/15-minute/.test(last)};}};
   window.__snap=function(){boot();return{entries:Array.from(store.entries()),idc:idc};};
+  window.__put=function(p,v){boot();store.set(p,cp(v));notify();};
   window.__dump=function(){boot();var o={};store.forEach(function(v,k){o[k]=v;});return o;};
   window.claude={use:async function(n){boot();return n==="db"?db:n==="user"?{me:async function(){return{id:"u1",canEdit:true};}}:n==="sample"?sample:null;}};
 })();

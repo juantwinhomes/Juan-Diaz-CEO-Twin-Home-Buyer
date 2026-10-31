@@ -29,8 +29,10 @@ homes beautiful and improving the communities he grew up in." Never state an age
 - Module 5: AI practice calls (the `sample` capability plays one of three sellers from the notes).
   A call passes only when all six checks pass; any "25 years" / "since 2002" / "24 years" from the
   rep fails the story check in code. One passed call opens the Module 5 quiz.
-- Module 5 also has phone practice: call Rob Walker, a Retell AI seller, at (510) 767-0799; the
-  score lands in the Seller practice calls sheet. Setup: `retell-setup.md`.
+- Module 5 also has phone practice: call Rob Walker, a Retell AI seller, at (510) 767-0799. The
+  score goes to a private sheet, and an hourly Claude task copies it into `roleplays` (`via:
+  "phone"`), so each trainee sees only their own calls on the page. Staff assign unmatched calls in
+  the same tab. Setup: `retell-setup.md`, sync prompt: `phone-sync-prompt.md`.
 - After Module 6: Cherry or Thea logs the mock call (Passed / Needs another try, notes required).
 - Juan's Team progress shows a Certify button once a mock call has passed.
 

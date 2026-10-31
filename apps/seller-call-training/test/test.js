@@ -22,7 +22,7 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   await passQuiz(0);a=await col('answers');ok(a.length===2&&a.find(x=>x.attempt===2).passed,'attempt 2 passed');ok((await p.textContent('#flash')).includes('Module 2 is open'),'flash says Module 2 open');
   for(const i of [1,2,3]){await p.click('#go-next');await p.waitForSelector('.subtabs');await passQuiz(i);}
   await p.click('#go-next');await p.waitForSelector('.subtabs');await quizTab();ok((await p.textContent('#pane')).includes('Pass one practice call first'),'M5 quiz locked until practice call passes');await p.click('.subtabs [data-pane="practice"]');await p.waitForSelector('#rp');
-  ok((await p.textContent('#phone')).includes('(510) 767-0799')&&!!(await p.$('#phone a[href*="docs.google.com/spreadsheets"]')),'phone practice card shows the number and the sheet link');
+  ok((await p.textContent('#phone')).includes('(510) 767-0799')&&!(await p.$('a[href*="docs.google.com"]'))&&(await p.textContent('#phone')).includes('No phone calls yet'),'phone card shows the number, no sheet link, no calls yet');
   await p.click('[data-sc="lily"]');await p.fill('#rp-in','We could pay $900,000 cash.');await p.click('#rp-say');await p.waitForFunction(()=>!document.querySelector('#rp-say')||!document.querySelector('#rp-say').disabled);
   await p.click('#rp-end');await p.waitForSelector('#rp-again');let r=await col('roleplays');ok(r.length===1&&r[0].pass===false&&r[0].turns.length>=3&&r[0].checks.find(c=>c.rule==='price').ok===false,'failed practice call saved with transcript and checks');
   await p.screenshot({path:OUT+'/3-rp-fail.png',fullPage:true});
@@ -30,6 +30,11 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   r=await col('roleplays');ok(r.length===2&&r[1].pass===false&&r[1].checks.find(c=>c.rule==='story').ok===false,'company age in a call fails the story check');
   await p.click('#rp-again');await p.click('[data-sc="nopressure"]');await p.fill('#rp-in',"Can I get your name and address? According to Redfin it's 3 bedrooms. Listing with an agent may get you more. Let's book a 15-minute visit with Juan, a licensed contractor.");await p.click('#rp-say');await p.waitForSelector('#rp-again');
   r=await col('roleplays');ok(r.length===3&&r[2].pass===true,'passing practice call saved');await quizTab();ok(!!(await p.$('#quiz')),'M5 quiz opens after a passed call');await p.click('.subtabs [data-pane="practice"]');
+  const T0=Date.parse('2026-10-31T21:05:00Z'),CK=(f)=>['price','source','visit','honest','pressure','story'].map(k=>({rule:k,ok:k!==f,note:''}));
+  await p.evaluate(([T0,a,b])=>{__put('roleplays/phone-call_v1',{via:'phone',callId:'call_v1',slug:'vanessa-miller',name:'Vanessa Miller',heardName:'Vanessa',uid:null,ts:T0,scenario:'phone',scenarioName:'Phone call with Rob Walker',turns:[{who:'seller',text:'Hello, this is Rob.'},{who:'rep',text:'Hi Rob, this is Vanessa from Twin Home Buyer.'}],pass:false,checks:a,feedback:'Offer the 15-minute visit with Juan.',unmatched:false});
+    __put('roleplays/phone-call_x9',{via:'phone',callId:'call_x9',slug:'',name:'',heardName:'Jon',uid:null,ts:T0+60000,scenario:'phone',scenarioName:'Phone call with Rob Walker',turns:[],pass:true,checks:b,feedback:'Good call.',unmatched:true});},[T0,CK('visit'),CK('')]);
+  await p.click('.subtabs [data-pane="practice"]');await p.waitForSelector('#phone .phc');let ph=await p.textContent('#phone');
+  ok((await p.$$('#phone .phc')).length===1&&ph.includes('NOT PASSED')&&ph.includes('Offer the 15-minute visit')&&!ph.includes('Jon'),'trainee sees only her own phone call, with checks and coach note');await p.screenshot({path:OUT+'/4b-phone-calls.png',fullPage:true});await quizTab();
   await p.screenshot({path:OUT+'/4-rp-pass.png',fullPage:true});
   await passQuiz(4);await p.click('#go-next');await p.waitForSelector('.subtabs');await passQuiz(5);
   await p.click('#go-next');await p.waitForSelector('#pane');ok((await p.textContent('#pane')).includes('Next: your mock call'),'final step asks for mock call');
@@ -47,6 +52,11 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   ok(!(await p.textContent('#view')).includes('Seth Concepcion')||(await p.$$eval('td b',b=>b.map(x=>x.textContent))).indexOf('Seth Concepcion')<0,'admin is not counted as a trainee');
   await p.click('.tab[data-v="mock"]');ok(!(await p.$('[data-ms]'))&&(await p.textContent('#view')).includes('You see the results'),'admin mock calls are read-only');
   await p.click('.tab[data-v="train"]');await p.click('.sitem[data-m="5"]');await quizTab();ok((await p.textContent('#view')).includes('answer key'),'admin sees all modules with answer key');
+  await p.click('.tab[data-v="train"]');await p.click('.sitem[data-m="4"]');await p.click('.subtabs [data-pane="practice"]');await p.waitForSelector('#phone .phc');ph=await p.textContent('#phone');
+  ok((await p.$$('#phone .phc')).length===2&&ph.includes('Not matched')&&ph.includes('heard “Jon”')&&ph.includes('Vanessa Miller'),'admin sees every phone call, unmatched flagged');
+  await p.selectOption('[data-asg="phone-call_x9"]','other-rep');await p.click('[data-asgo="phone-call_x9"]');await p.waitForFunction(()=>{const m=document.querySelector('[data-asgm="phone-call_x9"]');return !m||m.textContent.includes('Saved');});
+  const x9=(await dump())['roleplays/phone-call_x9'];ok(x9.slug==='other-rep'&&x9.name==='Other Rep'&&x9.unmatched===false,'admin assigns an unmatched phone call to a person');
+  await p.click('.tab[data-v="answers"]');ok((await p.textContent('#view')).includes('Other Rep · phone call with Rob'),'Every answer lists phone calls by name');
   await p.click('.tab[data-v="access"]');ok((await p.textContent('#view')).includes('People and codes'),'admin sees People & codes');
   const nA=(await col('answers')).length,nR=(await col('roleplays')).length;
   await p.click('.tab[data-v="preview"]');tabs=await p.$$eval('#tabs .tab',t=>t.map(x=>x.textContent));ok(tabs.join('|')==='My training|Typed version','preview shows the trainee tabs: '+tabs.join('|'));

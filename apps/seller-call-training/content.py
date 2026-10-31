@@ -213,9 +213,10 @@ M = [
     "pts": ["Open Google Voice.",
             "Call (510) 767-0799.",
             "When Rob answers (“Hello, this is Rob.”), introduce yourself with your real first name: “Hi Rob, this is [your first name] from Twin Home Buyer…” Your first name is how your score finds you.",
-            "Hang up when you’re done. About a minute later, open the Seller practice calls sheet and find your name. Passed = TRUE means all six rules passed. Read the Coach note for what to fix. Not there yet? Refresh.",
-            "Phone calls are extra reps. The Module 5 quiz opens after a passed practice call here on the page."],
-    "from": [f("This training", "Phone practice: a Retell AI seller on (510) 767-0799, scored on the same six rules into the Seller practice calls sheet")]},
+            "Hang up when you’re done. Your score shows up on this page within the hour, under Your phone calls in Module 5’s Practice call tab: passed or not, all six rules, and a coach’s note.",
+            "A passed phone call counts like a passed practice call here: it opens the Module 5 quiz.",
+            "No score an hour after your call? Tell Seth. The AI may not have caught your name."],
+    "from": [f("This training", "Phone practice: a Retell AI seller on (510) 767-0799, scored on the same six rules; scores post to this page every hour")]},
    {"h": "How a practice call here works", "ol": True,
     "pts": ["Pick a practice seller.",
             "The AI plays the seller. You type what you would say on the phone.",
@@ -301,7 +302,7 @@ SCENARIOS = [
   "push": ["What would you pay for it?", "Honestly, should I sell to you or list it with an agent?", "Who is Juan, anyway?"]},
 ]
 COACHES = ["cherry-burce", "thea-margate"]
-PHONE = {"number": "(510) 767-0799", "seller": "Rob Walker", "sheet": "https://docs.google.com/spreadsheets/d/1jPa-aEglY1N3wRY-rHAW-7l3nDVa48efAQycyidMfko/edit"}
+PHONE = {"number": "(510) 767-0799", "seller": "Rob Walker"}
 DATA = {"story": STORY, "modules": M, "scenarios": SCENARIOS, "coaches": COACHES, "phone": PHONE,
         "source": "Juan’s Oct 19, 2026 training session (the recording in Juan’s Drive, plus Gemini’s notes of it), Juan’s Oct 31 build email, and his Oct 30/31 story emails. Quotes from the recording are lightly cleaned of filler words"}
 if __name__ == "__main__":
