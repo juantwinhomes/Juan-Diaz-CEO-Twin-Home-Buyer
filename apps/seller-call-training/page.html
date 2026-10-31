@@ -145,7 +145,35 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 .cfm{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(10,24,38,.62)}
 .cfm-card{width:100%;max-width:420px;background:var(--card);color:var(--ink);border-radius:16px;box-shadow:var(--shadow);padding:18px}
 .cfm-card p{margin:0 0 14px;white-space:pre-wrap;font-size:16px}
-@media (max-width:560px){.mod{grid-template-columns:40px 1fr}.mod .st{grid-column:2}.mod .num{width:40px;height:40px}}
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;align-items:start}
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 62px);display:grid;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px}
+.sitem{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:1.5px solid transparent;border-radius:12px;padding:8px 10px;cursor:pointer;color:var(--ink)}
+.sitem:hover{background:var(--wash)}
+.sitem.on{background:var(--hat-soft);border-color:var(--hat)}
+.sitem.lock{opacity:.55;cursor:not-allowed}
+.sitem .num{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:14px;background:var(--wash);border:2px solid var(--line);color:var(--ink2)}
+.sitem.ok .num{background:var(--teal);border-color:var(--teal);color:#fff}
+.sitem.on .num{background:var(--hat);border-color:var(--hat);color:var(--hat-ink)}
+.sitem .st{display:flex;flex-direction:column;min-width:0}
+.sitem .st b{font-size:15px;line-height:1.25}
+.sitem .st small{font-size:12.5px;color:var(--mute)}
+.pane{min-width:0}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.subtabs button{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-weight:700;cursor:pointer;color:var(--ink2)}
+.subtabs button.on{background:var(--band);border-color:var(--band);color:var(--on-band)}
+.rule{font-family:var(--f-display);font-size:clamp(19px,3.2vw,23px);font-weight:800;line-height:1.3;margin:6px 0 0;text-wrap:balance}
+.sec{padding:14px 0;border-top:1px solid var(--line)}.sec:first-child{border-top:none;padding-top:0}
+.sec h3{font-size:18px;font-weight:800}
+.ex{display:grid;gap:8px;margin-top:10px}
+.ex>div{padding:10px 12px;border-radius:12px;font-size:16px;max-width:92%}
+.ex .k{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px;color:var(--ink2)}
+.ex .seller{background:var(--wash);border:1px solid var(--line);justify-self:start}
+.ex .you,.ex .juan{background:var(--blue-soft);justify-self:end}
+.ex .yes{background:var(--teal-soft);border-left:4px solid var(--teal)}
+.ex .no{background:var(--late-soft);border-left:4px solid var(--late)}
+details.srcs{margin-top:8px;border-top:1px solid var(--line);padding-top:10px}
+details.srcs summary{cursor:pointer;font-size:13.5px;color:var(--ink2);font-weight:700}
+@media (max-width:760px){.band .wrap{padding-block:12px 14px}.hello{margin-top:10px;gap:10px}.hello h1{font-size:26px}.hello p{display:none}.clock{min-width:0;padding:8px 14px;border-radius:14px}.clock b{font-size:19px}.layout{grid-template-columns:1fr;gap:12px}.side{position:static;display:flex;overflow-x:auto;padding:6px;gap:4px}.sitem{flex:none;width:auto;padding:6px 10px 6px 6px}.sitem .st small{display:none}.sitem .st b{font-size:14px;white-space:nowrap}.ex>div{max-width:100%}}
 @media (prefers-reduced-motion:no-preference){.court span.ok{animation:pop .4s ease-out}@keyframes pop{from{transform:scale(.6)}to{transform:scale(1)}}}
 </style>
 
@@ -296,7 +324,7 @@ function tabsFor(){
 function render(){if(!me)return;
   var tb=tabsFor();if(!tb.some(function(x){return x[0]===view;}))view=tb[0][0];
   $("tabs").innerHTML=tb.map(function(t){return'<button class="tab'+(t[0]===view?" on":"")+'" data-v="'+t[0]+'">'+esc(t[1])+(t[2]?'<span class="n">'+t[2]+'</span>':"")+'</button>';}).join("");
-  $("tabs").querySelectorAll(".tab").forEach(function(b){b.onclick=function(){view=b.dataset.v;openMod=null;render();window.scrollTo(0,0);};});
+  $("tabs").querySelectorAll(".tab").forEach(function(b){b.onclick=function(){if(view!==b.dataset.v){openMod=null;pane="lesson";}view=b.dataset.v;render();window.scrollTo(0,0);};});
   $("chip").innerHTML="";var cs=document.createElement("span");cs.textContent=me.name;var so=document.createElement("button");so.textContent="Sign out";so.onclick=function(){logIt("Signed out").then(function(){location.reload();});};$("chip").appendChild(cs);$("chip").appendChild(so);
   renderHello();
   var v=$("view");v.innerHTML="";
@@ -309,53 +337,65 @@ function renderHello(){
   var big=c?"Certified":n>=MODS.length?(mp?"Mock call passed":"Mock call next"):"Module "+(n+1)+" of "+MODS.length;
   var sub=c?"by "+(c.by||"Juan")+", "+new Date(c.ts).toLocaleDateString("en-US",{timeZone:TZ,month:"short",day:"numeric"}):n>=MODS.length?(mp?"Waiting for Juan to certify":"Ask Cherry or Thea"):MODS[n].title;
   $("hello").innerHTML='<div><h1>Hi, '+esc(first(me.name))+'.</h1><p>One skill at a time. Reps and correction.</p></div><div class="clock'+(c||mp?" done":"")+'"><b>'+esc(big)+'</b>'+esc(sub)+'</div>';
-  $("court").innerHTML='<div class="court" aria-label="Progress">'+MODS.map(function(m,i){return'<span class="'+(i<n?"ok":i===n?"now":"")+'" title="Module '+(i+1)+': '+esc(m.title)+'">'+(i+1)+'</span>';}).join("")+'<span class="'+(mp?"ok":n>=MODS.length?"now":"")+'" title="Mock call">MC</span><span class="'+(c?"ok":"")+'" title="Certified">✓</span></div>';}
+  $("court").innerHTML="";if(0)$("court").innerHTML='<div class="court" aria-label="Progress">'+MODS.map(function(m,i){return'<span class="'+(i<n?"ok":i===n?"now":"")+'" title="Module '+(i+1)+': '+esc(m.title)+'">'+(i+1)+'</span>';}).join("")+'<span class="'+(mp?"ok":n>=MODS.length?"now":"")+'" title="Mock call">MC</span><span class="'+(c?"ok":"")+'" title="Certified">✓</span></div>';}
 
-/* ---------- trainee: module list ---------- */
-function trainView(){if(openMod!=null)return moduleView(openMod);
-  var w=document.createElement("div"),staff=isStaff(),n=staff?MODS.length:nextIdx(me.slug);
-  if(flash&&Date.now()-flash.ts<600000&&flash.list)w.appendChild(h('<div class="bnr on '+(flash.ok?"ok":"err")+'">'+esc(flash.t)+'</div>'));
-  w.appendChild(h('<div class="card"><h2>'+(staff?"The training, as the team sees it":"Your six modules")+'</h2><p class="lead" style="margin:0">'+(staff?"Every module is open for you, with the answer key marked.":"In order. Each module ends with a quiz: get every answer right to open the next one. Every answer is saved under your name.")+'</p></div>'));
-  var s='<div class="mods">'+MODS.map(function(m,i){var ok=!staff&&i<n,now=!staff&&i===n,lock=!staff&&i>n,tries=staff?0:attemptsOf(me.slug,m.id).length;
-    var st=ok?'<span class="pill p-ok">Passed</span>':now?'<span class="pill p-open">'+(tries?"Try again":"Start here")+'</span>':lock?'<span class="pill p-lock">Pass Module '+i+' first</span>':'<span class="pill p-open">Open</span>';
-    return'<button class="mod'+(ok?" ok":now?" now":lock?" lock":"")+'" data-m="'+i+'"'+(lock?' aria-disabled="true"':"")+'><span class="num">'+(ok?"✓":i+1)+'</span><span><span class="t">Module '+(i+1)+' · '+esc(m.title)+'</span><br><span class="g">'+esc(m.goal)+'</span></span><span class="st">'+st+'</span></button>';}).join("")+'</div>';
-  w.appendChild(h(s));
-  if(!staff)w.appendChild(h(finalCard()));
-  setTimeout(function(){w.querySelectorAll("[data-m]").forEach(function(b){b.onclick=function(){var i=+b.dataset.m;if(!isStaff()&&i>nextIdx(me.slug))return;openMod=i;flash=null;render();window.scrollTo(0,0);};});},0);
+/* ---------- trainee: sidebar of modules + one lesson at a time ---------- */
+var pane="lesson";
+function defaultMod(){var n=nextIdx(me.slug);return isStaff()?0:n>=MODS.length?"final":n;}
+function trainView(){var w=document.createElement("div"),staff=isStaff(),n=staff?MODS.length:nextIdx(me.slug);
+  if(openMod==null||(openMod!=="final"&&!staff&&openMod>n)||(openMod==="final"&&staff))openMod=defaultMod();
+  var side='<aside class="side" aria-label="Modules">'+MODS.map(function(m,i){var ok=!staff&&passedMod(me.slug,m.id),lock=!staff&&i>n,cur=openMod===i;
+      var sub=staff?"Answer key":ok?"Passed":lock?"Locked":"In progress";
+      return'<button class="sitem'+(cur?" on":"")+(ok?" ok":"")+(lock?" lock":"")+'" data-m="'+i+'"'+(lock?' aria-disabled="true" title="Pass Module '+i+' first"':"")+'><span class="num">'+(ok?"✓":i+1)+'</span><span class="st"><b>'+esc(m.title)+'</b><small>'+sub+'</small></span></button>';}).join("")+
+    (staff?"":'<button class="sitem'+(openMod==="final"?" on":"")+(certs[me.slug]?" ok":"")+(n<MODS.length?" lock":"")+'" data-m="final"'+(n<MODS.length?' aria-disabled="true" title="Pass all six modules first"':"")+'><span class="num">'+(certs[me.slug]?"✓":"★")+'</span><span class="st"><b>Mock call &amp; certify</b><small>'+(certs[me.slug]?"Certified":mockPass(me.slug)?"Waiting for Juan":n<MODS.length?"After Module 6":"Next step")+'</small></span></button>')+'</aside>';
+  var lay=h('<div class="layout">'+side+'<div class="pane" id="pane"></div></div>').firstChild;
+  lay.querySelector("#pane").appendChild(openMod==="final"?h(finalCard()):moduleView(openMod));
+  w.appendChild(lay);
+  setTimeout(function(){w.querySelectorAll(".sitem").forEach(function(b){b.onclick=function(){if(b.classList.contains("lock"))return;var v=b.dataset.m;openMod=v==="final"?"final":+v;pane="lesson";flash=null;render();goTop();};});wirePane();},0);
   return w;}
+function goTop(){var p=$("pane");if(p&&window.innerWidth<760){try{p.scrollIntoView({block:"start"});}catch(_){}}else window.scrollTo(0,0);}
 function finalCard(){var n=nextIdx(me.slug),c=certs[me.slug],mp=mockPass(me.slug),last=mocksOf(me.slug)[0];
   if(c)return'<div class="card next ok"><h2>Certified ✓</h2><p class="lead" style="margin:0">Juan certified you on '+esc(dt(c.ts))+'.</p></div>';
-  if(n<MODS.length)return'<div class="card"><h2>Final mock call</h2><p class="lead" style="margin:0">After Module 6: a mock call with Cherry or Thea. Then Juan certifies you.</p></div>';
+  if(n<MODS.length)return'<div class="card"><h2>Mock call and certification</h2><p class="lead" style="margin:0">After Module 6: a mock call with Cherry or Thea. Then Juan certifies you.</p></div>';
   if(mp)return'<div class="card next ok"><h2>Mock call passed</h2><p class="lead" style="margin:0">'+esc(mp.by)+' passed your mock call on '+esc(dt(mp.ts))+'. Waiting for Juan to certify you.</p>'+(mp.notes?'<div class="src"><b>Notes</b>'+esc(mp.notes)+'</div>':"")+'</div>';
-  return'<div class="card next"><h2>Next: your final mock call</h2><p class="lead" style="margin:0">All six modules passed. Ask Cherry or Thea for a mock call. They log the result here, and then Juan certifies you.</p>'+(last?'<div class="src"><b>Last mock call · '+esc(last.by)+' · '+esc(dt(last.ts))+'</b>Needs another try. '+esc(last.notes||"")+'</div>':"")+'</div>';}
+  return'<div class="card next"><h2>Next: your mock call</h2><p class="lead" style="margin:0">All six modules passed. Ask Cherry or Thea for a mock call. They log the result here, and then Juan certifies you.</p>'+(last?'<div class="src"><b>Last mock call · '+esc(last.by)+' · '+esc(dt(last.ts))+'</b>Needs another try. '+esc(last.notes||"")+'</div>':"")+'</div>';}
 
-/* ---------- module ---------- */
-function partHtml(p,i){var tag=p.ol?"ol":"ul";
-  return'<div class="card"><h2>'+esc(p.h)+'</h2>'+(p.say?'<div class="say">“'+esc(p.say)+'”</div>':"")+'<'+tag+' class="pts">'+p.pts.map(function(x){return"<li>"+esc(x)+"</li>";}).join("")+'</'+tag+'><div class="src"><b>Where this comes from</b>'+p.from.map(function(f){return'<div>'+esc(f.s)+': “'+esc(f.t)+'”</div>';}).join("")+'</div></div>';}
-function moduleView(i){var m=MODS[i],w=document.createElement("div"),juan=isStaff(),passed=!juan&&passedMod(me.slug,m.id),tries=juan?[]:attemptsOf(me.slug,m.id);
-  w.appendChild(h('<div class="row" style="margin-bottom:12px"><button class="link" id="back">← All modules</button></div>'));
-  if(flash&&Date.now()-flash.ts<600000&&!flash.list)w.appendChild(h('<div class="bnr on '+(flash.ok?"ok":"err")+'" id="flash">'+esc(flash.t)+(flash.sub?'<div class="small">'+esc(flash.sub)+'</div>':"")+'</div>'));
-  w.appendChild(h('<div class="card next'+(passed?" ok":"")+'"><div class="small">MODULE '+(i+1)+' OF '+MODS.length+'</div><h2 style="font-size:26px">'+esc(m.title)+'</h2><p class="lead" style="margin:4px 0 0;font-size:17px">'+esc(m.goal)+'</p>'+(passed?'<p class="green" style="margin:8px 0 0">Passed on attempt '+esc((tries.filter(function(a){return a.passed;})[0]||{}).attempt||tries.length)+'.</p>':"")+'</div>'));
-  w.appendChild(h(m.parts.map(partHtml).join("")));
-  if(m.roleplay&&!juan)w.appendChild(roleplayCard());
-  if(m.roleplay&&juan)w.appendChild(h('<div class="card"><h2>Practice calls</h2><p class="lead" style="margin:0">The AI plays one of the three practice sellers above. A call passes only when all six checks pass: '+RULES.map(function(r){return esc(r[1]);}).join(", ")+'. Every call is saved; see <b>Every answer</b>.</p></div>'));
-  w.appendChild(quizCard(m,i,passed));
-  if(tries.length)w.appendChild(h('<div class="card"><h2>Your attempts</h2>'+tries.slice().reverse().map(function(a){return'<div class="meta">'+(a.passed?'<span class="green">Passed</span>':'<span class="red">Not passed</span>')+' · attempt '+esc(a.attempt)+' · '+esc(a.score)+'/'+esc(a.total)+' · '+esc(dt(a.ts))+'</div>';}).join("")+'</div>'));
-  setTimeout(function(){$("back").onclick=function(){openMod=null;flash=null;render();window.scrollTo(0,0);};wireQuiz(m,i);wireRoleplay();var f=$("flash");if(f&&flash&&Date.now()-flash.ts<3000)try{f.scrollIntoView({behavior:"smooth",block:"center"});}catch(_){}},0);
+/* ---------- one module ---------- */
+var EXK={seller:"Seller says",you:"You say",juan:"What Juan said",yes:"Say",no:"Don’t say"};
+function partHtml(p){var tag=p.ol?"ol":"ul";
+  return'<section class="sec"><h3>'+esc(p.h)+'</h3>'+(p.intro?'<p class="lead" style="margin:4px 0 0">'+esc(p.intro)+'</p>':"")+(p.say?'<div class="say">“'+esc(p.say)+'”</div>':"")+
+    (p.pts?'<'+tag+' class="pts">'+p.pts.map(function(x){return"<li>"+esc(x)+"</li>";}).join("")+'</'+tag+'>':"")+
+    (p.ex?'<div class="ex">'+p.ex.map(function(e){return'<div class="'+e.k+'"><span class="k">'+(e.k==="yes"?"✓ ":e.k==="no"?"✗ ":"")+esc(EXK[e.k])+'</span>'+esc(e.t)+'</div>';}).join("")+(p.ex.some(function(e){return e.k==="you";})?'<div class="small" style="max-width:none;padding:0">Example only. Use your own words.</div>':"")+'</div>':"")+'</section>';}
+function moduleView(i){var m=MODS[i],w=document.createElement("div"),staff=isStaff(),passed=!staff&&passedMod(me.slug,m.id),tries=staff?[]:attemptsOf(me.slug,m.id);
+  var qLock=!staff&&m.roleplay&&!rpPassed(me.slug);
+  if(pane==="practice"&&!m.roleplay)pane="lesson";
+  if(flash&&Date.now()-flash.ts<600000)w.appendChild(h('<div class="bnr on '+(flash.ok?"ok":"err")+'" id="flash">'+esc(flash.t)+(flash.sub?'<div class="small">'+esc(flash.sub)+'</div>':"")+'</div>'));
+  w.appendChild(h('<div class="card next'+(passed?" ok":"")+'"><div class="small">MODULE '+(i+1)+' OF '+MODS.length+' · '+esc(m.title.toUpperCase())+(passed?' · <span class="green">PASSED</span>':"")+'</div><p class="rule">'+esc(m.rule)+'</p></div>'));
+  var tabs=[["lesson","1. Lesson"]];if(m.roleplay)tabs.push(["practice","2. Practice call"+(!staff&&rpPassed(me.slug)?" ✓":"")]);tabs.push(["quiz",(m.roleplay?"3":"2")+". Quiz"+(passed?" ✓":qLock?" (locked)":"")]);
+  w.appendChild(h('<div class="subtabs" role="tablist">'+tabs.map(function(t){return'<button role="tab" data-pane="'+t[0]+'" class="'+(pane===t[0]?"on":"")+'" aria-selected="'+(pane===t[0])+'">'+esc(t[1])+'</button>';}).join("")+'</div>'));
+  if(pane==="lesson"){var nx=m.roleplay?["practice","Next: Practice call"]:["quiz","Next: Take the quiz"];
+    w.appendChild(h('<div class="card">'+m.parts.map(partHtml).join("")+'<details class="srcs"><summary>Where this comes from</summary><div class="src">'+m.parts.map(function(p){return p.from.map(function(f){return'<div>'+esc(f.s)+': “'+esc(f.t)+'”</div>';}).join("");}).join("")+'</div></details></div>'));
+    w.appendChild(h('<div class="row"><button class="btn hat" data-pane="'+nx[0]+'">'+nx[1]+' →</button></div>'));}
+  else if(pane==="practice"){if(staff)w.appendChild(h('<div class="card"><h2>Practice calls</h2><p class="lead" style="margin:0">The AI plays one of the three practice sellers. A call passes only when all six rules pass. Every call is saved; see <b>Every answer</b>.</p></div>'));else w.appendChild(roleplayCard());}
+  else{w.appendChild(quizCard(m,i,passed,qLock));
+    if(tries.length)w.appendChild(h('<div class="card"><h2>Your attempts</h2>'+tries.slice().reverse().map(function(a){return'<div class="meta">'+(a.passed?'<span class="green">Passed</span>':'<span class="red">Not passed</span>')+' · attempt '+esc(a.attempt)+' · '+esc(a.score)+'/'+esc(a.total)+' · '+esc(dt(a.ts))+'</div>';}).join("")+'</div>'));}
   return w;}
-function quizCard(m,i,passed){var n=m.quiz.length,juan=isStaff();
-  if(juan)return h('<div class="card"><h2>Quiz: '+n+' questions · answer key</h2>'+m.quiz.map(function(x,k){return'<div class="q"><b>'+(k+1)+'. '+esc(x.q)+'</b>'+x.o.map(function(o,j){return'<div class="key'+(j===x.a?" green":"")+'">'+(j===x.a?"✓ ":"• ")+esc(o)+'</div>';}).join("")+'<div class="small">Why: '+esc(x.why)+'</div></div>';}).join("")+'</div>');
-  if(passed){var nx=i+1<MODS.length?'<button class="btn hat" id="go-next">Go to Module '+(i+2)+'</button>':'<button class="btn hat" id="go-next">See your final step</button>';
-    return h('<div class="card next ok"><h2>Quiz passed</h2><p class="lead">All '+n+' right.</p><div class="row">'+nx+'</div></div>');}
-  if(m.roleplay&&!rpPassed(me.slug))return h('<div class="card"><h2>Quiz: '+n+' questions</h2><p class="lead" style="margin:0"><span class="pill p-lock">Locked</span> Pass one practice call above to open this quiz.</p></div>');
+function wirePane(){document.querySelectorAll("[data-pane]").forEach(function(b){b.onclick=function(){pane=b.dataset.pane;flash=null;render();goTop();};});
+  var i=openMod;if(typeof i!=="number")return;wireQuiz(MODS[i],i);wireRoleplay();var f=$("flash");if(f&&flash&&Date.now()-flash.ts<3000)try{f.scrollIntoView({behavior:"smooth",block:"center"});}catch(_){}}
+function quizCard(m,i,passed,qLock){var n=m.quiz.length;
+  if(isStaff())return h('<div class="card"><h2>Quiz: '+n+' questions · answer key</h2>'+m.quiz.map(function(x,k){return'<div class="q"><b>'+(k+1)+'. '+esc(x.q)+'</b>'+x.o.map(function(o,j){return'<div class="key'+(j===x.a?" green":"")+'">'+(j===x.a?"✓ ":"• ")+esc(o)+'</div>';}).join("")+'<div class="small">Why: '+esc(x.why)+'</div></div>';}).join("")+'</div>');
+  if(passed){var nx=i+1<MODS.length?"Go to Module "+(i+2)+": "+MODS[i+1].title:"See your last step: the mock call";
+    return h('<div class="card next ok"><h2>Quiz passed</h2><p class="lead">All '+n+' right.</p><div class="row"><button class="btn hat" id="go-next">'+esc(nx)+' →</button></div></div>');}
+  if(qLock)return h('<div class="card"><h2>Quiz: '+n+' questions</h2><p class="lead" style="margin:0">Pass one practice call first. Then this quiz opens.</p><div class="row" style="margin-top:12px"><button class="btn hat" data-pane="practice">Go to Practice call →</button></div></div>');
   var ans=quizAns[m.id]||(quizAns[m.id]={}),tried=quizTried[m.id];
   return h('<div class="card" id="quiz"><h2>Quiz: '+n+' questions</h2><p class="lead">Get all '+n+' right to pass'+(i+1<MODS.length?" and open Module "+(i+2):"")+'. Wrong answers turn red with the reason. Fix them and try again.</p>'+m.quiz.map(function(x,k){
       return'<div class="q"><b>'+(k+1)+'. '+esc(x.q)+'</b>'+x.o.map(function(o,j){var wrong=tried&&ans[k]===j&&j!==x.a;return'<label class="'+(wrong?"wrong":"")+'"><input type="radio" name="q'+k+'" value="'+j+'"'+(ans[k]===j?" checked":"")+'> <span>'+esc(o)+'</span></label>';}).join("")+(tried&&ans[k]!==x.a?'<div class="small red">'+esc(x.why)+'</div>':"")+'</div>';}).join("")+
     '<div class="bnr" id="q-b" role="alert" style="margin-top:14px"></div><div class="row" style="margin-top:14px"><button class="btn hat" id="q-go">Check my answers</button></div></div>');}
-function wireQuiz(m,i){var nx=$("go-next");if(nx)nx.onclick=function(){openMod=i+1<MODS.length?i+1:null;flash=null;render();window.scrollTo(0,0);};
+function wireQuiz(m,i){var nx=$("go-next");if(nx)nx.onclick=function(){openMod=i+1<MODS.length?i+1:"final";pane="lesson";flash=null;render();goTop();};
   var go=$("q-go");if(!go)return;var ans=quizAns[m.id];
   document.querySelectorAll('#quiz input[type=radio]').forEach(function(r){r.onchange=function(){ans[+r.name.slice(1)]=+r.value;};});
   go.onclick=async function(){if(busy)return;var b=$("q-b"),n=m.quiz.length,blank=[],wrong=[];
+    document.querySelectorAll('#quiz input[type=radio]:checked').forEach(function(r){ans[+r.name.slice(1)]=+r.value;});
     m.quiz.forEach(function(x,k){if(ans[k]==null)blank.push(k+1);else if(ans[k]!==x.a)wrong.push(k+1);});
     if(blank.length){b.textContent="Answer every question first. Still blank: "+blank.join(", ")+".";b.className="bnr on err";return;}
     busy=true;go.disabled=true;go.textContent="Saving…";
@@ -378,9 +418,9 @@ function sellerPrompt(sc){return"You are role-playing a home seller on a phone c
 function graderPrompt(sc){return"You grade a practice phone call for Twin Home Buyer's seller-call training. Grade only what the REP said. Be strict and fair.\n\nRULES:\n1 price: The rep never gives a price, number, offer or range for the house over the phone. Repeating the seller's own numbers back is fine.\n2 source: Any property detail the rep found online is credited to its source, for example \"according to Redfin\". The rep never says \"I know\" about property details. If no property details came up, this passes.\n3 visit: The rep offers to book a 15-minute visit with Juan, a licensed contractor.\n4 honest: If the seller has no repair pressure and no money pressure, the rep tells them listing with an agent may get them more. If the seller has repair or money pressure, this passes.\n5 pressure: The rep puts no pressure on the seller.\n6 story: If Juan or the company's history comes up, the rep tells it with these facts and nothing added: \""+STORY+"\" The rep never states an age for the company (no \"25 years\", no \"since 2002\", no \"24 years\", no other number of years for the company). If it never came up, this passes.\n\nSELLER'S SITUATION: "+sc.brief+"\n\nTRANSCRIPT:\n"+transcript()+"\n\nReply with ONLY a JSON object: {\"checks\":[{\"rule\":\"price\",\"ok\":true,\"note\":\"one short reason\"},{\"rule\":\"source\",\"ok\":true,\"note\":\"\"},{\"rule\":\"visit\",\"ok\":true,\"note\":\"\"},{\"rule\":\"honest\",\"ok\":true,\"note\":\"\"},{\"rule\":\"pressure\",\"ok\":true,\"note\":\"\"},{\"rule\":\"story\",\"ok\":true,\"note\":\"\"}],\"feedback\":\"2 or 3 plain sentences to the rep: what to fix first, or what went well\"}";}
 function roleplayCard(){var w=document.createElement("div"),passedAny=rpPassed(me.slug),tries=rpOf(me.slug);
   var s='<div class="card" id="rp"><h2>Practice call</h2>';
-  if(passedAny&&!rp.sc&&!rp.result)s+='<p class="green" style="margin:0 0 10px">You passed a practice call. The quiz below is open. Practice more anytime.</p>';
+  if(passedAny&&!rp.sc&&!rp.result)s+='<p class="green" style="margin:0 0 10px">You passed a practice call, so the quiz is open. Practice more anytime.</p>';
   s+='<p class="lead">'+plural(tries.length,"practice call")+' so far'+(tries.length?", "+tries.filter(function(r){return r.pass;}).length+" passed":"")+'. Every call is saved under your name.</p>';
-  if(rp.result){var r=rp.result;s+='<div class="bnr on '+(r.pass?"ok":"err")+'">'+(r.pass?"Passed ✓ This call passed all six checks.":"Not passed yet. Practice again.")+'</div>'+RULES.map(function(x){var c=(r.checks||[]).filter(function(k){return k.rule===x[0];})[0]||{};return'<div class="chk"><span class="'+(c.ok?"green":"red")+'">'+(c.ok?"✓":"✗")+'</span><span><b>'+esc(x[1])+'</b>'+(c.note?'<br><span class="small">'+esc(c.note)+'</span>':"")+'</span></div>';}).join("")+(r.feedback?'<div class="src"><b>Coach’s note</b>'+esc(r.feedback)+'</div>':"")+'<div class="row" style="margin-top:12px"><button class="btn hat" id="rp-again">'+(r.pass?"Practice again":"Try another call")+'</button></div>';}
+  if(rp.result){var r=rp.result;s+='<div class="bnr on '+(r.pass?"ok":"err")+'">'+(r.pass?"Passed ✓ This call passed all six checks.":"Not passed yet. Practice again.")+'</div>'+RULES.map(function(x){var c=(r.checks||[]).filter(function(k){return k.rule===x[0];})[0]||{};return'<div class="chk"><span class="'+(c.ok?"green":"red")+'">'+(c.ok?"✓":"✗")+'</span><span><b>'+esc(x[1])+'</b>'+(c.note?'<br><span class="small">'+esc(c.note)+'</span>':"")+'</span></div>';}).join("")+(r.feedback?'<div class="src"><b>Coach’s note</b>'+esc(r.feedback)+'</div>':"")+'<div class="row" style="margin-top:12px">'+(r.pass?'<button class="btn hat" data-pane="quiz">Take the quiz →</button><button class="btn ghost" id="rp-again">Practice again</button>':'<button class="btn hat" id="rp-again">Try another call</button>')+'</div>';}
   else if(!rp.sc){s+='<p style="margin:0 0 8px"><b>Pick a seller.</b></p><div class="scen">'+SCEN.map(function(sc){return'<button data-sc="'+sc.id+'"><b>'+esc(sc.name)+'</b><br><span class="small">'+esc(clip(sc.brief,110))+'</span></button>';}).join("")+'</div>';}
   else{s+='<div class="small">Practice seller: <b>'+esc(rp.sc.name)+'</b>. Type what you would say on the phone.</div><div class="chat" id="chat">'+rp.turns.map(function(t){return'<div class="bub '+(t.who==="rep"?"me":"ai")+'"><span class="who">'+(t.who==="rep"?"You":"Seller")+'</span>'+esc(t.text)+'</div>';}).join("")+(rp.busy?'<div class="bub ai">…</div>':"")+'</div>'+
     (rp.err?'<div class="bnr on err">'+esc(rp.err)+'</div>':"")+'<label class="small" for="rp-in">Your words</label><textarea class="in" id="rp-in" placeholder="e.g. Thanks for calling. Can I get your name and the property address?"'+(rp.busy?" disabled":"")+'>'+esc(rp.draft)+'</textarea><div class="row" style="margin-top:8px"><button class="btn hat" id="rp-say"'+(rp.busy?" disabled":"")+'>Say it</button><button class="btn ghost" id="rp-end"'+(rp.busy||!rp.turns.some(function(t){return t.who==="rep";})?" disabled":"")+'>End call and get scored</button><button class="link" id="rp-x">Start over</button></div>';}
@@ -392,7 +432,7 @@ function wireRoleplay(){document.querySelectorAll("[data-sc]").forEach(function(
   var sy=$("rp-say");if(sy)sy.onclick=rpSay;var en=$("rp-end");if(en)en.onclick=rpScore;
   var ch=$("chat");if(ch&&ch.lastElementChild)try{ch.lastElementChild.scrollIntoView({block:"nearest"});}catch(_){}}
 function sampleErr(e){return e&&e.code==="not_granted"?"Claude wasn’t allowed to run on this page. Allow it, then try again.":e&&e.code==="rate_limited"?"Too many requests at once. Wait a minute and try again.":"The AI didn’t answer. Try again.";}
-async function rpSay(){var t=(rp.draft||"").trim();if(!t||rp.busy)return;var sm=await sampler();if(!sm){rp.err="The AI isn’t available in this view. Open the page in Claude and allow it.";render();return;}
+async function rpSay(){var el=$("rp-in");if(el)rp.draft=el.value;var t=(rp.draft||"").trim();if(!t||rp.busy)return;var sm=await sampler();if(!sm){rp.err="The AI isn’t available in this view. Open the page in Claude and allow it.";render();return;}
   rp.turns.push({who:"rep",text:t.slice(0,1000)});rp.draft="";rp.err="";rp.busy=true;render();
   try{var out=await sm.json(sellerPrompt(rp.sc),{modelTier:"default",cache:false});var reply=String((out&&out.reply)||"").trim()||"Sorry, can you say that again?";rp.turns.push({who:"seller",text:reply.slice(0,1000)});rp.busy=false;
     if(out&&out.ended||rp.turns.length>=40){render();return rpScore();}render();var i2=$("rp-in");if(i2)i2.focus();}
@@ -424,7 +464,8 @@ function mockView(){var w=document.createElement("div");
   w.appendChild(h(s));
   setTimeout(function(){w.querySelectorAll("input[type=radio][name^=mr-]").forEach(function(x){x.onchange=function(){var sl=x.name.slice(3);mockDraft[sl]=Object.assign({},mockDraft[sl],{r:x.value});};});
     w.querySelectorAll("[data-mn]").forEach(function(t){t.oninput=function(){mockDraft[t.dataset.mn]=Object.assign({},mockDraft[t.dataset.mn],{n:t.value});};});
-    w.querySelectorAll("[data-ms]").forEach(function(b){b.onclick=async function(){var sl=b.dataset.ms,d=mockDraft[sl]||{},m=$("mm-"+sl),r=roster[sl];
+    w.querySelectorAll("[data-ms]").forEach(function(b){b.onclick=async function(){var sl=b.dataset.ms,m=$("mm-"+sl),r=roster[sl],ck=document.querySelector('input[name="mr-'+sl+'"]:checked'),nt=$("mn-"+sl);
+      mockDraft[sl]=Object.assign({},mockDraft[sl],ck?{r:ck.value}:{},nt?{n:nt.value}:{});var d=mockDraft[sl];
       if(!d.r){say(m,"Pick Passed or Needs another try.","err");return;}if((d.n||"").trim().length<10){say(m,"Write a short note (what went well, what to fix).","err");return;}
       b.disabled=true;var rec={slug:sl,name:r.name,result:d.r,notes:d.n.trim().slice(0,800),by:me.name,bySlug:me.slug,uid:uid,ts:Date.now()};
       try{var ref=await withTimeout(db.collection("mockcalls").add(rec),15000);rec.id=ref&&ref.id?ref.id:("tmp"+rec.ts);upsert(mocks,rec);delete mockDraft[sl];logIt("Mock call for "+r.name+": "+(d.r==="pass"?"PASSED":"needs another try"));render();}
@@ -464,7 +505,7 @@ function answersView(){var w=document.createElement("div");
 
 /* ---------- typed version ---------- */
 function typedText(){var o=["SELLER-CALL TRAINING · Twin Home Buyer","Source: "+D.source+".","","How it works: sign in with your name and 6-digit code. Six modules, in order, no skipping ahead. Each module ends with a quiz: every answer right opens the next module. Module 5 also needs one passed AI practice call. Every answer is saved by name. After Module 6: a final mock call with Cherry or Thea, then Juan certifies.","","JUAN’S STORY (the only way it is told):","“"+STORY+"”","Never state an age for the company.",""];
-  MODS.forEach(function(m,i){o.push("MODULE "+(i+1)+": "+m.title.toUpperCase());o.push(m.goal);m.parts.forEach(function(p){o.push("");o.push(p.h);if(p.say)o.push("   “"+p.say+"”");p.pts.forEach(function(x,k){o.push((p.ol?"   "+(k+1)+") ":"   - ")+x);});o.push("   Source: "+p.from.map(function(f){return f.s+": “"+f.t+"”";}).join(" / "));});
+  MODS.forEach(function(m,i){o.push("MODULE "+(i+1)+": "+m.title.toUpperCase());o.push("Rule: "+m.rule);m.parts.forEach(function(p){o.push("");o.push(p.h);if(p.intro)o.push("   "+p.intro);if(p.say)o.push("   “"+p.say+"”");(p.pts||[]).forEach(function(x,k){o.push((p.ol?"   "+(k+1)+") ":"   - ")+x);});(p.ex||[]).forEach(function(e){o.push("   "+EXK[e.k]+": "+e.t);});o.push("   Source: "+p.from.map(function(f){return f.s+": “"+f.t+"”";}).join(" / "));});
     if(m.roleplay){o.push("");o.push("Practice call checks (all six must pass): "+RULES.map(function(r){return r[1];}).join("; ")+".");}
     o.push("");o.push("Quiz ("+m.quiz.length+" questions, all must be right):");m.quiz.forEach(function(q,k){o.push((k+1)+". "+q.q);q.o.forEach(function(a,j){o.push("   "+"ABC"[j]+". "+a);});o.push("   Answer: "+"ABC"[q.a]+". Why: "+q.why);});o.push("");});
   o.push("FINAL STEP: mock call with Cherry or Thea (Passed / Needs another try, with notes), then Juan’s Certify.");return o.join("\n");}

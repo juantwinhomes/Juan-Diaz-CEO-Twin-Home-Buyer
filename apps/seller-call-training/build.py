@@ -8,11 +8,14 @@ def typed():
          "How it works: sign in with your name and 6-digit code. Six modules, in order, no skipping ahead. Each module ends with a quiz: every answer right opens the next module. Module 5 also needs one passed AI practice call. Every answer is saved by name. After Module 6: a final mock call with Cherry or Thea, then Juan certifies.", "",
          "JUAN’S STORY (the only way it is told):", "“" + STORY + "”", "Never state an age for the company.", ""]
     for i, m in enumerate(DATA["modules"]):
-        o += ["MODULE %d: %s" % (i + 1, m["title"].upper()), m["goal"]]
+        o += ["MODULE %d: %s" % (i + 1, m["title"].upper()), "Rule: " + m["rule"]]
         for p in m["parts"]:
             o += ["", p["h"]]
+            if p.get("intro"): o.append("   " + p["intro"])
             if p.get("say"): o.append("   “" + p["say"] + "”")
-            for k, x in enumerate(p["pts"]): o.append(("   %d) " % (k + 1) if p.get("ol") else "   - ") + x)
+            for k, x in enumerate(p.get("pts", [])): o.append(("   %d) " % (k + 1) if p.get("ol") else "   - ") + x)
+            EXK = {"seller": "Seller says", "you": "You say", "juan": "What Juan said", "yes": "Say", "no": "Don’t say"}
+            for e in p.get("ex", []): o.append("   %s: %s" % (EXK[e["k"]], e["t"]))
             o.append("   Source: " + " / ".join("%s: “%s”" % (f["s"], f["t"]) for f in p["from"]))
         if m.get("roleplay"): o += ["", "Practice call checks (all six must pass): " + "; ".join(RULES) + "."]
         o += ["", "Quiz (%d questions, all must be right):" % len(m["quiz"])]
