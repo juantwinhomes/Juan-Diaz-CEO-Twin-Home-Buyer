@@ -40,6 +40,12 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   await p.check('input[name="mr-vanessa-miller"][value="again"]');await p.fill('#mn-vanessa-miller','Gave a number when pushed. Redo the price objection.');await p.click('[data-ms="vanessa-miller"]');await p.waitForFunction(()=>/Needs another try/.test(document.querySelector('#view').textContent));
   await p.check('input[name="mr-vanessa-miller"][value="pass"]');await p.fill('#mn-vanessa-miller','Booked the 15-minute visit, no price, story word for word.');await p.click('[data-ms="vanessa-miller"]');await p.waitForFunction(()=>/Mock call passed/.test(document.querySelector('#view').textContent));
   let mc=await col('mockcalls');ok(mc.length===2&&mc.some(m=>m.result==='pass'&&m.by==='Cherry Burce'),'both mock calls saved by name');
+  await reload();await signIn('Seth Concepcion');tabs=await p.$$eval('#tabs .tab',t=>t.map(x=>x.textContent));ok(tabs.join('|')==='Team progress1|Every answer|Mock calls|The training|Typed version|People & codes','admin tabs: '+tabs.join('|'));
+  ok(!(await p.$('[data-cert]'))&&(await p.textContent('#view')).includes('Ready for Juan’s Certify'),'admin sees no Certify button');
+  ok(!(await p.textContent('#view')).includes('Seth Concepcion')||(await p.$$eval('td b',b=>b.map(x=>x.textContent))).indexOf('Seth Concepcion')<0,'admin is not counted as a trainee');
+  await p.click('.tab[data-v="mock"]');ok(!(await p.$('[data-ms]'))&&(await p.textContent('#view')).includes('You see the results'),'admin mock calls are read-only');
+  await p.click('.tab[data-v="train"]');await p.click('.mod[data-m="5"]');ok((await p.textContent('#view')).includes('answer key'),'admin sees all modules with answer key');
+  await p.click('.tab[data-v="access"]');ok((await p.textContent('#view')).includes('People and codes'),'admin sees People & codes');
   await reload();await signIn('Juan Diaz');tabs=await p.$$eval('#tabs .tab',t=>t.map(x=>x.textContent));ok(tabs[0]==='Team progress1','Juan sees 1 ready to certify: '+tabs.join('|'));
   const certBtns=await p.$$('[data-cert]');ok(certBtns.length===1,'exactly one Certify button');await p.screenshot({path:OUT+'/6-juan-team.png',fullPage:true});
   await p.click('[data-cert="vanessa-miller"]');await p.click('#cfm-n');ok(!(await col('certs')).length,'cancel does not certify');

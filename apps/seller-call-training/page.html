@@ -211,8 +211,11 @@ var roster={},people={},answers=[],roleplays=[],mocks=[],certs={},codes={},logs=
 var view="train",openMod=null,quizAns={},quizTried={},flash=null,busy=false,who="all",sampleP=null;
 var rp={sc:null,turns:[],busy:false,result:null,err:"",draft:""},mockDraft={};
 function isJuan(){return!!me&&me.role==="owner";}
+/* admin = sees everything Juan sees except Certify (Juan: "a single Certify button for me") */
+function isAdmin(){return!!me&&me.role==="admin";}
+function isStaff(){return isJuan()||isAdmin();}
 function isCoach(){return!!me&&(isJuan()||COACHES.indexOf(me.slug)>=0);}
-function team(){return Object.keys(roster).map(function(k){return roster[k];}).filter(function(r){return r.role!=="owner";}).sort(function(a,b){return a.name.localeCompare(b.name);});}
+function team(){return Object.keys(roster).map(function(k){return roster[k];}).filter(function(r){return r.role!=="owner"&&r.role!=="admin";}).sort(function(a,b){return a.name.localeCompare(b.name);});}
 function attemptsOf(sl,mid){return answers.filter(function(a){return a.slug===sl&&a.module===mid;}).sort(function(a,b){return a.ts-b.ts;});}
 function passedMod(sl,mid){return attemptsOf(sl,mid).some(function(a){return a.passed;})||!!((((people[sl]||{}).prog)||{})[mid]||{}).passed;}
 function rpOf(sl){return roleplays.filter(function(r){return r.slug===sl;}).sort(function(a,b){return a.ts-b.ts;});}
@@ -254,7 +257,7 @@ async function signIn(){var r=roster[picked],code=($("g-code").value||"").trim()
     catch(e){me=null;say(m,"Your sign-in couldn’t be saved, so the page stays locked. Ask Seth to share this page with you as Contributor.","err");$("g-go").disabled=false;return;}
     try{db.collection("data/users/"+uid).doc("me").set({slug:r.slug,ts:Date.now()}).catch(function(){});}catch(x){}
     logIt("Signed in");$("g-code").value="";$("gate").classList.add("hidden");document.body.classList.remove("locked");
-    view=isJuan()?"team":"train";render();
+    view=isStaff()?"team":"train";render();
   }catch(e){me=null;say(m,"Couldn’t check the code in this view. The page stays locked.","err");$("g-go").disabled=false;}}
 $("g-go").onclick=signIn;$("g-code").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();signIn();}});
 $("g-find").oninput=fillNames;$("g-find").onkeydown=function(e){if(e.key==="Enter"&&picked){e.preventDefault();$("g-code").focus();}};
@@ -286,7 +289,7 @@ function live(col,apply){try{db.collection(col).onSnapshot(function(s){apply(doc
 /* ---------- render ---------- */
 function soft(){if(!me)return;var a=document.activeElement;if(a&&a.matches&&a.matches("input,textarea,select")&&a.offsetParent!==null)return;render();}
 function tabsFor(){
-  if(isJuan()){var ready=team().filter(function(r){return mockPass(r.slug)&&!certs[r.slug];}).length;
+  if(isStaff()){var ready=team().filter(function(r){return mockPass(r.slug)&&!certs[r.slug];}).length;
     return[["team","Team progress",ready],["answers","Every answer"],["mock","Mock calls"],["train","The training"],["typed","Typed version"],["access","People & codes"]];}
   var t=[["train","My training"]];if(isCoach()){var wait=team().filter(function(r){return r.slug!==me.slug&&nextIdx(r.slug)>=MODS.length&&!mockPass(r.slug);}).length;t.push(["mock","Mock calls",wait]);}
   t.push(["typed","Typed version"]);return t;}
@@ -300,8 +303,8 @@ function render(){if(!me)return;
   var map={train:trainView,typed:typedView,mock:mockView,team:teamView,answers:answersView,access:accessView};
   v.appendChild((map[view]||trainView)());}
 function renderHello(){
-  if(isJuan()){var t=team(),started=t.filter(function(r){return answers.some(function(a){return a.slug===r.slug;});}).length,cert=t.filter(function(r){return certs[r.slug];}).length;
-    $("hello").innerHTML='<div><h1>Seller-call training</h1><p>Six modules in order, a final mock call with Cherry or Thea, then your Certify.</p></div><div class="clock'+(cert?" done":"")+'"><b>'+cert+' certified</b>'+started+' of '+t.length+' started</div>';$("court").innerHTML="";return;}
+  if(isStaff()){var t=team(),started=t.filter(function(r){return answers.some(function(a){return a.slug===r.slug;});}).length,cert=t.filter(function(r){return certs[r.slug];}).length;
+    $("hello").innerHTML='<div><h1>Seller-call training</h1><p>Six modules in order, a final mock call with Cherry or Thea, then '+(isJuan()?"your":"Juan’s")+' Certify.</p></div><div class="clock'+(cert?" done":"")+'"><b>'+cert+' certified</b>'+started+' of '+t.length+' started</div>';$("court").innerHTML="";return;}
   var n=nextIdx(me.slug),c=certs[me.slug],mp=mockPass(me.slug);
   var big=c?"Certified":n>=MODS.length?(mp?"Mock call passed":"Mock call next"):"Module "+(n+1)+" of "+MODS.length;
   var sub=c?"by "+(c.by||"Juan")+", "+new Date(c.ts).toLocaleDateString("en-US",{timeZone:TZ,month:"short",day:"numeric"}):n>=MODS.length?(mp?"Waiting for Juan to certify":"Ask Cherry or Thea"):MODS[n].title;
@@ -310,15 +313,15 @@ function renderHello(){
 
 /* ---------- trainee: module list ---------- */
 function trainView(){if(openMod!=null)return moduleView(openMod);
-  var w=document.createElement("div"),n=isJuan()?MODS.length:nextIdx(me.slug);
+  var w=document.createElement("div"),staff=isStaff(),n=staff?MODS.length:nextIdx(me.slug);
   if(flash&&Date.now()-flash.ts<600000&&flash.list)w.appendChild(h('<div class="bnr on '+(flash.ok?"ok":"err")+'">'+esc(flash.t)+'</div>'));
-  w.appendChild(h('<div class="card"><h2>'+(isJuan()?"The training, as the team sees it":"Your six modules")+'</h2><p class="lead" style="margin:0">'+(isJuan()?"Every module is open for you, with the answer key marked.":"In order. Each module ends with a quiz: get every answer right to open the next one. Every answer is saved under your name.")+'</p></div>'));
-  var s='<div class="mods">'+MODS.map(function(m,i){var ok=!isJuan()&&i<n,now=!isJuan()&&i===n,lock=!isJuan()&&i>n,tries=isJuan()?0:attemptsOf(me.slug,m.id).length;
+  w.appendChild(h('<div class="card"><h2>'+(staff?"The training, as the team sees it":"Your six modules")+'</h2><p class="lead" style="margin:0">'+(staff?"Every module is open for you, with the answer key marked.":"In order. Each module ends with a quiz: get every answer right to open the next one. Every answer is saved under your name.")+'</p></div>'));
+  var s='<div class="mods">'+MODS.map(function(m,i){var ok=!staff&&i<n,now=!staff&&i===n,lock=!staff&&i>n,tries=staff?0:attemptsOf(me.slug,m.id).length;
     var st=ok?'<span class="pill p-ok">Passed</span>':now?'<span class="pill p-open">'+(tries?"Try again":"Start here")+'</span>':lock?'<span class="pill p-lock">Pass Module '+i+' first</span>':'<span class="pill p-open">Open</span>';
     return'<button class="mod'+(ok?" ok":now?" now":lock?" lock":"")+'" data-m="'+i+'"'+(lock?' aria-disabled="true"':"")+'><span class="num">'+(ok?"✓":i+1)+'</span><span><span class="t">Module '+(i+1)+' · '+esc(m.title)+'</span><br><span class="g">'+esc(m.goal)+'</span></span><span class="st">'+st+'</span></button>';}).join("")+'</div>';
   w.appendChild(h(s));
-  if(!isJuan())w.appendChild(h(finalCard()));
-  setTimeout(function(){w.querySelectorAll("[data-m]").forEach(function(b){b.onclick=function(){var i=+b.dataset.m;if(!isJuan()&&i>nextIdx(me.slug))return;openMod=i;flash=null;render();window.scrollTo(0,0);};});},0);
+  if(!staff)w.appendChild(h(finalCard()));
+  setTimeout(function(){w.querySelectorAll("[data-m]").forEach(function(b){b.onclick=function(){var i=+b.dataset.m;if(!isStaff()&&i>nextIdx(me.slug))return;openMod=i;flash=null;render();window.scrollTo(0,0);};});},0);
   return w;}
 function finalCard(){var n=nextIdx(me.slug),c=certs[me.slug],mp=mockPass(me.slug),last=mocksOf(me.slug)[0];
   if(c)return'<div class="card next ok"><h2>Certified ✓</h2><p class="lead" style="margin:0">Juan certified you on '+esc(dt(c.ts))+'.</p></div>';
@@ -329,7 +332,7 @@ function finalCard(){var n=nextIdx(me.slug),c=certs[me.slug],mp=mockPass(me.slug
 /* ---------- module ---------- */
 function partHtml(p,i){var tag=p.ol?"ol":"ul";
   return'<div class="card"><h2>'+esc(p.h)+'</h2>'+(p.say?'<div class="say">“'+esc(p.say)+'”</div>':"")+'<'+tag+' class="pts">'+p.pts.map(function(x){return"<li>"+esc(x)+"</li>";}).join("")+'</'+tag+'><div class="src"><b>Where this comes from</b>'+p.from.map(function(f){return'<div>'+esc(f.s)+': “'+esc(f.t)+'”</div>';}).join("")+'</div></div>';}
-function moduleView(i){var m=MODS[i],w=document.createElement("div"),juan=isJuan(),passed=!juan&&passedMod(me.slug,m.id),tries=juan?[]:attemptsOf(me.slug,m.id);
+function moduleView(i){var m=MODS[i],w=document.createElement("div"),juan=isStaff(),passed=!juan&&passedMod(me.slug,m.id),tries=juan?[]:attemptsOf(me.slug,m.id);
   w.appendChild(h('<div class="row" style="margin-bottom:12px"><button class="link" id="back">← All modules</button></div>'));
   if(flash&&Date.now()-flash.ts<600000&&!flash.list)w.appendChild(h('<div class="bnr on '+(flash.ok?"ok":"err")+'" id="flash">'+esc(flash.t)+(flash.sub?'<div class="small">'+esc(flash.sub)+'</div>':"")+'</div>'));
   w.appendChild(h('<div class="card next'+(passed?" ok":"")+'"><div class="small">MODULE '+(i+1)+' OF '+MODS.length+'</div><h2 style="font-size:26px">'+esc(m.title)+'</h2><p class="lead" style="margin:4px 0 0;font-size:17px">'+esc(m.goal)+'</p>'+(passed?'<p class="green" style="margin:8px 0 0">Passed on attempt '+esc((tries.filter(function(a){return a.passed;})[0]||{}).attempt||tries.length)+'.</p>':"")+'</div>'));
@@ -340,7 +343,7 @@ function moduleView(i){var m=MODS[i],w=document.createElement("div"),juan=isJuan
   if(tries.length)w.appendChild(h('<div class="card"><h2>Your attempts</h2>'+tries.slice().reverse().map(function(a){return'<div class="meta">'+(a.passed?'<span class="green">Passed</span>':'<span class="red">Not passed</span>')+' · attempt '+esc(a.attempt)+' · '+esc(a.score)+'/'+esc(a.total)+' · '+esc(dt(a.ts))+'</div>';}).join("")+'</div>'));
   setTimeout(function(){$("back").onclick=function(){openMod=null;flash=null;render();window.scrollTo(0,0);};wireQuiz(m,i);wireRoleplay();var f=$("flash");if(f&&flash&&Date.now()-flash.ts<3000)try{f.scrollIntoView({behavior:"smooth",block:"center"});}catch(_){}},0);
   return w;}
-function quizCard(m,i,passed){var n=m.quiz.length,juan=isJuan();
+function quizCard(m,i,passed){var n=m.quiz.length,juan=isStaff();
   if(juan)return h('<div class="card"><h2>Quiz: '+n+' questions · answer key</h2>'+m.quiz.map(function(x,k){return'<div class="q"><b>'+(k+1)+'. '+esc(x.q)+'</b>'+x.o.map(function(o,j){return'<div class="key'+(j===x.a?" green":"")+'">'+(j===x.a?"✓ ":"• ")+esc(o)+'</div>';}).join("")+'<div class="small">Why: '+esc(x.why)+'</div></div>';}).join("")+'</div>');
   if(passed){var nx=i+1<MODS.length?'<button class="btn hat" id="go-next">Go to Module '+(i+2)+'</button>':'<button class="btn hat" id="go-next">See your final step</button>';
     return h('<div class="card next ok"><h2>Quiz passed</h2><p class="lead">All '+n+' right.</p><div class="row">'+nx+'</div></div>');}
@@ -410,13 +413,13 @@ async function rpScore(){if(rp.busy)return;var sm=await sampler();if(!sm){rp.err
 
 /* ---------- mock calls (Cherry, Thea, Juan) ---------- */
 function mockView(){var w=document.createElement("div");
-  if(!isCoach()){w.appendChild(h('<div class="card"><p class="lead" style="margin:0">Only Cherry, Thea and Juan log mock calls.</p></div>'));return w;}
+  var canLog=isCoach();if(!canLog&&!isAdmin()){w.appendChild(h('<div class="card"><p class="lead" style="margin:0">Only Cherry, Thea and Juan log mock calls.</p></div>'));return w;}
   var ready=team().filter(function(r){return r.slug!==me.slug&&nextIdx(r.slug)>=MODS.length;});
-  var s='<div class="card"><h2>Final mock calls</h2><p class="lead" style="margin:0">People who passed all six modules. Do the mock call, then log the result here. Notes are required either way.</p></div>';
+  var s='<div class="card"><h2>Final mock calls</h2><p class="lead" style="margin:0">People who passed all six modules. '+(canLog?"Do the mock call, then log the result here. Notes are required either way.":"Cherry, Thea and Juan log mock calls. You see the results.")+'</p></div>';
   if(!ready.length)s+='<div class="card"><p class="lead" style="margin:0">Nobody has finished all six modules yet.</p></div>';
   ready.sort(function(a,b){return(!!mockPass(a.slug)-!!mockPass(b.slug))||a.name.localeCompare(b.name);}).forEach(function(r){var mp=mockPass(r.slug),hist=mocksOf(r.slug),c=certs[r.slug],d=mockDraft[r.slug]||{};
     s+='<div class="card"><div class="row" style="justify-content:space-between"><h2>'+esc(r.name)+'</h2>'+(c?'<span class="pill p-ok">Certified</span>':mp?'<span class="pill p-ok">Mock call passed</span>':'<span class="pill p-open">Waiting for mock call</span>')+'</div>'+hist.map(function(m){return'<div class="item"><b>'+(m.result==="pass"?'<span class="green">Passed</span>':'<span class="red">Needs another try</span>')+'</b> · '+esc(m.by)+' · '+esc(dt(m.ts))+'<div class="meta">'+esc(m.notes)+'</div></div>';}).join("");
-    if(!mp)s+='<div style="margin-top:12px"><div class="row"><label class="row"><input type="radio" name="mr-'+esc(r.slug)+'" value="pass"'+(d.r==="pass"?" checked":"")+'> Passed</label><label class="row"><input type="radio" name="mr-'+esc(r.slug)+'" value="again"'+(d.r==="again"?" checked":"")+'> Needs another try</label></div><textarea class="in" style="margin-top:8px" id="mn-'+esc(r.slug)+'" data-mn="'+esc(r.slug)+'" placeholder="What went well, and what to fix">'+esc(d.n||"")+'</textarea><div class="row" style="margin-top:8px"><button class="btn hat" data-ms="'+esc(r.slug)+'">Save mock call</button><span class="msg" id="mm-'+esc(r.slug)+'"></span></div></div>';
+    if(!mp&&canLog)s+='<div style="margin-top:12px"><div class="row"><label class="row"><input type="radio" name="mr-'+esc(r.slug)+'" value="pass"'+(d.r==="pass"?" checked":"")+'> Passed</label><label class="row"><input type="radio" name="mr-'+esc(r.slug)+'" value="again"'+(d.r==="again"?" checked":"")+'> Needs another try</label></div><textarea class="in" style="margin-top:8px" id="mn-'+esc(r.slug)+'" data-mn="'+esc(r.slug)+'" placeholder="What went well, and what to fix">'+esc(d.n||"")+'</textarea><div class="row" style="margin-top:8px"><button class="btn hat" data-ms="'+esc(r.slug)+'">Save mock call</button><span class="msg" id="mm-'+esc(r.slug)+'"></span></div></div>';
     s+='</div>';});
   w.appendChild(h(s));
   setTimeout(function(){w.querySelectorAll("input[type=radio][name^=mr-]").forEach(function(x){x.onchange=function(){var sl=x.name.slice(3);mockDraft[sl]=Object.assign({},mockDraft[sl],{r:x.value});};});
@@ -437,10 +440,10 @@ function teamView(){var w=document.createElement("div"),t=team();
   s+='<div class="card"><div class="scroll"><table><thead><tr><th>Person</th><th>Modules</th><th>Quiz tries</th><th>Practice calls</th><th>Mock call</th><th>Certify</th></tr></thead><tbody>'+rows.map(function(x){
     var mods=x.n>=MODS.length?'<span class="green">All 6 passed</span>':x.qa||x.rps?'On Module '+(x.n+1)+'<div class="small">'+esc(MODS[x.n].title)+'</div>':'<span class="small">Not started</span>';
     var mock=x.mp?'<span class="green">Passed</span><div class="small">'+esc(x.mp.by)+' · '+esc(ago(x.mp.ts))+'</div>':x.lm?'<span class="red">Needs another try</span><div class="small">'+esc(x.lm.by)+'</div>':x.n>=MODS.length?'<span class="small">Waiting</span>':"—";
-    var cert=x.c?'<span class="green">Certified</span><div class="small">'+esc(dt(x.c.ts))+'</div>':x.mp?'<button class="btn teal sm" data-cert="'+esc(x.r.slug)+'">Certify</button>':'<span class="small">After mock call</span>';
+    var cert=x.c?'<span class="green">Certified</span><div class="small">'+esc(dt(x.c.ts))+'</div>':x.mp?(isJuan()?'<button class="btn teal sm" data-cert="'+esc(x.r.slug)+'">Certify</button>':'<span class="small">Ready for Juan’s Certify</span>'):'<span class="small">After mock call</span>';
     return'<tr><td><b>'+esc(x.r.name)+'</b><div class="small">'+esc(x.r.title)+'</div></td><td>'+mods+'</td><td>'+x.qa+'</td><td>'+(x.rps?x.rps+' <span class="small">('+x.rpp+' passed)</span>':"—")+'</td><td>'+mock+'</td><td>'+cert+'</td></tr>';}).join("")+'</tbody></table></div></div>';
   w.appendChild(h(s));
-  setTimeout(function(){w.querySelectorAll("[data-cert]").forEach(function(b){b.onclick=async function(){var sl=b.dataset.cert,r=roster[sl],mp=mockPass(sl);if(!mp)return;
+  setTimeout(function(){w.querySelectorAll("[data-cert]").forEach(function(b){b.onclick=async function(){var sl=b.dataset.cert,r=roster[sl],mp=mockPass(sl);if(!mp||!isJuan())return;
     if(!(await sure("Certify "+r.name+"?\n\nAll six modules passed, and "+mp.by+" passed the mock call. This saves your certification with today’s date.","Certify")))return;
     b.disabled=true;var rec={slug:sl,name:r.name,by:me.name,uid:uid,ts:Date.now(),mockBy:mp.by,mockAt:mp.ts};
     try{await withTimeout(db.doc("certs/"+sl).set(rec),15000);rec.id=sl;certs[sl]=rec;logIt("Certified "+r.name);render();}catch(e){b.disabled=false;alert("Did NOT save: "+errTxt(e));}};});},0);
