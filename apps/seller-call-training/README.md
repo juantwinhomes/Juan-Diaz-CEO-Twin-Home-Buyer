@@ -8,9 +8,13 @@ in order, no skipping ahead, a quiz at the end of each; sign in by name with a 6
 answer saved by name on the shared board; a typed version Claude can read; a final mock call with
 Cherry or Thea; then a single Certify button for Juan.
 
-Sources: Gemini notes of Juan's Oct 19 training session (Drive doc
-`1dCFc-mhwYykEPIV57GHOwLUgGNFjs8B-pB994TXimbM`), Juan's Oct 31 build email, and his Oct 30/31
-story emails. Every lesson part lists the exact source lines it came from.
+Sources: the recording of Juan's Oct 19 training session (Drive file
+`19Aa1uc4nf0MLVfxHRURQEY39H-Jpg2-2`; transcript pasted by Seth on Oct 31, not stored here because it
+holds Vanessa's personal details), Gemini's notes of it (Drive doc
+`1dCFc-mhwYykEPIV57GHOwLUgGNFjs8B-pB994TXimbM`), Juan's Oct 31 build email, and his Oct 30/31 story
+emails. Every lesson part lists its sources with recording timestamps; quotes are lightly cleaned
+of filler words. Left out on purpose: Juan's "25 years" line (his story rule bans it), "there may
+be a range" (conflicts with no price over the phone), Vanessa's family details, and Cherry's pay.
 
 **Juan's story is told only one way:** "Juan started at 12, sweeping the homes his Uncle George
 bought in Oakland. Raised in East Oakland, he's been flipping homes since 2005: 20+ years making

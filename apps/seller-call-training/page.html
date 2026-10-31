@@ -34,7 +34,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--hat);outline-offset:2px}
 h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:balance}
 .hidden{display:none!important}
-.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
 body.locked main,body.locked .band,body.locked nav{filter:blur(12px);pointer-events:none;user-select:none;max-height:100vh;overflow:hidden}
 /* gate */
 .gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(10,24,38,.62);backdrop-filter:blur(4px)}
@@ -86,8 +86,8 @@ textarea.in{min-height:80px;resize:vertical}
 .court span.now{border-color:var(--hat);color:var(--on-band)}
 /* nav */
 nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
-nav .wrap{display:flex;gap:4px;overflow-x:auto;padding-block:0}
-.tab{background:none;border:none;border-bottom:3px solid transparent;padding:13px 12px 10px;font-weight:700;color:var(--ink2);cursor:pointer;white-space:nowrap}
+nav .wrap{display:flex;gap:2px;overflow-x:auto;padding-block:0;scrollbar-width:none}nav .wrap::-webkit-scrollbar{display:none}
+.tab{background:none;border:none;border-bottom:3px solid transparent;padding:13px 10px 10px;font-weight:700;color:var(--ink2);cursor:pointer;white-space:nowrap}
 .tab.on{color:var(--ink);border-bottom-color:var(--hat)}
 .tab .n{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:var(--late);color:#fff;font-size:12px;margin-left:4px}
 main{padding-top:18px}
@@ -369,11 +369,11 @@ function finalCard(){if(preview)return'<div class="card"><h2>Mock call and certi
   return'<div class="card next"><h2>Next: your mock call</h2><p class="lead" style="margin:0">All six modules passed. Ask Cherry or Thea for a mock call. They log the result here, and then Juan certifies you.</p>'+(last?'<div class="src"><b>Last mock call · '+esc(last.by)+' · '+esc(dt(last.ts))+'</b>Needs another try. '+esc(last.notes||"")+'</div>':"")+'</div>';}
 
 /* ---------- one module ---------- */
-var EXK={seller:"Seller says",you:"You say",juan:"What Juan said",yes:"Say",no:"Don’t say"};
+var EXK={seller:"Seller",you:"You could say",juan:"Juan",yes:"Say",no:"Don’t say"};
 function partHtml(p){var tag=p.ol?"ol":"ul";
   return'<section class="sec"><h3>'+esc(p.h)+'</h3>'+(p.intro?'<p class="lead" style="margin:4px 0 0">'+esc(p.intro)+'</p>':"")+(p.say?'<div class="say">“'+esc(p.say)+'”</div>':"")+
     (p.pts?'<'+tag+' class="pts">'+p.pts.map(function(x){return"<li>"+esc(x)+"</li>";}).join("")+'</'+tag+'>':"")+
-    (p.ex?'<div class="ex">'+p.ex.map(function(e){return'<div class="'+e.k+'"><span class="k">'+(e.k==="yes"?"✓ ":e.k==="no"?"✗ ":"")+esc(EXK[e.k])+'</span>'+esc(e.t)+'</div>';}).join("")+(p.ex.some(function(e){return e.k==="you";})?'<div class="small" style="max-width:none;padding:0">Example only. Use your own words.</div>':"")+'</div>':"")+'</section>';}
+    (p.ex?'<div class="ex">'+p.ex.map(function(e){return'<div class="'+e.k+'"><span class="k">'+(e.k==="yes"?"✓ ":e.k==="no"?"✗ ":"")+esc(EXK[e.k])+'</span>'+esc(e.t)+'</div>';}).join("")+(p.ex.some(function(e){return e.k==="you"||e.k==="juan";})?'<div class="small" style="max-width:none;padding:0">'+(p.ex.some(function(e){return e.k==="juan";})?"Juan’s words from the Oct 19 recording. Use them as a guide, not a script.":"Example only. Use your own words.")+'</div>':"")+'</div>':"")+'</section>';}
 function moduleView(i){var m=MODS[i],w=document.createElement("div"),staff=isStaff(),passed=!staff&&passedMod(me.slug,m.id),tries=staff?[]:attemptsOf(me.slug,m.id);
   var qLock=!staff&&m.roleplay&&!rpPassed(me.slug);
   if(pane==="practice"&&!m.roleplay)pane="lesson";

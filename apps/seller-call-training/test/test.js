@@ -16,9 +16,9 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   await p.screenshot({path:OUT+'/1-lesson.png',fullPage:true});
   await quizTab();await p.waitForSelector('#quiz');
   await p.click('#q-go');ok((await p.textContent('#q-b')).includes('Still blank'),'blank submit blocked');ok((await col('answers')).length===0,'blank submit not saved');
-  for(let k=0;k<4;k++)await p.check(`input[name="q${k}"][value="2"]`);await p.click('#q-go');await p.waitForSelector('#flash');
-  let a=await col('answers');ok(a.length===1&&!a[0].passed&&a[0].answers.length===4&&a[0].name==='Vanessa Miller'&&a[0].answers[2].right===true,'fail attempt saved with every answer by name');
-  ok((await p.$$('#quiz label.wrong')).length===3,'wrong answers marked red');await p.screenshot({path:OUT+'/2-m1-fail.png',fullPage:true});
+  const q0=D.modules[0].quiz,wrong0=q0.filter(x=>x.a!==2).length;for(let k=0;k<q0.length;k++)await p.check(`input[name="q${k}"][value="2"]`);await p.click('#q-go');await p.waitForSelector('#flash');
+  let a=await col('answers');ok(a.length===1&&!a[0].passed&&a[0].answers.length===q0.length&&a[0].name==='Vanessa Miller'&&a[0].answers.every((x,k)=>x.right===(q0[k].a===2)),'fail attempt saved with every answer by name');
+  ok((await p.$$('#quiz label.wrong')).length===wrong0,'wrong answers marked red');await p.screenshot({path:OUT+'/2-m1-fail.png',fullPage:true});
   await passQuiz(0);a=await col('answers');ok(a.length===2&&a.find(x=>x.attempt===2).passed,'attempt 2 passed');ok((await p.textContent('#flash')).includes('Module 2 is open'),'flash says Module 2 open');
   for(const i of [1,2,3]){await p.click('#go-next');await p.waitForSelector('.subtabs');await passQuiz(i);}
   await p.click('#go-next');await p.waitForSelector('.subtabs');await quizTab();ok((await p.textContent('#pane')).includes('Pass one practice call first'),'M5 quiz locked until practice call passes');await p.click('.subtabs [data-pane="practice"]');await p.waitForSelector('#rp');
@@ -66,5 +66,5 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   await p.screenshot({path:OUT+'/7-juan-answers.png',fullPage:true});
   await p.click('.tab[data-v="train"]');await p.click('.sitem[data-m="2"]');await quizTab();ok((await p.textContent('#view')).includes('answer key'),'Juan sees the answer key');
   await reload();await signIn('Vanessa Miller');ok(true,'Team Hub code still signs Vanessa in');ok((await p.textContent('#view')).includes('Certified ✓'),'Vanessa sees Certified');
-  const logs=await col('log');ok(logs.some(l=>/Module 1 quiz, attempt 1: 1\/4/.test(l.a))&&logs.some(l=>/Certified Vanessa/.test(l.a)),'activity log by name');
+  const logs=await col('log');ok(logs.some(l=>l.a.startsWith('Module 1 quiz, attempt 1: '+(q0.length-wrong0)+'/'+q0.length))&&logs.some(l=>/Certified Vanessa/.test(l.a)),'activity log by name');
   ok(errs.length===0,'no page errors '+JSON.stringify(errs.slice(0,3)));console.log(fails?fails+' FAILED':'ALL PASSED');await b.close();})();

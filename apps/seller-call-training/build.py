@@ -14,7 +14,7 @@ def typed():
             if p.get("intro"): o.append("   " + p["intro"])
             if p.get("say"): o.append("   “" + p["say"] + "”")
             for k, x in enumerate(p.get("pts", [])): o.append(("   %d) " % (k + 1) if p.get("ol") else "   - ") + x)
-            EXK = {"seller": "Seller says", "you": "You say", "juan": "What Juan said", "yes": "Say", "no": "Don’t say"}
+            EXK = {"seller": "Seller", "you": "You could say", "juan": "Juan", "yes": "Say", "no": "Don’t say"}
             for e in p.get("ex", []): o.append("   %s: %s" % (EXK[e["k"]], e["t"]))
             o.append("   Source: " + " / ".join("%s: “%s”" % (f["s"], f["t"]) for f in p["from"]))
         if m.get("roleplay"): o += ["", "Practice call checks (all six must pass): " + "; ".join(RULES) + "."]
