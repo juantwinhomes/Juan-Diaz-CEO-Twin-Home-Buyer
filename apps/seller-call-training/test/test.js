@@ -22,6 +22,7 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.log('FAIL:',m);}else console
   await passQuiz(0);a=await col('answers');ok(a.length===2&&a.find(x=>x.attempt===2).passed,'attempt 2 passed');ok((await p.textContent('#flash')).includes('Module 2 is open'),'flash says Module 2 open');
   for(const i of [1,2,3]){await p.click('#go-next');await p.waitForSelector('.subtabs');await passQuiz(i);}
   await p.click('#go-next');await p.waitForSelector('.subtabs');await quizTab();ok((await p.textContent('#pane')).includes('Pass one practice call first'),'M5 quiz locked until practice call passes');await p.click('.subtabs [data-pane="practice"]');await p.waitForSelector('#rp');
+  ok((await p.textContent('#phone')).includes('(510) 767-0799')&&!!(await p.$('#phone a[href*="docs.google.com/spreadsheets"]')),'phone practice card shows the number and the sheet link');
   await p.click('[data-sc="lily"]');await p.fill('#rp-in','We could pay $900,000 cash.');await p.click('#rp-say');await p.waitForFunction(()=>!document.querySelector('#rp-say')||!document.querySelector('#rp-say').disabled);
   await p.click('#rp-end');await p.waitForSelector('#rp-again');let r=await col('roleplays');ok(r.length===1&&r[0].pass===false&&r[0].turns.length>=3&&r[0].checks.find(c=>c.rule==='price').ok===false,'failed practice call saved with transcript and checks');
   await p.screenshot({path:OUT+'/3-rp-fail.png',fullPage:true});

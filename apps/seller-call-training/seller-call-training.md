@@ -286,6 +286,15 @@ How Juan practices
    Juan: “Ask me any question, AI. Try to catch me, try to make me nervous, try to be disgruntled, try to give me any challenge in the home buying space, specifically in the Bay Area.”
    Source: Juan, Oct 31: “AI roleplay: the AI plays a seller with objections, and they practice until they pass.” / Oct 19 recording, 6:46: “Try to catch me, try to make me nervous, try to be disgruntled” / Oct 19 recording, 32:39: “you can say hold on stop this is not correct” / Oct 19 recording, 32:51: “explain the whole thing the web form comes in show AI this is the web form”
 
+Practice by phone
+   You can also practice out loud on a real call. The AI seller is Rob Walker: he filled out our web form for 123 Main Street, thinks his house is worth $1.4 million, two investors lowballed him, and his wife thinks they’d get more listing. Same six rules as below.
+   1) Open Google Voice.
+   2) Call (510) 767-0799.
+   3) When Rob answers (“Hello, this is Rob.”), introduce yourself with your real first name: “Hi Rob, this is [your first name] from Twin Home Buyer…” Your first name is how your score finds you.
+   4) Hang up when you’re done. About a minute later, open the Seller practice calls sheet and find your name. Passed = TRUE means all six rules passed. Read the Coach note for what to fix. Not there yet? Refresh.
+   5) Phone calls are extra reps. The Module 5 quiz opens after a passed practice call here on the page.
+   Source: This training: “Phone practice: a Retell AI seller on (510) 767-0799, scored on the same six rules into the Seller practice calls sheet”
+
 How a practice call here works
    1) Pick a practice seller.
    2) The AI plays the seller. You type what you would say on the phone.
