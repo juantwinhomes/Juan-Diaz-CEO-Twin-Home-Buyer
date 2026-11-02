@@ -120,7 +120,7 @@ select, input[type="text"] {
 .list { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .thead, .row {
   display: grid; gap: 10px 14px; align-items: start;
-  grid-template-columns: 28px 74px minmax(0, 1.3fr) 112px minmax(0, 1.4fr) 160px 56px;
+  grid-template-columns: 28px 74px minmax(0, 1.3fr) 112px minmax(0, 1.4fr) 160px 72px;
   padding: 10px 14px;
 }
 .thead { background: var(--sunk); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); align-items: center; }
@@ -148,6 +148,17 @@ select, input[type="text"] {
 .prop input { width: 100%; box-sizing: border-box; font-size: 0.88rem; padding: 6px 8px; }
 .open a { color: var(--accent); font-weight: 600; font-size: 0.88rem; text-decoration: none; }
 .open a:hover { text-decoration: underline; }
+.open { display: grid; gap: 4px; justify-items: start; }
+.linkbtn { font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+.linkbtn:hover { text-decoration: underline; }
+.row { cursor: pointer; }
+.preview { border-top: 1px dashed var(--line); background: var(--sunk); padding: 12px 14px 16px 56px; display: grid; gap: 10px; }
+.pv-head { display: grid; gap: 2px; }
+.pv-head span { color: var(--muted); font-size: 0.85rem; overflow-wrap: anywhere; }
+.pv-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.86rem; line-height: 1.5; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; max-height: 460px; overflow: auto; max-width: 90ch; }
+.pv-atts { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+.pv-atts img { max-width: min(100%, 480px); max-height: 560px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+.pv-note { color: var(--muted); font-size: 0.86rem; }
 .empty { padding: 28px 16px; color: var(--muted); text-align: center; display: grid; gap: 6px; justify-items: center; }
 .empty b { color: var(--ink); font-size: 1.02rem; }
 .empty p { max-width: 56ch; }
@@ -166,6 +177,7 @@ select, input[type="text"] {
   .row > .details { grid-area: details; }
   .row > .prop { grid-area: prop; }
   .row > .open { grid-area: open; align-self: center; }
+  .preview { padding-left: 14px; }
 }
 @media (max-width: 520px) {
   .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -266,8 +278,10 @@ select, input[type="text"] {
     source: "all",
     selected: new Set(),
     account: null,
-    scanning: false
+    scanning: false,
+    open: new Set()     // receipts shown inline
   };
+  const msgCache = new Map(); // email text and photos loaded for the inline view, this visit only
   let db = null, mcp = null, sample = null, sampleOff = false;
   const $ = id => document.getElementById(id);
 
@@ -459,8 +473,15 @@ select, input[type="text"] {
     prop.append(input);
 
     const open = el("span", "open");
+    const isOpen = state.open.has(r.id);
+    const view = el("button", "linkbtn", isOpen ? "Hide" : "View");
+    view.type = "button";
+    view.setAttribute("aria-expanded", String(isOpen));
+    view.setAttribute("aria-label", (isOpen ? "Hide" : "View") + " the receipt");
+    view.onclick = ev => { ev.stopPropagation(); togglePreview(r.id); };
+    open.append(view);
     if (r.viewUrl && /^https:\/\/mail\.google\.com\//.test(r.viewUrl)) {
-      const a = el("a", null, "Open");
+      const a = el("a", null, "Gmail");
       a.href = r.viewUrl;
       a.target = "_blank";
       a.rel = "noopener";
@@ -469,7 +490,14 @@ select, input[type="text"] {
     }
 
     row.append(cbWrap, date, vendor, amount, details, prop, open);
-    return row;
+    row.addEventListener("click", ev => {
+      if (ev.target.closest("input, a, button, select, textarea, label")) return;
+      togglePreview(r.id);
+    });
+    const frag = document.createDocumentFragment();
+    frag.append(row);
+    if (isOpen) frag.append(previewEl(r));
+    return frag;
   }
   function renderBulk() {
     const n = state.selected.size;
@@ -504,6 +532,151 @@ select, input[type="text"] {
     const fb = $("fillClaude");
     fb.hidden = !left.length || !sample || sampleOff;
     fb.textContent = "Fill " + left.length + " with Claude";
+  }
+
+  // ---------- inline receipt view ----------
+  function readable(t) {
+    let s = String(t || "")
+      .replace(/ /g, " ")
+      .replace(/<https?:\/\/[^>\s]+>/g, "")
+      .replace(/\(https?:\/\/[^)\s]+\)/g, "")
+      .replace(/https?:\/\/\S{60,}/g, "")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n");
+    const cut = s.search(/\n[^\n]*(unsubscribe|privacy notice|all rights reserved|©)/i);
+    if (cut > 600) s = s.slice(0, cut);
+    return s.trim().slice(0, 20000);
+  }
+  function togglePreview(id) {
+    if (state.open.has(id)) state.open.delete(id);
+    else {
+      state.open.add(id);
+      if (!msgCache.has(id)) loadPreview(id);
+    }
+    render();
+  }
+  function previewEl(r) {
+    const box = el("div", "preview");
+    box.dataset.for = r.id;
+    fillPreview(box, r);
+    return box;
+  }
+  function refreshPreview(id) {
+    const box = document.querySelector('.preview[data-for="' + CSS.escape(id) + '"]');
+    const r = allRows().find(x => x.id === id);
+    if (box && r) fillPreview(box, r);
+  }
+  function fillPreview(box, r) {
+    box.textContent = "";
+    const c = msgCache.get(r.id);
+    if (!c) { box.append(el("p", "pv-note", mcp ? "Loading the receipt…" : "Open this page in claude.ai to see the receipt.")); return; }
+    if (c.error) { box.append(el("p", "pv-note", c.error)); return; }
+    const head = el("div", "pv-head");
+    const when = c.date && !isNaN(new Date(c.date)) ? new Date(c.date).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+    head.append(el("b", null, c.subject || "(no subject)"), el("span", null, [c.sender, when].filter(Boolean).join(" · ")));
+    box.append(head);
+    const imgs = c.images ? Object.values(c.images) : [];
+    const hasImageAtt = c.attachments.some(a => /^image\//i.test(a.mimeType));
+    if (imgs.length || c.attachments.length) {
+      const atts = el("div", "pv-atts");
+      for (const url of imgs) { const img = document.createElement("img"); img.src = url; img.alt = "Receipt photo"; atts.append(img); }
+      if (!imgs.length && hasImageAtt && !c.loadingImages && !c.imageNote) {
+        const b = el("button", "btn", "Show photos");
+        b.type = "button";
+        b.onclick = () => loadImages(r.id);
+        atts.append(b);
+      }
+      if (c.imageNote) atts.append(el("span", "pv-note", c.imageNote));
+      for (const a of c.attachments) {
+        if (/^image\//i.test(a.mimeType)) continue;
+        atts.append(el("span", "pv-note", (/pdf/i.test(a.mimeType) ? "PDF: " : "File: ") + (a.filename || "attachment") + ". Open it with the Gmail link."));
+      }
+      box.append(atts);
+    }
+    box.append(el("div", "pv-body", c.text || "This email has no text. The receipt is in the attachment."));
+  }
+  async function loadPreview(id) {
+    if (!mcp) return;
+    try {
+      const m = await gmail("get_message", { messageId: id, messageFormat: "PLAIN_TEXT" });
+      const atts = Array.isArray(m && m.attachments) ? m.attachments.filter(a => a && (a.filename || a.mimeType)) : [];
+      const row = allRows().find(x => x.id === id) || {};
+      msgCache.set(id, {
+        subject: str(m && m.subject, 300),
+        sender: str(m && m.sender, 200),
+        date: m && m.date,
+        text: readable(m && (m.plaintextBody || m.snippet)),
+        attachments: atts.map(a => ({ filename: String(a.filename || ""), mimeType: String(a.mimeType || "") })),
+        images: null
+      });
+      refreshPreview(id);
+      // Crew photos and forwards show their photos straight away; vendor emails wait for a click.
+      const c = msgCache.get(id);
+      if (c.attachments.some(a => /^image\//i.test(a.mimeType)) && (row.source === "other" || row.source === "juan" || !c.text)) loadImages(id);
+    } catch (e) {
+      msgCache.set(id, {
+        error: e && e.code === "tool_error"
+          ? "This receipt is in the accounting@ inbox. Open the page signed into Gmail as accounting@ to see it here, or use the Gmail link."
+          : gmailMessage(e)
+      });
+      refreshPreview(id);
+    }
+  }
+  function decodeRaw(raw) {
+    if (/^[\w-]+:[ \t]/m.test(raw.slice(0, 400))) return raw; // already MIME text
+    try {
+      let b = raw.replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
+      while (b.length % 4) b += "=";
+      return atob(b);
+    } catch (e) { return raw; }
+  }
+  function mimeParts(str, depth) {
+    depth = depth || 0;
+    const crlf = str.indexOf("\r\n\r\n");
+    const lf = str.indexOf("\n\n");
+    const idx = crlf >= 0 && (lf < 0 || crlf <= lf) ? crlf : lf;
+    const sepLen = idx === crlf ? 4 : 2;
+    const headerText = idx >= 0 ? str.slice(0, idx) : str;
+    const body = idx >= 0 ? str.slice(idx + sepLen) : "";
+    const headers = {};
+    headerText.replace(/\r?\n[ \t]+/g, " ").split(/\r?\n/).forEach(line => {
+      const i = line.indexOf(":");
+      if (i > 0) headers[line.slice(0, i).trim().toLowerCase()] = line.slice(i + 1).trim();
+    });
+    const ct = headers["content-type"] || "text/plain";
+    const bm = ct.match(/boundary="?([^";]+)"?/i);
+    if (/^multipart\//i.test(ct) && bm && depth < 6) {
+      return body.split("--" + bm[1]).slice(1)
+        .filter(chunk => !chunk.startsWith("--"))
+        .flatMap(chunk => mimeParts(chunk.replace(/^\r?\n/, ""), depth + 1));
+    }
+    return [{ type: ct.split(";")[0].trim().toLowerCase(), enc: (headers["content-transfer-encoding"] || "").toLowerCase(), body }];
+  }
+  async function loadImages(id) {
+    const c = msgCache.get(id);
+    if (!c || c.loadingImages || !mcp) return;
+    c.loadingImages = true;
+    c.imageNote = "Loading the photo…";
+    refreshPreview(id);
+    try {
+      const p = await gmail("get_message", { messageId: id, messageFormat: "RAW" });
+      const raw = typeof p === "string" ? p : (p && (p.raw || p.rawContent || p.raw_content || p.content || "")) || "";
+      const images = {};
+      for (const part of mimeParts(decodeRaw(String(raw)))) {
+        if (!/^image\//.test(part.type) || !/base64/.test(part.enc)) continue;
+        const bin = atob(part.body.replace(/[^A-Za-z0-9+/=]/g, ""));
+        if (bin.length < 15000) continue; // logos and icons
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        images["p" + Object.keys(images).length] = URL.createObjectURL(new Blob([bytes], { type: part.type }));
+      }
+      c.images = images;
+      c.imageNote = Object.keys(images).length ? "" : "The photo can't be shown here. Open it with the Gmail link.";
+    } catch (e) {
+      c.imageNote = "The photo can't be shown here. Open it with the Gmail link.";
+    }
+    c.loadingImages = false;
+    refreshPreview(id);
   }
 
   // ---------- bulk actions ----------
