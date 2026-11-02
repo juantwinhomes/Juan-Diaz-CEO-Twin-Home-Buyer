@@ -71,3 +71,13 @@ For each one, work out whether Marieflor has already replied.
   planned time off, email Juan 48 hours ahead and wait for written approval;
   sick or emergency, email juan@ no later than 2 hours before the shift.
   This is a personal rule, not a crew process to update.
+
+## Check everything before flagging
+
+- Before saying something is missing or not done, check: this conversation's
+  full history, her other Claude sessions from the same days (list_sessions /
+  list_events), her Sent mail, and her drafts. She does work in several chats.
+  Don't make her repeat herself.
+- "Late because" lines: only when the email asks for one. Build the reason
+  from the record (Sent mail times and chat history), say what she was doing
+  at that time, and add the fix.
