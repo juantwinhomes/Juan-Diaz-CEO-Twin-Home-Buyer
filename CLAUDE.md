@@ -14,6 +14,21 @@ This repo holds the working rules for Claude when helping Marieflor
 Every email from **Juan** or **Cherry** received that day (or since the last check).
 For each one, work out whether Marieflor has already replied.
 
+## Standing scan routine (whenever Marieflor asks "what came in?" or starts a shift)
+
+1. Confirm Gmail and Google Calendar are connected.
+2. Scan the **last 48 hours** of email. For each one that needs action, say:
+   - Is it a task? Deadline? Urgent?
+   - Does it need a reply (Juan's rule: every email gets DONE, DATE or BLOCKED)?
+   - Who it's addressed to; flag when Juan names Marieflor.
+3. **Draft every reply first** (save as a Gmail draft) for her to review.
+   Never send without her OK.
+4. **Put every deadline on her calendar** (marieflor@twinhomebuyer.com, never
+   Juan's calendar), Pacific Time, with popup alerts **1 hour** and **30 minutes**
+   before. Event description asks: "Will I make it? If not, send BLOCKED now,
+   with your solution and a new time" and links the email and the draft.
+5. Report what came in, most urgent first.
+
 ## How to report (start or end of shift)
 
 1. **Still needs a reply**: list first, oldest first.
