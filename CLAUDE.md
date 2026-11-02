@@ -61,3 +61,13 @@ For each one, work out whether Marieflor has already replied.
   artifact with Juan (Share menu) before the email goes out.
 - Later, once Claude has learned her tone and language from enough of her
   replies, she may let Claude start drafting. Not until she says so.
+
+## Two kinds of attendance (don't mix them up)
+
+- **Matrix crew attendance** (the Matrix Group One employee list): Marieflor
+  owns it. Daily note to Juan by 9:00 a.m. PT: who didn't punch in, who
+  notified and why, who sent their Daily, who's out, who covers, sites affected.
+- **Office attendance** (Juan's rule for the office team, Marieflor included):
+  planned time off, email Juan 48 hours ahead and wait for written approval;
+  sick or emergency, email juan@ no later than 2 hours before the shift.
+  This is a personal rule, not a crew process to update.
