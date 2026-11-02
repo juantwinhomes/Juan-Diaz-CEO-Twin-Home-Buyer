@@ -73,6 +73,7 @@ VENDOR_RULES = [
     ("AMAZON", "Amazon", "Supplies", "Yes", "Order/shipment emails from both Amazon accounts", "", "", "", "", "Charges per shipment"),
     ("UBER *TRIP", "Uber", "Travel", "Yes", "Uber business profile receipts to accounting@", "", "", "", "", ""),
     ("UBER *EATS", "Uber Eats", "Meals", "Yes if 75+", "Uber business profile receipts to accounting@", "", "", "", "", ""),
+    ("WAYMO", "Waymo", "Travel", "Yes", "Juan forwards ride receipts to accounting@", "", "", "", "", "Pickup/drop-off address shows the property visit"),
     ("SHELL", "Shell", "Fuel", "No", "Card statement + Juan calendar", "", "", "", "", ""),
     ("CHEVRON", "Chevron", "Fuel", "No", "Card statement + Juan calendar", "", "", "", "", ""),
     ("ARCO", "ARCO", "Fuel", "No", "Card statement + Juan calendar", "", "", "", "", ""),

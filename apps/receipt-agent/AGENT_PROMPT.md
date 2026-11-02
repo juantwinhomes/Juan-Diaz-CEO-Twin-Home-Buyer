@@ -73,14 +73,21 @@ Set Status UNRECOGNIZED with one short reason when any of these is true:
 
 STEP 4. CHARGES THAT NEED NO RECEIPT
 Company policy: fuel at any amount, and restaurants under Settings MEAL_RECEIPT_THRESHOLD.
-- Look on the Calendar tab for CHECK_DATE: a property address, showing, inspection,
-  closing, meeting or site visit. Prefer events near the merchant's city.
-- Found: Status NO RECEIPT NEEDED. Memo "Business purpose: <event title>, <address>,
-  Juan calendar <date> <time>".
-- Not on the calendar: run one Gmail search for CHECK_DATE (from:juan@twinhomebuyer.com
-  or mentioning the merchant's city) that places Juan at a property. Found: memo the email
-  subject and date.
-- Still nothing: Status MISSING, reason "no business purpose found".
+This is Kristine's process: if Juan had a property visit that day, or went to a property,
+that visit is the business purpose. Match by day; card statements carry no time of day.
+- Calendar: look on the Calendar tab for CHECK_DATE, and the day before (statements often
+  post a day late), for a property visit: a property address, showing, inspection, closing,
+  walkthrough or site visit.
+- Not on the calendar: search label:receipts for CHECK_DATE and the day before for a ride
+  receipt (Waymo, Uber) whose pickup or drop-off is a property address, or another
+  forwarded receipt that places Juan at a property. Juan forwards these to accounting@, so
+  they come from juan@twinhomebuyer.com.
+- One property visit found: Status NO RECEIPT NEEDED, Suggested Property = that property.
+  Memo "Business purpose: <visit>, <address> (Juan calendar <date> <time>)" or
+  "(<Waymo/Uber> ride to <address>, <date>)".
+- Several property visits that day: Status NO RECEIPT NEEDED, memo lists every visit,
+  Suggested Property "check" so Kristine picks one. Never choose between them yourself.
+- Nothing found: Status MISSING, reason "no business purpose found".
 - Restaurants at or over MEAL_RECEIPT_THRESHOLD need a receipt: go to Step 5. If the
   Calendar tab shows crew work at more than one property that day, fill Suggested Split
   with the properties and an even split of the amount, ending "(proposed, Kristine to
@@ -91,8 +98,10 @@ For each charge still open:
 a) Search label:receipts from CHECK_DATE minus DATE_WINDOW_DAYS to CHECK_DATE plus
    DATE_WINDOW_DAYS, with the amount in quotes ("142.37"). For Amazon and Home Depot online
    orders start 7 days before CHECK_DATE: they charge when items ship.
-b) No hit: same window with the vendor keyword (amazon, homedepot, uber) and no amount.
-   Check each snippet for the amount.
+b) No hit: same window with the vendor keyword (amazon, homedepot, uber, waymo) and no
+   amount. Check each snippet for the amount. Receipts Juan forwarded come from
+   juan@twinhomebuyer.com with "Fwd:" in the subject; match them on the original vendor
+   inside the email.
 c) Also check Receipt Files rows from that window whose file name or sender matches the
    vendor. Crew receipts have the amount and property in the subject.
 Match rules:

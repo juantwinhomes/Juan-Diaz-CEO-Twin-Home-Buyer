@@ -94,12 +94,16 @@ Label **Receipts**:
 from:homedepot.com subject:(receipt OR order OR invoice)
 from:amazon.com subject:(ordered OR order OR shipped OR refund OR invoice OR receipt)
 from:uber.com subject:(trip OR receipt OR order)
+from:waymo.com
+from:juan@twinhomebuyer.com (waymo OR uber OR "home depot" OR homedepot OR amazon OR receipt OR invoice OR order)
 subject:(receipt OR invoice OR "payment received" OR "payment confirmation" OR "order confirmation") -from:accounting@twinhomebuyer.com
 ```
 Label **Card Alerts**:
 ```
 from:(americanexpress.com OR bankofamerica.com OR wellsfargo.com OR citi.com OR capitalone.com OR discover.com OR relayfi.com) subject:(purchase OR transaction OR charge OR "card was used" OR withdrawal OR debit)
 ```
+The juan@ filter catches the receipts Juan forwards (Waymo, Uber, Uber Eats, Home Depot):
+forwarded emails come from juan@, so the vendor filters above miss them.
 Tune these after the first runs. Marketing emails that slip in are harmless. Receipts that
 miss a filter are the real risk, so check the "missing" lines against the inbox in week one.
 
