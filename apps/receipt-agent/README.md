@@ -5,6 +5,20 @@ each receipt, sends the matched receipt into QuickBooks, logs the business purpo
 and small meals, and emails Juan a three-part report. Seth builds it. Kristine runs it
 under accounting@. Seth never touches QuickBooks.
 
+## Receipt Inbox page (current direction)
+
+Live page: https://claude.ai/artifact/T5JzERnp9mbpL4jMtaxDq3 (source: `receipt-inbox.html`).
+Kristine opens it; it reads accounting@ through her own Gmail connection, uses Claude to fill
+in vendor, date, amount, order number and location, and lists every receipt with a checkbox
+(Good, Needs follow-up, Not a receipt) and a Property box. Only scans of accounting@ are saved;
+any other inbox runs as a test. Email text is never stored. Matching to card charges and
+posting to QuickBooks come next.
+
+Sources it searches: Home Depot, Amazon (forwarded from construction@), Waymo and other
+receipts Juan forwards, Uber, and anything with "receipt" in the subject (crew photos).
+Uber receipts reach accounting@ only after the Uber Business profile email is changed from
+the Yahoo inbox.
+
 | File | What it is |
 |---|---|
 | `AGENT_PROMPT.md` | The agent's instructions. Kristine pastes it into her Claude scheduled task. |
