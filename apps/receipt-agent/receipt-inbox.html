@@ -19,6 +19,7 @@
   --warn: #9a5a05; --warn-soft: #faefdc;
   --bad: #ad2a22; --bad-soft: #fae6e4;
   --wait: #586372; --wait-soft: #eaedf1;
+  --paper: #ffffff; /* receipt pages stay white in both themes, like paper */
   --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -159,6 +160,11 @@ select, input[type="text"] {
 .pv-atts { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
 .pv-atts img { max-width: min(100%, 480px); max-height: 560px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
 .pv-note { color: var(--muted); font-size: 0.86rem; }
+.pv-files { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.pv-pdf { display: grid; gap: 8px; width: min(100%, 600px); }
+.pv-page { display: block; width: 100%; height: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; }
+.pv-files img { max-width: min(100%, 480px); max-height: 560px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+.pv-text summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; }
 .empty { padding: 28px 16px; color: var(--muted); text-align: center; display: grid; gap: 6px; justify-items: center; }
 .empty b { color: var(--ink); font-size: 1.02rem; }
 .empty p { max-width: 56ch; }
@@ -189,7 +195,7 @@ select, input[type="text"] {
   <header>
     <div class="eyebrow">Twin Home Buyer &middot; Receipt agent</div>
     <h1>Receipt Inbox</h1>
-    <p class="lede">Every receipt that lands in accounting@, in one list: Home Depot, Amazon, Waymo, Uber and crew photos. Built-in readers fill in most receipts for free. Claude reads only the ones they can't, and only when you click. Matching to card charges and posting to QuickBooks come next.</p>
+    <p class="lede">Every receipt that lands in accounting@, in one list: Home Depot, Amazon, Waymo, Uber and crew photos. Built-in readers fill in most receipts for free, PDF receipts included. Claude reads only the ones they can't, and only when you click. Matching to card charges and posting to QuickBooks come next.</p>
   </header>
 
   <section class="controls" aria-label="Scan the inbox">
@@ -540,12 +546,22 @@ select, input[type="text"] {
       .replace(/ /g, " ")
       .replace(/<https?:\/\/[^>\s]+>/g, "")
       .replace(/\(https?:\/\/[^)\s]+\)/g, "")
-      .replace(/https?:\/\/\S{60,}/g, "")
-      .replace(/[ \t]+\n/g, "\n")
-      .replace(/\n{3,}/g, "\n\n");
+      .replace(/https?:\/\/\S{60,}/g, "");
+    // HTML emails turned into text leave table borders behind; drop them.
+    s = s.split(/\r?\n/)
+      .map(l => l.replace(/\[\]/g, "").replace(/^[\s|]+|[\s|]+$/g, "").replace(/\s*\|\s*/g, "   ").trim())
+      .filter(l => l && !/^[-_=*•·.\s|]+$/.test(l))
+      .join("\n");
     const cut = s.search(/\n[^\n]*(unsubscribe|privacy notice|all rights reserved|©)/i);
     if (cut > 600) s = s.slice(0, cut);
     return s.trim().slice(0, 20000);
+  }
+  const isPdf = (type, name) => /pdf/i.test(String(type || "")) || /\.pdf$/i.test(String(name || ""));
+  function fileAttachments(m) {
+    const list = Array.isArray(m && m.attachments) ? m.attachments : [];
+    return list
+      .filter(a => a && (isPdf(a.mimeType, a.filename) || /^image\//i.test(String(a.mimeType || ""))))
+      .map(a => ({ filename: String(a.filename || ""), mimeType: String(a.mimeType || "") }));
   }
   function togglePreview(id) {
     if (state.open.has(id)) state.open.delete(id);
@@ -575,44 +591,34 @@ select, input[type="text"] {
     const when = c.date && !isNaN(new Date(c.date)) ? new Date(c.date).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "";
     head.append(el("b", null, c.subject || "(no subject)"), el("span", null, [c.sender, when].filter(Boolean).join(" · ")));
     box.append(head);
-    const imgs = c.images ? Object.values(c.images) : [];
-    const hasImageAtt = c.attachments.some(a => /^image\//i.test(a.mimeType));
-    if (imgs.length || c.attachments.length) {
-      const atts = el("div", "pv-atts");
-      for (const url of imgs) { const img = document.createElement("img"); img.src = url; img.alt = "Receipt photo"; atts.append(img); }
-      if (!imgs.length && hasImageAtt && !c.loadingImages && !c.imageNote) {
-        const b = el("button", "btn", "Show photos");
-        b.type = "button";
-        b.onclick = () => loadImages(r.id);
-        atts.append(b);
-      }
-      if (c.imageNote) atts.append(el("span", "pv-note", c.imageNote));
-      for (const a of c.attachments) {
-        if (/^image\//i.test(a.mimeType)) continue;
-        atts.append(el("span", "pv-note", (/pdf/i.test(a.mimeType) ? "PDF: " : "File: ") + (a.filename || "attachment") + ". Open it with the Gmail link."));
-      }
-      box.append(atts);
+    if (c.fileNode) box.append(c.fileNode);
+    if (c.attNote) box.append(el("p", "pv-note", c.attNote));
+    const text = el("div", "pv-body", c.text || "This email has no text.");
+    if (c.fileNode) {
+      const d = document.createElement("details");
+      d.className = "pv-text";
+      d.append(el("summary", null, "Email text"), text);
+      box.append(d);
+    } else {
+      box.append(text);
     }
-    box.append(el("div", "pv-body", c.text || "This email has no text. The receipt is in the attachment."));
   }
   async function loadPreview(id) {
     if (!mcp) return;
     try {
       const m = await gmail("get_message", { messageId: id, messageFormat: "PLAIN_TEXT" });
-      const atts = Array.isArray(m && m.attachments) ? m.attachments.filter(a => a && (a.filename || a.mimeType)) : [];
-      const row = allRows().find(x => x.id === id) || {};
+      const atts = fileAttachments(m);
       msgCache.set(id, {
         subject: str(m && m.subject, 300),
         sender: str(m && m.sender, 200),
         date: m && m.date,
         text: readable(m && (m.plaintextBody || m.snippet)),
-        attachments: atts.map(a => ({ filename: String(a.filename || ""), mimeType: String(a.mimeType || "") })),
-        images: null
+        attachments: atts,
+        fileNode: null,
+        attNote: ""
       });
       refreshPreview(id);
-      // Crew photos and forwards show their photos straight away; vendor emails wait for a click.
-      const c = msgCache.get(id);
-      if (c.attachments.some(a => /^image\//i.test(a.mimeType)) && (row.source === "other" || row.source === "juan" || !c.text)) loadImages(id);
+      if (atts.length) loadFiles(id);
     } catch (e) {
       msgCache.set(id, {
         error: e && e.code === "tool_error"
@@ -650,33 +656,154 @@ select, input[type="text"] {
         .filter(chunk => !chunk.startsWith("--"))
         .flatMap(chunk => mimeParts(chunk.replace(/^\r?\n/, ""), depth + 1));
     }
-    return [{ type: ct.split(";")[0].trim().toLowerCase(), enc: (headers["content-transfer-encoding"] || "").toLowerCase(), body }];
+    const nm = (headers["content-disposition"] || "").match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i) || ct.match(/name="?([^";]+)"?/i);
+    return [{ type: ct.split(";")[0].trim().toLowerCase(), enc: (headers["content-transfer-encoding"] || "").toLowerCase(), name: nm ? nm[1] : "", body }];
   }
-  async function loadImages(id) {
-    const c = msgCache.get(id);
-    if (!c || c.loadingImages || !mcp) return;
-    c.loadingImages = true;
-    c.imageNote = "Loading the photo…";
-    refreshPreview(id);
-    try {
-      const p = await gmail("get_message", { messageId: id, messageFormat: "RAW" });
-      const raw = typeof p === "string" ? p : (p && (p.raw || p.rawContent || p.raw_content || p.content || "")) || "";
-      const images = {};
-      for (const part of mimeParts(decodeRaw(String(raw)))) {
-        if (!/^image\//.test(part.type) || !/base64/.test(part.enc)) continue;
-        const bin = atob(part.body.replace(/[^A-Za-z0-9+/=]/g, ""));
-        if (bin.length < 15000) continue; // logos and icons
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        images["p" + Object.keys(images).length] = URL.createObjectURL(new Blob([bytes], { type: part.type }));
-      }
-      c.images = images;
-      c.imageNote = Object.keys(images).length ? "" : "The photo can't be shown here. Open it with the Gmail link.";
-    } catch (e) {
-      c.imageNote = "The photo can't be shown here. Open it with the Gmail link.";
+  // PDF and photo attachments, read from the full email once per visit. No Claude usage.
+  const rawCache = new Map();
+  function fileParts(id) {
+    if (!rawCache.has(id)) {
+      const job = (async () => {
+        const p = await gmail("get_message", { messageId: id, messageFormat: "RAW" });
+        const raw = typeof p === "string" ? p : (p && (p.raw || p.rawContent || p.raw_content || p.content || "")) || "";
+        const out = [];
+        for (const part of mimeParts(decodeRaw(String(raw)))) {
+          if (!/base64/.test(part.enc)) continue;
+          const pdf = isPdf(part.type, part.name);
+          if (!pdf && !/^image\//.test(part.type)) continue;
+          const bin = atob(part.body.replace(/[^A-Za-z0-9+/=]/g, ""));
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          out.push({ type: pdf ? "application/pdf" : part.type, name: part.name, pdf, bytes });
+        }
+        return out;
+      })();
+      rawCache.set(id, job);
+      job.catch(() => rawCache.delete(id));
     }
-    c.loadingImages = false;
+    return rawCache.get(id);
+  }
+  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  let pdfjsReady = null;
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const tag = document.createElement("script");
+      tag.src = src;
+      tag.onload = resolve;
+      tag.onerror = () => reject(new Error("Could not load " + src));
+      document.head.append(tag);
+    });
+  }
+  function pdfjs() {
+    if (!pdfjsReady) {
+      // The worker script runs on the page itself: the frame can't start a worker from another site.
+      pdfjsReady = loadScript(PDFJS + "pdf.min.js")
+        .then(() => loadScript(PDFJS + "pdf.worker.min.js"))
+        .then(() => {
+          const lib = window.pdfjsLib || window["pdfjs-dist/build/pdf"];
+          if (!lib) throw new Error("PDF reader missing");
+          lib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js";
+          return lib;
+        });
+      pdfjsReady.catch(() => { pdfjsReady = null; });
+    }
+    return pdfjsReady;
+  }
+  // Draws the PDF's pages into `container` (when given) and returns its text.
+  async function readPdf(bytes, container) {
+    const lib = await pdfjs();
+    const doc = await lib.getDocument({ data: bytes.slice(0), isEvalSupported: false }).promise;
+    let text = "";
+    try {
+      const pages = Math.min(doc.numPages, 4);
+      for (let n = 1; n <= pages; n++) {
+        const page = await doc.getPage(n);
+        if (container) {
+          const base = page.getViewport({ scale: 1 });
+          const ratio = Math.min(window.devicePixelRatio || 1, 2);
+          const vp = page.getViewport({ scale: (600 / base.width) * ratio });
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.floor(vp.width);
+          canvas.height = Math.floor(vp.height);
+          canvas.className = "pv-page";
+          canvas.setAttribute("role", "img");
+          canvas.setAttribute("aria-label", "Receipt page " + n);
+          container.append(canvas);
+          await page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
+        }
+        const tc = await page.getTextContent();
+        let lastY = null;
+        for (const it of tc.items) {
+          const y = it.transform ? it.transform[5] : null;
+          if (lastY !== null && y !== null && Math.abs(y - lastY) > 2) text += "\n";
+          else if (text && !text.endsWith("\n")) text += " ";
+          text += it.str;
+          lastY = y;
+        }
+        text += "\n";
+      }
+      if (container && doc.numPages > pages) container.append(el("span", "pv-note", "Showing " + pages + " of " + doc.numPages + " pages. Use the Gmail link for the rest."));
+    } finally {
+      doc.destroy();
+    }
+    return text;
+  }
+  async function pdfTextOf(id) {
+    let t = "";
+    for (const part of await fileParts(id)) if (part.pdf) t += (await readPdf(part.bytes, null)) + "\n";
+    return t;
+  }
+  async function loadFiles(id) {
+    const c = msgCache.get(id);
+    if (!c || c.filesLoading || c.fileNode) return;
+    c.filesLoading = true;
+    c.attNote = "Opening the receipt…";
+    const node = el("div", "pv-files");
+    c.fileNode = node;
     refreshPreview(id);
+    let shown = 0, pdfText = "";
+    try {
+      for (const part of await fileParts(id)) {
+        if (part.pdf) {
+          const wrap = el("div", "pv-pdf");
+          node.append(wrap);
+          try { pdfText += (await readPdf(part.bytes, wrap)) + "\n"; shown++; }
+          catch (e) { wrap.append(el("span", "pv-note", "This PDF can't be shown here. Use the Gmail link.")); }
+        } else if (part.bytes.length >= 15000) { // smaller images are logos and icons
+          const img = document.createElement("img");
+          img.alt = "Receipt photo";
+          img.src = URL.createObjectURL(new Blob([part.bytes], { type: part.type }));
+          node.append(img);
+          shown++;
+        }
+      }
+      c.attNote = shown ? "" : "The receipt file can't be shown here. Use the Gmail link.";
+    } catch (e) {
+      c.attNote = "The receipt file can't be shown here. Use the Gmail link.";
+    }
+    if (!shown) c.fileNode = null;
+    c.filesLoading = false;
+    refreshPreview(id);
+    if (pdfText.trim()) applyFileText(id, pdfText);
+  }
+  // Fill in the amount from the PDF when the email itself had none.
+  async function applyFileText(id, text) {
+    const r = allRows().find(x => x.id === id);
+    if (!r) return;
+    const cur = r.extracted || {};
+    if (cur.readBy === "claude" || num(cur.total) !== null) return;
+    const got = freeRead({ source: r.source, subject: r.subject || "", sender: r.sender || "", body: text });
+    if (got.total === null && got.itemsSubtotal === null) return;
+    const merged = Object.assign({}, cur, {
+      total: got.total,
+      itemsSubtotal: got.itemsSubtotal,
+      tax: got.tax !== null ? got.tax : (cur.tax !== undefined ? cur.tax : null),
+      orderNumber: cur.orderNumber || got.orderNumber,
+      cardLast4: cur.cardLast4 || got.cardLast4,
+      vendor: cur.vendor || got.vendor,
+      readBy: "pdf"
+    });
+    if (await saveFields(id, { extracted: merged })) { r.extracted = merged; render(); }
   }
 
   // ---------- bulk actions ----------
@@ -852,8 +979,8 @@ select, input[type="text"] {
       if (rf) x.total = -Math.abs(num(rf[1]));
     }
     if (x.total === null) {
-      const t = text.match(/\b(?:order total|grand total|total charged|amount charged|total paid|you paid)\s*:?\s*\$\s?([\d,]+\.\d{2})/i)
-        || text.match(/\btotal\s*:?\s*\$\s?([\d,]+\.\d{2})/i);
+      const t = text.match(/\b(?:order total|grand total|total charged|amount charged|total paid|you paid)\s*:?\s*\$?\s?(-?[\d,]+\.\d{2})/i)
+        || text.match(/\btotal\s*:?\s*\$?\s?(-?[\d,]+\.\d{2})/i);
       if (t) x.total = num(t[1]);
     }
     if (x.total === null && m.source === "amazon") {
@@ -909,7 +1036,14 @@ select, input[type="text"] {
         const m = await gmail("get_message", { messageId: ids[i], messageFormat: "PLAIN_TEXT" });
         if (!m) continue;
         if (!state.account && m.viewUrl) { detectAccount(m.viewUrl); showAccount(); }
-        msgs.push({ id: ids[i], subject: String(m.subject || ""), sender: String(m.sender || ""), emailDate: isoOf(m.date), body: String(m.plaintextBody || m.snippet || "") });
+        let body = String(m.plaintextBody || m.snippet || "");
+        if (fileAttachments(m).some(a => isPdf(a.mimeType, a.filename))) {
+          try {
+            const t = await pdfTextOf(ids[i]);
+            if (t.trim()) body = "RECEIPT PDF:\n" + t.slice(0, 1500) + "\n\nEMAIL:\n" + body;
+          } catch (e) { /* email text only */ }
+        }
+        msgs.push({ id: ids[i], subject: String(m.subject || ""), sender: String(m.sender || ""), emailDate: isoOf(m.date), body });
       }
       const details = await extract(msgs);
       let done = 0;
@@ -986,7 +1120,8 @@ select, input[type="text"] {
           sender: String(m.sender || meta.sender || "").slice(0, 200),
           emailDate: isoOf(m.date),
           viewUrl: String(m.viewUrl || ""),
-          body: String(m.plaintextBody || m.snippet || "")
+          body: String(m.plaintextBody || m.snippet || ""),
+          attachments: fileAttachments(m)
         });
       }
 
@@ -995,7 +1130,17 @@ select, input[type="text"] {
       let saved = 0, freeCount = 0;
       for (const m of msgs) {
         const prev = state.docs.get(m.id) || state.temp.get(m.id) || {};
-        const x = (prev.extracted && prev.extracted.readBy === "claude") ? prev.extracted : freeRead(m);
+        let x = (prev.extracted && prev.extracted.readBy === "claude") ? prev.extracted : freeRead(m);
+        if (x.readBy !== "claude" && x.total === null && x.itemsSubtotal === null && m.attachments.some(a => isPdf(a.mimeType, a.filename))) {
+          setStatus("Reading the PDF receipt from " + (x.vendor || "a vendor") + "\u2026");
+          try {
+            const t = await pdfTextOf(m.id);
+            const got = t.trim() ? freeRead(Object.assign({}, m, { body: t })) : null;
+            if (got && (got.total !== null || got.itemsSubtotal !== null)) {
+              x = Object.assign({}, x, { total: got.total, itemsSubtotal: got.itemsSubtotal, tax: got.tax, orderNumber: x.orderNumber || got.orderNumber, cardLast4: x.cardLast4 || got.cardLast4, readBy: "pdf" });
+            }
+          } catch (e) { /* left for Claude */ }
+        }
         if (x.total !== null || x.itemsSubtotal !== null) freeCount++;
         const doc = {
           id: m.id,
