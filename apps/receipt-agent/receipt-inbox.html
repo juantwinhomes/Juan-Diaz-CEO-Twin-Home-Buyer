@@ -70,6 +70,7 @@ select, input[type="text"] {
 .inbox.test { color: var(--warn); }
 .inbox.live { color: var(--ok); }
 .status { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
+.usage { font-size: 0.8rem; color: var(--muted); }
 .btn {
   font: inherit; font-weight: 600; font-size: 0.9rem; cursor: pointer;
   border: 1px solid var(--line); background: var(--surface); color: var(--ink);
@@ -137,6 +138,7 @@ select, input[type="text"] {
 .pill.s-good { background: var(--ok-soft); color: var(--ok); }
 .pill.s-not_receipt { background: var(--wait-soft); color: var(--wait); }
 .pill.test { background: var(--warn-soft); color: var(--warn); }
+.pill.ai { background: var(--accent-soft); color: var(--accent); }
 .amount { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; font-weight: 500; padding-top: 1px; }
 .amount small { display: block; font-size: 0.72rem; color: var(--muted); font-weight: 400; }
 .details { display: grid; gap: 3px; font-size: 0.88rem; min-width: 0; }
@@ -175,7 +177,7 @@ select, input[type="text"] {
   <header>
     <div class="eyebrow">Twin Home Buyer &middot; Receipt agent</div>
     <h1>Receipt Inbox</h1>
-    <p class="lede">Every receipt that lands in accounting@, in one list: Home Depot, Amazon, Waymo, Uber and crew photos. Check the good ones. Matching to card charges and posting to QuickBooks come next.</p>
+    <p class="lede">Every receipt that lands in accounting@, in one list: Home Depot, Amazon, Waymo, Uber and crew photos. Built-in readers fill in most receipts for free. Claude reads only the ones they can't, and only when you click. Matching to card charges and posting to QuickBooks come next.</p>
   </header>
 
   <section class="controls" aria-label="Scan the inbox">
@@ -190,9 +192,11 @@ select, input[type="text"] {
       </select>
     </div>
     <button id="scan" class="btn primary" type="button">Scan inbox</button>
+    <button id="fillClaude" class="btn" type="button" hidden></button>
     <div class="meta">
       <span id="inbox" class="inbox">Inbox: shown after the first scan</span>
       <span id="status" class="status" role="status" aria-live="polite"></span>
+      <span id="usage" class="usage"></span>
     </div>
   </section>
 
@@ -207,6 +211,7 @@ select, input[type="text"] {
     <button type="button" class="btn" data-act="follow_up">Needs follow-up</button>
     <button type="button" class="btn" data-act="not_receipt">Not a receipt</button>
     <button type="button" class="btn" data-act="new">Back to review</button>
+    <button type="button" class="btn" data-act="claude">Ask Claude to re-read</button>
     <button type="button" class="btn ghost" data-act="copy">Copy rows for the ledger</button>
     <button type="button" class="btn ghost" data-act="clear">Clear selection</button>
   </div>
@@ -224,7 +229,7 @@ select, input[type="text"] {
     </div>
   </section>
 
-  <p class="foot">Receipts are read from the Gmail connected to the viewer's Claude. Only scans of accounting@ are saved here; any other inbox runs as a test and is not saved. Email text is used to fill in the details and is never stored.</p>
+  <p class="foot">Receipts are read from the Gmail connected to the viewer's Claude. Only scans of accounting@ are saved here; any other inbox runs as a test and is not saved. Email text is used to fill in the details and is never stored. Scanning and the built-in readers use no Claude usage; Fill with Claude does, and the count for this month is shown under the scan button.</p>
 </div>
 
 <datalist id="propList"></datalist>
@@ -251,7 +256,8 @@ select, input[type="text"] {
   ];
   const STATUS_LABEL = Object.fromEntries(STATUSES.map(s => [s.key, s.label]));
   const SOURCE_LABEL = Object.fromEntries(SOURCES.map(s => [s.key, s.label]));
-  const BATCH = 5;
+  const BATCH = 8;
+  const VENDOR_BY_SOURCE = { homedepot: "Home Depot", amazon: "Amazon", waymo: "Waymo" };
 
   const state = {
     docs: new Map(),   // saved receipts from the shared store
@@ -419,7 +425,9 @@ select, input[type="text"] {
     tags.append(el("span", "pill s-" + (r.status || "new"), STATUS_LABEL[r.status || "new"]));
     if (x.kind === "refund") tags.append(el("span", "pill", "Refund"));
     if (state.temp.has(r.id)) tags.append(el("span", "pill test", "Test, not saved"));
-    if (!r.extracted) tags.append(el("span", "pill", "Details not filled"));
+    if (needsClaude(r)) tags.append(el("span", "pill", "Needs Claude"));
+    else if (r.extracted && r.extracted.readBy === "claude") tags.append(el("span", "pill ai", "Read by Claude"));
+    else if (amountOf(r).value === null) tags.append(el("span", "pill", "No amount found"));
     vendor.append(tags);
 
     const amt = amountOf(r);
@@ -492,6 +500,10 @@ select, input[type="text"] {
       }
     }
     renderBulk();
+    const left = allRows().filter(r => needsClaude(r) && (r.status || "new") !== "not_receipt");
+    const fb = $("fillClaude");
+    fb.hidden = !left.length || !sample || sampleOff;
+    fb.textContent = "Fill " + left.length + " with Claude";
   }
 
   // ---------- bulk actions ----------
@@ -558,7 +570,7 @@ select, input[type="text"] {
   function prompt(batch) {
     const emails = batch.map(m =>
       "=== EMAIL id=" + m.id + "\nFrom: " + m.sender + "\nSubject: " + m.subject + "\nDate: " + m.emailDate + "\n\n" +
-      m.body.replace(/\n{3,}/g, "\n\n").slice(0, 3500)
+      trimForClaude(m.body)
     ).join("\n\n");
     return "You help a bookkeeper at Twin Home Buyer, a real estate company in the San Francisco Bay Area. " +
       "Below are " + batch.length + " emails from the company's accounting inbox. For each one, pull out the purchase details.\n\n" +
@@ -593,7 +605,8 @@ select, input[type="text"] {
       items: str(o.items, 120),
       location: str(o.location, 160),
       note: str(o.note, 200),
-      cardLast4: last4 && /^\d{4}$/.test(last4) ? last4 : null
+      cardLast4: last4 && /^\d{4}$/.test(last4) ? last4 : null,
+      readBy: "claude"
     };
   }
   async function extract(msgs) {
@@ -618,6 +631,129 @@ select, input[type="text"] {
       }
     }
     return out;
+  }
+
+  function trimForClaude(body) {
+    let t = String(body || "")
+      .replace(/https?:\/\/\S+/g, "")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n\s*\n+/g, "\n");
+    const cut = t.search(/\n[^\n]*(unsubscribe|privacy notice|privacy policy|all rights reserved|©)/i);
+    if (cut > 400) t = t.slice(0, cut);
+    return t.slice(0, 2000);
+  }
+  function needsClaude(r) {
+    const x = r.extracted;
+    if (!x) return true;
+    if (x.readBy === "claude") return false;
+    return num(x.total) === null && num(x.itemsSubtotal) === null;
+  }
+
+  // Free reader: plain rules for the receipt formats that arrive every day. No Claude usage.
+  function freeRead(m) {
+    const subject = String(m.subject || "");
+    const raw = String(m.body || "").replace(/ /g, " ");
+    const fwdAt = raw.search(/-{3,}\s*Forwarded message\s*-{3,}|Begin forwarded message:/i);
+    const note = fwdAt > 0 ? str(raw.slice(0, fwdAt).replace(/\n+/g, " "), 200) : null;
+    const text = subject + "\n" + raw;
+    const head = subject + " " + String(m.sender || "");
+    let vendor = VENDOR_BY_SOURCE[m.source] || null;
+    if (!vendor) {
+      if (/uber\s*eats/i.test(text)) vendor = "Uber Eats";
+      else if (/\buber\b/i.test(head)) vendor = "Uber";
+      else if (/waymo/i.test(text)) vendor = "Waymo";
+      else if (/home\s*depot/i.test(text)) vendor = "Home Depot";
+      else if (/amazon/i.test(head)) vendor = "Amazon";
+    }
+    const x = {
+      isReceipt: true, kind: "purchase", vendor, date: null, total: null, itemsSubtotal: null, tax: null,
+      orderNumber: null, items: null, location: null, note, cardLast4: null, readBy: "rules"
+    };
+    // Crew photos: subject like "Receipt $142.37 820 28th St"
+    const crew = subject.match(/receipt\s*[:\-]?\s*\$\s?([\d,]+\.\d{2})\s*(.*)$/i);
+    if (crew) { x.total = num(crew[1]); x.location = str(crew[2], 160); x.items = "Crew receipt photo"; }
+    const refund = /refund/i.test(subject);
+    if (refund) {
+      x.kind = "refund";
+      const rf = text.match(/refund(?:ed)?(?:\s+(?:total|amount|subtotal))?\s*:?\s*\$\s?([\d,]+\.\d{2})/i);
+      if (rf) x.total = -Math.abs(num(rf[1]));
+    }
+    if (x.total === null) {
+      const t = text.match(/\b(?:order total|grand total|total charged|amount charged|total paid|you paid)\s*:?\s*\$\s?([\d,]+\.\d{2})/i)
+        || text.match(/\btotal\s*:?\s*\$\s?([\d,]+\.\d{2})/i);
+      if (t) x.total = num(t[1]);
+    }
+    if (x.total === null && m.source === "amazon") {
+      const re = /Quantity:\s*(\d+)[\s\S]{0,120}?\$\s?([\d,]+\.\d{2})/gi;
+      let sum = 0, n = 0, hit;
+      while ((hit = re.exec(text)) && n < 60) { sum += Number(hit[1]) * num(hit[2]); n++; }
+      if (n) { x.itemsSubtotal = Math.round(sum * 100) / 100; x.kind = "shipment"; }
+    }
+    const tax = text.match(/\b(?:estimated\s+)?tax(?:es)?\s*:?\s*\$\s?([\d,]+\.\d{2})/i);
+    if (tax) x.tax = num(tax[1]);
+    const amz = text.match(/\b\d{3}-\d{7}-\d{7}\b/);
+    const order = amz ? amz[0] : ((text.match(/\border\s*(?:number|no\.?|#)\s*:?\s*#?\s*([A-Z0-9][A-Z0-9-]{5,19})/i) || [])[1] || null);
+    if (order && /\d/.test(order)) x.orderNumber = order;
+    const card = text.match(/(?:ending in|ending|x{3,}|\*{2,}|•{2,})\s*(\d{4})\b/i);
+    if (card) x.cardLast4 = card[1];
+    if (!x.items) x.items = str(subject.replace(/^\s*(?:fwd?|fw)\s*:\s*/i, ""), 120);
+    if (!refund && (m.source === "waymo" || /\b(trip|ride)\b/i.test(subject))) x.kind = "ride";
+    if (!refund && /uber\s*eats/i.test(text)) x.kind = "food";
+    return x;
+  }
+
+  function monthKey() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+  }
+  async function countUsage(receipts, calls) {
+    if (!db || state.account !== INBOX) return;
+    try {
+      const ref = db.doc("meta/usage");
+      const snap = await ref.get();
+      const data = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : {};
+      const months = data.months || {};
+      const k = monthKey();
+      const cur = months[k] || {};
+      months[k] = { receipts: (cur.receipts || 0) + receipts, calls: (cur.calls || 0) + calls };
+      await ref.set({ months });
+    } catch (e) { /* the counter is a convenience */ }
+  }
+
+  // Claude only on request: re-read the emails the free reader couldn't.
+  async function fillWithClaude(ids) {
+    if (state.scanning || !ids.length) return;
+    if (!mcp) { banner("Open this page in claude.ai to use Claude.", true); return; }
+    if (!sample || sampleOff) { banner("Claude isn't allowed on this page. Allow it from this page's Permissions menu.", true); return; }
+    state.scanning = true;
+    $("scan").disabled = true;
+    $("fillClaude").disabled = true;
+    banner("");
+    try {
+      const msgs = [];
+      for (let i = 0; i < ids.length; i++) {
+        setStatus("Reading email " + (i + 1) + " of " + ids.length + " for Claude…");
+        const m = await gmail("get_message", { messageId: ids[i], messageFormat: "PLAIN_TEXT" });
+        if (!m) continue;
+        if (!state.account && m.viewUrl) { detectAccount(m.viewUrl); showAccount(); }
+        msgs.push({ id: ids[i], subject: String(m.subject || ""), sender: String(m.sender || ""), emailDate: isoOf(m.date), body: String(m.plaintextBody || m.snippet || "") });
+      }
+      const details = await extract(msgs);
+      let done = 0;
+      for (const [id, x] of details) {
+        if (await saveFields(id, { extracted: x })) done++;
+      }
+      if (done) await countUsage(done, Math.ceil(msgs.length / BATCH));
+      setStatus("Claude filled in " + done + " of " + ids.length + (ids.length === 1 ? " receipt." : " receipts."));
+    } catch (e) {
+      banner(gmailMessage(e), true);
+      setStatus("");
+    } finally {
+      state.scanning = false;
+      $("scan").disabled = false;
+      $("fillClaude").disabled = false;
+      render();
+    }
   }
 
   async function scan() {
@@ -682,12 +818,12 @@ select, input[type="text"] {
       }
 
       const live = !!db && state.account === INBOX;
-      const details = await extract(msgs);
       const now = new Date().toISOString();
-      let saved = 0;
+      let saved = 0, freeCount = 0;
       for (const m of msgs) {
         const prev = state.docs.get(m.id) || state.temp.get(m.id) || {};
-        const x = details.get(m.id) || prev.extracted || null;
+        const x = (prev.extracted && prev.extracted.readBy === "claude") ? prev.extracted : freeRead(m);
+        if (x.total !== null || x.itemsSubtotal !== null) freeCount++;
         const doc = {
           id: m.id,
           threadId: m.threadId,
@@ -709,10 +845,11 @@ select, input[type="text"] {
           state.temp.set(m.id, doc);
         }
       }
-      const filled = msgs.filter(m => details.has(m.id)).length;
+      const left = msgs.length - freeCount;
       setStatus(msgs.length + " new " + (msgs.length === 1 ? "receipt" : "receipts") + " from the last " + days + " days" +
         (live ? ", saved." : ", shown as a test and not saved.") +
-        (filled < msgs.length ? " " + (msgs.length - filled) + " still need vendor and amount; scan again to fill them in." : ""));
+        " Read for free: " + freeCount + "." +
+        (left ? " " + left + " need Claude. Click Fill with Claude when you want them done." : ""));
       if (!live && db && state.account && state.account !== INBOX) {
         banner("This scan read " + state.account + ". Only accounting@ scans are saved, so these rows disappear when you reload.");
       } else if (!live && db && !state.account) {
@@ -730,6 +867,7 @@ select, input[type="text"] {
 
   // ---------- wiring ----------
   $("scan").onclick = scan;
+  $("fillClaude").onclick = () => fillWithClaude(allRows().filter(r => needsClaude(r) && (r.status || "new") !== "not_receipt").map(r => r.id));
   $("selAll").onchange = e => {
     for (const r of visibleRows()) { if (e.target.checked) state.selected.add(r.id); else state.selected.delete(r.id); }
     render();
@@ -740,6 +878,7 @@ select, input[type="text"] {
     const act = b.dataset.act;
     if (act === "copy") copyRows();
     else if (act === "clear") { state.selected.clear(); $("copyBox").hidden = true; render(); }
+    else if (act === "claude") { const ids = [...state.selected]; state.selected.clear(); fillWithClaude(ids); }
     else bulkStatus(act);
   });
 
@@ -760,6 +899,11 @@ select, input[type="text"] {
         state.docs = new Map(snap.docs.map(d => [d.id, Object.assign({}, d.data(), { id: d.id })]));
         render();
       }, err => { clearTimeout(timer); banner(dbMessage(err), true); });
+      db.doc("meta/usage").onSnapshot(s => {
+        const months = s.exists ? (s.data().months || {}) : {};
+        const m = months[monthKey()];
+        $("usage").textContent = m ? "Claude this month: " + m.receipts + " receipts in " + m.calls + (m.calls === 1 ? " call" : " calls") : "Claude this month: none yet";
+      }, () => {});
     } else {
       banner("Saving is off in this view. Scans show here but are not kept.");
     }

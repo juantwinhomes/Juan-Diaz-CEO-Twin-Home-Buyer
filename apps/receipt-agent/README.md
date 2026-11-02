@@ -14,6 +14,10 @@ in vendor, date, amount, order number and location, and lists every receipt with
 any other inbox runs as a test. Email text is never stored. Matching to card charges and
 posting to QuickBooks come next.
 
+Cost: scanning Gmail uses no Claude usage. Built-in readers fill in Home Depot, Amazon,
+Uber, Waymo and crew-subject receipts for free. Claude reads only the leftovers, in batches of 8
+on the smallest model, when Kristine clicks Fill with Claude; the page shows this month's count.
+
 Sources it searches: Home Depot, Amazon (forwarded from construction@), Waymo and other
 receipts Juan forwards, Uber, and anything with "receipt" in the subject (crew photos).
 Uber receipts reach accounting@ only after the Uber Business profile email is changed from
