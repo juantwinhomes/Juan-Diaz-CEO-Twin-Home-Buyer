@@ -31,13 +31,15 @@ HOW_TO = [
     ["Receipt Files: written by the helper script every hour. Don't edit."],
     ["Attach Log: one row per charge, written by the agent. Type Y in Kristine Cleared when you clear a line."],
     ["Run Log: one row per run, written by the agent."],
+    ["Helper Status: written by the helper script. Last run, OK or ERROR, and which account it ran as."],
 ]
 
 SETTINGS = [
     ("Key", "Value", "What it is"),
     ("MODE", "TEST", "TEST = report to Kristine only, nothing sent to QuickBooks. Change to LIVE after the test."),
     ("REPORT_TO", "juan@twinhomebuyer.com", "Daily report recipient in LIVE mode."),
-    ("REPORT_CC", "accounting@twinhomebuyer.com", "Kristine. Gets every report; the only recipient in TEST mode."),
+    ("REPORT_CC", "accounting@twinhomebuyer.com", "Kristine. Cc on every LIVE report."),
+    ("TEST_REPORT_TO", "accounting@twinhomebuyer.com, seth@twinhomebuyer.com", "TEST mode report goes here only (Kristine and Seth). Never Juan."),
     ("QBO_RECEIPT_ADDRESS", "", "QuickBooks > Receipts > forwarding address (ends in @assist.intuit.com or @qbodocs.com)."),
     ("RECEIPTS_FOLDER_ID", "", "Drive folder 'Receipts Inbox' (the ID is the last part of the folder URL)."),
     ("LEDGER_SHEET_ID", "", "Current month's Twin Home Expense Ledger. Update on the 1st of each month."),
@@ -87,6 +89,7 @@ ATTACH_LOG = [(
     "Suggested Category", "Suggested Property", "Memo", "Suggested Split", "Send to QBO", "QBO Sent At",
     "Kristine Cleared",
 )]
+STATUS = [("Job", "Last Run", "Result", "Details", "Runs As")]
 RUN_LOG = [(
     "Run Date", "Check Date", "Mode", "Charges Checked", "Matched", "Matched $", "No Receipt Needed",
     "Missing", "Unrecognized", "Pending", "Errors",
@@ -118,7 +121,7 @@ def main():
     how["A1"].font = Font(bold=True, size=14)
     how.column_dimensions["A"].width = 110
 
-    add_tab(wb, "Settings", SETTINGS, [26, 34, 100], todo_cells=("B5", "B6", "B7", "B12"))
+    add_tab(wb, "Settings", SETTINGS, [26, 34, 100], todo_cells=("B6", "B7", "B8", "B13"))
     cards = add_tab(wb, "Cards", CARDS, [8, 22, 18, 18, 22, 12, 22, 60])
     for r in range(2, len(CARDS) + 1):
         for col in ("A", "D", "E", "F"):
@@ -133,6 +136,7 @@ def main():
     add_tab(wb, "Receipt Files", RECEIPT_FILES, [18, 20, 12, 30, 40, 40, 30, 50])
     add_tab(wb, "Attach Log", ATTACH_LOG)
     add_tab(wb, "Run Log", RUN_LOG)
+    add_tab(wb, "Helper Status", STATUS, [24, 18, 10, 60, 32])
 
     wb.save(OUT)
     print(f"wrote {OUT}")

@@ -109,12 +109,17 @@ QuickBooks with: QuickBooks only accepts receipts from that address. Paste the a
 Settings QBO_RECEIPT_ADDRESS. Then forward two real receipts to it by hand and check that
 QuickBooks offers the match to the card charge.
 
-**5. Install the helper script (10 min).** Go to script.google.com > New project > name it
-"Receipt Helper". Paste `receipt-helper.gs` over the starter code. Fill CONTROL_SHEET_ID
-(the long ID in the sheet's URL) and RECEIPTS_FOLDER_ID. Project Settings > time zone
-America/Los_Angeles. Select `setup` > Run > approve the permissions. It creates the hourly
-and daily triggers and does a first pass. Juan's calendar must be shared with accounting@
-("See all event details"); the script stops with a clear message if it isn't.
+**5. Install the helper script (Seth 5 min, Kristine 2 min).** Seth opens the control sheet >
+Extensions > Apps Script, names it "Receipt Helper", pastes `receipt-helper.gs` with
+CONTROL_SHEET_ID and RECEIPTS_FOLDER_ID filled in, and sets Project Settings > time zone
+America/Los_Angeles. Seth never runs it: it would install under his account. Kristine, signed
+in as accounting@, opens the same sheet > Extensions > Apps Script, picks `setup`, clicks Run
+and approves the permissions (Advanced > Go to Receipt Helper). It creates the hourly and daily
+triggers under accounting@ and does a first pass. Seth can edit the code afterwards without her;
+she only approves again if a change needs a new permission. Anyone who can edit the script can
+change what it does with accounting@'s access, so Juan and Kristine approve Seth's edit access in
+writing. Juan's calendar must be shared with accounting@ ("See all event details"); Helper
+Status shows the error if it isn't.
 
 **6. Card alerts on every card and account (by Tue Nov 3).** In each bank and card portal,
 turn on the purchase or transaction alert at the lowest amount the bank allows, sent to
@@ -152,8 +157,8 @@ only, prompt = the text from `AGENT_PROMPT.md` with the sheet ID filled in. 5:45
    Oct 29 is a good choice: its receipts have had two days to arrive.
 3. She opens Claude, starts a new session on Sonnet with Gmail and Drive/Sheets connected,
    and pastes `AGENT_PROMPT.md` with `TEST DATE: 2026-10-29` as the last line.
-4. The report comes to accounting@ only. Nothing goes to QuickBooks (HOLD). She checks
-   five matches against the real receipts and forwards the report to Seth.
+4. The report goes to accounting@ and seth@ only (Settings TEST_REPORT_TO). Nothing goes to
+   QuickBooks (HOLD). Kristine and Seth each check five matches against the real receipts.
 5. Seth emails Juan the results and this write-up.
 
 Results email (Seth to Juan, fill in the numbers):
@@ -178,6 +183,40 @@ How it works, step by step: (paste "How it works" from the README)
 
 Seth
 ```
+
+---
+
+## Checking it without logging into accounting@ (Seth)
+
+Everything the helper and the agent produce lands in the control sheet and the Receipts Inbox
+folder, both owned by Seth.
+
+| Look at | Healthy | If not |
+|---|---|---|
+| Helper Status tab | One line per job, Result OK, Runs As accounting@ | ERROR shows the reason. Runs As seth@ means it was installed under the wrong account. |
+| Calendar tab | Juan's last 7 days | Juan's calendar isn't shared with accounting@ |
+| Receipt Files tab and Receipts Inbox folder | New files every hour | The Gmail "Receipts" label is empty, or the filters are missing |
+| Run Log and Attach Log | One row per run, one row per charge | The agent didn't run, or failed: check its Errors column |
+| Test report email | Arrives at accounting@ and seth@ (Settings TEST_REPORT_TO) | Check the Run Log Errors column |
+
+To check a match, open the receipt from its File URL on Receipt Files and compare it with the
+Attach Log row. Kristine confirms by screenshot that QuickBooks offered the match for the
+receipts sent there: that screen is inside QuickBooks.
+
+### Test it yourself first, on your own account
+
+1. Make a copy of the control sheet named "Receipt Agent Control TEST" and a test Drive folder.
+2. In the copy: Extensions > Apps Script, paste the helper, and put the copy's sheet ID and the
+   test folder ID in CONFIG.
+3. In your own Gmail, create a "Receipts" label and put 2 or 3 real receipts in it.
+4. Run `saveReceipts` and `exportJuanCalendar` by hand. **Never run `setup` in the test copy**:
+   it would leave hourly triggers running under your account.
+5. Check Helper Status, Receipt Files and the test folder.
+6. Agent: in the copy, set TEST_REPORT_TO to seth@ only and put one Charges row that matches a
+   test receipt. Run the prompt in a Claude session with the copy's sheet ID and a
+   `TEST DATE:` line. Check the Attach Log and the report email.
+
+Delete the test copy when you're done.
 
 ---
 

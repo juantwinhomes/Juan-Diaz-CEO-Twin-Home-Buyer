@@ -22,7 +22,8 @@ Read its Settings tab first. Every address, ID and threshold you need is there.
 RUN MODE
 - If this message has a line "TEST DATE: YYYY-MM-DD", CHECK_DATE is that date and MODE is TEST.
 - Otherwise CHECK_DATE is yesterday in Pacific time, and MODE is the Settings value MODE.
-- TEST mode: send the report only to Settings REPORT_CC. Never email Juan. Write HOLD in
+- TEST mode: send the report only to Settings TEST_REPORT_TO (REPORT_CC if that is blank).
+  Never email Juan. Write HOLD in
   Send to QBO instead of YES. Do not write to the ledger.
 
 COST RULES. Follow every one.
@@ -135,7 +136,8 @@ STEP 7. WRITE THE LOG
   only into empty cells. Row not found: skip it and note "ledger row not found".
 
 STEP 8. REPORT EMAIL
-To: Settings REPORT_TO in LIVE mode, with Cc REPORT_CC. TEST mode: To REPORT_CC only.
+To: Settings REPORT_TO in LIVE mode, with Cc REPORT_CC. TEST mode: To TEST_REPORT_TO only
+(REPORT_CC if blank).
 Subject: Receipts <Day Mon D>: X unrecognized, Y missing, Z matched ($total)
 Plain text, three sections in this order. Nothing else, apart from an "ERRORS" line when a
 step failed.

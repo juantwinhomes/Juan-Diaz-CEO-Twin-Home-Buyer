@@ -15,6 +15,9 @@
  *                                 renames the Drive file to date_vendor_amount_card and emails it to the
  *                                 QuickBooks receipt address, then stamps "QBO Sent At".
  *
+ * Every job writes one line to the "Helper Status" tab: last run, OK or ERROR, what it did, and which
+ * account it ran as. Seth checks that tab instead of logging into accounting@.
+ *
  * Install: apps/receipt-agent/README.md, section "Install the helper script".
  * Nothing here logs into QuickBooks. QuickBooks only receives files by email from accounting@.
  */
@@ -37,19 +40,28 @@ const TABS = {
   FILES: 'Receipt Files',
   CALENDAR: 'Calendar',
   ATTACH_LOG: 'Attach Log',
+  STATUS: 'Helper Status',
 };
 
 const FILES_HEADERS = ['Saved At', 'Gmail Message ID', 'Email Date', 'From', 'Subject', 'File Name', 'File ID', 'File URL'];
 const CALENDAR_HEADERS = ['Date', 'Start', 'End', 'Title', 'Location', 'Notes'];
+const STATUS_HEADERS = ['Job', 'Last Run', 'Result', 'Details', 'Runs As'];
 
-/** Run once by hand after pasting the two IDs above. Authorizes the script, creates the triggers, does a first pass. */
+/**
+ * Kristine runs this once, signed in as accounting@. Authorizes the script, creates the triggers
+ * and does a first pass. Seth: don't run it from your account, it would install under you.
+ */
 function setup() {
-  ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
-  ScriptApp.newTrigger('saveReceipts').timeBased().everyHours(1).create();
-  ScriptApp.newTrigger('sendMatchedToQuickBooks').timeBased().everyHours(1).create();
-  ScriptApp.newTrigger('exportJuanCalendar').timeBased().atHour(4).everyDays(1).inTimezone(CONFIG.TZ).create();
-  exportJuanCalendar();
-  saveReceipts();
+  run_('setup', function () {
+    ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
+    ScriptApp.newTrigger('saveReceipts').timeBased().everyHours(1).create();
+    ScriptApp.newTrigger('sendMatchedToQuickBooks').timeBased().everyHours(1).create();
+    ScriptApp.newTrigger('exportJuanCalendar').timeBased().atHour(4).everyDays(1).inTimezone(CONFIG.TZ).create();
+    return ScriptApp.getProjectTriggers().length + ' triggers installed';
+  });
+  // First pass. Each job records its own result on Helper Status, so one failing doesn't stop the other.
+  try { exportJuanCalendar(); } catch (e) { /* recorded on Helper Status */ }
+  try { saveReceipts(); } catch (e) { /* recorded on Helper Status */ }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -57,17 +69,22 @@ function setup() {
 // ---------------------------------------------------------------------------------------------
 
 function saveReceipts() {
+  run_('saveReceipts', saveReceiptsJob_);
+}
+
+function saveReceiptsJob_() {
   const started = Date.now();
   const folder = DriveApp.getFolderById(CONFIG.RECEIPTS_FOLDER_ID);
   const sheet = getTab_(TABS.FILES, FILES_HEADERS);
   const seen = columnSet_(sheet, 'Gmail Message ID');
   const query = 'label:' + CONFIG.RECEIPTS_LABEL.toLowerCase().replace(/[\s\/]+/g, '-') + ' newer_than:45d';
   const rows = [];
+  let timedOut = false;
 
   try {
-    for (let start = 0; start < 500; start += 50) {
+    pages: for (let start = 0; start < 500; start += 50) {
       const threads = GmailApp.search(query, start, 50);
-      if (threads.length === 0) return;
+      if (threads.length === 0) break;
       for (const thread of threads) {
         for (const msg of thread.getMessages()) {
           if (seen.has(msg.getId())) continue;
@@ -78,13 +95,14 @@ function saveReceipts() {
               file.getName(), file.getId(), file.getUrl(),
             ]);
           });
-          if (Date.now() - started > CONFIG.MAX_RUN_MS) return; // out of time; the next hourly run continues
+          if (Date.now() - started > CONFIG.MAX_RUN_MS) { timedOut = true; break pages; } // next hourly run continues
         }
       }
     }
   } finally {
     appendRows_(sheet, rows); // always log what was saved, even if a message failed
   }
+  return rows.length + ' file(s) saved' + (timedOut ? ', more next run' : '');
 }
 
 function saveMessage_(msg, folder) {
@@ -139,6 +157,10 @@ function senderName_(from) {
 // ---------------------------------------------------------------------------------------------
 
 function exportJuanCalendar() {
+  run_('exportJuanCalendar', exportJuanCalendarJob_);
+}
+
+function exportJuanCalendarJob_() {
   const cal = CalendarApp.getCalendarById(CONFIG.JUAN_CALENDAR_ID);
   if (!cal) {
     throw new Error('Cannot open ' + CONFIG.JUAN_CALENDAR_ID +
@@ -162,6 +184,7 @@ function exportJuanCalendar() {
     sheet.getRange(2, 1, sheet.getLastRow() - 1, CALENDAR_HEADERS.length).clearContent();
   }
   appendRows_(sheet, rows);
+  return rows.length + ' events copied (last ' + CONFIG.CALENDAR_DAYS_BACK + ' days)';
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -169,12 +192,19 @@ function exportJuanCalendar() {
 // ---------------------------------------------------------------------------------------------
 
 function sendMatchedToQuickBooks() {
+  run_('sendMatchedToQuickBooks', sendMatchedJob_);
+}
+
+function sendMatchedJob_() {
   const qbo = String(readSettings_().QBO_RECEIPT_ADDRESS || '').trim();
-  if (!qbo || qbo.indexOf('@') === -1) return; // address not set yet
+  if (!qbo || qbo.indexOf('@') === -1) return 'waiting: QBO_RECEIPT_ADDRESS not set in Settings';
 
   const log = getTab_(TABS.ATTACH_LOG, null);
   const data = log.getDataRange().getValues();
-  if (data.length < 2) return;
+  if (data.length < 2) return 'nothing to send';
+  let sent = 0;
+  let tooSmall = 0;
+  let waiting = 0;
   const h = headerIndex_(data[0], [
     'Charge Date', 'Card Last 4', 'Amount', 'Vendor', 'Memo', 'Receipt Gmail ID',
     'Drive File ID', 'Drive File Name', 'Send to QBO', 'QBO Sent At',
@@ -188,7 +218,7 @@ function sendMatchedToQuickBooks() {
 
     let fileId = String(row[h['Drive File ID']]).trim();
     if (!fileId) fileId = filesByGmailId[String(row[h['Receipt Gmail ID']]).trim()] || '';
-    if (!fileId) continue; // not saved to Drive yet; the next hourly run tries again
+    if (!fileId) { waiting++; continue; } // not saved to Drive yet; the next hourly run tries again
 
     const file = DriveApp.getFileById(fileId);
     const ext = (file.getName().match(/\.[a-z0-9]{2,5}$/i) || ['.pdf'])[0].toLowerCase();
@@ -201,16 +231,46 @@ function sendMatchedToQuickBooks() {
     let status;
     if (file.getSize() < CONFIG.QBO_MIN_BYTES) {
       status = 'NOT SENT: file under 46 KB, attach in QuickBooks by hand';
+      tooSmall++;
     } else {
       GmailApp.sendEmail(qbo, 'Receipt ' + name, String(row[h['Memo']] || ''), {
         attachments: [file.getBlob()],
         name: 'Twin Home Buyer Accounting',
       });
       status = stamp_(new Date());
+      sent++;
     }
     log.getRange(r + 1, h['Drive File ID'] + 1).setValue(fileId);
     log.getRange(r + 1, h['Drive File Name'] + 1).setValue(name);
     log.getRange(r + 1, h['QBO Sent At'] + 1).setValue(status);
+  }
+  return sent + ' sent to QuickBooks, ' + tooSmall + ' too small, ' + waiting + ' waiting for the file';
+}
+
+// ---------------------------------------------------------------------------------------------
+// Helper Status: one line per job, so Seth can check the script without logging into accounting@
+// ---------------------------------------------------------------------------------------------
+
+function run_(job, fn) {
+  try {
+    status_(job, 'OK', fn() || '');
+  } catch (e) {
+    status_(job, 'ERROR', (e && e.message) || String(e));
+    throw e; // Google also emails the trigger owner when a scheduled run fails
+  }
+}
+
+function status_(job, result, details) {
+  try {
+    const sheet = getTab_(TABS.STATUS, STATUS_HEADERS);
+    const jobs = sheet.getRange(1, 1, Math.max(sheet.getLastRow(), 1), 1).getValues().map(function (r) { return r[0]; });
+    let row = jobs.indexOf(job) + 1;
+    if (row < 2) row = sheet.getLastRow() + 1;
+    sheet.getRange(row, 1, 1, STATUS_HEADERS.length).setValues([[
+      job, stamp_(new Date()), result, String(details).slice(0, 500), Session.getEffectiveUser().getEmail(),
+    ]]);
+  } catch (e) {
+    console.error('Could not write Helper Status: ' + e);
   }
 }
 
