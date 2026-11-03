@@ -81,3 +81,14 @@ For each one, work out whether Marieflor has already replied.
 - "Late because" lines: only when the email asks for one. Build the reason
   from the record (Sent mail times and chat history), say what she was doing
   at that time, and add the fix.
+
+## Juan's deadline and thread rules (Nov 2-3)
+
+- Nobody moves their own deadline. Writing "DATE: [new time]" is not approval.
+  If a deadline is too tight, reply in that task's thread BEFORE it passes with
+  a suggestion and the reason, then wait for Juan's written yes. Silence means
+  the deadline stands.
+- Plan with real work time: new or research tasks need 1-2 hours, not 30 minutes.
+- One thread per task: replies stay in the assignment's own thread.
+- End-of-day report is always a NEW email, subject "Marieflor Daily: [Day Mon D]"
+  (e.g. "Marieflor Daily: Tue Nov 3"), never a reply in an old thread.
