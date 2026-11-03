@@ -99,3 +99,11 @@ For each one, work out whether Marieflor has already replied.
   isn't enough.
 - Every promised time in a sent email ("by 1:05 PM") is a deadline: put it on
   the calendar right away with 1-hour and 30-minute alerts.
+
+## Names
+
+- Accounting is **Kristine** (Kristine Joy Lomeda, accounting@twinhomebuyer.com),
+  spelled with a **K**. Juan's emails call her "Christine Accounting," but in
+  Marieflor's drafts always write **Kristine**.
+- Don't mix her up with **Christine Joy Frondozo** (christinejoy@twinhomebuyer.com),
+  a different person.
