@@ -92,3 +92,5 @@ For each one, work out whether Marieflor has already replied.
 - One thread per task: replies stay in the assignment's own thread.
 - End-of-day report is always a NEW email, subject "Marieflor Daily: [Day Mon D]"
   (e.g. "Marieflor Daily: Tue Nov 3"), never a reply in an old thread.
+- Calendar: only real work blocks and deadlines. Do NOT add short replies
+  (Got it, Ready, GOT IT, Received) to her calendar; just keep them as drafts.
