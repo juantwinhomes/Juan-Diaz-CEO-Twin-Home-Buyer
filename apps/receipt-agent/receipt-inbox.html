@@ -4,21 +4,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: a working queue. Scan controls on top, status tabs double as the summary, then one checkable row per receipt; rows turn into cards on phones. */
+/* Layout: an app shell. Slim top bar; below it a review queue on the left and the selected receipt on the right, each scrolling on its own. Phones show one pane at a time. */
 :root {
-  --bg: #f4f6f8;
+  --bg: #eef1f4;
   --surface: #ffffff;
-  --sunk: #eef1f4;
+  --sunk: #f5f7f9;
   --ink: #16202b;
-  --muted: #586372;
-  --line: #d3d9e1;
+  --muted: #5d6877;
+  --line: #d6dce3;
   --accent: #1f4e9c;
   --accent-ink: #ffffff;
   --accent-soft: #e5ecf8;
   --ok: #1b7349; --ok-soft: #e2f1e9;
   --warn: #9a5a05; --warn-soft: #faefdc;
   --bad: #ad2a22; --bad-soft: #fae6e4;
-  --wait: #586372; --wait-soft: #eaedf1;
+  --wait: #5d6877; --wait-soft: #e9ecf0;
   --paper: #ffffff; /* receipt pages stay white in both themes, like paper */
   --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
@@ -26,180 +26,188 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0e131a; --surface: #161d27; --sunk: #111821; --ink: #e6ebf1; --muted: #9ba6b4; --line: #2a3442;
-    --accent: #8fb0ef; --accent-ink: #0e131a; --accent-soft: #1b2843;
+    --bg: #0d1218; --surface: #151c25; --sunk: #111821; --ink: #e6ebf1; --muted: #9ba6b4; --line: #27313e;
+    --accent: #8fb0ef; --accent-ink: #0d1218; --accent-soft: #1b2843;
     --ok: #6fd1a0; --ok-soft: #13301f; --warn: #f0b45a; --warn-soft: #382811;
     --bad: #f28b82; --bad-soft: #3b1917; --wait: #a9b3c0; --wait-soft: #222a35;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0e131a; --surface: #161d27; --sunk: #111821; --ink: #e6ebf1; --muted: #9ba6b4; --line: #2a3442;
-  --accent: #8fb0ef; --accent-ink: #0e131a; --accent-soft: #1b2843;
+  --bg: #0d1218; --surface: #151c25; --sunk: #111821; --ink: #e6ebf1; --muted: #9ba6b4; --line: #27313e;
+  --accent: #8fb0ef; --accent-ink: #0d1218; --accent-soft: #1b2843;
   --ok: #6fd1a0; --ok-soft: #13301f; --warn: #f0b45a; --warn-soft: #382811;
   --bad: #f28b82; --bad-soft: #3b1917; --wait: #a9b3c0; --wait-soft: #222a35;
   color-scheme: dark;
 }
 
-body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
-.wrap {
-  max-width: 1180px; margin: 0 auto; display: grid; gap: 16px;
-  padding-block: 28px 48px;
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14px; line-height: 1.45; }
+.shell {
+  height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;
+  max-width: 1680px; margin: 0 auto;
+  padding-block: 12px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-h1 { font-family: var(--display); font-size: clamp(1.9rem, 4.5vw, 2.5rem); line-height: 1.05; margin: 4px 0 6px; text-wrap: balance; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
 p { margin: 0; }
-.eyebrow { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
-.lede { color: var(--muted); max-width: 66ch; }
 .mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button, select, input { font: inherit; color: inherit; }
 
-/* Controls */
-.controls {
-  display: flex; flex-wrap: wrap; align-items: end; gap: 12px 16px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+/* Top bar */
+.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.brand { display: grid; gap: 0; margin-right: auto; min-width: 0; }
+.brand .eyebrow { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.brand h1 { font-size: 1.45rem; line-height: 1.1; }
+.inbox { font-size: 0.78rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.inbox.live { color: var(--ok); border-color: var(--ok); }
+.inbox.test { color: var(--warn); border-color: var(--warn); }
+.scanbox { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.scanbox label { font-size: 0.78rem; color: var(--muted); }
+select, input[type="text"], input[type="search"] {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; min-width: 0;
 }
-.field { display: grid; gap: 4px; }
-.field label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-select, input[type="text"] {
-  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
-  border-radius: 8px; padding: 7px 10px; min-width: 0;
-}
-.meta { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
-.inbox { font-size: 0.85rem; font-weight: 600; }
-.inbox.test { color: var(--warn); }
-.inbox.live { color: var(--ok); }
-.status { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
-.usage { font-size: 0.8rem; color: var(--muted); }
 .btn {
-  font: inherit; font-weight: 600; font-size: 0.9rem; cursor: pointer;
+  font-weight: 600; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
   border: 1px solid var(--line); background: var(--surface); color: var(--ink);
-  border-radius: 8px; padding: 8px 14px; white-space: nowrap;
+  border-radius: 8px; padding: 6px 12px; white-space: nowrap; text-decoration: none; line-height: 1.3;
 }
 .btn:hover { border-color: var(--accent); }
+.btn:disabled { opacity: 0.55; cursor: progress; }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-.btn.primary:disabled { opacity: 0.55; cursor: progress; }
+.btn.good { background: var(--ok); color: var(--surface); border-color: var(--ok); }
 .btn.ghost { background: transparent; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-.banner { border-radius: 10px; padding: 10px 14px; background: var(--warn-soft); color: var(--ink); border: 1px solid var(--warn); }
+.btn.small { font-size: 0.78rem; padding: 4px 9px; }
+kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius: 4px; border: 1px solid currentColor; opacity: 0.7; }
+.statusline { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--muted); min-height: 1.2em; }
+.statusline span:empty { display: none; }
+.banner { border-radius: 8px; padding: 8px 12px; background: var(--warn-soft); border: 1px solid var(--warn); font-size: 0.88rem; }
 .banner.bad { background: var(--bad-soft); border-color: var(--bad); }
 
-/* Tabs and source chips */
-.tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.tab {
-  font: inherit; text-align: left; cursor: pointer; display: grid; gap: 2px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--ink);
-  border-top: 4px solid var(--line);
+/* Two panes */
+.app {
+  flex: 1; min-height: 0; display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 12px;
 }
-.tab .t-label { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.tab .t-count { font-family: var(--display); font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
-.tab .t-sum { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.tab[data-key="new"] { border-top-color: var(--accent); }
-.tab[data-key="follow_up"] { border-top-color: var(--warn); }
-.tab[data-key="good"] { border-top-color: var(--ok); }
-.tab[data-key="not_receipt"] { border-top-color: var(--wait); }
-.tab[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
-.sources { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip {
-  font: inherit; font-size: 0.82rem; font-weight: 500; cursor: pointer;
-  border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 11px;
-}
-.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.pane { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 
-/* Bulk bar */
-.bulk {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-  background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 10px; padding: 8px 10px;
+/* Queue */
+.qhead { display: grid; gap: 8px; padding: 10px; border-bottom: 1px solid var(--line); }
+.segs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; background: var(--sunk); border-radius: 9px; padding: 3px; }
+.seg { cursor: pointer; border: 0; background: transparent; border-radius: 7px; padding: 5px 4px; display: grid; justify-items: center; gap: 0; color: var(--muted); }
+.seg .seg-count { font-family: var(--display); font-weight: 700; font-size: 1.05rem; line-height: 1.1; color: var(--ink); }
+.seg .seg-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
+.seg[aria-selected="true"] { background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.seg[data-key="new"][aria-selected="true"] .seg-label { color: var(--accent); }
+.seg[data-key="follow_up"][aria-selected="true"] .seg-label { color: var(--warn); }
+.seg[data-key="good"][aria-selected="true"] .seg-label { color: var(--ok); }
+.tools { display: flex; gap: 6px; }
+.tools input { flex: 1 1 auto; }
+.tools select { flex: 0 0 auto; max-width: 46%; }
+.qmeta { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--muted); }
+.qmeta label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.qmeta #listCount { margin-left: auto; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; background: var(--accent-soft); border-bottom: 1px solid var(--line); }
+.bulk #bulkCount { font-weight: 600; font-size: 0.82rem; margin-right: auto; }
+.copybox { margin: 8px 10px; min-height: 90px; font-family: var(--mono); font-size: 0.75rem; border: 1px solid var(--line); border-radius: 8px; background: var(--sunk); color: var(--ink); padding: 6px; }
+.items { flex: 1; overflow: auto; }
+.item {
+  display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start;
+  padding: 10px 12px; border-bottom: 1px solid var(--line); cursor: pointer;
 }
-.bulk #bulkCount { font-weight: 600; margin-right: 4px; }
-.copybox { width: 100%; min-height: 120px; font-family: var(--mono); font-size: 0.8rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 8px; box-sizing: border-box; }
+.item:hover { background: var(--sunk); }
+.item.active { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.item input { margin-top: 3px; }
+.item-main { display: grid; gap: 2px; min-width: 0; }
+.item-top { display: flex; gap: 8px; align-items: baseline; }
+.item-vendor { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0; }
+.item-amt { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
+.item-sub { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 0.78rem; color: var(--muted); }
+.item-sub span { overflow-wrap: anywhere; }
+.item-flags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.badge, .pill { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; background: var(--sunk); color: var(--muted); border: 1px solid var(--line); }
+.badge.warn, .pill.test { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.pill.s-new { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.pill.s-follow_up { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.pill.s-good { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.pill.s-not_receipt { background: var(--wait-soft); color: var(--wait); border-color: transparent; }
+.pill.ai { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.empty { padding: 28px 18px; color: var(--muted); text-align: center; display: grid; gap: 6px; justify-items: center; }
+.empty b { color: var(--ink); font-size: 0.98rem; }
 
-/* List */
-.list { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.thead, .row {
-  display: grid; gap: 10px 14px; align-items: start;
-  grid-template-columns: 28px 74px minmax(0, 1.3fr) 112px minmax(0, 1.4fr) 160px 72px;
-  padding: 10px 14px;
+/* Detail */
+.detail { overflow: auto; }
+.d-head { display: grid; gap: 8px; padding: 14px 18px 10px; }
+.back { display: none; justify-self: start; }
+.d-title { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
+.d-title h2 { font-size: 1.5rem; line-height: 1.15; overflow-wrap: anywhere; }
+.d-meta { color: var(--muted); font-size: 0.85rem; }
+.d-amt { text-align: right; display: grid; justify-items: end; }
+.d-amt .num { font-size: 1.6rem; font-weight: 500; line-height: 1.1; }
+.d-amt small { color: var(--muted); font-size: 0.75rem; }
+.d-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.d-actions {
+  position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 8px 18px; background: var(--surface); border-block: 1px solid var(--line);
 }
-.thead { background: var(--sunk); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); align-items: center; }
-.row { border-top: 1px solid var(--line); }
-.row.selected { background: var(--accent-soft); }
-.r { text-align: right; }
-.date { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); padding-top: 2px; }
-.vendor { display: grid; gap: 3px; min-width: 0; }
-.vendor b { font-weight: 600; overflow-wrap: anywhere; }
-.vendor .items { color: var(--muted); font-size: 0.88rem; overflow-wrap: anywhere; }
-.tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.pill { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; background: var(--sunk); color: var(--muted); }
-.pill.s-new { background: var(--accent-soft); color: var(--accent); }
-.pill.s-follow_up { background: var(--warn-soft); color: var(--warn); }
-.pill.s-good { background: var(--ok-soft); color: var(--ok); }
-.pill.s-not_receipt { background: var(--wait-soft); color: var(--wait); }
-.pill.test { background: var(--warn-soft); color: var(--warn); }
-.pill.ai { background: var(--accent-soft); color: var(--accent); }
-.amount { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; font-weight: 500; padding-top: 1px; }
-.amount small { display: block; font-size: 0.72rem; color: var(--muted); font-weight: 400; }
-.details { display: grid; gap: 3px; font-size: 0.88rem; min-width: 0; }
-.details span { overflow-wrap: anywhere; }
-.details .k { color: var(--muted); }
-.details .note { font-style: italic; }
-.prop input { width: 100%; box-sizing: border-box; font-size: 0.88rem; padding: 6px 8px; }
-.open a { color: var(--accent); font-weight: 600; font-size: 0.88rem; text-decoration: none; }
-.open a:hover { text-decoration: underline; }
-.open { display: grid; gap: 4px; justify-items: start; }
-.linkbtn { font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
-.linkbtn:hover { text-decoration: underline; }
-.row { cursor: pointer; }
-.preview { border-top: 1px dashed var(--line); background: var(--sunk); padding: 12px 14px 16px 56px; display: grid; gap: 10px; }
-.pv-head { display: grid; gap: 2px; }
-.pv-head span { color: var(--muted); font-size: 0.85rem; overflow-wrap: anywhere; }
-.pv-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.86rem; line-height: 1.5; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; max-height: 460px; overflow: auto; max-width: 90ch; }
-.pv-atts { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
-.pv-atts img { max-width: min(100%, 480px); max-height: 560px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
-.pv-note { color: var(--muted); font-size: 0.86rem; }
-.pv-files { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
-.pv-pdf { display: grid; gap: 8px; width: min(100%, 600px); }
-.pv-page { display: block; width: 100%; height: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; }
-.pv-files img { max-width: min(100%, 480px); max-height: 560px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
-.pv-text summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; }
-.empty { padding: 28px 16px; color: var(--muted); text-align: center; display: grid; gap: 6px; justify-items: center; }
-.empty b { color: var(--ink); font-size: 1.02rem; }
-.empty p { max-width: 56ch; }
-.foot { color: var(--muted); font-size: 0.85rem; max-width: 80ch; }
+.d-actions .spacer { flex: 1 1 auto; }
+.d-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; padding: 16px 18px 24px; align-items: start; }
+.viewer { display: grid; gap: 10px; min-width: 0; }
+.vbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.vseg { display: inline-flex; background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
+.vseg button { cursor: pointer; border: 0; background: transparent; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+.vseg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+.zoom { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-size: 0.78rem; color: var(--muted); }
+.zoom .num { min-width: 3.2em; text-align: center; }
+.vscroll { overflow: auto; border-radius: 10px; background: var(--sunk); border: 1px solid var(--line); padding: 12px; max-height: none; }
+.pv-files { display: grid; gap: 12px; justify-items: center; }
+.pv-pdf { display: grid; gap: 10px; width: calc(var(--zoom, 1) * 100%); max-width: none; }
+.pv-page { display: block; width: 100%; height: auto; background: var(--paper); border-radius: 4px; box-shadow: 0 1px 2px rgba(15, 23, 32, 0.18), 0 6px 18px rgba(15, 23, 32, 0.08); }
+.pv-files img { display: block; width: calc(var(--zoom, 1) * 100%); max-width: none; height: auto; border-radius: 6px; background: var(--paper); }
+.pv-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.86rem; line-height: 1.55; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; max-width: 80ch; }
+.pv-note { color: var(--muted); font-size: 0.85rem; }
+.facts { position: sticky; top: 56px; display: grid; gap: 14px; background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.field { display: grid; gap: 4px; }
+.field label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.field input { width: 100%; box-sizing: border-box; }
+.facts dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 12px; font-size: 0.85rem; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.facts dd.num { font-family: var(--mono); }
+.keys { font-size: 0.75rem; color: var(--muted); line-height: 1.7; }
+.d-empty { height: 100%; display: grid; place-items: center; padding: 40px 20px; text-align: center; color: var(--muted); }
+.d-empty b { display: block; color: var(--ink); font-size: 1.05rem; margin-bottom: 6px; }
 
-@media (max-width: 860px) {
-  .thead { display: none; }
-  .row {
-    grid-template-columns: 28px minmax(0, 1fr) auto;
-    grid-template-areas: "cb vendor amount" "cb date date" "cb details details" "cb prop open";
-  }
-  .row > .cb { grid-area: cb; }
-  .row > .date { grid-area: date; padding-top: 0; }
-  .row > .vendor { grid-area: vendor; }
-  .row > .amount { grid-area: amount; }
-  .row > .details { grid-area: details; }
-  .row > .prop { grid-area: prop; }
-  .row > .open { grid-area: open; align-self: center; }
-  .preview { padding-left: 14px; }
+@media (max-width: 1280px) {
+  .d-body { grid-template-columns: minmax(0, 1fr); }
+  .facts { position: static; order: -1; }
 }
-@media (max-width: 520px) {
-  .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .detail { display: none; }
+  body.show-detail .detail { display: flex; }
+  body.show-detail .queue { display: none; }
+  .back { display: inline-flex; }
+  kbd, .keys { display: none; }
+  .brand h1 { font-size: 1.25rem; }
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (max-width: 480px) {
+  .seg .seg-label { font-size: 0.6rem; }
+  .d-title { flex-direction: column; }
+  .d-amt { justify-items: start; text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
 </style>
 
-<div class="wrap">
-  <header>
-    <div class="eyebrow">Twin Home Buyer &middot; Receipt agent</div>
-    <h1>Receipt Inbox</h1>
-    <p class="lede">Every receipt that lands in accounting@, in one list: Home Depot, Amazon, Waymo, Uber and crew photos. Built-in readers fill in most receipts for free, PDF receipts included. Claude reads only the ones they can't, and only when you click. Matching to card charges and posting to QuickBooks come next.</p>
-  </header>
-
-  <section class="controls" aria-label="Scan the inbox">
-    <div class="field">
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent</span>
+      <h1>Receipt Inbox</h1>
+    </div>
+    <span id="inbox" class="inbox">Inbox: shown after the first scan</span>
+    <div class="scanbox">
       <label for="days">Look back</label>
       <select id="days">
         <option value="1">1 day</option>
@@ -207,47 +215,55 @@ select, input[type="text"] {
         <option value="7" selected>7 days</option>
         <option value="14">14 days</option>
         <option value="30">30 days</option>
+        <option value="60">60 days</option>
+        <option value="90">90 days</option>
       </select>
+      <button id="scan" class="btn primary" type="button">Scan inbox</button>
+      <button id="fillClaude" class="btn" type="button" hidden></button>
     </div>
-    <button id="scan" class="btn primary" type="button">Scan inbox</button>
-    <button id="fillClaude" class="btn" type="button" hidden></button>
-    <div class="meta">
-      <span id="inbox" class="inbox">Inbox: shown after the first scan</span>
-      <span id="status" class="status" role="status" aria-live="polite"></span>
-      <span id="usage" class="usage"></span>
-    </div>
-  </section>
-
+  </header>
+  <div class="statusline">
+    <span id="status" role="status" aria-live="polite"></span>
+    <span id="usage"></span>
+  </div>
   <div id="banner" class="banner" role="alert" hidden></div>
 
-  <nav class="tabs" id="tabs" aria-label="Receipt status"></nav>
-  <div class="sources" id="sources" aria-label="Filter by source"></div>
+  <div class="app">
+    <section class="pane queue" aria-label="Receipts to review">
+      <div class="qhead">
+        <div class="segs" id="tabs" role="tablist" aria-label="Status"></div>
+        <div class="tools">
+          <input type="search" id="search" placeholder="Search vendor, amount, order #" aria-label="Search receipts">
+          <select id="source" aria-label="Source">
+            <option value="all">All sources</option>
+          </select>
+        </div>
+        <div class="qmeta">
+          <label for="selAll"><input type="checkbox" id="selAll"> Select all</label>
+          <span id="listCount"></span>
+        </div>
+      </div>
+      <div class="bulk" id="bulk" hidden>
+        <span id="bulkCount"></span>
+        <button type="button" class="btn small" data-act="good">Good</button>
+        <button type="button" class="btn small" data-act="follow_up">Follow-up</button>
+        <button type="button" class="btn small" data-act="not_receipt">Not a receipt</button>
+        <button type="button" class="btn small" data-act="new">To review</button>
+        <button type="button" class="btn small" data-act="claude">Ask Claude</button>
+        <button type="button" class="btn small" data-act="csv">Download CSV</button>
+        <button type="button" class="btn small ghost" data-act="copy">Copy rows</button>
+        <button type="button" class="btn small ghost" data-act="clear">Clear</button>
+      </div>
+      <textarea id="copyBox" class="copybox" aria-label="Rows to paste into the ledger" readonly hidden></textarea>
+      <div class="items" id="items" role="listbox" aria-label="Receipts"></div>
+      <div class="empty" id="listEmpty">
+        <b>No receipts yet</b>
+        <p>Click Scan inbox to pull receipts from accounting@.</p>
+      </div>
+    </section>
 
-  <div class="bulk" id="bulk" hidden>
-    <span id="bulkCount"></span>
-    <button type="button" class="btn" data-act="good">Mark good</button>
-    <button type="button" class="btn" data-act="follow_up">Needs follow-up</button>
-    <button type="button" class="btn" data-act="not_receipt">Not a receipt</button>
-    <button type="button" class="btn" data-act="new">Back to review</button>
-    <button type="button" class="btn" data-act="claude">Ask Claude to re-read</button>
-    <button type="button" class="btn ghost" data-act="copy">Copy rows for the ledger</button>
-    <button type="button" class="btn ghost" data-act="clear">Clear selection</button>
+    <section class="pane detail" id="detail" aria-label="Selected receipt"></section>
   </div>
-  <textarea id="copyBox" class="copybox" aria-label="Rows to paste into the ledger" readonly hidden></textarea>
-
-  <section class="list" aria-label="Receipts">
-    <div class="thead">
-      <span><input type="checkbox" id="selAll" aria-label="Select every receipt shown"></span>
-      <span>Date</span><span>Vendor</span><span class="r">Amount</span><span>Details</span><span>Property</span><span></span>
-    </div>
-    <div id="rows"></div>
-    <div class="empty" id="empty">
-      <b>No receipts yet</b>
-      <p>Click Scan inbox to pull the last 7 days of receipts from accounting@. The first scan asks to allow Gmail and Claude on this page.</p>
-    </div>
-  </section>
-
-  <p class="foot">Receipts are read from the Gmail connected to the viewer's Claude. Only scans of accounting@ are saved here; any other inbox runs as a test and is not saved. Email text is used to fill in the details and is never stored. Scanning and the built-in readers use no Claude usage; Fill with Claude does, and the count for this month is shown under the scan button.</p>
 </div>
 
 <datalist id="propList"></datalist>
@@ -285,7 +301,10 @@ select, input[type="text"] {
     selected: new Set(),
     account: null,
     scanning: false,
-    open: new Set()     // receipts shown inline
+    selectedId: null,   // the receipt shown on the right
+    query: "",
+    viewMode: "file",   // "file" or "email" in the receipt viewer
+    zoom: 1
   };
   const msgCache = new Map(); // email text and photos loaded for the inline view, this visit only
   let db = null, mcp = null, sample = null, sampleOff = false;
@@ -370,140 +389,124 @@ select, input[type="text"] {
       return String(dbb).localeCompare(String(da));
     });
   }
-  function visibleRows() {
-    return allRows().filter(r => (state.source === "all" || r.source === state.source) && (r.status || "new") === state.tab);
-  }
 
   async function saveFields(id, patch) {
     if (state.temp.has(id)) { Object.assign(state.temp.get(id), patch); return true; }
     if (!db) return false;
-    try { await db.collection("receipts").doc(id).update(patch); return true; }
-    catch (e) { banner(dbMessage(e), true); return false; }
+    try {
+      await db.collection("receipts").doc(id).update(patch);
+      const d = state.docs.get(id);
+      if (d) Object.assign(d, patch); // show the change before the store echoes it back
+      return true;
+    } catch (e) { banner(dbMessage(e), true); return false; }
   }
 
   // ---------- render ----------
+
+  // ---------- layout: the queue on the left, the selected receipt on the right ----------
+  const narrow = () => window.matchMedia("(max-width: 900px)").matches;
+  function senderName(r) {
+    return String((r && r.sender) || "").replace(/<.*>/, "").replace(/"/g, "").trim() || "Unknown sender";
+  }
+  function longDate(iso) {
+    if (!iso) return "";
+    const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso + "T12:00:00" : iso);
+    return isNaN(d) ? String(iso).slice(0, 10) : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+  function matchesFilters(r) {
+    if (state.source !== "all" && r.source !== state.source) return false;
+    const q = state.query.trim().toLowerCase();
+    if (!q) return true;
+    const x = r.extracted || {};
+    return [x.vendor, x.items, x.orderNumber, x.location, x.note, x.cardLast4, r.subject, r.property, senderName(r), amountOf(r).label]
+      .filter(Boolean).join(" ").toLowerCase().includes(q);
+  }
+  function visibleRows() {
+    return allRows().filter(r => matchesFilters(r) && (r.status || "new") === state.tab);
+  }
+  function current() {
+    return state.selectedId ? allRows().find(r => r.id === state.selectedId) || null : null;
+  }
+
+  function render() {
+    renderTabs();
+    renderList();
+    renderDetail();
+    renderBulk();
+    renderProps();
+    const left = allRows().filter(r => needsClaude(r) && (r.status || "new") !== "not_receipt");
+    const fb = $("fillClaude");
+    fb.hidden = !left.length || !sample || sampleOff;
+    fb.textContent = "Fill " + left.length + " with Claude";
+  }
   function renderTabs() {
-    const rows = allRows().filter(r => state.source === "all" || r.source === state.source);
+    const rows = allRows().filter(matchesFilters);
     const nav = $("tabs");
     nav.textContent = "";
     for (const s of STATUSES) {
       const these = rows.filter(r => (r.status || "new") === s.key);
-      const sum = these.reduce((acc, r) => acc + (amountOf(r).value || 0), 0);
-      const b = el("button", "tab");
+      const b = el("button", "seg");
       b.type = "button";
       b.dataset.key = s.key;
-      b.setAttribute("aria-pressed", String(state.tab === s.key));
-      b.append(el("span", "t-label", s.label), el("span", "t-count", String(these.length)), el("span", "t-sum", these.length ? money(sum) : "$0.00"));
-      b.onclick = () => { state.tab = s.key; state.selected.clear(); render(); };
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(state.tab === s.key));
+      b.title = these.length ? money(these.reduce((a, r) => a + (amountOf(r).value || 0), 0)) + " total" : "None";
+      b.append(el("span", "seg-count", String(these.length)), el("span", "seg-label", s.label));
+      b.onclick = () => { state.tab = s.key; state.selected.clear(); state.selectedId = null; render(); };
       nav.append(b);
     }
   }
-  function renderSources() {
-    const box = $("sources");
-    box.textContent = "";
-    const opts = [{ key: "all", label: "All sources" }].concat(SOURCES);
-    for (const s of opts) {
-      const b = el("button", "chip", s.label);
-      b.type = "button";
-      b.setAttribute("aria-pressed", String(state.source === s.key));
-      b.onclick = () => { state.source = s.key; state.selected.clear(); render(); };
-      box.append(b);
-    }
-  }
-  function renderProps() {
-    const set = new Set(["Office"]);
-    for (const r of allRows()) if (r.property) set.add(r.property);
-    const dl = $("propList");
-    dl.textContent = "";
-    for (const p of set) { const o = document.createElement("option"); o.value = p; dl.append(o); }
-  }
-  function rowEl(r) {
+  function itemEl(r) {
     const x = r.extracted || {};
-    const row = el("div", "row" + (state.selected.has(r.id) ? " selected" : ""));
-    row.dataset.id = r.id;
+    const active = r.id === state.selectedId;
+    const item = el("div", "item" + (active ? " active" : ""));
+    item.setAttribute("role", "option");
+    item.setAttribute("aria-selected", String(active));
+    item.dataset.id = r.id;
 
-    const cbWrap = el("span", "cb");
     const cb = document.createElement("input");
     cb.type = "checkbox";
     cb.id = "sel-" + r.id;
     cb.checked = state.selected.has(r.id);
-    cb.setAttribute("aria-label", "Select " + (x.vendor || r.subject || "receipt"));
-    cb.onchange = () => {
-      if (cb.checked) state.selected.add(r.id); else state.selected.delete(r.id);
-      row.classList.toggle("selected", cb.checked);
-      renderBulk();
-    };
-    cbWrap.append(cb);
+    cb.setAttribute("aria-label", "Select " + (x.vendor || "receipt"));
+    cb.addEventListener("click", ev => ev.stopPropagation());
+    cb.onchange = () => { if (cb.checked) state.selected.add(r.id); else state.selected.delete(r.id); renderBulk(); };
 
-    const date = el("span", "date", shortDate(x.date || r.emailDate));
+    const main = el("div", "item-main");
+    const top = el("div", "item-top");
+    top.append(el("span", "item-vendor", x.vendor || senderName(r)), el("span", "item-amt", amountOf(r).label));
+    const sub = el("div", "item-sub");
+    sub.append(el("span", null, shortDate(x.date || r.emailDate)), el("span", null, SOURCE_LABEL[r.source] || "Other"));
+    if (r.property) sub.append(el("span", null, r.property));
+    else if (x.orderNumber) sub.append(el("span", "mono", x.orderNumber));
+    main.append(top, sub);
+    const flags = el("div", "item-flags");
+    if (needsClaude(r)) flags.append(el("span", "badge", "Needs Claude"));
+    if (x.kind === "refund") flags.append(el("span", "badge", "Refund"));
+    if (state.temp.has(r.id)) flags.append(el("span", "badge warn", "Test"));
+    if (flags.childNodes.length) main.append(flags);
 
-    const vendor = el("div", "vendor");
-    vendor.append(el("b", null, x.vendor || (r.sender || "").replace(/<.*>/, "").trim() || "Unknown sender"));
-    vendor.append(el("span", "items", x.items || r.subject || ""));
-    const tags = el("div", "tags");
-    tags.append(el("span", "pill", SOURCE_LABEL[r.source] || "Other"));
-    tags.append(el("span", "pill s-" + (r.status || "new"), STATUS_LABEL[r.status || "new"]));
-    if (x.kind === "refund") tags.append(el("span", "pill", "Refund"));
-    if (state.temp.has(r.id)) tags.append(el("span", "pill test", "Test, not saved"));
-    if (needsClaude(r)) tags.append(el("span", "pill", "Needs Claude"));
-    else if (r.extracted && r.extracted.readBy === "claude") tags.append(el("span", "pill ai", "Read by Claude"));
-    else if (amountOf(r).value === null) tags.append(el("span", "pill", "No amount found"));
-    vendor.append(tags);
-
-    const amt = amountOf(r);
-    const amount = el("span", "amount", amt.label);
-    if (amt.note) amount.append(el("small", null, amt.note));
-
-    const details = el("div", "details");
-    if (x.orderNumber) { const s = el("span"); s.append(el("span", "k", "Order "), el("span", "mono", x.orderNumber)); details.append(s); }
-    if (x.location) { const s = el("span"); s.append(el("span", "k", "Location "), document.createTextNode(x.location)); details.append(s); }
-    if (x.cardLast4) { const s = el("span"); s.append(el("span", "k", "Card "), el("span", "mono", x.cardLast4)); details.append(s); }
-    if (x.note) details.append(el("span", "note", "Note: " + x.note));
-    if (!details.childNodes.length) details.append(el("span", "k", r.subject || ""));
-
-    const prop = el("span", "prop");
-    const input = document.createElement("input");
-    input.type = "text";
-    input.id = "prop-" + r.id;
-    input.setAttribute("list", "propList");
-    input.placeholder = "Property or Office";
-    input.setAttribute("aria-label", "Property for " + (x.vendor || "receipt"));
-    input.value = r.property || "";
-    input.onchange = async () => {
-      const v = input.value.trim().slice(0, 120);
-      if (v === (r.property || "")) return;
-      await saveFields(r.id, { property: v });
-      r.property = v;
-      renderProps();
-    };
-    prop.append(input);
-
-    const open = el("span", "open");
-    const isOpen = state.open.has(r.id);
-    const view = el("button", "linkbtn", isOpen ? "Hide" : "View");
-    view.type = "button";
-    view.setAttribute("aria-expanded", String(isOpen));
-    view.setAttribute("aria-label", (isOpen ? "Hide" : "View") + " the receipt");
-    view.onclick = ev => { ev.stopPropagation(); togglePreview(r.id); };
-    open.append(view);
-    if (r.viewUrl && /^https:\/\/mail\.google\.com\//.test(r.viewUrl)) {
-      const a = el("a", null, "Gmail");
-      a.href = r.viewUrl;
-      a.target = "_blank";
-      a.rel = "noopener";
-      a.title = "Open the email in Gmail";
-      open.append(a);
+    item.append(cb, main);
+    item.onclick = () => select(r.id);
+    return item;
+  }
+  function renderList() {
+    const shown = visibleRows();
+    // Keep a receipt open on wide screens, so one always shows on the right.
+    if (!shown.some(r => r.id === state.selectedId)) state.selectedId = !narrow() && shown.length ? shown[0].id : null;
+    const box = $("items");
+    box.textContent = "";
+    for (const r of shown) box.append(itemEl(r));
+    const empty = $("listEmpty");
+    empty.hidden = shown.length > 0;
+    if (!shown.length) {
+      empty.textContent = "";
+      if (!allRows().length) empty.append(el("b", null, "No receipts yet"), el("p", null, "Click Scan inbox to pull receipts from accounting@."));
+      else if (state.query) empty.append(el("b", null, "No matches"), el("p", null, "No receipt in " + STATUS_LABEL[state.tab] + " matches your search."));
+      else empty.append(el("b", null, "Nothing in " + STATUS_LABEL[state.tab]), el("p", null, state.tab === "new" ? "Every receipt has been reviewed." : "Receipts you move here show up in this tab."));
     }
-
-    row.append(cbWrap, date, vendor, amount, details, prop, open);
-    row.addEventListener("click", ev => {
-      if (ev.target.closest("input, a, button, select, textarea, label")) return;
-      togglePreview(r.id);
-    });
-    const frag = document.createDocumentFragment();
-    frag.append(row);
-    if (isOpen) frag.append(previewEl(r));
-    return frag;
+    const sum = shown.reduce((a, r) => a + (amountOf(r).value || 0), 0);
+    $("listCount").textContent = shown.length + (shown.length === 1 ? " receipt" : " receipts") + (shown.length ? " · " + money(sum) : "");
   }
   function renderBulk() {
     const n = state.selected.size;
@@ -514,30 +517,384 @@ select, input[type="text"] {
     sa.checked = shown.length > 0 && shown.every(r => state.selected.has(r.id));
     sa.indeterminate = !sa.checked && shown.some(r => state.selected.has(r.id));
   }
-  function render() {
-    renderTabs();
-    renderSources();
-    renderProps();
-    const rowsBox = $("rows");
-    rowsBox.textContent = "";
+  function renderProps() {
+    const set = new Set(["Office"]);
+    for (const r of allRows()) if (r.property) set.add(r.property);
+    const dl = $("propList");
+    dl.textContent = "";
+    for (const p of set) { const o = document.createElement("option"); o.value = p; dl.append(o); }
+  }
+  function select(id) {
+    state.selectedId = id;
+    if (narrow()) document.body.classList.add("show-detail");
+    render();
+    const pane = $("detail");
+    pane.scrollTop = 0;
+    const item = document.querySelector('.item[data-id="' + CSS.escape(id) + '"]');
+    if (item) item.scrollIntoView({ block: "nearest" });
+  }
+  function move(step) {
     const shown = visibleRows();
-    for (const r of shown) rowsBox.append(rowEl(r));
-    const empty = $("empty");
-    if (shown.length) { empty.hidden = true; }
-    else {
-      empty.hidden = false;
-      empty.textContent = "";
-      if (!allRows().length) {
-        empty.append(el("b", null, "No receipts yet"), el("p", null, "Click Scan inbox to pull the last 7 days of receipts from accounting@. The first scan asks to allow Gmail and Claude on this page."));
-      } else {
-        empty.append(el("b", null, "Nothing in " + STATUS_LABEL[state.tab]), el("p", null, state.tab === "new" ? "Every receipt here has been reviewed." : "Receipts you move here will show up in this tab."));
-      }
+    if (!shown.length) return;
+    const i = shown.findIndex(r => r.id === state.selectedId);
+    const next = shown[Math.max(0, Math.min(shown.length - 1, (i < 0 ? 0 : i + step)))];
+    if (next) select(next.id);
+  }
+  // One receipt: save its status, then move on to the next one in the same tab.
+  async function setOne(id, status) {
+    const shown = visibleRows();
+    const i = shown.findIndex(r => r.id === id);
+    const next = shown[i + 1] || shown[i - 1] || null;
+    const ok = await saveFields(id, { status, reviewedAt: new Date().toISOString() });
+    if (!ok) return;
+    if (status !== state.tab) state.selectedId = next ? next.id : null;
+    setStatus("Moved to " + STATUS_LABEL[status] + ".");
+    render();
+    $("detail").scrollTop = 0;
+  }
+
+  function renderDetail() {
+    const pane = $("detail");
+    pane.textContent = "";
+    const r = current();
+    if (!r) {
+      const box = el("div", "d-empty");
+      const inner = el("div");
+      inner.append(el("b", null, allRows().length ? "Pick a receipt on the left" : "Nothing to show yet"),
+        el("p", null, allRows().length ? "Its receipt, details and actions open here." : "Scan the inbox to load receipts."));
+      box.append(inner);
+      pane.append(box);
+      return;
     }
-    renderBulk();
-    const left = allRows().filter(r => needsClaude(r) && (r.status || "new") !== "not_receipt");
-    const fb = $("fillClaude");
-    fb.hidden = !left.length || !sample || sampleOff;
-    fb.textContent = "Fill " + left.length + " with Claude";
+    if (!msgCache.has(r.id) && mcp) loadPreview(r.id);
+    const x = r.extracted || {};
+    const amt = amountOf(r);
+    const status = r.status || "new";
+
+    const head = el("header", "d-head");
+    const back = el("button", "btn ghost small back", "← All receipts");
+    back.type = "button";
+    back.onclick = () => { document.body.classList.remove("show-detail"); render(); };
+    const title = el("div", "d-title");
+    const left = el("div");
+    left.append(el("h2", null, x.vendor || senderName(r)),
+      el("div", "d-meta", [longDate(x.date || r.emailDate), SOURCE_LABEL[r.source] || "Other", x.items].filter(Boolean).join(" · ")));
+    const right = el("div", "d-amt");
+    right.append(el("span", "num", amt.label));
+    if (amt.note) right.append(el("small", null, amt.note));
+    title.append(left, right);
+    const pills = el("div", "d-pills");
+    pills.append(el("span", "pill s-" + status, STATUS_LABEL[status]));
+    if (needsClaude(r)) pills.append(el("span", "pill", "Needs Claude"));
+    else if (x.readBy === "claude") pills.append(el("span", "pill ai", "Read by Claude"));
+    else if (x.readBy === "pdf") pills.append(el("span", "pill", "Read from the PDF"));
+    if (x.kind === "refund") pills.append(el("span", "pill", "Refund"));
+    if (state.temp.has(r.id)) pills.append(el("span", "pill test", "Test, not saved"));
+    head.append(back, title, pills);
+
+    const actions = el("div", "d-actions");
+    const act = (label, s, key, cls) => {
+      const b = el("button", "btn" + (cls ? " " + cls : ""));
+      b.type = "button";
+      b.append(document.createTextNode(label), el("kbd", null, key));
+      b.title = label + " (" + key + ")";
+      b.onclick = () => setOne(r.id, s);
+      return b;
+    };
+    if (status !== "good") actions.append(act("Good", "good", "G", "good"));
+    if (status !== "follow_up") actions.append(act("Follow-up", "follow_up", "F"));
+    if (status !== "not_receipt") actions.append(act("Not a receipt", "not_receipt", "N"));
+    if (status !== "new") actions.append(act("To review", "new", "R"));
+    actions.append(el("span", "spacer"));
+    const dlBtn = el("button", "btn");
+    dlBtn.type = "button";
+    dlBtn.append(document.createTextNode("Download"), el("kbd", null, "D"));
+    dlBtn.title = "Download the receipt (D)";
+    dlBtn.onclick = () => downloadReceipt(r, dlBtn);
+    actions.append(dlBtn);
+    if (needsClaude(r) && sample && !sampleOff) {
+      const ask = el("button", "btn", "Ask Claude");
+      ask.type = "button";
+      ask.onclick = () => fillWithClaude([r.id]);
+      actions.append(ask);
+    }
+    if (r.viewUrl && /^https:\/\/mail\.google\.com\//.test(r.viewUrl)) {
+      const a = el("a", "btn ghost", "Gmail ↗");
+      a.href = r.viewUrl;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.title = "Open the email in Gmail";
+      actions.append(a);
+    }
+
+    const body = el("div", "d-body");
+    const viewer = el("section", "viewer");
+    viewer.setAttribute("aria-label", "Receipt");
+    fillViewer(viewer, r);
+
+    const facts = el("aside", "facts");
+    facts.setAttribute("aria-label", "Receipt details");
+    const field = el("div", "field");
+    const lab = el("label", null, "Property");
+    lab.htmlFor = "prop-" + r.id;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = "prop-" + r.id;
+    input.setAttribute("list", "propList");
+    input.placeholder = "Property address or Office";
+    input.value = r.property || "";
+    input.onchange = async () => {
+      const v = input.value.trim().slice(0, 120);
+      if (v === (r.property || "")) return;
+      if (await saveFields(r.id, { property: v })) { r.property = v; renderList(); renderProps(); }
+    };
+    field.append(lab, input);
+    const dl = document.createElement("dl");
+    const fact = (k, v, mono) => {
+      if (v === null || v === undefined || v === "") return;
+      const dd = el("dd", mono ? "num" : null, String(v));
+      dl.append(el("dt", null, k), dd);
+    };
+    fact("Amount", amt.label + (amt.note ? " (" + amt.note + ")" : ""), true);
+    if (num(x.tax) !== null) fact("Tax", money(num(x.tax)), true);
+    fact("Date", longDate(x.date || r.emailDate));
+    fact("Card", x.cardLast4 ? "•••• " + x.cardLast4 : "Not shown", !!x.cardLast4);
+    fact("Order", x.orderNumber, true);
+    fact("Location", x.location);
+    fact("Juan's note", x.note);
+    fact("From", senderName(r));
+    const keys = el("p", "keys", "J / K next and previous · G good · F follow-up · N not a receipt · D download");
+    facts.append(field, dl, keys);
+
+    body.append(viewer, facts);
+    pane.append(head, actions, body);
+  }
+  function fillViewer(box, r) {
+    box.textContent = "";
+    box.style.setProperty("--zoom", String(state.zoom));
+    const c = msgCache.get(r.id);
+    if (!c) { box.append(el("p", "pv-note", mcp ? "Loading the receipt…" : "Open this page in claude.ai to see the receipt.")); return; }
+    if (c.error) { box.append(el("p", "pv-note", c.error)); return; }
+    const hasFile = c.attachments.length > 0;
+    const mode = hasFile && state.viewMode === "file" ? "file" : "email";
+    const bar = el("div", "vbar");
+    if (hasFile) {
+      const seg = el("div", "vseg");
+      seg.setAttribute("role", "group");
+      seg.setAttribute("aria-label", "What to show");
+      for (const [k, label] of [["file", "Receipt"], ["email", "Email"]]) {
+        const b = el("button", null, label);
+        b.type = "button";
+        b.setAttribute("aria-pressed", String(mode === k));
+        b.onclick = () => { state.viewMode = k; refreshPreview(r.id); };
+        seg.append(b);
+      }
+      bar.append(seg);
+    }
+    if (mode === "file") {
+      const z = el("div", "zoom");
+      const zb = (label, d, name) => {
+        const b = el("button", "btn small ghost", label);
+        b.type = "button";
+        b.setAttribute("aria-label", name);
+        b.onclick = () => { state.zoom = Math.max(0.5, Math.min(2.5, Math.round((state.zoom + d) * 100) / 100)); box.style.setProperty("--zoom", String(state.zoom)); zl.textContent = Math.round(state.zoom * 100) + "%"; };
+        return b;
+      };
+      const zl = el("span", "num", Math.round(state.zoom * 100) + "%");
+      const fit = el("button", "btn small ghost", "Fit");
+      fit.type = "button";
+      fit.onclick = () => { state.zoom = 1; box.style.setProperty("--zoom", "1"); zl.textContent = "100%"; };
+      z.append(zb("−", -0.25, "Zoom out"), zl, zb("+", 0.25, "Zoom in"), fit);
+      bar.append(z);
+    }
+    if (bar.childNodes.length) box.append(bar);
+    const scroller = el("div", "vscroll");
+    if (mode === "file") {
+      if (c.fileNode) scroller.append(c.fileNode);
+      if (c.attNote) scroller.append(el("p", "pv-note", c.attNote));
+      if (!c.fileNode && !c.attNote) scroller.append(el("p", "pv-note", "Opening the receipt…"));
+    } else {
+      scroller.append(el("div", "pv-body", c.text || "This email has no text."));
+    }
+    box.append(scroller);
+    if (c.subject) box.append(el("p", "pv-note", "Email: " + c.subject));
+  }
+  function refreshPreview(id) {
+    if (id !== state.selectedId) return;
+    const v = document.querySelector("#detail .viewer");
+    const r = current();
+    if (v && r) fillViewer(v, r);
+  }
+
+  // ---------- downloads ----------
+  let dlApi;
+  async function downloadsApi() {
+    if (dlApi === undefined) {
+      const C = window.claude;
+      dlApi = C && typeof C.use === "function" ? await C.use("downloads") : null;
+    }
+    return dlApi;
+  }
+  function fileBase(r) {
+    // Same naming as the Company Receipts drive: "$134.25 Home Depot 820 28th St"
+    const x = r.extracted || {};
+    const a = amountOf(r).value;
+    const amt = a === null ? "" : (a < 0 ? "-$" : "$") + Math.abs(a).toFixed(2);
+    const name = [amt, x.vendor || senderName(r), r.property || ""].filter(Boolean).join(" ");
+    return (name || "Receipt").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 150);
+  }
+  async function saveFile(filename, data) {
+    const api = await downloadsApi();
+    if (!api) { banner("Downloads don't work in this view. Open the page in claude.ai, or use the Gmail link."); return false; }
+    try {
+      await api.save({ filename, data });
+      setStatus("Saved " + filename + ".");
+      return true;
+    } catch (e) {
+      const c = e && e.code;
+      if (c === "declined") return false;
+      if (c === "rate_limited") { banner("A download is already waiting for your OK. Finish that one first."); return false; }
+      if (c === "unavailable" || c === "not_granted" || c === "capability_disabled" || c === "capability_removed") { banner("Downloads don't work in this view. Use the Gmail link."); return false; }
+      banner("The download didn't work: " + ((e && e.message) || "unknown error") + ".", true);
+      return false;
+    }
+  }
+  const JSPDF = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+  let jspdfReady = null;
+  function jspdf() {
+    if (!jspdfReady) {
+      jspdfReady = loadScript(JSPDF).then(() => {
+        if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("PDF maker missing");
+        return window.jspdf.jsPDF;
+      });
+      jspdfReady.catch(() => { jspdfReady = null; });
+    }
+    return jspdfReady;
+  }
+  const latin = s => String(s || "")
+    .replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, "-")
+    .replace(/[•·]/g, "*").replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, " ");
+  function summaryPairs(r) {
+    const x = r.extracted || {};
+    const amt = amountOf(r);
+    return [
+      ["Vendor", x.vendor || senderName(r)],
+      ["Amount", amt.label + (amt.note ? " (" + amt.note + ")" : "")],
+      ["Date", longDate(x.date || r.emailDate)],
+      ["Card", x.cardLast4 ? "ending " + x.cardLast4 : ""],
+      ["Order", x.orderNumber],
+      ["Items", x.items],
+      ["Location", x.location],
+      ["Property", r.property],
+      ["Note", x.note],
+      ["Email", r.subject],
+      ["From", r.sender]
+    ].filter(p => p[1]);
+  }
+  // Email-only receipts (Amazon, Uber, Waymo) download as a one-page PDF of the details and the email.
+  async function receiptPdf(r, text) {
+    try {
+      const JsPDF = await jspdf();
+      const doc = new JsPDF({ unit: "pt", format: "letter" });
+      const margin = 54, width = 612 - margin * 2;
+      let y = margin;
+      const write = (t, size, bold) => {
+        doc.setFont("helvetica", bold ? "bold" : "normal");
+        doc.setFontSize(size);
+        for (const line of doc.splitTextToSize(latin(t), width)) {
+          if (y > 792 - margin) { doc.addPage(); y = margin; }
+          doc.text(line, margin, y);
+          y += size * 1.4;
+        }
+      };
+      write(fileBase(r), 15, true);
+      y += 6;
+      for (const [k, v] of summaryPairs(r)) write(k + ": " + v, 10);
+      y += 10;
+      write("Email text", 11, true);
+      write(text || "(no text)", 9);
+      return doc.output("blob");
+    } catch (e) {
+      return null;
+    }
+  }
+  async function downloadReceipt(r, btn) {
+    if (!r) return;
+    if (btn) btn.disabled = true;
+    try {
+      const base = fileBase(r);
+      if (!msgCache.has(r.id) && mcp) await loadPreview(r.id);
+      const c = msgCache.get(r.id) || {};
+      if (mcp && c.attachments && c.attachments.length) {
+        try {
+          const parts = await fileParts(r.id);
+          const file = parts.find(p => p.pdf) || parts.find(p => p.bytes.length >= 15000);
+          if (file) {
+            const ext = file.pdf ? "pdf" : /png/.test(file.type) ? "png" : /gif/.test(file.type) ? "gif" : /webp/.test(file.type) ? "webp" : "jpg";
+            await saveFile(base + "." + ext, new Blob([file.bytes], { type: file.type }));
+            return;
+          }
+        } catch (e) { /* fall back to a PDF of the email */ }
+      }
+      const pdf = await receiptPdf(r, c.text || "");
+      if (pdf) await saveFile(base + ".pdf", pdf);
+      else await saveFile(base + ".txt", summaryPairs(r).map(p => p[0] + ": " + p[1]).join("\n") + "\n\n" + (c.text || ""));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  async function downloadCsv(rows) {
+    const q = v => '"' + String(v === null || v === undefined ? "" : v).replace(/"/g, '""') + '"';
+    const head = ["Date", "Vendor", "Amount", "Tax", "Card", "Order #", "Items", "Location", "Property", "Status", "Source", "File name", "Email"];
+    const lines = [head.map(q).join(",")].concat(rows.map(r => {
+      const x = r.extracted || {};
+      const a = amountOf(r).value;
+      return [x.date || (r.emailDate || "").slice(0, 10), x.vendor || senderName(r), a === null ? "" : a.toFixed(2), num(x.tax) === null ? "" : num(x.tax).toFixed(2),
+        x.cardLast4 || "", x.orderNumber || "", x.items || "", x.location || "", r.property || "", STATUS_LABEL[r.status || "new"],
+        SOURCE_LABEL[r.source] || "Other", fileBase(r), r.viewUrl || ""].map(q).join(",");
+    }));
+    const today = new Date().toISOString().slice(0, 10);
+    await saveFile("Receipts " + today + ".csv", lines.join("\r\n"));
+  }
+
+  // ---------- controls and keyboard ----------
+  function wire() {
+    const srcSel = $("source");
+    for (const s of SOURCES) { const o = document.createElement("option"); o.value = s.key; o.textContent = s.label; srcSel.append(o); }
+    srcSel.onchange = () => { state.source = srcSel.value; state.selected.clear(); render(); };
+    $("search").addEventListener("input", e => { state.query = e.target.value; render(); });
+    $("scan").onclick = scan;
+    $("fillClaude").onclick = () => fillWithClaude(allRows().filter(r => needsClaude(r) && (r.status || "new") !== "not_receipt").map(r => r.id));
+    $("selAll").onchange = e => {
+      for (const r of visibleRows()) { if (e.target.checked) state.selected.add(r.id); else state.selected.delete(r.id); }
+      render();
+    };
+    $("bulk").addEventListener("click", e => {
+      const b = e.target.closest("button[data-act]");
+      if (!b) return;
+      const a = b.dataset.act;
+      if (a === "copy") copyRows();
+      else if (a === "csv") downloadCsv(allRows().filter(r => state.selected.has(r.id)));
+      else if (a === "clear") { state.selected.clear(); $("copyBox").hidden = true; render(); }
+      else if (a === "claude") { const ids = [...state.selected]; state.selected.clear(); fillWithClaude(ids); }
+      else bulkStatus(a);
+    });
+    document.addEventListener("keydown", e => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
+      const k = e.key.toLowerCase();
+      const r = current();
+      if (k === "j" || e.key === "ArrowDown") { move(1); e.preventDefault(); }
+      else if (k === "k" || e.key === "ArrowUp") { move(-1); e.preventDefault(); }
+      else if (!r) return;
+      else if (k === "g") setOne(r.id, "good");
+      else if (k === "f") setOne(r.id, "follow_up");
+      else if (k === "n") setOne(r.id, "not_receipt");
+      else if (k === "r") setOne(r.id, "new");
+      else if (k === "d") downloadReceipt(r);
+      else if (k === "x") { if (state.selected.has(r.id)) state.selected.delete(r.id); else state.selected.add(r.id); render(); }
+    });
+    window.matchMedia("(max-width: 900px)").addEventListener("change", () => { if (!narrow()) document.body.classList.remove("show-detail"); render(); });
   }
 
   // ---------- inline receipt view ----------
@@ -562,46 +919,6 @@ select, input[type="text"] {
     return list
       .filter(a => a && (isPdf(a.mimeType, a.filename) || /^image\//i.test(String(a.mimeType || ""))))
       .map(a => ({ filename: String(a.filename || ""), mimeType: String(a.mimeType || "") }));
-  }
-  function togglePreview(id) {
-    if (state.open.has(id)) state.open.delete(id);
-    else {
-      state.open.add(id);
-      if (!msgCache.has(id)) loadPreview(id);
-    }
-    render();
-  }
-  function previewEl(r) {
-    const box = el("div", "preview");
-    box.dataset.for = r.id;
-    fillPreview(box, r);
-    return box;
-  }
-  function refreshPreview(id) {
-    const box = document.querySelector('.preview[data-for="' + CSS.escape(id) + '"]');
-    const r = allRows().find(x => x.id === id);
-    if (box && r) fillPreview(box, r);
-  }
-  function fillPreview(box, r) {
-    box.textContent = "";
-    const c = msgCache.get(r.id);
-    if (!c) { box.append(el("p", "pv-note", mcp ? "Loading the receipt…" : "Open this page in claude.ai to see the receipt.")); return; }
-    if (c.error) { box.append(el("p", "pv-note", c.error)); return; }
-    const head = el("div", "pv-head");
-    const when = c.date && !isNaN(new Date(c.date)) ? new Date(c.date).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "";
-    head.append(el("b", null, c.subject || "(no subject)"), el("span", null, [c.sender, when].filter(Boolean).join(" · ")));
-    box.append(head);
-    if (c.fileNode) box.append(c.fileNode);
-    if (c.attNote) box.append(el("p", "pv-note", c.attNote));
-    const text = el("div", "pv-body", c.text || "This email has no text.");
-    if (c.fileNode) {
-      const d = document.createElement("details");
-      d.className = "pv-text";
-      d.append(el("summary", null, "Email text"), text);
-      box.append(d);
-    } else {
-      box.append(text);
-    }
   }
   async function loadPreview(id) {
     if (!mcp) return;
@@ -721,7 +1038,7 @@ select, input[type="text"] {
         if (container) {
           const base = page.getViewport({ scale: 1 });
           const ratio = Math.min(window.devicePixelRatio || 1, 2);
-          const vp = page.getViewport({ scale: (600 / base.width) * ratio });
+          const vp = page.getViewport({ scale: (900 / base.width) * ratio });
           const canvas = document.createElement("canvas");
           canvas.width = Math.floor(vp.width);
           canvas.height = Math.floor(vp.height);
@@ -1184,21 +1501,7 @@ select, input[type="text"] {
   }
 
   // ---------- wiring ----------
-  $("scan").onclick = scan;
-  $("fillClaude").onclick = () => fillWithClaude(allRows().filter(r => needsClaude(r) && (r.status || "new") !== "not_receipt").map(r => r.id));
-  $("selAll").onchange = e => {
-    for (const r of visibleRows()) { if (e.target.checked) state.selected.add(r.id); else state.selected.delete(r.id); }
-    render();
-  };
-  $("bulk").addEventListener("click", e => {
-    const b = e.target.closest("button[data-act]");
-    if (!b) return;
-    const act = b.dataset.act;
-    if (act === "copy") copyRows();
-    else if (act === "clear") { state.selected.clear(); $("copyBox").hidden = true; render(); }
-    else if (act === "claude") { const ids = [...state.selected]; state.selected.clear(); fillWithClaude(ids); }
-    else bulkStatus(act);
-  });
+  wire();
 
   async function boot() {
     render();
