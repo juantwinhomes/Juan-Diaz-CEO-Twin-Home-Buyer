@@ -94,3 +94,8 @@ For each one, work out whether Marieflor has already replied.
   (e.g. "Marieflor Daily: Tue Nov 3"), never a reply in an old thread.
 - Calendar: only real work blocks and deadlines. Do NOT add short replies
   (Got it, Ready, GOT IT, Received) to her calendar; just keep them as drafts.
+- When Marieflor tells the team something for Juan, she copies Juan or
+  forwards it to him as proof (a screenshot if it went by text). DONE alone
+  isn't enough.
+- Every promised time in a sent email ("by 1:05 PM") is a deadline: put it on
+  the calendar right away with 1-hour and 30-minute alerts.
