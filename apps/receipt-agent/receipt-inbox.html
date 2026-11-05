@@ -249,7 +249,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v14</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v15</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -1837,11 +1837,26 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         hi = i;
         col = { date, amount, debit, credit,
           type: at(/type/), num: at(/^(num|no\.?|ref(erence)?( no\.?)?)$/), name: at(/^(name|payee|vendor|merchant|from\/to)$/),
-          memo: at(/memo|description/), split: at(/^(split|category)$/), account: at(/^(account|account name|card|card member)$/) };
+          memo: at(/memo|description/), split: at(/^(split|category)$/), account: at(/^(account|account name|card|card member)$/),
+          itemSplit: at(/item split account|^split account$/) };
       }
     }
     if (hi < 0) throw new Error("no header row");
     const fallback = String(fileName || "Card").replace(/\.[^.]+$/, "").replace(/[_]+/g, " ").trim().slice(0, 80) || "Card";
+    // QuickBooks' newer Transaction report puts the category in "Account Name" and the card in "Item split account".
+    // Use whichever column looks like cards and bank accounts ("Amex - 2001", "4444 - Opex Checking").
+    let cardCol = col.account, catCol = col.split;
+    if (col.itemSplit >= 0) {
+      const looks = v => /(\s-\s*\d{4}\b)|(^\d{4}\s*-\s)|\b(cc|checking|savings|credit card|amex|visa|mastercard|discover|citi|chase|capital one|relay)\b/i.test(String(v === null || v === undefined ? "" : v));
+      let a = 0, b = 0;
+      for (let i = hi + 1; i < Math.min(rows.length, hi + 600); i++) {
+        const r = rows[i] || [];
+        if (col.account >= 0 && looks(r[col.account])) a++;
+        if (looks(r[col.itemSplit])) b++;
+      }
+      if (b > a) { cardCol = col.itemSplit; catCol = col.account; }
+      else if (catCol < 0) catCol = col.itemSplit;
+    }
     let group = "";
     const out = [];
     const seen = new Map();
@@ -1862,6 +1877,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         if (d !== null || c !== null) amt = (d || 0) - (c || 0);
       }
       if (amt === null || amt === 0) continue;
+      if (cardCol !== col.account && !cell(r, cardCol)) continue;
       if (/^bill$/i.test(cell(r, col.type)) || /accounts payable|\ba\/p\b/i.test(cell(r, col.account))) continue; // vendor bills are not card or bank charges
       const row = {
         date: day,
@@ -1870,9 +1886,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         // Reports grouped by vendor (Transaction List by Vendor) carry the payee in the group row.
         name: (cell(r, col.name) || (col.account >= 0 ? group : "")).slice(0, 80),
         memo: cell(r, col.memo).slice(0, 120),
-        split: cell(r, col.split).slice(0, 80),
-        account: (cell(r, col.account) || group || fallback).slice(0, 80),
-        unnamed: !cell(r, col.account) && !group,
+        split: cell(r, catCol).slice(0, 80),
+        account: (cell(r, cardCol) || group || fallback).slice(0, 80),
+        unnamed: !cell(r, cardCol) && !group,
         raw: Math.round(amt * 100) / 100
       };
       if (!row.name && row.memo) row.name = row.memo.slice(0, 80);
@@ -1922,6 +1938,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       setStatus("");
       return;
     }
+    // Only recent charges matter: keep the 92 days up to the newest charge in the file.
+    const newest = rows.reduce((m, r) => (r.date > m ? r.date : m), "");
+    const cutoff = newest ? new Date(Date.UTC(+newest.slice(0, 4), +newest.slice(5, 7) - 1, +newest.slice(8, 10)) - 92 * 86400000).toISOString().slice(0, 10) : "";
+    const older = rows.filter(r => r.date < cutoff).length;
+    rows = rows.filter(r => r.date >= cutoff);
     const unnamed = rows.some(r => r.unnamed);
     for (const r of rows) delete r.unnamed;
     const byAcct = new Map();
@@ -1948,7 +1969,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (unnamed) banner("This file didn't name the card, so it was saved under \"" + [...byAcct.keys()].join(", ") + "\". If that's wrong, rename the file to the card's name (for example Amex 1004.xlsx) and upload it again.");
     state.view = "cards";
     state.filed = null;
-    setStatus("Loaded " + saved + " card " + (saved === 1 ? "line" : "lines") + " from " + file.name + ".");
+    setStatus("Loaded " + saved + " card " + (saved === 1 ? "line" : "lines") + " from " + file.name + "." + (older ? " Skipped " + older + " older than 3 months." : ""));
     render();
   }
 
@@ -2069,6 +2090,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const d = new Date(iso);
     return isNaN(d) ? null : d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
   }
+  // Card digits a charge carries: its account ("Amex - 2001") and the card in its memo ("XXXX5004").
+  const cardDigits = (acct, memo) => {
+    const set = new Set(String(acct || "").match(/\d{4}(?!\d)/g) || []);
+    for (const m of String(memo || "").matchAll(/(?:x{2,}|\*+|ending\s*(?:in\s*)?)(\d{4})\b/gi)) set.add(m[1]);
+    return set;
+  };
   const dayNum = day => Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) / 86400000;
   function cardModel() {
     const charges = [];
@@ -2084,7 +2111,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     for (const c of charges) {
       if (c.payment || c.marked) continue;
       const vc = vendorKey(c.name + " " + c.memo);
-      const last4 = (String(c.account).match(/(\d{4})\D*$/) || [])[1] || null;
+      const digits = cardDigits(c.account, c.memo);
       for (const r of receipts) {
         const x = r.extracted;
         const t = num(x.total), sub = num(x.itemsSubtotal);
@@ -2099,7 +2126,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         score += Math.abs(diff) * 0.5;
         const vr = vendorKey([x.vendor, senderName(r), r.subject].join(" "));
         if (vc && vr) { if (vc !== vr) continue; score -= 2; } else score += 1;
-        if (last4 && x.cardLast4 && last4 !== x.cardLast4) continue;
+        if (digits.size && x.cardLast4 && !digits.has(x.cardLast4)) continue;
         pairs.push({ c, r, quality, score });
       }
     }
@@ -2115,7 +2142,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       for (const c of charges) {
         if (c.payment || c.marked || byCharge.has(c.k)) continue;
         const vc = vendorKey(c.name + " " + c.memo);
-        const last4 = (String(c.account).match(/(\d{4})\D*$/) || [])[1] || null;
+        const digits = cardDigits(c.account, c.memo);
         const cm = dayNum(c.date.slice(0, 7) + "-15");
         let best = null, bestScore = 1e9;
         state.filed.forEach((f, i) => {
@@ -2124,8 +2151,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           if (gap > 40) return; // same month, or the month next to it
           const vf = vendorKey(f.vendor);
           if (vc && vf && vc !== vf) return;
-          const fd = (String(f.card).match(/(\d{4})\D*$/) || [])[1] || null;
-          if (last4 && fd && last4 !== fd) return;
+          const fd = cardDigits(f.card, "");
+          if (digits.size && fd.size && ![...fd].some(d => digits.has(d))) return;
           const score = gap + (vc && vf ? 0 : 5);
           if (score < bestScore) { best = i; bestScore = score; }
         });
