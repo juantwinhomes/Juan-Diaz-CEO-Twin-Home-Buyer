@@ -249,7 +249,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v9</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -447,6 +447,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 
   function gmailMessage(e) {
     const c = e && e.code;
+    if (/withheld/i.test(String((e && e.message) || ""))) return "Gmail won't share one email with this page (an automated Claude or Anthropic email). If it's in the list, mark it Not a receipt.";
     if (c === "server_not_connected") return "Gmail isn't connected to your Claude. Add it in claude.ai Settings → Connectors, signed in as accounting@, then scan again.";
     if (c === "needs_reauth") return "Gmail needs to be reconnected. Reconnect it in claude.ai Settings → Connectors, then scan again.";
     if (c === "not_in_manifest" || c === "approval_required" || c === "consent_required") return "Gmail is not allowed on this page yet. Click Scan inbox and choose Allow, or turn Gmail on in this page's Permissions menu.";
@@ -1416,6 +1417,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return t.slice(0, 2000);
   }
   function needsClaude(r) {
+    if (/\b(claude|anthropic)\b/i.test(String((r && r.sender) || ""))) return false; // Claude account emails: never receipts, Gmail won't share them
     const x = r.extracted;
     if (!x) return true;
     if (x.readBy === "claude") return false;
@@ -1512,9 +1514,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     banner("");
     try {
       const msgs = [];
+      let held = 0;
       for (let i = 0; i < ids.length; i++) {
         setStatus("Reading email " + (i + 1) + " of " + ids.length + " for Claude…");
-        const m = await gmail("get_message", { messageId: gid(ids[i]), messageFormat: "PLAIN_TEXT" });
+        let m = null;
+        try { m = await gmail("get_message", { messageId: gid(ids[i]), messageFormat: "PLAIN_TEXT" }); }
+        catch (e) { if (FATAL.has(e && e.code)) throw e; held++; continue; }
         if (!m) continue;
         if (!state.account && m.viewUrl) { detectAccount(m.viewUrl); showAccount(); }
         let body = String(m.plaintextBody || m.snippet || "");
@@ -1533,6 +1538,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       }
       if (done) await countUsage(done, Math.ceil(msgs.length / BATCH));
       setStatus("Claude filled in " + done + " of " + ids.length + (ids.length === 1 ? " receipt." : " receipts."));
+      if (held) banner(held + (held === 1 ? " email was" : " emails were") + " held back by Gmail and skipped. Mark them Not a receipt.");
     } catch (e) {
       banner(gmailMessage(e), true);
       setStatus("");
@@ -1556,8 +1562,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     try {
       if (!state.account) {
         setStatus("Checking which inbox is connected…");
-        for (const q of ["list:" + GROUP, "in:inbox"]) {
-          const p = (await gmail("search_threads", { query: q, pageSize: 1 })) || {};
+        for (const q of ["list:" + GROUP + SKIP, "in:inbox" + SKIP]) {
+          let p = {};
+          try { p = (await gmail("search_threads", { query: q, pageSize: 1 })) || {}; }
+          catch (e) { if (FATAL.has(e && e.code)) throw e; continue; }
           const t = (p.threads || [])[0];
           const u = t && (t.viewUrl || (t.messages && t.messages[0] && t.messages[0].viewUrl));
           if (u) { detectAccount(u); break; }
