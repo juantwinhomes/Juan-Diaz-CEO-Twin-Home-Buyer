@@ -195,7 +195,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .stat.warn b { color: var(--warn); }
 .stat.ok b { color: var(--ok); }
 .c-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.c-tools .segs { flex: 1 1 460px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.c-tools .segs { flex: 1 1 520px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.c-range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--muted); }
+.c-range label { display: inline-flex; align-items: center; gap: 6px; }
+.c-range input[type="date"] { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; color: var(--ink); }
+.c-hint { padding: 10px 14px; font-size: 0.8rem; color: var(--muted); border-bottom: 1px solid var(--line); background: var(--sunk); }
 .c-files { font-size: 0.78rem; color: var(--muted); }
 .c-list { flex: 1; overflow: auto; }
 .crow { display: grid; grid-template-columns: 70px minmax(0, 1.2fr) minmax(0, 1fr) 92px minmax(0, 1.5fr) 128px; gap: 12px; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--line); font-size: 0.86rem; }
@@ -249,7 +253,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v16</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v17</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -326,6 +330,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         <button type="button" class="btn" id="copyReport">Copy report for Juan</button>
         <button type="button" class="btn ghost" id="cardCsv">Download CSV</button>
       </div>
+      <div class="c-range">
+        <label for="cFrom">From <input type="date" id="cFrom"></label>
+        <label for="cTo">To <input type="date" id="cTo"></label>
+        <button type="button" class="btn small ghost" id="cSince">Since first receipt</button>
+        <button type="button" class="btn small ghost" id="cAll">All dates</button>
+        <span id="cRangeNote"></span>
+      </div>
       <p class="c-files" id="cFiles"></p>
     </div>
     <textarea id="reportBox" class="copybox" aria-label="Report text" readonly hidden></textarea>
@@ -362,7 +373,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   const CTABS = [
     { key: "missing", label: "Missing receipt" },
     { key: "check", label: "Check" },
-    { key: "matched", label: "Matched" },
+    { key: "matched", label: "Matched email" },
+    { key: "drive", label: "Filed in Drive" },
     { key: "skipped", label: "No receipt needed" },
     { key: "nocharge", label: "Receipt, no charge" }
   ];
@@ -393,7 +405,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     cards: new Map(),   // uploaded card reports, one doc per card account
     cTab: "missing",
     filed: null,        // receipts already filed in Company Receipts (file names only, this visit only)
-    filedNote: ""
+    filedNote: "",
+    cFrom: "",          // date filter for the Card charges view
+    cTo: ""
   };
   let model = null;     // card charges matched to receipts, rebuilt on every render
   const msgCache = new Map(); // email text and photos loaded for the inline view, this visit only
@@ -969,6 +983,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("viewReceipts").onclick = () => { state.view = "receipts"; render(); };
     $("viewCards").onclick = () => { state.view = "cards"; render(); };
     $("driveCheck").onclick = () => loadFiled(true);
+    $("cFrom").onchange = e => { state.cFrom = e.target.value || ""; render(); };
+    $("cTo").onchange = e => { state.cTo = e.target.value || ""; render(); };
+    $("cAll").onclick = () => { state.cFrom = ""; state.cTo = ""; render(); };
+    $("cSince").onclick = () => { state.cFrom = firstReceiptDay() || ""; state.cTo = ""; render(); };
     $("cardUpload").onclick = () => $("cardFile").click();
     $("cardFile").onchange = async e => {
       const files = [...(e.target.files || [])];
@@ -2114,6 +2132,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     for (const m of String(memo || "").matchAll(/(?:x{2,}|\*+|ending\s*(?:in\s*)?)(\d{4})\b/gi)) set.add(m[1]);
     return set;
   };
+  function shiftMonth(ym, n) {
+    let y = +ym.slice(0, 4), m = +ym.slice(5, 7) + n;
+    while (m > 12) { m -= 12; y++; }
+    while (m < 1) { m += 12; y--; }
+    return y + "-" + pad2(m);
+  }
   const dayNum = day => Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) / 86400000;
   function cardModel() {
     const charges = [];
@@ -2163,12 +2187,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         if (c.payment || c.marked || byCharge.has(c.k)) continue;
         const vc = vendorKey(c.name + " " + c.memo);
         const digits = cardDigits(c.account, c.memo);
-        const cm = dayNum(c.date.slice(0, 7) + "-15");
+        const cmon = c.date.slice(0, 7), cday = +c.date.slice(8, 10);
         let best = null, bestScore = 1e9;
         state.filed.forEach((f, i) => {
           if (used.has(i) || Math.abs(f.amount - c.amount) >= 0.005) return;
-          const gap = Math.abs(dayNum(f.ym + "-15") - cm);
-          if (gap > 40) return; // same month, or the month next to it
+          // Filed by month: the same month, or the neighbouring month for charges in the first or last 3 days.
+          const gap = f.ym === cmon ? 0 : (cday >= 28 && f.ym === shiftMonth(cmon, 1)) || (cday <= 3 && f.ym === shiftMonth(cmon, -1)) ? 1 : -1;
+          if (gap < 0) return;
           const vf = vendorKey(f.vendor);
           if (vc && vf && vc !== vf) return;
           if (!(vc && vf) && !nameOverlap(c.name + " " + c.memo, f.vendor)) return;
@@ -2185,7 +2210,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   function chargeState(c) {
     if (c.payment || c.marked) return "skipped";
     const m = model.byCharge.get(c.k);
-    return m ? (m.quality === "filed" ? "matched" : m.quality) : "missing";
+    return m ? (m.quality === "filed" ? "drive" : m.quality) : "missing";
   }
   function receiptsNoCharge() {
     if (!model || !model.charges.length) return [];
@@ -2193,12 +2218,24 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       if ((r.status || "new") === "not_receipt" || model.byReceipt.has(r.id)) return false;
       if (amountOf(r).value === null) return false;
       const d = localDay((r.extracted && r.extracted.date) || r.emailDate);
-      return d && d >= model.from && d <= model.to;
+      const from = state.cFrom && state.cFrom > model.from ? state.cFrom : model.from;
+      const to = state.cTo && state.cTo < model.to ? state.cTo : model.to;
+      return d && d >= from && d <= to;
     });
   }
+  const inRange = d => (!state.cFrom || d >= state.cFrom) && (!state.cTo || d <= state.cTo);
+  function firstReceiptDay() {
+    let first = "";
+    for (const r of allRows()) {
+      if ((r.status || "new") === "not_receipt") continue;
+      const d = localDay((r.extracted && r.extracted.date) || r.emailDate);
+      if (d && (!first || d < first)) first = d;
+    }
+    return first;
+  }
   function cardCounts() {
-    const out = { missing: [], check: [], matched: [], skipped: [] };
-    for (const c of model.charges) out[chargeState(c)].push(c);
+    const out = { missing: [], check: [], matched: [], drive: [], skipped: [] };
+    for (const c of model.charges) if (inRange(c.date)) out[chargeState(c)].push(c);
     out.nocharge = receiptsNoCharge();
     return out;
   }
@@ -2245,14 +2282,21 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const counts = cardCounts();
     const st = $("cStats");
     st.textContent = "";
-    const n = model.charges.filter(c => !c.payment);
+    const n = model.charges.filter(c => !c.payment && inRange(c.date));
     st.append(
       stat("Card charges", n.length, n.length ? money(sumOf(n)) : ""),
-      stat("Matched", counts.matched.length, (n => n ? n + " in Drive" : "")(counts.matched.filter(c => { const h = model.byCharge.get(c.k); return h && h.filed; }).length), counts.matched.length ? "ok" : ""),
+      stat("Matched email", counts.matched.length, "", counts.matched.length ? "ok" : ""),
+      stat("Filed in Drive", counts.drive.length, "", counts.drive.length ? "ok" : ""),
       stat("Check", counts.check.length, "", counts.check.length ? "warn" : ""),
       stat("Missing receipt", counts.missing.length, counts.missing.length ? money(sumOf(counts.missing)) : "", counts.missing.length ? "bad" : ""),
       stat("Receipt, no charge", counts.nocharge.length)
     );
+    const fi = $("cFrom"), ti = $("cTo");
+    fi.value = state.cFrom; ti.value = state.cTo;
+    fi.min = ti.min = model.from || ""; fi.max = ti.max = model.to || "";
+    $("cRangeNote").textContent = state.cFrom || state.cTo
+      ? "Showing " + (state.cFrom ? longDate(state.cFrom) : longDate(model.from)) + " to " + (state.cTo ? longDate(state.cTo) : longDate(model.to)) + "."
+      : (model.from ? "Showing all dates in the report (" + longDate(model.from) + " to " + longDate(model.to) + ")." : "");
     const tabs = $("cTabs");
     tabs.textContent = "";
     for (const t of CTABS) {
@@ -2280,6 +2324,14 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       box.append(e);
       return;
     }
+    const HINTS = {
+      matched: "Charges matched to a receipt that came in by email (Home Depot, Amazon, Uber and the rest).",
+      drive: "Charges with a receipt Kristine already filed in Company Receipts (same amount and vendor, same month).",
+      missing: "Charges with no emailed receipt and nothing filed in Company Receipts.",
+      nocharge: "Receipts with no posted charge in this QuickBooks report yet. Usually the charge is still waiting in Bank transactions, or it was paid on an account the report doesn't cover.",
+      skipped: "Card payments, transfers and deposits, plus charges marked No receipt needed."
+    };
+    if (HINTS[state.cTab]) box.append(el("div", "c-hint", HINTS[state.cTab]));
     const head = el("div", "crow head");
     if (state.cTab === "nocharge") {
       ["Date", "Receipt", "Source", "Amount", "Status", ""].forEach(t => head.append(el("span", t === "Amount" ? "amt" : null, t)));
@@ -2380,11 +2432,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       return lines.join("\n");
     }
     const c = cardCounts();
-    const n = model.charges.filter(x => !x.payment);
+    const n = model.charges.filter(x => !x.payment && inRange(x.date));
     const accounts = [...new Set(model.charges.map(x => x.account))];
-    lines.push("CARD CHARGES: " + n.length + " (" + money(sumOf(n)) + "), " + longDate(model.from) + " to " + longDate(model.to) + ", " + accounts.join(", ") + ".");
-    const inDrive = c.matched.filter(x => { const h = model.byCharge.get(x.k); return h && h.filed; }).length;
-    lines.push("- Matched to a receipt: " + c.matched.length + (inDrive ? " (" + inDrive + " already filed in Company Receipts)" : ""));
+    const from = state.cFrom || model.from, to = state.cTo || model.to;
+    lines.push("CARD CHARGES: " + n.length + " (" + money(sumOf(n)) + "), " + longDate(from) + " to " + longDate(to) + ", " + accounts.join(", ") + ".");
+    lines.push("- Matched to an emailed receipt: " + c.matched.length);
+    lines.push("- Receipt already filed in Company Receipts: " + c.drive.length);
     lines.push("- Likely match, amount to check: " + c.check.length);
     lines.push("- Missing a receipt: " + c.missing.length + (c.missing.length ? " (" + money(sumOf(c.missing)) + ")" : ""));
     lines.push("- No receipt needed or card payments: " + c.skipped.length);
@@ -2415,10 +2468,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   async function downloadCardCsv() {
     if (!model.charges.length) { banner("Upload a card report first."); return; }
     const q = v => '"' + String(v === null || v === undefined ? "" : v).replace(/"/g, '""') + '"';
-    const label = { missing: "Missing receipt", check: "Check amount", matched: "Matched", skipped: "No receipt needed" };
+    const label = { missing: "Missing receipt", check: "Check amount", matched: "Matched email", drive: "In Drive", skipped: "No receipt needed" };
     const head = ["Date", "Card", "Type", "Payee", "Memo", "Category", "Amount", "Match", "Receipt vendor", "Receipt date", "Receipt amount", "Property", "Email"];
     const lines = [head.map(q).join(",")];
-    for (const c of model.charges.slice().sort((a, b) => a.date.localeCompare(b.date))) {
+    for (const c of model.charges.filter(x => inRange(x.date)).sort((a, b) => a.date.localeCompare(b.date))) {
       const hit = model.byCharge.get(c.k);
       const r = hit && hit.r, x = (r && r.extracted) || {};
       if (hit && hit.filed) {
