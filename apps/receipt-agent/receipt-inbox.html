@@ -249,7 +249,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v12</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v13</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -1825,11 +1825,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const c = (rows[i] || []).map(v => String(v === null || v === undefined ? "" : v).trim().toLowerCase());
       const at = re => c.findIndex(v => re.test(v));
       const date = at(/^(transaction |trans\.? |posted |post )?date$/);
-      const amount = at(/^amount$/), debit = at(/^(debit|charge|charges)$/), credit = at(/^(credit|payment|payments)$/);
+      const amount = at(/^amount$/), debit = at(/^(debit|charge|charges|spent)$/), credit = at(/^(credit|payment|payments|received)$/);
       if (date >= 0 && (amount >= 0 || debit >= 0)) {
         hi = i;
         col = { date, amount, debit, credit,
-          type: at(/type/), num: at(/^(num|no\.?|ref(erence)?( no\.?)?)$/), name: at(/^(name|payee|vendor|merchant)$/),
+          type: at(/type/), num: at(/^(num|no\.?|ref(erence)?( no\.?)?)$/), name: at(/^(name|payee|vendor|merchant|from\/to)$/),
           memo: at(/memo|description/), split: at(/^(split|category)$/), account: at(/^(account|account name|card|card member)$/) };
       }
     }
