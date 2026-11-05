@@ -249,7 +249,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v15</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v16</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -1857,6 +1857,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       if (b > a) { cardCol = col.itemSplit; catCol = col.account; }
       else if (catCol < 0) catCol = col.itemSplit;
     }
+    // Transaction List by Vendor without an Account column: group rows are payees, and the card is unknown.
+    const byVendor = cardCol < 0 && col.name < 0;
     let group = "";
     const out = [];
     const seen = new Map();
@@ -1878,17 +1880,19 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       }
       if (amt === null || amt === 0) continue;
       if (cardCol !== col.account && !cell(r, cardCol)) continue;
+      if (/journal entry/i.test(cell(r, col.type))) continue; // bookkeeping entries, not card or bank charges
       if (/^bill$/i.test(cell(r, col.type)) || /accounts payable|\ba\/p\b/i.test(cell(r, col.account))) continue; // vendor bills are not card or bank charges
       const row = {
         date: day,
         type: cell(r, col.type).slice(0, 40),
         num: cell(r, col.num).slice(0, 30),
         // Reports grouped by vendor (Transaction List by Vendor) carry the payee in the group row.
-        name: (cell(r, col.name) || (col.account >= 0 ? group : "")).slice(0, 80),
+        name: (cell(r, col.name) || ((col.account >= 0 || byVendor) ? group : "")).slice(0, 80),
         memo: cell(r, col.memo).slice(0, 120),
         split: cell(r, catCol).slice(0, 80),
-        account: (cell(r, cardCol) || group || fallback).slice(0, 80),
-        unnamed: !cell(r, cardCol) && !group,
+        account: (cell(r, cardCol) || (byVendor ? "QuickBooks charges (all cards)" : group) || fallback).slice(0, 80),
+        noCard: byVendor,
+        unnamed: !byVendor && !cell(r, cardCol) && !group,
         raw: Math.round(amt * 100) / 100
       };
       if (!row.name && row.memo) row.name = row.memo.slice(0, 80);
@@ -1944,7 +1948,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const older = rows.filter(r => r.date < cutoff).length;
     rows = rows.filter(r => r.date >= cutoff);
     const unnamed = rows.some(r => r.unnamed);
-    for (const r of rows) delete r.unnamed;
+    const noCard = rows.some(r => r.noCard);
+    for (const r of rows) { delete r.unnamed; delete r.noCard; }
     const byAcct = new Map();
     for (const r of rows) { if (!byAcct.has(r.account)) byAcct.set(r.account, []); byAcct.get(r.account).push(r); }
     let saved = 0;
@@ -1967,6 +1972,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       catch (e) { banner(dbMessage(e), true); break; }
     }
     if (unnamed) banner("This file didn't name the card, so it was saved under \"" + [...byAcct.keys()].join(", ") + "\". If that's wrong, rename the file to the card's name (for example Amex 1004.xlsx) and upload it again.");
+    if (noCard) banner("This report has no Account column, so charges are matched by vendor, date and amount, without the card. For card-level matching, add the Account column in QuickBooks (Customize, Columns) and upload it again.");
     state.view = "cards";
     state.filed = null;
     setStatus("Loaded " + saved + " card " + (saved === 1 ? "line" : "lines") + " from " + file.name + "." + (older ? " Skipped " + older + " older than 3 months." : ""));
@@ -2075,6 +2081,18 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
 
   // ---------- matching ----------
+  // When the vendor isn't one we know, the two names must share a real word ("CenCal Mobile Blasting" and "CenCal").
+  const STOPWORDS = new Set(["the", "inc", "llc", "com", "www", "and", "for", "receipt", "receipts", "order", "your", "from", "with", "store",
+    "payment", "purchase", "card", "via", "forwarding", "corp", "company", "services", "service", "noreply", "reply"]);
+  function nameTokens(t) {
+    return new Set(String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").split(" ").filter(w => w.length >= 3 && !STOPWORDS.has(w) && !/^\d+$/.test(w)));
+  }
+  function nameOverlap(a, b) {
+    const A = nameTokens(a), B = nameTokens(b);
+    for (const w of A) if (B.has(w)) return true;
+    const ca = [...A].join(""), cb = [...B].join("");
+    return !!(ca && cb && (ca.includes(cb) || cb.includes(ca)));
+  }
   function vendorKey(s) {
     s = String(s || "").toLowerCase();
     if (/home\s*depot|homedepot/.test(s)) return "homedepot";
@@ -2125,7 +2143,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         if (diff < -3 || diff > 10) continue;
         score += Math.abs(diff) * 0.5;
         const vr = vendorKey([x.vendor, senderName(r), r.subject].join(" "));
-        if (vc && vr) { if (vc !== vr) continue; score -= 2; } else score += 1;
+        if (vc && vr) { if (vc !== vr) continue; score -= 2; }
+        else if (quality === "check" || !nameOverlap(c.name + " " + c.memo, [x.vendor, senderName(r)].join(" "))) continue;
+        else score += 1;
         if (digits.size && x.cardLast4 && !digits.has(x.cardLast4)) continue;
         pairs.push({ c, r, quality, score });
       }
@@ -2151,6 +2171,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           if (gap > 40) return; // same month, or the month next to it
           const vf = vendorKey(f.vendor);
           if (vc && vf && vc !== vf) return;
+          if (!(vc && vf) && !nameOverlap(c.name + " " + c.memo, f.vendor)) return;
           const fd = cardDigits(f.card, "");
           if (digits.size && fd.size && ![...fd].some(d => digits.has(d))) return;
           const score = gap + (vc && vf ? 0 : 5);
