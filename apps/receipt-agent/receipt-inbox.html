@@ -179,6 +179,52 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .d-empty { height: 100%; display: grid; place-items: center; padding: 40px 20px; text-align: center; color: var(--muted); }
 .d-empty b { display: block; color: var(--ink); font-size: 1.05rem; margin-bottom: 6px; }
 
+/* View switch, and the card charges view */
+.views { display: inline-flex; background: var(--sunk); border: 1px solid var(--line); border-radius: 9px; padding: 3px; }
+.views button { cursor: pointer; border: 0; background: transparent; border-radius: 7px; padding: 5px 12px; font-weight: 600; font-size: 0.85rem; color: var(--muted); }
+.views button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+.app[hidden], .cards[hidden] { display: none; }
+.cards { flex: 1; min-height: 0; }
+.c-head { display: grid; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.c-stats { display: flex; flex-wrap: wrap; gap: 8px 26px; }
+.stat { display: grid; }
+.stat b { font-family: var(--display); font-size: 1.35rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.stat small { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+.stat.bad b { color: var(--bad); }
+.stat.warn b { color: var(--warn); }
+.stat.ok b { color: var(--ok); }
+.c-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.c-tools .segs { flex: 1 1 460px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.c-files { font-size: 0.78rem; color: var(--muted); }
+.c-list { flex: 1; overflow: auto; }
+.crow { display: grid; grid-template-columns: 70px minmax(0, 1.2fr) minmax(0, 1fr) 92px minmax(0, 1.5fr) 128px; gap: 12px; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--line); font-size: 0.86rem; }
+.crow.head { position: sticky; top: 0; z-index: 1; background: var(--sunk); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.crow .amt { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.crow .payee { font-weight: 600; overflow-wrap: anywhere; }
+.crow small { display: block; color: var(--muted); font-weight: 400; font-size: 0.76rem; overflow-wrap: anywhere; }
+.crow .match { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-width: 0; }
+.crow .c-act { justify-self: end; }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; font-weight: 600; text-align: left; }
+.linkbtn:hover { text-decoration: underline; }
+.pill.m-matched { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.pill.m-check { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.pill.m-missing { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+.badge.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+@media (max-width: 900px) {
+  .crow { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; }
+  .crow.head { display: none; }
+  .crow > .c-date { grid-column: 1 / -1; grid-row: 1; color: var(--muted); font-size: 0.76rem; }
+  .crow > .payee { grid-column: 1; grid-row: 2; }
+  .crow > .amt { grid-column: 2; grid-row: 2; align-self: start; }
+  .crow > .c-cat { grid-column: 1 / -1; grid-row: 3; }
+  .crow > .match { grid-column: 1 / -1; grid-row: 4; }
+  .crow > .c-act { grid-column: 1 / -1; grid-row: 5; justify-self: start; }
+  .crow > .c-act:empty { display: none; }
+  .c-tools .segs { flex-basis: 100%; }
+  .c-tools .seg .seg-label { white-space: normal; text-align: center; line-height: 1.15; }
+}
+
 @media (max-width: 1280px) {
   .d-body { grid-template-columns: minmax(0, 1fr); }
   .facts { position: static; order: -1; }
@@ -205,6 +251,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     <div class="brand">
       <span class="eyebrow">Twin Home Buyer &middot; Receipt agent</span>
       <h1>Receipt Inbox</h1>
+    </div>
+    <div class="views" role="group" aria-label="View">
+      <button type="button" id="viewReceipts" aria-pressed="true">Receipts</button>
+      <button type="button" id="viewCards" aria-pressed="false">Card charges</button>
     </div>
     <span id="inbox" class="inbox">Inbox: shown after the first scan</span>
     <div class="scanbox">
@@ -258,12 +308,28 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       <div class="items" id="items" role="listbox" aria-label="Receipts"></div>
       <div class="empty" id="listEmpty">
         <b>No receipts yet</b>
-        <p>Click Scan inbox to pull receipts from accounting@.</p>
+        <p>Click Scan inbox to pull receipts from accounting@, or the receipts@ copies in your own inbox.</p>
       </div>
     </section>
 
     <section class="pane detail" id="detail" aria-label="Selected receipt"></section>
   </div>
+
+  <section class="pane cards" id="cards" aria-label="Card charges" hidden>
+    <div class="c-head">
+      <div class="c-stats" id="cStats"></div>
+      <div class="c-tools">
+        <div class="segs" id="cTabs" role="tablist" aria-label="Match status"></div>
+        <button type="button" class="btn primary" id="cardUpload">Upload card report</button>
+        <input type="file" id="cardFile" accept=".xlsx,.xls,.csv" hidden>
+        <button type="button" class="btn" id="copyReport">Copy report for Juan</button>
+        <button type="button" class="btn ghost" id="cardCsv">Download CSV</button>
+      </div>
+      <p class="c-files" id="cFiles"></p>
+    </div>
+    <textarea id="reportBox" class="copybox" aria-label="Report text" readonly hidden></textarea>
+    <div class="c-list" id="cList"></div>
+  </section>
 </div>
 
 <datalist id="propList"></datalist>
@@ -275,12 +341,22 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   const INBOX = "accounting@twinhomebuyer.com";
   const GMAIL = "Gmail";
   const SOURCES = [
-    { key: "homedepot", label: "Home Depot", q: "from:homedepot.com subject:(receipt OR order OR purchase)" },
-    { key: "amazon", label: "Amazon", q: "from:amazon.com subject:(shipped OR ordered OR refund)" },
+    // receipts@ copies arrive as "'The Home Depot' via Receipts Forwarding", so match the name as well as the address.
+    { key: "homedepot", label: "Home Depot", q: 'from:(homedepot.com OR "home depot") subject:(receipt OR order OR purchase)' },
+    { key: "amazon", label: "Amazon", q: 'from:(amazon.com OR "amazon.com") subject:(shipped OR ordered OR refund)' },
     { key: "waymo", label: "Waymo", q: "subject:waymo" },
     { key: "uber", label: "Uber", q: "subject:uber subject:(trip OR receipt OR order)" },
     { key: "juan", label: "Juan's forwards", q: "from:juan@twinhomebuyer.com subject:(fwd OR fw) (receipt OR order OR trip OR ride OR purchase)" },
-    { key: "other", label: "Crew & other", q: "subject:receipt -from:amazon.com -from:homedepot.com -subject:waymo -subject:uber" }
+    { key: "other", label: "Crew & other", q: 'subject:receipt -from:amazon.com -from:homedepot.com -from:"home depot" -subject:waymo -subject:uber' }
+  ];
+  const GROUP = "receipts.twinhomebuyer.com";  // the receipts@ group's list id
+  const DOMAIN = "@twinhomebuyer.com";
+  const CTABS = [
+    { key: "missing", label: "Missing receipt" },
+    { key: "check", label: "Check" },
+    { key: "matched", label: "Matched" },
+    { key: "skipped", label: "No receipt needed" },
+    { key: "nocharge", label: "Receipt, no charge" }
   ];
   const STATUSES = [
     { key: "new", label: "To review" },
@@ -304,8 +380,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     selectedId: null,   // the receipt shown on the right
     query: "",
     viewMode: "file",   // "file" or "email" in the receipt viewer
-    zoom: 1
+    zoom: 1,
+    view: "receipts",   // "receipts" or "cards"
+    cards: new Map(),   // uploaded card reports, one doc per card account
+    cTab: "missing"
   };
+  let model = null;     // card charges matched to receipts, rebuilt on every render
   const msgCache = new Map(); // email text and photos loaded for the inline view, this visit only
   let db = null, mcp = null, sample = null, sampleOff = false;
   const $ = id => document.getElementById(id);
@@ -332,10 +412,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (isNaN(d)) return String(iso).slice(0, 10);
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
-  function gmailAfter(days) {
-    const d = new Date(Date.now() - days * 86400000);
+  function gmailDay(ms) {
+    const d = new Date(ms);
     return d.getFullYear() + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + String(d.getDate()).padStart(2, "0");
   }
+  const gmailAfter = days => gmailDay(Date.now() - days * 86400000);
   function isoOf(v) {
     const d = new Date(v || "");
     return isNaN(d) ? "" : d.toISOString();
@@ -429,6 +510,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
 
   function render() {
+    model = cardModel();
+    renderViews();
+    if (state.view === "cards") renderCards();
     renderTabs();
     renderList();
     renderDetail();
@@ -484,6 +568,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (needsClaude(r)) flags.append(el("span", "badge", "Needs Claude"));
     if (x.kind === "refund") flags.append(el("span", "badge", "Refund"));
     if (state.temp.has(r.id)) flags.append(el("span", "badge warn", "Test"));
+    const onCard = model && model.byReceipt.get(r.id);
+    if (onCard) flags.append(el("span", "badge" + (onCard.quality === "matched" ? " ok" : " warn"), onCard.quality === "matched" ? "On card" : "Check card"));
     if (flags.childNodes.length) main.append(flags);
 
     item.append(cb, main);
@@ -501,7 +587,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     empty.hidden = shown.length > 0;
     if (!shown.length) {
       empty.textContent = "";
-      if (!allRows().length) empty.append(el("b", null, "No receipts yet"), el("p", null, "Click Scan inbox to pull receipts from accounting@."));
+      if (!allRows().length) empty.append(el("b", null, "No receipts yet"), el("p", null, "Click Scan inbox to pull receipts from accounting@, or the receipts@ copies in your own inbox."));
       else if (state.query) empty.append(el("b", null, "No matches"), el("p", null, "No receipt in " + STATUS_LABEL[state.tab] + " matches your search."));
       else empty.append(el("b", null, "Nothing in " + STATUS_LABEL[state.tab]), el("p", null, state.tab === "new" ? "Every receipt has been reviewed." : "Receipts you move here show up in this tab."));
     }
@@ -662,6 +748,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     fact("Order", x.orderNumber, true);
     fact("Location", x.location);
     fact("Juan's note", x.note);
+    if (model && model.charges.length) {
+      const cm = model.byReceipt.get(r.id);
+      fact("Card charge", cm ? [cm.c.account, shortDate(cm.c.date), money(cm.c.amount), cm.quality === "check" ? "amount to check" : ""].filter(Boolean).join(" · ") : "None found in the card report");
+      if (cm && cm.c.split) fact("Category", cm.c.split);
+    }
     fact("From", senderName(r));
     const keys = el("p", "keys", "J / K next and previous · G good · F follow-up · N not a receipt · D download");
     facts.append(field, dl, keys);
@@ -864,6 +955,16 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     srcSel.onchange = () => { state.source = srcSel.value; state.selected.clear(); render(); };
     $("search").addEventListener("input", e => { state.query = e.target.value; render(); });
     $("scan").onclick = scan;
+    $("viewReceipts").onclick = () => { state.view = "receipts"; render(); };
+    $("viewCards").onclick = () => { state.view = "cards"; render(); };
+    $("cardUpload").onclick = () => $("cardFile").click();
+    $("cardFile").onchange = async e => {
+      const files = [...(e.target.files || [])];
+      e.target.value = "";
+      for (const f of files) await uploadCards(f);
+    };
+    $("copyReport").onclick = copyReport;
+    $("cardCsv").onclick = downloadCardCsv;
     $("fillClaude").onclick = () => fillWithClaude(allRows().filter(r => needsClaude(r) && (r.status || "new") !== "not_receipt").map(r => r.id));
     $("selAll").onchange = e => {
       for (const r of visibleRows()) { if (e.target.checked) state.selected.add(r.id); else state.selected.delete(r.id); }
@@ -882,6 +983,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     document.addEventListener("keydown", e => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
+      if (state.view !== "receipts") return;
       const k = e.key.toLowerCase();
       const r = current();
       if (k === "j" || e.key === "ArrowDown") { move(1); e.preventDefault(); }
@@ -920,10 +1022,29 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       .filter(a => a && (isPdf(a.mimeType, a.filename) || /^image\//i.test(String(a.mimeType || ""))))
       .map(a => ({ filename: String(a.filename || ""), mimeType: String(a.mimeType || "") }));
   }
+  // A receipt saved from another inbox has a different id in yours: find your copy by subject and date.
+  const localIds = new Map();
+  const gid = id => localIds.get(id) || id;
+  async function findLocalCopy(r) {
+    let subj = String(r.subject || "").replace(/["()]/g, " ").replace(/\s+/g, " ").trim();
+    if (subj.length > 90) subj = subj.slice(0, 90).replace(/\s+\S*$/, "");
+    if (!subj) return null;
+    let q = 'subject:"' + subj + '"';
+    const t = Date.parse(r.emailDate || "");
+    if (!isNaN(t)) q += " after:" + gmailDay(t - 2 * 86400000) + " before:" + gmailDay(t + 3 * 86400000);
+    const p = (await gmail("search_threads", { query: q, pageSize: 5 })) || {};
+    for (const th of (p.threads || [])) for (const m of (th.messages || [])) if (m && m.id) return m.id;
+    return null;
+  }
+  const previewing = new Set();
   async function loadPreview(id) {
-    if (!mcp) return;
+    if (!mcp || previewing.has(id)) return;
+    previewing.add(id);
+    try { await loadPreviewOnce(id, false); } finally { previewing.delete(id); }
+  }
+  async function loadPreviewOnce(id, retried) {
     try {
-      const m = await gmail("get_message", { messageId: id, messageFormat: "PLAIN_TEXT" });
+      const m = await gmail("get_message", { messageId: gid(id), messageFormat: "PLAIN_TEXT" });
       const atts = fileAttachments(m);
       msgCache.set(id, {
         subject: str(m && m.subject, 300),
@@ -937,9 +1058,15 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       refreshPreview(id);
       if (atts.length) loadFiles(id);
     } catch (e) {
+      if (!retried && e && e.code === "tool_error") {
+        const r = allRows().find(x => x.id === id);
+        let local = null;
+        try { local = r ? await findLocalCopy(r) : null; } catch (e2) { local = null; }
+        if (local && local !== id) { localIds.set(id, local); return loadPreviewOnce(id, true); }
+      }
       msgCache.set(id, {
         error: e && e.code === "tool_error"
-          ? "This receipt is in the accounting@ inbox. Open the page signed into Gmail as accounting@ to see it here, or use the Gmail link."
+          ? "This receipt was saved from another inbox and isn't in yours. Open the page signed into that Gmail to see it here."
           : gmailMessage(e)
       });
       refreshPreview(id);
@@ -981,7 +1108,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   function fileParts(id) {
     if (!rawCache.has(id)) {
       const job = (async () => {
-        const p = await gmail("get_message", { messageId: id, messageFormat: "RAW" });
+        const p = await gmail("get_message", { messageId: gid(id), messageFormat: "RAW" });
         const raw = typeof p === "string" ? p : (p && (p.raw || p.rawContent || p.raw_content || p.content || "")) || "";
         const out = [];
         for (const part of mimeParts(decodeRaw(String(raw)))) {
@@ -1177,11 +1304,36 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       if (who && who.includes("@")) state.account = who.toLowerCase();
     } catch (e) { /* no account in the link */ }
   }
+  // accounting@ scans its whole inbox. Any other company inbox scans only the receipts@ copies in it.
+  // Both are saved; anything else runs as a test.
+  function scanMode() {
+    const a = state.account;
+    if (!a) return { live: false, scope: " list:" + GROUP };
+    if (a === INBOX) return { live: true, scope: "" };
+    return { live: a.endsWith(DOMAIN), scope: " list:" + GROUP };
+  }
   function showAccount() {
     const s = $("inbox");
     if (!state.account) { s.textContent = "Inbox: shown after the first scan"; s.className = "inbox"; return; }
+    const mode = scanMode();
     if (state.account === INBOX) { s.textContent = "Inbox: " + state.account + " (saved)"; s.className = "inbox live"; }
+    else if (mode.live) { s.textContent = "Inbox: " + state.account + ", receipts@ copies (saved)"; s.className = "inbox live"; }
     else { s.textContent = "Inbox: " + state.account + " (test, not saved)"; s.className = "inbox test"; }
+  }
+  function cleanName(n) {
+    return String(n || "").replace(/\s+via\s+.*$/i, "").replace(/^['"\s]+|['"\s]+$/g, "").slice(0, 80);
+  }
+  const normSubject = s => String(s || "").toLowerCase().replace(/^\s*((fwd?|fw|re)\s*:\s*)+/i, "").replace(/\s+/g, " ").trim();
+  // The same receipt reaches accounting@ and the receipts@ copies under different ids. Same subject within 45 minutes = same email.
+  function dupDoc(id, subject, date) {
+    const s = normSubject(subject), t = Date.parse(date || "");
+    if (!s || isNaN(t)) return null;
+    for (const d of state.docs.values()) {
+      if (d.id === id || normSubject(d.subject) !== s) continue;
+      const u = Date.parse(d.emailDate || "");
+      if (!isNaN(u) && Math.abs(u - t) <= 45 * 60000) return d;
+    }
+    return null;
   }
 
   function prompt(batch) {
@@ -1324,7 +1476,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
   }
   async function countUsage(receipts, calls) {
-    if (!db || state.account !== INBOX) return;
+    if (!db || !scanMode().live) return;
     try {
       const ref = db.doc("meta/usage");
       const snap = await ref.get();
@@ -1350,7 +1502,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const msgs = [];
       for (let i = 0; i < ids.length; i++) {
         setStatus("Reading email " + (i + 1) + " of " + ids.length + " for Claude…");
-        const m = await gmail("get_message", { messageId: ids[i], messageFormat: "PLAIN_TEXT" });
+        const m = await gmail("get_message", { messageId: gid(ids[i]), messageFormat: "PLAIN_TEXT" });
         if (!m) continue;
         if (!state.account && m.viewUrl) { detectAccount(m.viewUrl); showAccount(); }
         let body = String(m.plaintextBody || m.snippet || "");
@@ -1390,18 +1542,31 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const after = gmailAfter(days);
     const found = new Map();
     try {
+      if (!state.account) {
+        setStatus("Checking which inbox is connected…");
+        for (const q of ["list:" + GROUP, "in:inbox"]) {
+          const p = (await gmail("search_threads", { query: q, pageSize: 1 })) || {};
+          const t = (p.threads || [])[0];
+          const u = t && (t.viewUrl || (t.messages && t.messages[0] && t.messages[0].viewUrl));
+          if (u) { detectAccount(u); break; }
+        }
+        showAccount();
+      }
+      const mode = scanMode();
       for (const s of SOURCES) {
         setStatus("Searching " + s.label + "…");
         let token = null, pages = 0;
         do {
-          const input = { query: s.q + " after:" + after, pageSize: 50 };
+          const input = { query: s.q + mode.scope + " -in:sent after:" + after, pageSize: 50 };
           if (token) input.pageToken = token;
           const p = (await gmail("search_threads", input)) || {};
           for (const t of (p.threads || [])) {
             for (const m of (t.messages || [])) {
               if (!m || !m.id || found.has(m.id)) continue;
-              if (String(m.sender || "").toLowerCase().includes(INBOX)) continue; // our own replies
-              found.set(m.id, { source: s.key, threadId: t.id || m.threadId || "", subject: m.subject || "", sender: m.sender || "" });
+              const from = String(m.sender || "").toLowerCase();
+              if (from.includes(INBOX) || (state.account && from.includes(state.account))) continue; // our own replies
+              const dn = (m.addressDisplayNames || []).find(a => a && a.emailAddress && from.includes(String(a.emailAddress).toLowerCase()));
+              found.set(m.id, { source: s.key, threadId: t.id || m.threadId || "", subject: m.subject || "", sender: m.sender || "", date: m.date || "", fromName: dn ? cleanName(dn.displayName) : "" });
             }
           }
           token = p.nextPageToken || null;
@@ -1409,16 +1574,19 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         } while (token && pages < 4);
       }
 
-      const todo = [...found].filter(([id]) => {
+      let dups = 0;
+      const todo = [...found].filter(([id, meta]) => {
         const d = state.docs.get(id) || state.temp.get(id);
-        return !d || !d.extracted;
+        if (d && d.extracted) return false;
+        if (dupDoc(id, meta.subject, meta.date)) { dups++; return false; }
+        return true;
       });
       if (!found.size) {
         setStatus("No receipt emails in the last " + days + (days === 1 ? " day." : " days."));
         return;
       }
       if (!todo.length) {
-        setStatus(found.size + " receipt emails found. All of them are already in the list.");
+        setStatus(found.size + " receipt emails found. All of them are already in the list" + (dups ? " (" + dups + " saved from another inbox)." : "."));
         return;
       }
 
@@ -1429,12 +1597,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         const m = await gmail("get_message", { messageId: id, messageFormat: "PLAIN_TEXT" });
         if (!m) continue;
         if (!state.account && m.viewUrl) { detectAccount(m.viewUrl); showAccount(); }
+        const addr = String(m.sender || meta.sender || "");
         msgs.push({
           id,
           source: meta.source,
           threadId: m.threadId || meta.threadId,
           subject: String(m.subject || meta.subject || "").slice(0, 300),
-          sender: String(m.sender || meta.sender || "").slice(0, 200),
+          sender: (meta.fromName && !/</.test(addr) ? meta.fromName + " <" + addr + ">" : addr).slice(0, 200),
           emailDate: isoOf(m.date),
           viewUrl: String(m.viewUrl || ""),
           body: String(m.plaintextBody || m.snippet || ""),
@@ -1442,7 +1611,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         });
       }
 
-      const live = !!db && state.account === INBOX;
+      const live = !!db && scanMode().live;
       const now = new Date().toISOString();
       let saved = 0, freeCount = 0;
       for (const m of msgs) {
@@ -1471,7 +1640,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           status: prev.status || (x && x.isReceipt === false ? "not_receipt" : "new"),
           property: prev.property || "",
           reviewedAt: prev.reviewedAt || null,
-          scannedAt: now
+          scannedAt: now,
+          scannedBy: state.account || ""
         };
         if (live) {
           try { await db.collection("receipts").doc(m.id).set(doc); saved++; }
@@ -1485,8 +1655,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         (live ? ", saved." : ", shown as a test and not saved.") +
         " Read for free: " + freeCount + "." +
         (left ? " " + left + " need Claude. Click Fill with Claude when you want them done." : ""));
-      if (!live && db && state.account && state.account !== INBOX) {
-        banner("This scan read " + state.account + ". Only accounting@ scans are saved, so these rows disappear when you reload.");
+      if (!live && db && state.account) {
+        banner("This scan read " + state.account + ". Only accounting@ and company inboxes on receipts@ are saved, so these rows disappear when you reload.");
       } else if (!live && db && !state.account) {
         banner("This page couldn't tell which inbox it read, so the scan ran as a test and nothing was saved.");
       }
@@ -1499,6 +1669,465 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       render();
     }
   }
+
+  // ---------- card charges: the QuickBooks card report, matched to receipts ----------
+  // Seth exports each card account's report from QuickBooks (Run report, Export to Excel) and uploads it here.
+  // Rows are kept per card account in the shared store; matching runs in the page and is never saved.
+  const XLSX_URL = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+  let xlsxReady = null;
+  function xlsxLib() {
+    if (!xlsxReady) {
+      xlsxReady = loadScript(XLSX_URL).then(() => {
+        if (!window.XLSX || !window.XLSX.read) throw new Error("spreadsheet reader missing");
+        return window.XLSX;
+      });
+      xlsxReady.catch(() => { xlsxReady = null; });
+    }
+    return xlsxReady;
+  }
+  function amountCell(v) {
+    if (v === null || v === undefined) return null;
+    if (typeof v === "number") return Number.isFinite(v) ? v : null;
+    let t = String(v).trim();
+    if (!t) return null;
+    const neg = /^\(.*\)$/.test(t) || /^-/.test(t) || /-$/.test(t);
+    t = t.replace(/[()$,\s-]/g, "");
+    if (!/^\d+(\.\d+)?$/.test(t)) return null;
+    const n = parseFloat(t);
+    return neg ? -n : n;
+  }
+  const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+  const pad2 = n => String(n).padStart(2, "0");
+  function dayCell(v) {
+    if (v === null || v === undefined || v === "") return null;
+    if (v instanceof Date && !isNaN(v)) return v.getFullYear() + "-" + pad2(v.getMonth() + 1) + "-" + pad2(v.getDate());
+    const t = String(v).trim();
+    let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return m[1] + "-" + pad2(m[2]) + "-" + pad2(m[3]);
+    m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (m) { const y = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]); return y + "-" + pad2(m[1]) + "-" + pad2(m[2]); }
+    m = t.match(/^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})$/);
+    if (m && MONTHS[m[1].toLowerCase()]) return m[3] + "-" + pad2(MONTHS[m[1].toLowerCase()]) + "-" + pad2(m[2]);
+    return null;
+  }
+  function hashKey(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h >>> 0).toString(36);
+  }
+  // Works with QuickBooks reports (Account QuickReport, Transaction Report) and plain card-site CSVs.
+  function parseCardRows(rows, fileName) {
+    let hi = -1, col = null;
+    for (let i = 0; i < Math.min(rows.length, 40) && hi < 0; i++) {
+      const c = (rows[i] || []).map(v => String(v === null || v === undefined ? "" : v).trim().toLowerCase());
+      const at = re => c.findIndex(v => re.test(v));
+      const date = at(/^(transaction |trans\.? |posted |post )?date$/);
+      const amount = at(/^amount$/), debit = at(/^(debit|charge|charges)$/), credit = at(/^(credit|payment|payments)$/);
+      if (date >= 0 && (amount >= 0 || debit >= 0)) {
+        hi = i;
+        col = { date, amount, debit, credit,
+          type: at(/type/), num: at(/^(num|no\.?|ref(erence)?( no\.?)?)$/), name: at(/^(name|payee|vendor|merchant)$/),
+          memo: at(/memo|description/), split: at(/^(split|category)$/), account: at(/^(account|account name|card|card member)$/) };
+      }
+    }
+    if (hi < 0) throw new Error("no header row");
+    const fallback = String(fileName || "Card").replace(/\.[^.]+$/, "").replace(/[_]+/g, " ").trim().slice(0, 80) || "Card";
+    let group = "";
+    const out = [];
+    const seen = new Map();
+    const cell = (r, i) => (i >= 0 && r[i] !== null && r[i] !== undefined ? String(r[i]).trim() : "");
+    for (let i = hi + 1; i < rows.length; i++) {
+      const r = rows[i] || [];
+      const filled = r.map(v => String(v === null || v === undefined ? "" : v).trim()).filter(Boolean);
+      if (!filled.length) continue;
+      const day = dayCell(r[col.date]);
+      if (!day) {
+        const first = filled[0];
+        if (!/^total|balance/i.test(first) && filled.length === 1) group = first.slice(0, 80);
+        continue;
+      }
+      let amt = col.amount >= 0 ? amountCell(r[col.amount]) : null;
+      if (amt === null && col.debit >= 0) {
+        const d = amountCell(r[col.debit]), c = col.credit >= 0 ? amountCell(r[col.credit]) : null;
+        if (d !== null || c !== null) amt = (d || 0) - (c || 0);
+      }
+      if (amt === null || amt === 0) continue;
+      const row = {
+        date: day,
+        type: cell(r, col.type).slice(0, 40),
+        num: cell(r, col.num).slice(0, 30),
+        name: cell(r, col.name).slice(0, 80),
+        memo: cell(r, col.memo).slice(0, 120),
+        split: cell(r, col.split).slice(0, 80),
+        account: (cell(r, col.account) || group || fallback).slice(0, 80),
+        unnamed: !cell(r, col.account) && !group,
+        raw: Math.round(amt * 100) / 100
+      };
+      if (!row.name && row.memo) row.name = row.memo.slice(0, 80);
+      const base = [row.account, row.date, row.type, row.num, row.name, row.memo, row.raw.toFixed(2)].join("|");
+      const n = (seen.get(base) || 0) + 1;
+      seen.set(base, n);
+      row.k = hashKey(base + "|" + n);
+      out.push(row);
+    }
+    // Charges carry the account's usual sign; the other sign is a refund or credit.
+    const isPayment = r => /card payment|^payment$|transfer|deposit/i.test(r.type) || /autopay|payment\s*-?\s*thank you|online payment/i.test(r.name + " " + r.memo);
+    const plain = out.filter(r => !isPayment(r));
+    const pos = plain.filter(r => r.raw > 0).length;
+    const chargeSign = pos >= plain.length - pos ? 1 : -1;
+    for (const r of out) {
+      r.payment = isPayment(r);
+      const refund = /credit card credit|refund|return/i.test(r.type) || (!r.type && Math.sign(r.raw) !== chargeSign);
+      r.amount = Math.round((refund ? -Math.abs(r.raw) : Math.abs(r.raw)) * 100) / 100;
+      delete r.raw;
+    }
+    return out;
+  }
+  async function readCardFile(file) {
+    const X = await xlsxLib();
+    const wb = X.read(await file.arrayBuffer(), { type: "array" });
+    const out = [];
+    for (const name of wb.SheetNames) {
+      const rows = X.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: "", blankrows: false });
+      try { out.push(...parseCardRows(rows, file.name)); } catch (e) { /* a sheet with no transactions */ }
+    }
+    return out;
+  }
+  const slug = s => String(s || "card").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "card";
+  async function uploadCards(file) {
+    if (!db) { banner("Saving is off in this view. Open the page in claude.ai to upload the card report.", true); return; }
+    banner("");
+    setStatus("Reading " + file.name + "…");
+    let rows;
+    try { rows = await readCardFile(file); }
+    catch (e) {
+      banner("That file couldn't be read. In QuickBooks, export the card's report with Export → Export to Excel, then upload that file.", true);
+      setStatus("");
+      return;
+    }
+    if (!rows.length) {
+      banner("No charges were found in " + file.name + ". Upload the card's report from QuickBooks with the Date and Amount columns.", true);
+      setStatus("");
+      return;
+    }
+    const unnamed = rows.some(r => r.unnamed);
+    for (const r of rows) delete r.unnamed;
+    const byAcct = new Map();
+    for (const r of rows) { if (!byAcct.has(r.account)) byAcct.set(r.account, []); byAcct.get(r.account).push(r); }
+    let saved = 0;
+    for (const [account, list] of byAcct) {
+      const id = slug(account);
+      const prev = state.cards.get(id) || {};
+      const days = list.map(r => r.date).sort();
+      const from = days[0], to = days[days.length - 1];
+      // The new file replaces its own date range; older rows outside it stay.
+      let merged = (prev.rows || []).filter(r => r.date < from || r.date > to).concat(list)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      if (merged.length > 900) merged = merged.slice(merged.length - 900);
+      const all = merged.map(r => r.date);
+      const doc = {
+        account, rows: merged, marks: prev.marks || {},
+        from: all[0], to: all[all.length - 1],
+        uploadedAt: new Date().toISOString(), file: String(file.name).slice(0, 120)
+      };
+      try { await db.collection("cards").doc(id).set(doc); state.cards.set(id, doc); saved += list.length; }
+      catch (e) { banner(dbMessage(e), true); break; }
+    }
+    if (unnamed) banner("This file didn't name the card, so it was saved under \"" + [...byAcct.keys()].join(", ") + "\". If that's wrong, rename the file to the card's name (for example Amex 1004.xlsx) and upload it again.");
+    state.view = "cards";
+    setStatus("Loaded " + saved + " card " + (saved === 1 ? "line" : "lines") + " from " + file.name + ".");
+    render();
+  }
+
+  // ---------- matching ----------
+  function vendorKey(s) {
+    s = String(s || "").toLowerCase();
+    if (/home\s*depot|homedepot/.test(s)) return "homedepot";
+    if (/amazon|amzn/.test(s)) return "amazon";
+    if (/uber/.test(s)) return "uber";
+    if (/waymo/.test(s)) return "waymo";
+    if (/lowe'?s/.test(s)) return "lowes";
+    return "";
+  }
+  function localDay(iso) {
+    if (!iso) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+    const d = new Date(iso);
+    return isNaN(d) ? null : d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  const dayNum = day => Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) / 86400000;
+  function cardModel() {
+    const charges = [];
+    for (const [id, d] of state.cards) {
+      const marks = d.marks || {};
+      for (const r of (d.rows || [])) charges.push(Object.assign({}, r, { cardId: id, account: r.account || d.account, marked: marks[r.k] || "" }));
+    }
+    const byCharge = new Map(), byReceipt = new Map();
+    if (!charges.length) return { charges, byCharge, byReceipt, from: null, to: null };
+    const days = charges.map(c => c.date).sort();
+    const receipts = allRows().filter(r => (r.status || "new") !== "not_receipt" && r.extracted);
+    const pairs = [];
+    for (const c of charges) {
+      if (c.payment || c.marked) continue;
+      const vc = vendorKey(c.name + " " + c.memo);
+      const last4 = (String(c.account).match(/(\d{4})\D*$/) || [])[1] || null;
+      for (const r of receipts) {
+        const x = r.extracted;
+        const t = num(x.total), sub = num(x.itemsSubtotal);
+        let quality = null, score = 0;
+        if (t !== null && Math.abs(t - c.amount) < 0.005) quality = "matched";
+        else if (t === null && sub !== null && c.amount > 0 && c.amount >= sub - 0.005 && c.amount <= sub * 1.11 + 0.01) { quality = "check"; score += 4; }
+        else continue;
+        const rd = localDay(x.date || r.emailDate);
+        if (!rd) continue;
+        const diff = dayNum(c.date) - dayNum(rd);
+        if (diff < -3 || diff > 10) continue;
+        score += Math.abs(diff) * 0.5;
+        const vr = vendorKey([x.vendor, senderName(r), r.subject].join(" "));
+        if (vc && vr) { if (vc !== vr) continue; score -= 2; } else score += 1;
+        if (last4 && x.cardLast4 && last4 !== x.cardLast4) continue;
+        pairs.push({ c, r, quality, score });
+      }
+    }
+    pairs.sort((a, b) => (a.quality === b.quality ? 0 : a.quality === "matched" ? -1 : 1) || a.score - b.score);
+    for (const p of pairs) {
+      if (byCharge.has(p.c.k) || byReceipt.has(p.r.id)) continue;
+      byCharge.set(p.c.k, { r: p.r, quality: p.quality });
+      byReceipt.set(p.r.id, { c: p.c, quality: p.quality });
+    }
+    return { charges, byCharge, byReceipt, from: days[0], to: days[days.length - 1] };
+  }
+  function chargeState(c) {
+    if (c.payment || c.marked) return "skipped";
+    const m = model.byCharge.get(c.k);
+    return m ? m.quality : "missing";
+  }
+  function receiptsNoCharge() {
+    if (!model || !model.charges.length) return [];
+    return allRows().filter(r => {
+      if ((r.status || "new") === "not_receipt" || model.byReceipt.has(r.id)) return false;
+      if (amountOf(r).value === null) return false;
+      const d = localDay((r.extracted && r.extracted.date) || r.emailDate);
+      return d && d >= model.from && d <= model.to;
+    });
+  }
+  function cardCounts() {
+    const out = { missing: [], check: [], matched: [], skipped: [] };
+    for (const c of model.charges) out[chargeState(c)].push(c);
+    out.nocharge = receiptsNoCharge();
+    return out;
+  }
+  const sumOf = list => list.reduce((a, c) => a + (c.amount !== undefined ? c.amount : (amountOf(c).value || 0)), 0);
+
+  // ---------- card charges view ----------
+  function renderViews() {
+    $("viewReceipts").setAttribute("aria-pressed", String(state.view === "receipts"));
+    $("viewCards").setAttribute("aria-pressed", String(state.view === "cards"));
+    document.querySelector(".app").hidden = state.view !== "receipts";
+    $("cards").hidden = state.view !== "cards";
+    $("bulk").hidden = state.view !== "receipts" || state.selected.size === 0;
+  }
+  function openReceipt(id) {
+    const r = allRows().find(x => x.id === id);
+    if (!r) return;
+    state.view = "receipts";
+    state.tab = r.status || "new";
+    state.source = "all";
+    $("source").value = "all";
+    state.query = "";
+    $("search").value = "";
+    state.selected.clear();
+    select(id);
+  }
+  async function markCharge(c, mark) {
+    const d = state.cards.get(c.cardId);
+    if (!d || !db) return;
+    const marks = Object.assign({}, d.marks || {});
+    if (mark) marks[c.k] = mark; else delete marks[c.k];
+    try {
+      await db.collection("cards").doc(c.cardId).update({ marks });
+      d.marks = marks;
+      render();
+    } catch (e) { banner(dbMessage(e), true); }
+  }
+  function stat(label, value, extra, cls) {
+    const s = el("div", "stat" + (cls ? " " + cls : ""));
+    s.append(el("b", null, String(value)), el("span", null, label));
+    if (extra) s.append(el("small", null, extra));
+    return s;
+  }
+  function renderCards() {
+    const counts = cardCounts();
+    const st = $("cStats");
+    st.textContent = "";
+    const n = model.charges.filter(c => !c.payment);
+    st.append(
+      stat("Card charges", n.length, n.length ? money(sumOf(n)) : ""),
+      stat("Matched", counts.matched.length, "", counts.matched.length ? "ok" : ""),
+      stat("Check", counts.check.length, "", counts.check.length ? "warn" : ""),
+      stat("Missing receipt", counts.missing.length, counts.missing.length ? money(sumOf(counts.missing)) : "", counts.missing.length ? "bad" : ""),
+      stat("Receipt, no charge", counts.nocharge.length)
+    );
+    const tabs = $("cTabs");
+    tabs.textContent = "";
+    for (const t of CTABS) {
+      const b = el("button", "seg");
+      b.type = "button";
+      b.dataset.key = t.key;
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(state.cTab === t.key));
+      b.append(el("span", "seg-count", String(counts[t.key].length)), el("span", "seg-label", t.label));
+      b.onclick = () => { state.cTab = t.key; render(); };
+      tabs.append(b);
+    }
+    const files = [...state.cards.values()].sort((a, b) => String(a.account).localeCompare(String(b.account)));
+    $("cFiles").textContent = files.length
+      ? "Loaded: " + files.map(d => d.account + " (" + shortDate(d.from) + " to " + shortDate(d.to) + ", uploaded " + shortDate(d.uploadedAt) + ")").join(" · ")
+      : "";
+    const box = $("cList");
+    box.textContent = "";
+    if (!model.charges.length) {
+      const e = el("div", "empty");
+      e.append(el("b", null, "No card report yet"),
+        el("p", null, "In QuickBooks: Accounting → Chart of accounts → the card's Action menu → Run report → Last 30 days → Export to Excel. Then click Upload card report. One file per card."));
+      box.append(e);
+      return;
+    }
+    const head = el("div", "crow head");
+    if (state.cTab === "nocharge") {
+      ["Date", "Receipt", "Source", "Amount", "Status", ""].forEach(t => head.append(el("span", t === "Amount" ? "amt" : null, t)));
+      box.append(head);
+      const list = counts.nocharge;
+      if (!list.length) { box.append(emptyNote("Every receipt in these dates has a card charge.")); return; }
+      for (const r of list) {
+        const row = el("div", "crow");
+        const x = r.extracted || {};
+        row.append(el("span", "c-date", shortDate(x.date || r.emailDate)));
+        const p = el("span", "payee", x.vendor || senderName(r));
+        if (x.items) p.append(el("small", null, x.items));
+        row.append(p, el("span", "c-cat", SOURCE_LABEL[r.source] || "Other"), el("span", "amt", amountOf(r).label));
+        const m = el("span", "match");
+        m.append(el("span", "pill s-" + (r.status || "new"), STATUS_LABEL[r.status || "new"]));
+        if (state.temp.has(r.id)) m.append(el("span", "pill test", "Test"));
+        row.append(m);
+        const act = el("span", "c-act");
+        const open = el("button", "btn small", "Open receipt");
+        open.type = "button";
+        open.onclick = () => openReceipt(r.id);
+        act.append(open);
+        row.append(act);
+        box.append(row);
+      }
+      return;
+    }
+    ["Date", "Payee", "Card · category", "Amount", "Receipt", ""].forEach(t => head.append(el("span", t === "Amount" ? "amt" : null, t)));
+    box.append(head);
+    const list = counts[state.cTab] || [];
+    if (!list.length) {
+      box.append(emptyNote(state.cTab === "missing" ? "Every card charge has a receipt." : "Nothing here."));
+      return;
+    }
+    for (const c of list.slice().sort((a, b) => b.date.localeCompare(a.date))) {
+      const row = el("div", "crow");
+      row.append(el("span", "c-date", shortDate(c.date)));
+      const p = el("span", "payee", c.name || c.memo || "No payee");
+      if (c.memo && c.memo !== c.name) p.append(el("small", null, c.memo));
+      row.append(p);
+      const cat = el("span", "c-cat", c.account);
+      cat.append(el("small", null, [c.type, c.split].filter(Boolean).join(" · ")));
+      row.append(cat, el("span", "amt", money(c.amount)));
+      const m = el("span", "match");
+      const hit = model.byCharge.get(c.k);
+      const s = chargeState(c);
+      if (hit) {
+        m.append(el("span", "pill m-" + hit.quality, hit.quality === "matched" ? "Matched" : "Check amount"));
+        const x = hit.r.extracted || {};
+        const link = el("button", "linkbtn", [x.vendor || senderName(hit.r), shortDate(x.date || hit.r.emailDate), amountOf(hit.r).label].join(" · "));
+        link.type = "button";
+        link.title = "Open this receipt";
+        link.onclick = () => openReceipt(hit.r.id);
+        m.append(link);
+      } else if (s === "skipped") {
+        m.append(el("span", "pill", c.payment ? "Card payment" : "No receipt needed"));
+      } else {
+        m.append(el("span", "pill m-missing", "Missing receipt"));
+      }
+      row.append(m);
+      const act = el("span", "c-act");
+      if (!c.payment && !hit) {
+        const b = el("button", "btn small ghost", c.marked ? "Undo" : "No receipt needed");
+        b.type = "button";
+        b.onclick = () => markCharge(c, c.marked ? "" : "no_receipt");
+        act.append(b);
+      }
+      row.append(act);
+      box.append(row);
+    }
+  }
+  function emptyNote(t) {
+    const e = el("div", "empty");
+    e.append(el("p", null, t));
+    return e;
+  }
+
+  // ---------- the typed report for Juan ----------
+  function reportText() {
+    const today = localDay(new Date().toISOString());
+    const rows = allRows();
+    const by = k => rows.filter(r => (r.status || "new") === k).length;
+    const lines = ["Receipt agent report, " + longDate(today) + ". All times Pacific.", ""];
+    lines.push("RECEIPTS: " + rows.length + " in the inbox. To review " + by("new") + ", Follow-up " + by("follow_up") + ", Good " + by("good") + ", Not a receipt " + by("not_receipt") + ".");
+    if (!model.charges.length) {
+      lines.push("CARD CHARGES: no card report uploaded yet.");
+      return lines.join("\n");
+    }
+    const c = cardCounts();
+    const n = model.charges.filter(x => !x.payment);
+    const accounts = [...new Set(model.charges.map(x => x.account))];
+    lines.push("CARD CHARGES: " + n.length + " (" + money(sumOf(n)) + "), " + longDate(model.from) + " to " + longDate(model.to) + ", " + accounts.join(", ") + ".");
+    lines.push("- Matched to a receipt: " + c.matched.length);
+    lines.push("- Likely match, amount to check: " + c.check.length);
+    lines.push("- Missing a receipt: " + c.missing.length + (c.missing.length ? " (" + money(sumOf(c.missing)) + ")" : ""));
+    lines.push("- No receipt needed or card payments: " + c.skipped.length);
+    lines.push("- Receipts with no card charge yet: " + c.nocharge.length);
+    if (c.missing.length) {
+      lines.push("", "MISSING RECEIPTS");
+      const list = c.missing.slice().sort((a, b) => b.amount - a.amount);
+      list.slice(0, 25).forEach((x, i) => lines.push((i + 1) + ". " + shortDate(x.date) + ", " + (x.name || x.memo || "No payee") + ", " + money(x.amount) + ", " + x.account));
+      if (list.length > 25) lines.push("...and " + (list.length - 25) + " more in the Receipt Inbox page.");
+    }
+    return lines.join("\n");
+  }
+  async function copyReport() {
+    const text = reportText();
+    const box = $("reportBox");
+    try {
+      await navigator.clipboard.writeText(text);
+      box.hidden = true;
+      setStatus("Report copied. Paste it into your email to Juan.");
+    } catch (e) {
+      box.value = text;
+      box.hidden = false;
+      box.focus();
+      box.select();
+      setStatus("Press Ctrl+C (Cmd+C on a Mac) to copy the report.");
+    }
+  }
+  async function downloadCardCsv() {
+    if (!model.charges.length) { banner("Upload a card report first."); return; }
+    const q = v => '"' + String(v === null || v === undefined ? "" : v).replace(/"/g, '""') + '"';
+    const label = { missing: "Missing receipt", check: "Check amount", matched: "Matched", skipped: "No receipt needed" };
+    const head = ["Date", "Card", "Type", "Payee", "Memo", "Category", "Amount", "Match", "Receipt vendor", "Receipt date", "Receipt amount", "Property", "Email"];
+    const lines = [head.map(q).join(",")];
+    for (const c of model.charges.slice().sort((a, b) => a.date.localeCompare(b.date))) {
+      const hit = model.byCharge.get(c.k);
+      const r = hit && hit.r, x = (r && r.extracted) || {};
+      lines.push([c.date, c.account, c.type, c.name, c.memo, c.split, c.amount.toFixed(2), c.payment ? "Card payment" : label[chargeState(c)],
+        r ? (x.vendor || senderName(r)) : "", r ? localDay(x.date || r.emailDate) : "", r ? amountOf(r).label : "", r ? r.property || "" : "", r ? r.viewUrl || "" : ""].map(q).join(","));
+    }
+    await saveFile("Card match " + localDay(new Date().toISOString()) + ".csv", lines.join("\r\n"));
+  }
+
 
   // ---------- wiring ----------
   wire();
@@ -1520,6 +2149,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         state.docs = new Map(snap.docs.map(d => [d.id, Object.assign({}, d.data(), { id: d.id })]));
         render();
       }, err => { clearTimeout(timer); banner(dbMessage(err), true); });
+      db.collection("cards").onSnapshot(snap => {
+        state.cards = new Map(snap.docs.map(d => [d.id, d.data()]));
+        render();
+      }, () => {});
       db.doc("meta/usage").onSnapshot(s => {
         const months = s.exists ? (s.data().months || {}) : {};
         const m = months[monthKey()];

@@ -10,9 +10,30 @@ under accounting@. Seth never touches QuickBooks.
 Live page: https://claude.ai/artifact/T5JzERnp9mbpL4jMtaxDq3 (source: `receipt-inbox.html`).
 Kristine opens it; it reads accounting@ through her own Gmail connection, uses Claude to fill
 in vendor, date, amount, order number and location, and lists every receipt with a checkbox
-(Good, Needs follow-up, Not a receipt) and a Property box. Only scans of accounting@ are saved;
-any other inbox runs as a test. Email text is never stored. Matching to card charges and
-posting to QuickBooks come next.
+(Good, Needs follow-up, Not a receipt) and a Property box. Email text is never stored.
+
+**Which scans are saved.** accounting@ scans its whole inbox. Any other company inbox that is a
+member of the receipts@ Google Group (Seth) scans only the receipts@ copies in it
+(`list:receipts.twinhomebuyer.com`); those are saved too. Anything else runs as a test.
+receipts@ rewrites the sender to "'The Home Depot' via Receipts Forwarding <receipts@...>", so the
+Home Depot and Amazon searches match the sender's name as well as its address
+(`from:(homedepot.com OR "home depot")`). The same receipt can reach accounting@ and a receipts@
+copy under different Gmail ids; a scan skips one whose subject matches a saved receipt within 45
+minutes. A receipt saved from another inbox opens in yours by finding your copy by subject and date.
+
+**Card charges view (QuickBooks matching).** Seth (Reports-only QuickBooks user) opens each
+company card in Accounting → Chart of accounts → Action → Run report, sets Last 30 days, and
+exports to Excel. Upload card report reads the file in the page (SheetJS from cdnjs; QuickBooks
+QuickReport, Transaction Report, or a card-site CSV) and keeps the rows in the shared store, one
+document per card account (`cards/<account>`); a new file replaces its own date range. Matching
+runs in the page and is never saved: same amount within -3 to +10 days of the receipt, vendor and
+card last 4 must agree when both are known; Amazon shipment emails (items, no tax) match as
+"Check" when the charge is 0 to 11% above the item total. Tabs: Missing receipt, Check, Matched,
+No receipt needed (card payments, plus charges Kristine marks), Receipt with no charge. Each
+receipt shows its card charge and the QuickBooks category. Copy report for Juan builds the typed
+summary with the missing-receipt list; Download CSV exports the whole match. Card data is
+readable by everyone the page is shared with, so keep the page shared only with Seth, Kristine
+and Juan.
 
 Cost: scanning Gmail uses no Claude usage. Built-in readers fill in Home Depot, Amazon,
 Uber, Waymo and crew-subject receipts for free. Claude reads only the leftovers, in batches of 8
