@@ -253,7 +253,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v20</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v21</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -333,7 +333,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         <button type="button" class="btn ghost" id="cardCsv">Download CSV</button>
       </div>
       <div class="c-range">
-        <label for="cDay">Date <input type="date" id="cDay"></label>
+        <label for="cFrom">From <input type="date" id="cFrom"></label>
+        <label for="cTo">To <input type="date" id="cTo"></label>
+        <button type="button" class="btn small ghost" id="cLast">Latest date</button>
         <button type="button" class="btn small ghost" id="cSince">Since first receipt</button>
         <button type="button" class="btn small ghost" id="cAll">All dates</button>
         <span id="cRangeNote"></span>
@@ -991,7 +993,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("driveCheck").onclick = () => loadFiled(true);
     $("saveSheet").onclick = saveToSheet;
     $("openSheet").href = SHEET_URL;
-    $("cDay").onchange = e => { state.cFrom = state.cTo = e.target.value || (model && model.to) || ""; state.cRangeSet = true; render(); };
+    $("cFrom").onchange = e => { state.cFrom = e.target.value || ""; state.cRangeSet = true; render(); };
+    $("cTo").onchange = e => { state.cTo = e.target.value || ""; state.cRangeSet = true; render(); };
+    $("cLast").onclick = () => { state.cFrom = state.cTo = (model && model.to) || ""; state.cRangeSet = true; render(); };
     $("cAll").onclick = () => { state.cFrom = ""; state.cTo = ""; state.cRangeSet = true; render(); };
     $("cSince").onclick = () => { state.cFrom = firstReceiptDay() || ""; state.cTo = ""; state.cRangeSet = true; render(); };
     $("cardUpload").onclick = () => $("cardFile").click();
@@ -2373,10 +2377,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       stat("Missing receipt", counts.missing.length, counts.missing.length ? money(sumOf(counts.missing)) : "", counts.missing.length ? "bad" : ""),
       stat("Receipt, no charge", counts.nocharge.length)
     );
-    const di = $("cDay");
-    di.value = state.cFrom && state.cFrom === state.cTo ? state.cFrom : "";
-    di.min = model.from || "";
-    di.max = model.to || "";
+    const fi = $("cFrom"), ti = $("cTo");
+    fi.value = state.cFrom;
+    ti.value = state.cTo;
+    fi.min = ti.min = model.from || "";
+    fi.max = ti.max = model.to || "";
     $("cRangeNote").textContent = state.cFrom || state.cTo
       ? ((f, t) => f === t ? "Showing " + longDate(f) + "." : "Showing " + longDate(f) + " to " + longDate(t) + ".")(state.cFrom || model.from, state.cTo || model.to)
       : (model.from ? "Showing all dates in the report (" + longDate(model.from) + " to " + longDate(model.to) + ")." : "");
