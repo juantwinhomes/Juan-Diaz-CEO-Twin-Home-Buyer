@@ -1468,6 +1468,14 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (!x.items) x.items = str(subject.replace(/^\s*(?:fwd?|fw)\s*:\s*/i, ""), 120);
     if (!refund && (m.source === "waymo" || /\b(trip|ride)\b/i.test(subject))) x.kind = "ride";
     if (!refund && /uber\s*eats/i.test(text)) x.kind = "food";
+    // Unpaid invoices and quotes, and Juan's reply chains, are not receipts (vendor receipt emails are left alone).
+    if (m.source === "juan" || m.source === "other") {
+      const unpaid = /\b(invoice|quote|estimate|proposal)\b/i.test(text)
+        && /(deposit due|due on receipt|balance (due|remaining)|amount due|don'?t pay|approval needed)/i.test(text)
+        && !/(paid in full|payment received|thank you for your payment|amount paid)/i.test(text);
+      const replyChain = m.source === "juan" && /^\s*re\s*:/i.test(subject);
+      if (unpaid || replyChain) { x.isReceipt = false; x.kind = "other"; }
+    }
     return x;
   }
 
