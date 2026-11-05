@@ -35,6 +35,14 @@ summary with the missing-receipt list; Download CSV exports the whole match. Car
 readable by everyone the page is shared with, so keep the page shared only with Seth, Kristine
 and Juan.
 
+**Company Receipts (Google Drive).** Kristine files receipts in the Company Receipts shared drive:
+one folder per card, one folder per month ("OCTOBER 2026"), files named "$852.41 - Home Depot".
+The Card charges view reads only those file names through the viewer's Google Drive connector
+(search_files; nothing is opened or saved): card folders under the drive root, the month folders
+for the months the card report covers, then their files. A charge with no emailed receipt counts as
+matched ("In Drive") when a filed receipt has the same amount, the same or next month, and no
+conflicting vendor or card digits. Check Company Receipts reruns it; uploading a report reruns it.
+
 Cost: scanning Gmail uses no Claude usage. Built-in readers fill in Home Depot, Amazon,
 Uber, Waymo and crew-subject receipts for free. Claude reads only the leftovers, in batches of 8
 on the smallest model, when Kristine clicks Fill with Claude; the page shows this month's count.
