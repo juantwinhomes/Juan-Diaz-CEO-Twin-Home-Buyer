@@ -351,6 +351,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   ];
   const GROUP = "receipts.twinhomebuyer.com";  // the receipts@ group's list id
   const DOMAIN = "@twinhomebuyer.com";
+  // Claude and Anthropic account emails are never receipts, and Gmail withholds them from connectors.
+  const SKIP = " -from:anthropic.com -from:claude.com -from:claude.ai -from:claude";
+  // Errors that mean Gmail can't be used at all. Anything else skips one search or one email and the scan goes on.
+  const FATAL = new Set(["server_not_connected", "needs_reauth", "not_in_manifest", "approval_required", "consent_required", "selection_required", "blocked_by_policy", "not_granted", "capability_disabled", "capability_removed"]);
   const CTABS = [
     { key: "missing", label: "Missing receipt" },
     { key: "check", label: "Check" },
@@ -1561,11 +1565,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         showAccount();
       }
       const mode = scanMode();
+      const skipped = [];
       for (const s of SOURCES) {
         setStatus("Searching " + s.label + "…");
         let token = null, pages = 0;
+        try {
         do {
-          const input = { query: s.q + mode.scope + " -in:sent after:" + after, pageSize: 50 };
+          const input = { query: s.q + mode.scope + SKIP + " -in:sent after:" + after, pageSize: 50 };
           if (token) input.pageToken = token;
           const p = (await gmail("search_threads", input)) || {};
           for (const t of (p.threads || [])) {
@@ -1580,7 +1586,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           token = p.nextPageToken || null;
           pages++;
         } while (token && pages < 4);
+        } catch (e) {
+          if (FATAL.has(e && e.code)) throw e;
+          skipped.push(s.label);
+        }
       }
+      if (skipped.length) banner("Gmail held back the " + skipped.join(", ") + " search, usually because of an automated email it won't share. Everything else was scanned.");
 
       let dups = 0;
       const todo = [...found].filter(([id, meta]) => {
@@ -1599,10 +1610,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       }
 
       const msgs = [];
+      let unread = 0;
       for (let i = 0; i < todo.length; i++) {
         const [id, meta] = todo[i];
         setStatus("Reading email " + (i + 1) + " of " + todo.length + "…");
-        const m = await gmail("get_message", { messageId: id, messageFormat: "PLAIN_TEXT" });
+        let m = null;
+        try { m = await gmail("get_message", { messageId: id, messageFormat: "PLAIN_TEXT" }); }
+        catch (e) { if (FATAL.has(e && e.code)) throw e; unread++; continue; }
         if (!m) continue;
         if (!state.account && m.viewUrl) { detectAccount(m.viewUrl); showAccount(); }
         const addr = String(m.sender || meta.sender || "");
@@ -1663,6 +1677,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         (live ? ", saved." : ", shown as a test and not saved.") +
         " Read for free: " + freeCount + "." +
         (left ? " " + left + " need Claude. Click Fill with Claude when you want them done." : ""));
+      if (unread) banner(unread + (unread === 1 ? " email was" : " emails were") + " held back by Gmail and skipped. Everything else was scanned.");
       if (!live && db && state.account) {
         banner("This scan read " + state.account + ". Only accounting@ and company inboxes on receipts@ are saved, so these rows disappear when you reload.");
       } else if (!live && db && !state.account) {
