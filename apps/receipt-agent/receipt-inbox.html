@@ -249,7 +249,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v11</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v12</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -1855,11 +1855,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         if (d !== null || c !== null) amt = (d || 0) - (c || 0);
       }
       if (amt === null || amt === 0) continue;
+      if (/^bill$/i.test(cell(r, col.type)) || /accounts payable|\ba\/p\b/i.test(cell(r, col.account))) continue; // vendor bills are not card or bank charges
       const row = {
         date: day,
         type: cell(r, col.type).slice(0, 40),
         num: cell(r, col.num).slice(0, 30),
-        name: cell(r, col.name).slice(0, 80),
+        // Reports grouped by vendor (Transaction List by Vendor) carry the payee in the group row.
+        name: (cell(r, col.name) || (col.account >= 0 ? group : "")).slice(0, 80),
         memo: cell(r, col.memo).slice(0, 120),
         split: cell(r, col.split).slice(0, 80),
         account: (cell(r, col.account) || group || fallback).slice(0, 80),
@@ -1874,7 +1876,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       out.push(row);
     }
     // Charges carry the account's usual sign; the other sign is a refund or credit.
-    const isPayment = r => /card payment|^payment$|transfer|deposit/i.test(r.type) || /autopay|payment\s*-?\s*thank you|online payment/i.test(r.name + " " + r.memo);
+    const isPayment = r => /card payment|^payment$|transfer|deposit|bill payment \(check\)/i.test(r.type) || /autopay|payment\s*-?\s*thank you|online payment/i.test(r.name + " " + r.memo);
     const plain = out.filter(r => !isPayment(r));
     const pos = plain.filter(r => r.raw > 0).length;
     const chargeSign = pos >= plain.length - pos ? 1 : -1;
@@ -2151,7 +2153,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         link.onclick = () => openReceipt(hit.r.id);
         m.append(link);
       } else if (s === "skipped") {
-        m.append(el("span", "pill", c.payment ? "Card payment" : "No receipt needed"));
+        m.append(el("span", "pill", c.payment ? "Payment or transfer" : "No receipt needed"));
       } else {
         m.append(el("span", "pill m-missing", "Missing receipt"));
       }
