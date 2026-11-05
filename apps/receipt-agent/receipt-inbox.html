@@ -249,7 +249,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v9</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v10</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -342,12 +342,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   const GMAIL = "Gmail";
   const SOURCES = [
     // receipts@ copies arrive as "'The Home Depot' via Receipts Forwarding", so match the name as well as the address.
-    { key: "homedepot", label: "Home Depot", q: 'from:(homedepot.com OR "home depot") subject:(receipt OR order OR purchase)' },
+    { key: "homedepot", label: "Home Depot", q: 'from:(homedepot.com OR "home depot") subject:receipt' },
     { key: "amazon", label: "Amazon", q: 'from:(amazon.com OR "amazon.com") subject:(shipped OR ordered OR refund)' },
     { key: "waymo", label: "Waymo", q: "subject:waymo" },
     { key: "uber", label: "Uber", q: "subject:uber subject:(trip OR receipt OR order)" },
     { key: "juan", label: "Juan's forwards", q: "from:juan@twinhomebuyer.com subject:(fwd OR fw) (receipt OR order OR trip OR ride OR purchase)" },
-    { key: "other", label: "Crew & other", q: 'subject:receipt -from:amazon.com -from:homedepot.com -from:"home depot" -subject:waymo -subject:uber' }
+    { key: "other", label: "Crew & other", q: 'subject:receipt -from:amazon.com -from:homedepot.com -from:"home depot" -subject:waymo -subject:uber -subject:"receipt agent" -subject:"receipt inbox"' }
   ];
   const GROUP = "receipts.twinhomebuyer.com";  // the receipts@ group's list id
   const DOMAIN = "@twinhomebuyer.com";
@@ -1433,12 +1433,19 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const text = subject + "\n" + raw;
     const head = subject + " " + String(m.sender || "");
     let vendor = VENDOR_BY_SOURCE[m.source] || null;
+    // Only Juan's forwards name the vendor in the body; everything else goes by subject and sender.
+    const where = m.source === "juan" ? text : head;
     if (!vendor) {
-      if (/uber\s*eats/i.test(text)) vendor = "Uber Eats";
+      if (/uber\s*eats/i.test(where)) vendor = "Uber Eats";
       else if (/\buber\b/i.test(head)) vendor = "Uber";
-      else if (/waymo/i.test(text)) vendor = "Waymo";
-      else if (/home\s*depot/i.test(text)) vendor = "Home Depot";
+      else if (/waymo/i.test(where)) vendor = "Waymo";
+      else if (/home\s*depot/i.test(where)) vendor = "Home Depot";
       else if (/amazon/i.test(head)) vendor = "Amazon";
+    }
+    if (!vendor && m.source === "other" && !/@twinhomebuyer\.com/i.test(String(m.sender || ""))) {
+      const nm = String(m.sender || "").replace(/<.*>/, "").replace(/"/g, "").trim();
+      const dom = (String(m.sender || "").match(/@([a-z0-9-]+)\.[a-z.]+>?\s*$/i) || [])[1];
+      vendor = nm && !/@/.test(nm) ? nm.slice(0, 60) : dom ? dom.charAt(0).toUpperCase() + dom.slice(1) : null;
     }
     const x = {
       isReceipt: true, kind: "purchase", vendor, date: null, total: null, itemsSubtotal: null, tax: null,
@@ -1473,14 +1480,18 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (card) x.cardLast4 = card[1];
     if (!x.items) x.items = str(subject.replace(/^\s*(?:fwd?|fw)\s*:\s*/i, ""), 120);
     if (!refund && (m.source === "waymo" || /\b(trip|ride)\b/i.test(subject))) x.kind = "ride";
-    if (!refund && /uber\s*eats/i.test(text)) x.kind = "food";
+    if (!refund && /uber\s*eats/i.test(where)) x.kind = "food";
     // Unpaid invoices and quotes, and Juan's reply chains, are not receipts (vendor receipt emails are left alone).
     if (m.source === "juan" || m.source === "other") {
       const unpaid = /\b(invoice|quote|estimate|proposal)\b/i.test(text)
         && /(deposit due|due on receipt|balance (due|remaining)|amount due|don'?t pay|approval needed)/i.test(text)
         && !/(paid in full|payment received|thank you for your payment|amount paid)/i.test(text);
-      const replyChain = m.source === "juan" && /^\s*re\s*:/i.test(subject);
-      if (unpaid || replyChain) { x.isReceipt = false; x.kind = "other"; }
+      const snd = String(m.sender || "");
+      const teammate = /@twinhomebuyer\.com/i.test(snd) && !/receipts@twinhomebuyer\.com/i.test(snd);
+      const replyChain = teammate && /^\s*re\s*:/i.test(subject);
+      // A teammate's own email counts only when it forwards a receipt or is a crew photo ("Receipt $142.37 820 28th St").
+      const internal = m.source === "other" && teammate && !/^\s*(fwd?|fw)\s*:/i.test(subject) && !crew;
+      if (unpaid || replyChain || internal) { x.isReceipt = false; x.kind = "other"; }
     }
     return x;
   }
@@ -1534,7 +1545,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const details = await extract(msgs);
       let done = 0;
       for (const [id, x] of details) {
-        if (await saveFields(id, { extracted: x })) done++;
+        const cur = allRows().find(r => r.id === id);
+        const patch = { extracted: x };
+        if (x.isReceipt === false && cur && (cur.status || "new") === "new") patch.status = "not_receipt";
+        if (await saveFields(id, patch)) done++;
       }
       if (done) await countUsage(done, Math.ceil(msgs.length / BATCH));
       setStatus("Claude filled in " + done + " of " + ids.length + (ids.length === 1 ? " receipt." : " receipts."));
@@ -1658,6 +1672,15 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           } catch (e) { /* left for Claude */ }
         }
         if (x.total !== null || x.itemsSubtotal !== null) freeCount++;
+        // One Amazon order arrives as "Ordered" and later "Shipped" (the charge): keep one. Separate shipments all stay.
+        let dupStatus = null, retire = [];
+        if (m.source === "amazon" && x.orderNumber && x.kind !== "refund") {
+          const isOrd = s => /^\s*ordered/i.test(s || "");
+          const twins = [...state.docs.values()].filter(d => d.id !== m.id && d.source === "amazon" && d.extracted
+            && d.extracted.orderNumber === x.orderNumber && d.extracted.kind !== "refund" && (d.status || "new") !== "not_receipt");
+          if (twins.length && isOrd(m.subject)) dupStatus = "not_receipt";
+          else if (/^\s*shipped/i.test(m.subject)) retire = twins.filter(d => isOrd(d.subject) && (d.status || "new") === "new").map(d => d.id);
+        }
         const doc = {
           id: m.id,
           threadId: m.threadId,
@@ -1667,14 +1690,17 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           emailDate: m.emailDate,
           viewUrl: m.viewUrl,
           extracted: x,
-          status: prev.status || (x && x.isReceipt === false ? "not_receipt" : "new"),
+          status: prev.status || dupStatus || (x && x.isReceipt === false ? "not_receipt" : "new"),
           property: prev.property || "",
           reviewedAt: prev.reviewedAt || null,
           scannedAt: now,
           scannedBy: state.account || ""
         };
         if (live) {
-          try { await db.collection("receipts").doc(m.id).set(doc); saved++; }
+          try {
+            await db.collection("receipts").doc(m.id).set(doc); saved++;
+            for (const rid of retire) await saveFields(rid, { status: "not_receipt", reviewedAt: now });
+          }
           catch (e) { banner(dbMessage(e), true); break; }
         } else {
           state.temp.set(m.id, doc);
