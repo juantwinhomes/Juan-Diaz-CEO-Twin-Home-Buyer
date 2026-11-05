@@ -253,7 +253,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v17</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v18</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -274,6 +274,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       </select>
       <button id="scan" class="btn primary" type="button">Scan inbox</button>
       <button id="fillClaude" class="btn" type="button" hidden></button>
+      <button id="saveSheet" class="btn" type="button" title="Write every saved receipt and card match to the Receipt Agent Data sheet">Save to Sheet</button>
+      <a id="openSheet" class="btn ghost" target="_blank" rel="noopener" title="Open the Receipt Agent Data sheet">Sheet ↗</a>
     </div>
   </header>
   <div class="statusline">
@@ -363,6 +365,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   ];
   // Company Receipts shared drive: one folder per card, one folder per month, files named "$852.41 - Home Depot".
   const DRIVE = "Google Drive";
+  // Receipt Agent Data (Google Sheet): Summary, Receipts and Card match tabs. Each save replaces the two data tabs.
+  const SHEETS = "Google Sheets";
+  const SHEET_ID = "1Tnh8nUd8F5MM02aL_k-aNtjfif-6txOS6JUuqsK9s6g";
+  const SHEET_URL = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/edit";
   const RECEIPTS_ROOT = "0AJUvSfJqg5l9Uk9PVA";
   const GROUP = "receipts.twinhomebuyer.com";  // the receipts@ group's list id
   const DOMAIN = "@twinhomebuyer.com";
@@ -983,6 +989,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("viewReceipts").onclick = () => { state.view = "receipts"; render(); };
     $("viewCards").onclick = () => { state.view = "cards"; render(); };
     $("driveCheck").onclick = () => loadFiled(true);
+    $("saveSheet").onclick = saveToSheet;
+    $("openSheet").href = SHEET_URL;
     $("cFrom").onchange = e => { state.cFrom = e.target.value || ""; render(); };
     $("cTo").onchange = e => { state.cTo = e.target.value || ""; render(); };
     $("cAll").onclick = () => { state.cFrom = ""; state.cTo = ""; render(); };
@@ -1995,6 +2003,79 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     state.filed = null;
     setStatus("Loaded " + saved + " card " + (saved === 1 ? "line" : "lines") + " from " + file.name + "." + (older ? " Skipped " + older + " older than 3 months." : ""));
     render();
+  }
+
+  // ---------- save to the Receipt Agent Data sheet ----------
+  async function sheetCall(tool, input) {
+    try {
+      return (await mcp.callTool(SHEETS, tool, input)).payload;
+    } catch (e) {
+      if (e && e.retryable) {
+        await sleep(Math.min(e.retryAfterMs || 1500, 15000) + Math.random() * 800);
+        return (await mcp.callTool(SHEETS, tool, input)).payload;
+      }
+      throw e;
+    }
+  }
+  // Sheets reads typed text like its own UI: keep text that starts like a number, date or formula as plain text.
+  const cellText = v => {
+    const t = v === null || v === undefined ? "" : String(v).replace(/[\r\n\t]+/g, " ").trim().slice(0, 500);
+    return t && /^[=+\-@\d'\s(]/.test(t) ? "'" + t : t;
+  };
+  function sheetMessage(e) {
+    const c = e && e.code;
+    if (c === "server_not_connected") return "Google Sheets isn't connected to your Claude. Add it in claude.ai Settings, Connectors, then click Save to Sheet again.";
+    if (c === "not_in_manifest" || c === "approval_required" || c === "consent_required") return "Google Sheets is not allowed on this page yet. Click Save to Sheet and choose Allow.";
+    if (c === "needs_reauth") return "Google Sheets needs to be reconnected in claude.ai Settings, Connectors.";
+    if (c === "tool_error") return "The sheet couldn't be written. If you can't open the Receipt Agent Data sheet, ask Seth to share it with you as an editor.";
+    return "Saving to the sheet didn't work: " + ((e && e.message) || "unknown error") + ".";
+  }
+  async function saveToSheet() {
+    if (!mcp) { banner("Open this page in claude.ai to save to the sheet.", true); return; }
+    const btn = $("saveSheet");
+    btn.disabled = true;
+    banner("");
+    try {
+      setStatus("Saving to the Receipt Agent Data sheet…");
+      const receipts = allRows().filter(r => !state.temp.has(r.id)).slice(0, 999).map(r => {
+        const x = r.extracted || {};
+        const a = amountOf(r).value, tax = num(x.tax);
+        const cm = model && model.byReceipt.get(r.id);
+        return [
+          localDay(x.date || r.emailDate) || "", cellText(x.vendor || senderName(r)), a === null ? "" : a, tax === null ? "" : tax,
+          x.cardLast4 || "", x.orderNumber || "", cellText(x.items), cellText(x.location), cellText(r.property),
+          STATUS_LABEL[r.status || "new"], SOURCE_LABEL[r.source] || "Other",
+          cm ? cellText([cm.c.account, longDate(cm.c.date), money(cm.c.amount)].join(", ")) : "", cm ? cellText(cm.c.split) : "",
+          x.readBy || "", cellText(r.scannedBy), r.viewUrl || "", r.id
+        ];
+      });
+      const label = { missing: "Missing receipt", check: "Check amount", matched: "Matched email", drive: "In Drive", skipped: "No receipt needed" };
+      const charges = (model ? model.charges.slice().sort((a, b) => a.date.localeCompare(b.date)) : []).slice(0, 1999).map(c => {
+        const hit = model.byCharge.get(c.k);
+        const r = hit && hit.r, x = (r && r.extracted) || {}, f = hit && hit.filed;
+        const ra = r ? amountOf(r).value : null;
+        return [
+          c.date, cellText(c.account), cellText(c.type), cellText(c.name), cellText(c.memo), cellText(c.split), c.amount,
+          c.payment ? "Payment or transfer" : label[chargeState(c)],
+          r ? cellText(x.vendor || senderName(r)) : f ? cellText(f.vendor) : "",
+          r ? (localDay(x.date || r.emailDate) || "") : "",
+          r ? (ra === null ? "" : ra) : f ? f.amount : "",
+          r ? cellText(r.property) : f ? cellText(f.card) : "",
+          r ? (r.viewUrl || "") : f ? (f.url || "") : ""
+        ];
+      });
+      await sheetCall("batch_clear_values", { spreadsheetId: SHEET_ID, ranges: ["Receipts!A2:Q", "'Card match'!A2:M"] });
+      if (receipts.length) await sheetCall("update_values", { spreadsheetId: SHEET_ID, range: "Receipts!A2", values: receipts });
+      if (charges.length) await sheetCall("update_values", { spreadsheetId: SHEET_ID, range: "'Card match'!A2", values: charges });
+      const when = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+      await sheetCall("update_values", { spreadsheetId: SHEET_ID, range: "Summary!B2", values: [["'" + when + " Pacific" + (state.account ? ", by " + state.account : "")]] });
+      setStatus("Saved " + receipts.length + (receipts.length === 1 ? " receipt" : " receipts") + " and " + charges.length + (charges.length === 1 ? " card charge" : " card charges") + " to the sheet.");
+    } catch (e) {
+      banner(sheetMessage(e), true);
+      setStatus("");
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   // ---------- Company Receipts in Google Drive (file names only) ----------
