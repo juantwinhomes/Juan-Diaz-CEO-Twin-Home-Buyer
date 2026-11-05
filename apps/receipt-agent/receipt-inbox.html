@@ -249,7 +249,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v10</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v11</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -1476,7 +1476,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const amz = text.match(/\b\d{3}-\d{7}-\d{7}\b/);
     const order = amz ? amz[0] : ((text.match(/\border\s*(?:number|no\.?|#)\s*:?\s*#?\s*([A-Z0-9][A-Z0-9-]{5,19})/i) || [])[1] || null);
     if (order && /\d/.test(order)) x.orderNumber = order;
-    const card = text.match(/(?:ending in|ending|x{3,}|\*{2,}|•{2,})\s*(\d{4})\b/i);
+    const card = text.match(/(?:ending in|ending|x{3,}|\*{2,}|•{2,})\s*(\d{4})\b/i)
+      || text.match(/\b(?:american express|amex|visa|mastercard|discover)\D{0,12}(\d{4})\b/i);
     if (card) x.cardLast4 = card[1];
     if (!x.items) x.items = str(subject.replace(/^\s*(?:fwd?|fw)\s*:\s*/i, ""), 120);
     if (!refund && (m.source === "waymo" || /\b(trip|ride)\b/i.test(subject))) x.kind = "ride";
@@ -1515,6 +1516,44 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
 
   // Claude only on request: re-read the emails the free reader couldn't.
+  // Free: read the amount from the receipt PDF for any saved receipt still missing one. No Claude usage.
+  async function fillFromPdfs(ids) {
+    if (!mcp) return 0;
+    const pick = ids ? new Set(ids) : null;
+    const rows = allRows().filter(r => needsClaude(r) && (r.status || "new") !== "not_receipt" && (!pick || pick.has(r.id))).slice(0, 40);
+    let filled = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      setStatus("Reading receipt PDFs for amounts, " + (i + 1) + " of " + rows.length + "…");
+      try {
+        let m;
+        try { m = await gmail("get_message", { messageId: gid(r.id), messageFormat: "PLAIN_TEXT" }); }
+        catch (e) {
+          if (FATAL.has(e && e.code)) throw e;
+          let local = null;
+          try { local = await findLocalCopy(r); } catch (e2) { local = null; }
+          if (!local || local === gid(r.id)) continue;
+          localIds.set(r.id, local);
+          m = await gmail("get_message", { messageId: local, messageFormat: "PLAIN_TEXT" });
+        }
+        if (!fileAttachments(m).some(a => isPdf(a.mimeType, a.filename))) continue;
+        const t = await pdfTextOf(r.id);
+        const got = t.trim() ? freeRead({ source: r.source, subject: r.subject || "", sender: r.sender || "", body: t }) : null;
+        if (!got || (got.total === null && got.itemsSubtotal === null)) continue;
+        const cur = r.extracted || {};
+        const merged = Object.assign({}, cur, {
+          total: got.total, itemsSubtotal: got.itemsSubtotal,
+          tax: got.tax !== null ? got.tax : (cur.tax !== undefined ? cur.tax : null),
+          orderNumber: cur.orderNumber || got.orderNumber, cardLast4: cur.cardLast4 || got.cardLast4,
+          vendor: cur.vendor || got.vendor, readBy: "pdf"
+        });
+        if (await saveFields(r.id, { extracted: merged })) { r.extracted = merged; filled++; }
+      } catch (e) { if (FATAL.has(e && e.code)) throw e; }
+    }
+    if (filled) render();
+    return filled;
+  }
+
   async function fillWithClaude(ids) {
     if (state.scanning || !ids.length) return;
     if (!mcp) { banner("Open this page in claude.ai to use Claude.", true); return; }
@@ -1524,6 +1563,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("fillClaude").disabled = true;
     banner("");
     try {
+      const fromPdf = await fillFromPdfs(ids);
+      ids = ids.filter(id => { const r = allRows().find(x => x.id === id); return r && needsClaude(r); });
+      if (!ids.length) { setStatus("Filled " + fromPdf + " from the receipt PDFs. No Claude needed."); return; }
       const msgs = [];
       let held = 0;
       for (let i = 0; i < ids.length; i++) {
@@ -1627,7 +1669,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         return;
       }
       if (!todo.length) {
-        setStatus(found.size + " receipt emails found. All of them are already in the list" + (dups ? " (" + dups + " saved from another inbox)." : "."));
+        const f = await fillFromPdfs();
+        setStatus(found.size + " receipt emails found. All of them are already in the list" + (dups ? " (" + dups + " saved from another inbox)." : ".") + (f ? " Filled " + f + " missing amounts from the receipt PDFs." : ""));
         return;
       }
 
@@ -1711,6 +1754,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         (live ? ", saved." : ", shown as a test and not saved.") +
         " Read for free: " + freeCount + "." +
         (left ? " " + left + " need Claude. Click Fill with Claude when you want them done." : ""));
+      const scanMsg = $("status").textContent;
+      const pdfFilled = await fillFromPdfs();
+      setStatus(scanMsg + (pdfFilled ? " Filled " + pdfFilled + " more amounts from the receipt PDFs." : ""));
       if (unread) banner(unread + (unread === 1 ? " email was" : " emails were") + " held back by Gmail and skipped. Everything else was scanned.");
       if (!live && db && state.account) {
         banner("This scan read " + state.account + ". Only accounting@ and company inboxes on receipts@ are saved, so these rows disappear when you reload.");
