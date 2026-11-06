@@ -103,6 +103,19 @@ and leaving out quotes and estimates. Vendors with unmatched charges come first;
 their own searches; fuel, fast food, cash, our own accounts and Anthropic are left out. New vendors on a new report are
 searched automatically.
 
+**Upload receipt (Darlyn).** Every charge with no receipt, or with a possible match, has an Upload receipt button. It
+opens a panel with the Company Receipts card folder (guessed from the account, for example Amex - 2001 to AmEx Receipt,
+changeable) and a file picker. The file goes to that card folder's month folder ("NOVEMBER 2026", created if missing,
+otherwise the card folder itself) through the viewer's Google Drive connector (create_file), named Christine's way
+("$318.00 - Ox Mountain.pdf"); phone photos over 1.2 MB are shrunk to a 2000-pixel JPEG first. The upload is saved on the
+charge (`cards/<account>.found`, uploaded: true) so the charge shows Filed in Drive for everyone right away. The uploader
+needs edit access to Company Receipts.
+
+**Payment-service receipts.** QuickBooks Payments, PayPal and Melio receipts take the vendor from the subject
+("Invoice #6740-(Accent Window Systems, Inc.)", "payment to Yuri Hernandez"). When the card shows a different name for the
+same business (American Rock and Rent billing as Jet Black Logistics), a same-amount, same-window match from a payment
+service is a possible match in the Check tab.
+
 **Receipt Agent Data sheet.** https://docs.google.com/spreadsheets/d/1Tnh8nUd8F5MM02aL_k-aNtjfif-6txOS6JUuqsK9s6g/edit
 (in Seth's Receipt Agent folder). Save to Sheet writes, through the viewer's Google Sheets connector
 (update_values, batch_clear_values): the Receipts tab (one row per saved receipt, with its card charge
