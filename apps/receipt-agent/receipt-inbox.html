@@ -201,6 +201,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .c-range input[type="date"] { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; color: var(--ink); }
 .c-hint { padding: 10px 14px; font-size: 0.8rem; color: var(--muted); border-bottom: 1px solid var(--line); background: var(--sunk); }
 .c-files { font-size: 0.78rem; color: var(--muted); }
+.c-holders { font-size: 0.8rem; color: var(--muted); }
+.c-holders summary { cursor: pointer; width: fit-content; }
+.c-holders-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 14px; padding: 8px 0 2px; }
+.c-holders-list label { display: grid; gap: 3px; }
+.c-holders-list input { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; color: var(--ink); font: inherit; }
 .c-list { flex: 1; overflow: auto; }
 .crow { display: grid; grid-template-columns: 70px minmax(0, 1.2fr) minmax(0, 1fr) 92px minmax(0, 1.5fr) 128px; gap: 12px; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--line); font-size: 0.86rem; }
 .crow.head { position: sticky; top: 0; z-index: 1; background: var(--sunk); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
@@ -253,7 +258,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v21</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v22</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -340,6 +345,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         <button type="button" class="btn small ghost" id="cAll">All dates</button>
         <span id="cRangeNote"></span>
       </div>
+      <details class="c-holders" id="cHolders">
+        <summary>Who holds each card <span id="cHoldersNote"></span></summary>
+        <div class="c-holders-list" id="cHoldersList"></div>
+      </details>
       <p class="c-files" id="cFiles"></p>
     </div>
     <textarea id="reportBox" class="copybox" aria-label="Report text" readonly hidden></textarea>
@@ -378,7 +387,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   // Errors that mean Gmail can't be used at all. Anything else skips one search or one email and the scan goes on.
   const FATAL = new Set(["server_not_connected", "needs_reauth", "not_in_manifest", "approval_required", "consent_required", "selection_required", "blocked_by_policy", "not_granted", "capability_disabled", "capability_removed"]);
   const CTABS = [
-    { key: "missing", label: "Missing receipt" },
+    { key: "missing", label: "No receipt found" },
     { key: "check", label: "Check" },
     { key: "matched", label: "Matched email" },
     { key: "drive", label: "Filed in Drive" },
@@ -415,7 +424,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     filedNote: "",
     cFrom: "",          // date filter for the Card charges view
     cTo: "",
-    cRangeSet: false    // the date filter opens on the report's last day
+    cRangeSet: false,   // the date filter opens on the report's last day
+    holders: {}         // card number -> who holds the card, shared (meta/cardholders)
   };
   let model = null;     // card charges matched to receipts, rebuilt on every render
   const msgCache = new Map(); // email text and photos loaded for the inline view, this visit only
@@ -1888,20 +1898,46 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     }
     // Transaction List by Vendor without an Account column: group rows are payees, and the card is unknown.
     const byVendor = cardCol < 0 && col.name < 0;
-    let group = "";
     const out = [];
-    const seen = new Map();
     const cell = (r, i) => (i >= 0 && r[i] !== null && r[i] !== undefined ? String(r[i]).trim() : "");
+    const filledOf = r => (r || []).map(v => String(v === null || v === undefined ? "" : v).trim()).filter(Boolean);
+    // Group rows name the account (or the payee). A parent account with its own lines closes them with "Total for X",
+    // lists its sub-accounts, then closes with "Total for X with sub-accounts".
+    const totalOf = t => { const m = String(t).match(/^total for (.+?)( with sub-accounts)?\s*$/i); return m ? { name: m[1].trim().slice(0, 80), subs: !!m[2] } : null; };
+    const subsFollow = (from, name) => {
+      const seen = new Set();
+      for (let j = from + 1; j < rows.length; j++) {
+        const f = filledOf(rows[j]);
+        if (!f.length || dayCell((rows[j] || [])[col.date])) continue;
+        const t = totalOf(f[0]);
+        if (!t) {
+          if (/^total$/i.test(f[0])) return false;
+          if (f.length === 1) seen.add(f[0].slice(0, 80));
+          continue;
+        }
+        if (t.subs && t.name === name) return true;
+        if (!seen.has(t.name)) return false;
+      }
+      return false;
+    };
+    const stack = [];
     for (let i = hi + 1; i < rows.length; i++) {
       const r = rows[i] || [];
-      const filled = r.map(v => String(v === null || v === undefined ? "" : v).trim()).filter(Boolean);
+      const filled = filledOf(r);
       if (!filled.length) continue;
       const day = dayCell(r[col.date]);
       if (!day) {
         const first = filled[0];
-        if (!/^total|balance/i.test(first) && filled.length === 1) group = first.slice(0, 80);
+        const t = totalOf(first);
+        if (t) {
+          if (t.subs) { const at = stack.lastIndexOf(t.name); if (at >= 0) stack.length = at; }
+          else if (stack[stack.length - 1] === t.name && !subsFollow(i, t.name)) stack.pop();
+          continue;
+        }
+        if (!/^total|balance/i.test(first) && filled.length === 1) stack.push(first.slice(0, 80));
         continue;
       }
+      const group = stack[stack.length - 1] || "";
       let amt = col.amount >= 0 ? amountCell(r[col.amount]) : null;
       if (amt === null && col.debit >= 0) {
         const d = amountCell(r[col.debit]), c = col.credit >= 0 ? amountCell(r[col.credit]) : null;
@@ -1911,38 +1947,101 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       if (cardCol !== col.account && !cell(r, cardCol)) continue;
       if (/journal entry/i.test(cell(r, col.type))) continue; // bookkeeping entries, not card or bank charges
       if (/^bill$/i.test(cell(r, col.type)) || /accounts payable|\ba\/p\b/i.test(cell(r, col.account))) continue; // vendor bills are not card or bank charges
-      const row = {
+      const payee = cell(r, col.name);
+      out.push({
         date: day,
         type: cell(r, col.type).slice(0, 40),
         num: cell(r, col.num).slice(0, 30),
         // Reports grouped by vendor (Transaction List by Vendor) carry the payee in the group row.
-        name: (cell(r, col.name) || ((col.account >= 0 || byVendor) ? group : "")).slice(0, 80),
-        memo: cell(r, col.memo).slice(0, 120),
-        split: cell(r, catCol).slice(0, 80),
+        name: (payee || ((col.account >= 0 || byVendor) ? group : "")).slice(0, 80),
+        memo: cell(r, col.memo).replace(/\s+/g, " ").slice(0, 120),
+        split: cell(r, catCol).slice(0, 120),
         account: (cell(r, cardCol) || (byVendor ? "QuickBooks charges (all cards)" : group) || fallback).slice(0, 80),
         noCard: byVendor,
         unnamed: !byVendor && !cell(r, cardCol) && !group,
-        raw: Math.round(amt * 100) / 100
-      };
+        raw: Math.round(amt * 100) / 100,
+        path: stack.join(":"), payee, rawSplit: cell(r, catCol)
+      });
+    }
+    // Transaction Detail by Account lists every account in the books: keep the cards and bank accounts.
+    const ledger = !byVendor && cardCol < 0 && catCol >= 0 ? ledgerCharges(out) : null;
+    const list = ledger || out;
+    const seen = new Map();
+    for (const row of list) {
       if (!row.name && row.memo) row.name = row.memo.slice(0, 80);
+      delete row.path; delete row.payee; delete row.rawSplit;
       const base = [row.account, row.date, row.type, row.num, row.name, row.memo, row.raw.toFixed(2)].join("|");
       const n = (seen.get(base) || 0) + 1;
       seen.set(base, n);
       row.k = hashKey(base + "|" + n);
-      out.push(row);
     }
     // Charges carry the account's usual sign; the other sign is a refund or credit.
-    const isPayment = r => /card payment|^payment$|transfer|deposit|bill payment \(check\)/i.test(r.type) || /autopay|payment\s*-?\s*thank you|online payment/i.test(r.name + " " + r.memo);
-    const plain = out.filter(r => !isPayment(r));
+    const isPayment = r => r.xfer || /card payment|^payment$|transfer|deposit|bill payment \(check\)/i.test(r.type) || /autopay|payment\s*-?\s*thank you|online payment/i.test(r.name + " " + r.memo);
+    const plain = list.filter(r => !isPayment(r));
     const pos = plain.filter(r => r.raw > 0).length;
     const chargeSign = pos >= plain.length - pos ? 1 : -1;
-    for (const r of out) {
-      r.payment = isPayment(r);
+    for (const r of list) {
+      r.payment = !!isPayment(r);
+      delete r.xfer;
       const refund = /credit card credit|refund|return/i.test(r.type) || (!r.type && Math.sign(r.raw) !== chargeSign);
       r.amount = Math.round((refund ? -Math.abs(r.raw) : Math.abs(r.raw)) * 100) / 100;
       delete r.raw;
     }
-    return out;
+    return list;
+  }
+  // A whole-ledger report (Transaction Detail by Account) shows each card charge twice: on the card, with the
+  // category as its split, and on the category, with the card as its split. The category line carries the bank's
+  // memo (the card member's "XXXX5004"). Keep the card and bank lines and copy that memo onto them.
+  const MONEY_NAME = /\b(amex|american express|visa|mastercard|master card|discover|citi|chase|capital one|relay|wells fargo|wf|bank of america|boa|checking|savings|credit card|cc|paypal|brex|ramp|mercury|novo|bluevine)\b|\(\d{4}\)|\s-\s*\d{4}(?:\s*&\s*\d{4})*\s*$|^\d{4}\s*-\s/i;
+  const NOT_MONEY = /expense|depreciation|\bfees?\b|interest|\bloans?\b|financ|mortgage|kiavi|anchor|payable|receivable|\bdue (from|to)\b|inventory|income|revenue|equity|investment|wages|payroll|^(19|20)\d{2}\s+[a-z]/i;
+  const leafOf = p => String(p || "").split(":").pop().trim();
+  function ledgerCharges(out) {
+    const paths = new Set(out.map(r => r.path).filter(Boolean));
+    if (paths.size < 3) return null;
+    const leaves = new Set([...paths].map(p => leafOf(p).toLowerCase()));
+    const named = out.filter(r => r.rawSplit && leaves.has(leafOf(r.rawSplit).toLowerCase())).length;
+    if (named < out.length * 0.3) return null;
+    const payPaths = new Set(out.filter(r => /credit card payment|^transfer$/i.test(r.type)).map(r => r.path));
+    const money = new Set([...paths].filter(p => {
+      const leaf = leafOf(p);
+      if (NOT_MONEY.test(p) || NOT_MONEY.test(leaf)) return false;
+      return MONEY_NAME.test(leaf) || MONEY_NAME.test(p) || payPaths.has(p);
+    }));
+    if (!money.size) return null;
+    const moneyLeaves = new Set([...money].map(p => leafOf(p).toLowerCase()));
+    const lc = v => String(v || "").toLowerCase();
+    const keyOf = (date, raw, payee, a, b) => [date, Math.abs(raw).toFixed(2), lc(payee), lc(a), lc(b)].join("|");
+    const mirrors = new Map();
+    for (const r of out) {
+      if (money.has(r.path) || !r.memo) continue;
+      const k = keyOf(r.date, r.raw, r.payee, leafOf(r.rawSplit), leafOf(r.path));
+      if (!mirrors.has(k)) mirrors.set(k, []);
+      mirrors.get(k).push(r);
+    }
+    // Money moving between two of our own accounts (card payments, transfers) shows on both: keep one side.
+    const sideA = r => lc(leafOf(r.path)) <= lc(leafOf(r.rawSplit));
+    const pairKey = r => [r.date, Math.abs(r.raw).toFixed(2)].concat([lc(leafOf(r.path)), lc(leafOf(r.rawSplit))].sort()).join("|");
+    const both = r => money.has(r.path) && moneyLeaves.has(lc(leafOf(r.rawSplit)));
+    const firstSide = new Map();
+    for (const r of out) if (both(r) && sideA(r)) firstSide.set(pairKey(r), (firstSide.get(pairKey(r)) || 0) + 1);
+    const kept = [];
+    for (const r of out) {
+      if (!money.has(r.path)) continue;
+      if (both(r)) {
+        r.xfer = true;
+        if (!sideA(r)) {
+          const k = pairKey(r), n = firstSide.get(k) || 0;
+          if (n > 0) { firstSide.set(k, n - 1); continue; }
+        }
+      }
+      if (!r.memo) {
+        const m = (mirrors.get(keyOf(r.date, r.raw, r.payee, leafOf(r.path), leafOf(r.rawSplit))) || []).shift();
+        if (m) r.memo = m.memo;
+      }
+      r.account = r.path.split(":").map(x => x.trim()).filter(Boolean).join(" · ").slice(0, 80);
+      kept.push(r);
+    }
+    return kept;
   }
   async function readCardFile(file) {
     const X = await xlsxLib();
@@ -1981,6 +2080,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     for (const r of rows) { delete r.unnamed; delete r.noCard; }
     const byAcct = new Map();
     for (const r of rows) { if (!byAcct.has(r.account)) byAcct.set(r.account, []); byAcct.get(r.account).push(r); }
+    if (byAcct.size > 25) {
+      banner("This file lists " + byAcct.size + " accounts, so it looks like the General Ledger. Upload Transaction Detail by Account instead: in QuickBooks, Reports, search Transaction Detail by Account, then Export to Excel.", true);
+      setStatus("");
+      return;
+    }
     let saved = 0;
     for (const [account, list] of byAcct) {
       const id = slug(account);
@@ -1997,8 +2101,27 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         from: all[0], to: all[all.length - 1],
         uploadedAt: new Date().toISOString(), file: String(file.name).slice(0, 120)
       };
+      // A saved document holds at most 256 KB: drop the oldest lines of a very busy card until it fits.
+      while (doc.rows.length > 50 && JSON.stringify(doc).length > 230000) { doc.rows = doc.rows.slice(50); doc.from = doc.rows[0].date; }
       try { await db.collection("cards").doc(id).set(doc); state.cards.set(id, doc); saved += list.length; }
       catch (e) { banner(dbMessage(e), true); break; }
+    }
+    // A report that names the card on each charge replaces the all-cards upload for the same dates, so nothing counts twice.
+    const allId = slug("QuickBooks charges (all cards)");
+    if (!noCard && saved && state.cards.has(allId) && !byAcct.has("QuickBooks charges (all cards)")) {
+      const prev = state.cards.get(allId);
+      const days = rows.map(r => r.date).sort();
+      const left = (prev.rows || []).filter(r => r.date < days[0] || r.date > days[days.length - 1]).sort((a, b) => a.date.localeCompare(b.date));
+      try {
+        if (left.length) {
+          const d = Object.assign({}, prev, { rows: left, from: left[0].date, to: left[left.length - 1].date });
+          await db.collection("cards").doc(allId).set(d);
+          state.cards.set(allId, d);
+        } else {
+          await db.collection("cards").doc(allId).delete();
+          state.cards.delete(allId);
+        }
+      } catch (e) { banner(dbMessage(e), true); }
     }
     if (unnamed) banner("This file didn't name the card, so it was saved under \"" + [...byAcct.keys()].join(", ") + "\". If that's wrong, rename the file to the card's name (for example Amex 1004.xlsx) and upload it again.");
     if (noCard) banner("This report has no Account column, so charges are matched by vendor, date and amount, without the card. For card-level matching, add the Account column in QuickBooks (Customize, Columns) and upload it again.");
@@ -2053,7 +2176,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           x.readBy || "", cellText(r.scannedBy), r.viewUrl || "", r.id
         ];
       });
-      const label = { missing: "Missing receipt", check: "Check amount", matched: "Matched email", drive: "In Drive", skipped: "No receipt needed" };
+      const label = { missing: "No receipt found", check: "Check amount", matched: "Matched email", drive: "In Drive", skipped: "No receipt needed" };
       const charges = (model ? model.charges.slice().sort((a, b) => a.date.localeCompare(b.date)) : []).slice(0, 1999).map(c => {
         const hit = model.byCharge.get(c.k);
         const r = hit && hit.r, x = (r && r.extracted) || {}, f = hit && hit.filed;
@@ -2065,10 +2188,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           r ? (localDay(x.date || r.emailDate) || "") : "",
           r ? (ra === null ? "" : ra) : f ? f.amount : "",
           r ? cellText(r.property) : f ? cellText(f.card) : "",
-          r ? (r.viewUrl || "") : f ? (f.url || "") : ""
+          r ? (r.viewUrl || "") : f ? (f.url || "") : "",
+          c.payment ? "" : cellText(placeOf(c.split)), c.payment ? "" : cellText(buyerOf(c).label), c.payment ? "" : "not recorded", c.payment ? "" : RECEIPT_WORD[chargeState(c)]
         ];
       });
-      await sheetCall("batch_clear_values", { spreadsheetId: SHEET_ID, ranges: ["Receipts!A2:Q", "'Card match'!A2:M"] });
+      await sheetCall("batch_clear_values", { spreadsheetId: SHEET_ID, ranges: ["Receipts!A2:Q", "'Card match'!A2:Q"] });
       if (receipts.length) await sheetCall("update_values", { spreadsheetId: SHEET_ID, range: "Receipts!A2", values: receipts });
       if (charges.length) await sheetCall("update_values", { spreadsheetId: SHEET_ID, range: "'Card match'!A2", values: charges });
       const when = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
@@ -2224,6 +2348,109 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return y + "-" + pad2(m);
   }
   const dayNum = day => Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) / 86400000;
+  // Property or office for a charge, read from its QuickBooks category ("Inventory Asset:972 Norton St:Rehab Costs").
+  function placeOf(split) {
+    const raw = String(split || "").trim();
+    if (!raw) return "";
+    if (/^-?split-?$/i.test(raw)) return "Several";
+    const parts = raw.split(":").map(x => x.trim()).filter(Boolean);
+    if (/vehicle|equipment|depreciation|auto loans?/i.test(raw)) return "Vehicles and equipment";
+    for (const p0 of parts) {
+      const p = p0.replace(/\s*\((?:reported|on juan).*\)\s*$/i, "").replace(/\s+-\s+(?:kiavi|anchor loans?|personal residence|rehab & holding costs)\s*$/i, "").replace(/\s+mtg pmts$/i, "");
+      const m = p.match(/(?:^|\)\s*)(\d{1,6}\s+[A-Za-z0-9][^:]*)$/);
+      if (m && !/^(19|20)\d{2}\s+[A-Za-z]/.test(m[1])) return m[1].trim();
+    }
+    if (/owner'?s pay|personal/i.test(raw)) return "Owner (personal)";
+    const due = raw.match(/^due from\s+([^:]+)/i);
+    if (due) return due[1].replace(/\s*[–-]\s*operating expenses$/i, "").trim();
+    if (/iriga/i.test(raw)) return "Iriga office";
+    if (/rehab|holding|construction|closing|materials/i.test(raw)) return "Property not set";
+    return "Office";
+  }
+  function whatFor(c) {
+    const raw = String(c.split || "").trim();
+    if (!raw) return "No category";
+    if (/^-?split-?$/i.test(raw)) return "Several categories";
+    if (/^mortgages:|mtg pmts/i.test(raw)) return "Mortgage payment";
+    const parts = raw.split(":").map(x => x.trim()).filter(Boolean);
+    const isAddr = p => /^\d/.test(placeOf(p));
+    let i = parts.length - 1;
+    while (i > 0 && isAddr(parts[i])) i--;
+    return isAddr(parts[i]) ? "Property costs" : parts[i];
+  }
+  // Bills, loans, taxes, payroll and related-company transfers: the paperwork is a statement or payroll record, not a store receipt.
+  const STATEMENT = /mortgage|mtg|kiavi|anchor loans|\bloans?\b|interest|taxes|insurance|payroll|salar|wages|labor cost|\bemd\b|due from|owner'?s pay|personal|bank charges|utilities|telephone/i;
+  const isStatement = c => STATEMENT.test(c.split || "") || /^(irs|franchise tax board|gusto|wise inc|lendinghome)$/i.test(c.name || "");
+  // The card a charge was made on: on a card account, the card member at the end of the bank's memo ("XXXX5004", "- 1175");
+  // otherwise the account's own number.
+  const CARD_ACCT = /amex|american express|capital one|citi|discover|home depot|\bcc\b|visa|master ?card|credit/i;
+  function cardOf(c) {
+    const acct = String(c.account || "");
+    if (CARD_ACCT.test(acct)) {
+      const memo = String(c.memo || "");
+      const all = [...memo.matchAll(/(?:x{2,}|\*+|ending\s*(?:in\s*)?)(\d{4})\b/gi)].map(m => m[1]);
+      if (all.length) return all[all.length - 1];
+      const t = memo.match(/\s-\s(\d{4})\s*$/);
+      if (t) return t[1];
+    }
+    const d = acct.match(/\d{4}(?!\d)/g) || [];
+    return CARD_ACCT.test(acct) ? d.join(" & ") : d[0] || "";
+  }
+  // Until purchase emails name the buyer, the card holder stands in for the buyer.
+  function buyerOf(c) {
+    const card = cardOf(c);
+    const kind = CARD_ACCT.test(String(c.account || "")) ? "card" : "account";
+    const who = card && state.holders[card];
+    return { card, kind, who: who || "", label: who ? who + " (" + kind + " " + card + ")" : card ? kind + " " + card + ", holder not set" : c.account + ", holder not set" };
+  }
+  const RECEIPT_WORD = { matched: "YES", drive: "YES", check: "CHECK", skipped: "Not needed", missing: "NO" };
+  async function saveHolder(card, name) {
+    if (!db) { banner("Open this page in claude.ai to save card holders.", true); return; }
+    const holders = Object.assign({}, state.holders);
+    const v = String(name || "").replace(/\s+/g, " ").trim().slice(0, 60);
+    if (v) holders[card] = v; else delete holders[card];
+    try {
+      await db.doc("meta/cardholders").set({ holders });
+      state.holders = holders;
+      render();
+    } catch (e) { banner(dbMessage(e), true); }
+  }
+  let holdersSig = "";
+  function renderHolders() {
+    const box = $("cHoldersList");
+    const seen = new Map();
+    for (const c of model.charges) {
+      if (c.payment) continue;
+      const card = cardOf(c);
+      if (!card) continue;
+      const e = seen.get(card) || { n: 0, accounts: new Set(), kind: buyerOf(c).kind };
+      e.n++; e.accounts.add(c.account);
+      seen.set(card, e);
+    }
+    const cards = [...seen.keys()].sort((a, b) => seen.get(b).n - seen.get(a).n);
+    const missing = cards.filter(k => !state.holders[k]).length;
+    $("cHoldersNote").textContent = cards.length ? "(" + (missing ? missing + " of " + cards.length + " not set" : "all " + cards.length + " set") + ")" : "";
+    $("cHolders").hidden = !cards.length;
+    const sig = JSON.stringify([cards, state.holders]);
+    if (sig === holdersSig || box.contains(document.activeElement)) return;
+    holdersSig = sig;
+    box.textContent = "";
+    box.append(el("p", null, "The report shows the card holder as the buyer until purchase emails name the buyer. Type a name and press Enter. Everyone using this page sees it."));
+    box.firstChild.style.gridColumn = "1 / -1";
+    for (const card of cards) {
+      const e = seen.get(card);
+      const lab = el("label");
+      lab.append(el("span", null, (e.kind === "card" ? "Card " : "Account ") + card + " · " + [...e.accounts].slice(0, 2).join(", ") + " · " + e.n + (e.n === 1 ? " charge" : " charges")));
+      const inp = document.createElement("input");
+      inp.type = "text";
+      inp.placeholder = "Who holds this card";
+      inp.value = state.holders[card] || "";
+      inp.onchange = () => saveHolder(card, inp.value);
+      inp.onkeydown = ev => { if (ev.key === "Enter") inp.blur(); };
+      lab.append(inp);
+      box.append(lab);
+    }
+  }
   function cardModel() {
     const charges = [];
     for (const [id, d] of state.cards) {
@@ -2374,7 +2601,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       stat("Matched email", counts.matched.length, "", counts.matched.length ? "ok" : ""),
       stat("Filed in Drive", counts.drive.length, "", counts.drive.length ? "ok" : ""),
       stat("Check", counts.check.length, "", counts.check.length ? "warn" : ""),
-      stat("Missing receipt", counts.missing.length, counts.missing.length ? money(sumOf(counts.missing)) : "", counts.missing.length ? "bad" : ""),
+      stat("No receipt found", counts.missing.length, counts.missing.length ? money(sumOf(counts.missing)) : "", counts.missing.length ? "bad" : ""),
       stat("Receipt, no charge", counts.nocharge.length)
     );
     const fi = $("cFrom"), ti = $("cTo");
@@ -2397,10 +2624,14 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       b.onclick = () => { state.cTab = t.key; render(); };
       tabs.append(b);
     }
+    renderHolders();
     const files = [...state.cards.values()].sort((a, b) => String(a.account).localeCompare(String(b.account)));
+    const loaded = files.length > 4
+      ? "Loaded: " + files.length + " accounts, " + shortDate(files.map(d => d.from).sort()[0]) + " to " + shortDate(files.map(d => d.to).sort().pop()) + ", uploaded " + shortDate(files.map(d => d.uploadedAt).sort().pop())
+      : files.length ? "Loaded: " + files.map(d => d.account + " (" + shortDate(d.from) + " to " + shortDate(d.to) + ", uploaded " + shortDate(d.uploadedAt) + ")").join(" · ") : "";
     if (state.filed === null && !filedLoading && mcp && model.charges.length) setTimeout(() => loadFiled(false), 0);
     $("cFiles").textContent = [
-      files.length ? "Loaded: " + files.map(d => d.account + " (" + shortDate(d.from) + " to " + shortDate(d.to) + ", uploaded " + shortDate(d.uploadedAt) + ")").join(" · ") : "",
+      loaded,
       state.filedNote
     ].filter(Boolean).join("  ·  ");
     const box = $("cList");
@@ -2415,7 +2646,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const HINTS = {
       matched: "Charges matched to a receipt that came in by email (Home Depot, Amazon, Uber and the rest).",
       drive: "Charges with a receipt Kristine already filed in Company Receipts (same amount and vendor, same month).",
-      missing: "Charges with no emailed receipt and nothing filed in Company Receipts.",
+      missing: "Charges with no emailed receipt and nothing filed in Company Receipts. Some may have a receipt attached in QuickBooks, which this page can't see.",
       nocharge: "Receipts with no posted charge in this QuickBooks report yet. Usually the charge is still waiting in Bank transactions, or it was paid on an account the report doesn't cover.",
       skipped: "Card payments, transfers and deposits, plus charges marked No receipt needed."
     };
@@ -2447,7 +2678,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       }
       return;
     }
-    ["Date", "Payee", "Card · category", "Amount", "Receipt", ""].forEach(t => head.append(el("span", t === "Amount" ? "amt" : null, t)));
+    ["Date", "Payee", "Card · what for · buyer", "Amount", "Receipt", ""].forEach(t => head.append(el("span", t === "Amount" ? "amt" : null, t)));
     box.append(head);
     const list = counts[state.cTab] || [];
     if (!list.length) {
@@ -2461,7 +2692,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       if (c.memo && c.memo !== c.name) p.append(el("small", null, c.memo));
       row.append(p);
       const cat = el("span", "c-cat", c.account);
-      cat.append(el("small", null, [c.type, c.split].filter(Boolean).join(" · ")));
+      const place = placeOf(c.split), buyer = buyerOf(c);
+      cat.append(el("small", null, [c.payment ? c.type : whatFor(c), c.payment ? "" : place, c.payment ? "" : buyer.who ? "Bought by " + buyer.who : buyer.card ? (buyer.kind === "card" ? "Card " : "Account ") + buyer.card : ""].filter(Boolean).join(" · ")));
+      cat.title = [c.type, c.split].filter(Boolean).join(" · ");
       row.append(cat, el("span", "amt", money(c.amount)));
       const m = el("span", "match");
       const hit = model.byCharge.get(c.k);
@@ -2488,7 +2721,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       } else if (s === "skipped") {
         m.append(el("span", "pill", c.payment ? "Payment or transfer" : "No receipt needed"));
       } else {
-        m.append(el("span", "pill m-missing", "Missing receipt"));
+        m.append(el("span", "pill m-missing", "No receipt found"));
+        if (isStatement(c)) m.append(el("small", null, "Bill, loan, tax or payroll"));
       }
       row.append(m);
       const act = el("span", "c-act");
@@ -2510,32 +2744,46 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 
   // ---------- the typed report for Juan ----------
   function reportText() {
-    const today = localDay(new Date().toISOString());
     const rows = allRows();
     const by = k => rows.filter(r => (r.status || "new") === k).length;
-    const lines = ["Receipt agent report, " + longDate(today) + ". All times Pacific.", ""];
-    lines.push("RECEIPTS: " + rows.length + " in the inbox. To review " + by("new") + ", Follow-up " + by("follow_up") + ", Good " + by("good") + ", Not a receipt " + by("not_receipt") + ".");
     if (!model.charges.length) {
-      lines.push("CARD CHARGES: no card report uploaded yet.");
-      return lines.join("\n");
+      return ["Receipt agent report, " + longDate(localDay(new Date().toISOString())) + ". Pacific Time.", "",
+        "RECEIPTS: " + rows.length + " in the inbox. To review " + by("new") + ", Follow-up " + by("follow_up") + ", Good " + by("good") + ", Not a receipt " + by("not_receipt") + ".",
+        "CARD CHARGES: no QuickBooks report uploaded yet."].join("\n");
     }
     const c = cardCounts();
-    const n = model.charges.filter(x => !x.payment && inRange(x.date));
-    const accounts = [...new Set(model.charges.map(x => x.account))];
     const from = state.cFrom || model.from, to = state.cTo || model.to;
-    lines.push("CARD CHARGES: " + n.length + " (" + money(sumOf(n)) + "), " + longDate(from) + " to " + longDate(to) + ", " + accounts.join(", ") + ".");
-    lines.push("- Matched to an emailed receipt: " + c.matched.length);
-    lines.push("- Receipt already filed in Company Receipts: " + c.drive.length);
-    lines.push("- Likely match, amount to check: " + c.check.length);
-    lines.push("- Missing a receipt: " + c.missing.length + (c.missing.length ? " (" + money(sumOf(c.missing)) + ")" : ""));
-    lines.push("- No receipt needed or card payments: " + c.skipped.length);
-    lines.push("- Receipts with no card charge yet: " + c.nocharge.length);
-    if (c.missing.length) {
-      lines.push("", "MISSING RECEIPTS");
-      const list = c.missing.slice().sort((a, b) => b.amount - a.amount);
-      list.slice(0, 25).forEach((x, i) => lines.push((i + 1) + ". " + shortDate(x.date) + ", " + (x.name || x.memo || "No payee") + ", " + money(x.amount) + ", " + x.account));
-      if (list.length > 25) lines.push("...and " + (list.length - 25) + " more in the Receipt Inbox page.");
+    const span = from === to ? longDate(from) : longDate(from) + " to " + longDate(to);
+    const charges = model.charges.filter(x => !x.payment && inRange(x.date)).sort((a, b) => a.date.localeCompare(b.date) || b.amount - a.amount);
+    const payee = x => x.name || x.memo || "No payee";
+    const flagLine = (x, i) => (i + 1) + ". " + [shortDate(x.date), payee(x), money(x.amount), whatFor(x), placeOf(x.split) || "Not set", "buyer: " + buyerOf(x).label, x.account].join(", ");
+    const found = c.matched.length + c.drive.length;
+    const lines = ["Expense report: charges posted in QuickBooks, " + span + ". Pacific Time.",
+      charges.length + (charges.length === 1 ? " charge, " : " charges, ") + money(sumOf(charges)) + ". Receipt found: " + found + ". No receipt found: " + c.missing.length + ". Amount to check: " + c.check.length + ".", "",
+      "FLAGS"];
+    const buys = c.missing.filter(x => !isStatement(x)).sort((a, b) => b.amount - a.amount);
+    const bills = c.missing.filter(isStatement).sort((a, b) => b.amount - a.amount);
+    const flagList = (title, list, max) => {
+      lines.push(title + ": " + list.length + (list.length ? " (" + money(sumOf(list)) + "), largest first" : ""));
+      list.slice(0, max).forEach((x, i) => lines.push(flagLine(x, i)));
+      if (list.length > max) lines.push("...and " + (list.length - max) + " more in the Receipt Inbox page and the Receipt Agent Data sheet.");
+    };
+    flagList("No receipt found, purchases", buys, 40);
+    if (bills.length) { lines.push(""); flagList("No receipt found, bills, loans, taxes and payroll (a statement usually covers these)", bills, 15); }
+    if (c.check.length) {
+      lines.push("", "Receipt found, amount to check: " + c.check.length);
+      c.check.forEach((x, i) => lines.push(flagLine(x, i)));
     }
+    lines.push("", "No approval: approvals aren't recorded yet. They start with the purchase email (Bought by / Approved by). Until then, Buyer shows the card holder.");
+    lines.push("", "EVERY CHARGE", "Date | Charge | What it's for | Property or office | Amount | Buyer | Approver | Receipt");
+    charges.slice(0, 150).forEach(x => {
+      const b = buyerOf(x);
+      lines.push([shortDate(x.date), payee(x), whatFor(x), placeOf(x.split) || "Not set", money(x.amount), b.who || (b.card ? b.kind + " " + b.card : x.account), "not recorded", RECEIPT_WORD[chargeState(x)]].join(" | "));
+    });
+    if (charges.length > 150) lines.push("...and " + (charges.length - 150) + " more. Pick fewer dates in the Receipt Inbox page, or open the Receipt Agent Data sheet.");
+    const pays = model.charges.filter(x => x.payment && inRange(x.date)).length;
+    lines.push("", "Not listed: " + pays + " card payments, deposits and transfers between our own accounts. Receipts with no posted charge yet: " + c.nocharge.length + ".");
+    lines.push("Source: QuickBooks Transaction Detail by Account (posted charges; charges still waiting in Bank transactions aren't in it). Receipts: the accounting@ inbox, receipts@ and Company Receipts in Google Drive.");
     return lines.join("\n");
   }
   async function copyReport() {
@@ -2556,18 +2804,19 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   async function downloadCardCsv() {
     if (!model.charges.length) { banner("Upload a card report first."); return; }
     const q = v => '"' + String(v === null || v === undefined ? "" : v).replace(/"/g, '""') + '"';
-    const label = { missing: "Missing receipt", check: "Check amount", matched: "Matched email", drive: "In Drive", skipped: "No receipt needed" };
-    const head = ["Date", "Card", "Type", "Payee", "Memo", "Category", "Amount", "Match", "Receipt vendor", "Receipt date", "Receipt amount", "Property", "Email"];
+    const label = { missing: "No receipt found", check: "Check amount", matched: "Matched email", drive: "In Drive", skipped: "No receipt needed" };
+    const head = ["Date", "Card", "Type", "Payee", "Memo", "Category", "Amount", "Match", "Receipt vendor", "Receipt date", "Receipt amount", "Property", "Email", "Property or office", "Buyer", "Approver", "Receipt"];
+    const tail = c => c.payment ? ["", "", "", ""] : [placeOf(c.split), buyerOf(c).label, "not recorded", RECEIPT_WORD[chargeState(c)]];
     const lines = [head.map(q).join(",")];
     for (const c of model.charges.filter(x => inRange(x.date)).sort((a, b) => a.date.localeCompare(b.date))) {
       const hit = model.byCharge.get(c.k);
       const r = hit && hit.r, x = (r && r.extracted) || {};
       if (hit && hit.filed) {
-        lines.push([c.date, c.account, c.type, c.name, c.memo, c.split, c.amount.toFixed(2), "In Drive", hit.filed.vendor, hit.filed.ym, money(hit.filed.amount), hit.filed.card, hit.filed.url].map(q).join(","));
+        lines.push([c.date, c.account, c.type, c.name, c.memo, c.split, c.amount.toFixed(2), "In Drive", hit.filed.vendor, hit.filed.ym, money(hit.filed.amount), hit.filed.card, hit.filed.url].concat(tail(c)).map(q).join(","));
         continue;
       }
       lines.push([c.date, c.account, c.type, c.name, c.memo, c.split, c.amount.toFixed(2), c.payment ? "Card payment" : label[chargeState(c)],
-        r ? (x.vendor || senderName(r)) : "", r ? localDay(x.date || r.emailDate) : "", r ? amountOf(r).label : "", r ? r.property || "" : "", r ? r.viewUrl || "" : ""].map(q).join(","));
+        r ? (x.vendor || senderName(r)) : "", r ? localDay(x.date || r.emailDate) : "", r ? amountOf(r).label : "", r ? r.property || "" : "", r ? r.viewUrl || "" : ""].concat(tail(c)).map(q).join(","));
     }
     await saveFile("Card match " + localDay(new Date().toISOString()) + ".csv", lines.join("\r\n"));
   }
@@ -2595,6 +2844,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       }, err => { clearTimeout(timer); banner(dbMessage(err), true); });
       db.collection("cards").onSnapshot(snap => {
         state.cards = new Map(snap.docs.map(d => [d.id, d.data()]));
+        render();
+      }, () => {});
+      db.doc("meta/cardholders").onSnapshot(s => {
+        state.holders = s.exists ? Object.assign({}, s.data().holders || {}) : {};
         render();
       }, () => {});
       db.doc("meta/usage").onSnapshot(s => {

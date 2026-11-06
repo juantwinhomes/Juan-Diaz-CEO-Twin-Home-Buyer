@@ -21,19 +21,37 @@ Home Depot and Amazon searches match the sender's name as well as its address
 copy under different Gmail ids; a scan skips one whose subject matches a saved receipt within 45
 minutes. A receipt saved from another inbox opens in yours by finding your copy by subject and date.
 
-**Card charges view (QuickBooks matching).** Seth (Reports-only QuickBooks user) opens each
-company card in Accounting → Chart of accounts → Action → Run report, sets Last 30 days, and
-exports to Excel. Upload card report reads the file in the page (SheetJS from cdnjs; QuickBooks
-QuickReport, Transaction Report, or a card-site CSV) and keeps the rows in the shared store, one
-document per card account (`cards/<account>`); a new file replaces its own date range. Matching
-runs in the page and is never saved: same amount within -3 to +10 days of the receipt, vendor and
-card last 4 must agree when both are known; Amazon shipment emails (items, no tax) match as
-"Check" when the charge is 0 to 11% above the item total. Tabs: Missing receipt, Check, Matched,
-No receipt needed (card payments, plus charges Kristine marks), Receipt with no charge. Each
-receipt shows its card charge and the QuickBooks category. Copy report for Juan builds the typed
-summary with the missing-receipt list; Download CSV exports the whole match. Card data is
-readable by everyone the page is shared with, so keep the page shared only with Seth, Kristine
-and Juan.
+**Card charges view (QuickBooks matching).** The report to upload is QuickBooks **Transaction Detail
+by Account** (Reports, search the name, set the dates, Export to Excel), unfiltered. It lists every
+account, so each card charge appears twice: on the card or bank account, with the category as its
+Split, and on the category, with the card as its Split. The page rebuilds the account tree from the
+group and "Total for X (with sub-accounts)" rows, keeps only card and bank accounts (names like
+Amex - 2001, WELLS FARGO (8251), Relay, Capital One, Home Depot - 5253, or any account with card
+payments or transfers; never expense, loan, mortgage, inventory, due-from or vehicle accounts), copies
+the bank memo from the category line onto the card line (that memo carries the card member, e.g.
+XXXX5004), and keeps one side of each transfer or card payment between two of our own accounts.
+Journal entries and bills are skipped. The older formats still work (Account QuickReport, the newer
+Transaction report, Transaction List by Vendor, a card-site CSV). A file listing more than 25 accounts
+(the General Ledger) is refused with a pointer to Transaction Detail by Account. Rows are kept in the
+shared store, one document per account (`cards/<account>`, trimmed to stay under the 256 KB document
+limit); a new file replaces its own date range, and a card-level upload removes the old all-cards
+upload's rows for the same dates so nothing counts twice. Matching runs in the page and is never
+saved: same amount within -3 to +10 days of the receipt, vendor and card last 4 must agree when both
+are known; Amazon shipment emails (items, no tax) match as "Check" when the charge is 0 to 11% above
+the item total. Tabs: No receipt found, Check, Matched email, Filed in Drive, No receipt needed
+(card payments, transfers, plus charges Kristine marks), Receipt with no charge.
+
+Each charge shows what it's for (the category's last level), the property or office (the address in
+the category path, "Property not set" for a rehab or holding cost with no property, Office otherwise)
+and the buyer. Until purchase emails name the buyer, the buyer is the card holder: Who holds each card
+lists every card member and bank account in the report, and the names typed there are shared
+(`meta/cardholders`). Approver shows "not recorded" until approvals are tracked. **Copy report for
+Juan** builds Juan's format for the dates picked (the latest date by default): flags first (no receipt
+found, purchases first, then bills, loans, taxes and payroll that a statement usually covers; amount
+to check; approvals), then every charge as Date | Charge | What it's for | Property or office | Amount
+| Buyer | Approver | Receipt YES/NO. Download CSV and Save to Sheet carry the same four columns. Card
+data is readable by everyone the page is shared with, so keep the page shared only with the team that
+runs it.
 
 **Company Receipts (Google Drive).** Kristine files receipts in the Company Receipts shared drive:
 one folder per card, one folder per month ("OCTOBER 2026"), files named "$852.41 - Home Depot".
