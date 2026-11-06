@@ -67,9 +67,12 @@ which left most filed receipts unmatched).
 **Search all of Drive.** For flagged charges in the dates shown (purchases first, largest first, 150
 per click; another click goes on to the next 150), the page asks Drive's full-text search, which reads
 the text inside PDFs and photos, for the charge's amount (410.10, 4,500.00, 4,500) and one vendor word,
-in PDFs and images created from 20 days before the charge. A hit counts only when the file name
-carries the same amount, or the text Drive returns shows the amount and the vendor word. Each file
-matches one charge. Hits are saved on the charge's account document (`cards/<account>.found`), so
+in PDFs and images created from 20 days before the charge. A hit counts when the file name carries the same
+amount, or the text Drive returns (about 5,000 characters) shows the amount as a whole number
+("$410.10" counts, "1,410.10" doesn't). A second search with the amount alone, for amounts with cents,
+files its hit as a possible match in the Check tab, where Confirm or Not it settles it. Each file
+matches one charge, and a file marked Not it is never offered again. Downloaded receipts can be dropped
+into Drive without renaming. Hits are saved on the charge's account document (`cards/<account>.found`), so
 everyone sees them; they show as Filed in Drive ("Found in Drive") with a link to the file.
 
 **Export to Excel** (replaces Download CSV) writes one workbook for the dates shown: Flags (each

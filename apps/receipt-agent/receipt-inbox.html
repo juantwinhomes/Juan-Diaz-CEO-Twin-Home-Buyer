@@ -213,7 +213,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .crow .payee { font-weight: 600; overflow-wrap: anywhere; }
 .crow small { display: block; color: var(--muted); font-weight: 400; font-size: 0.76rem; overflow-wrap: anywhere; }
 .crow .match { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-width: 0; }
-.crow .c-act { justify-self: end; }
+.crow .c-act { justify-self: end; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .linkbtn { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; font-weight: 600; text-align: left; }
 .linkbtn:hover { text-decoration: underline; }
 .pill.m-matched { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
@@ -258,7 +258,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v24</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v25</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -2286,25 +2286,43 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return words[0] || "";
   }
   const isoDay = (day, shift) => new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) + shift * 86400000).toISOString().slice(0, 19) + "Z";
+  // The amount as a whole number in the text: "$410.10" counts, "1,410.10" and "410.105" don't; "4,500" counts in "4,500.00".
+  function hasAmount(text, forms) {
+    for (const f of forms) {
+      for (let i = text.indexOf(f); i >= 0; i = text.indexOf(f, i + 1)) {
+        const before = text[i - 1] || " ", after = text.slice(i + f.length, i + f.length + 3);
+        if (/[\d.,]/.test(before) || /^\d/.test(after)) continue;
+        if (/^[.,]\d/.test(after) && (f.includes(".") || !/^\.00/.test(after))) continue;
+        return true;
+      }
+    }
+    return false;
+  }
+  // First with the vendor word; then, for amounts with cents, the amount alone, which only counts as a possible match.
   async function driveFind(c, used) {
     const amt = Math.abs(c.amount);
     const forms = amountForms(amt), word = vendorWord(c);
-    const q = "(" + forms.map(f => "fullText contains '" + f + "'").join(" or ") + ")" +
-      (word ? " and fullText contains '" + word.replace(/'/g, "") + "'" : "") +
+    const base = "(" + forms.map(f => "fullText contains '" + f + "'").join(" or ") + ")" +
       " and (mimeType = 'application/pdf' or mimeType contains 'image/') and createdTime > '" + isoDay(c.date, -20) + "'";
-    const p = (await driveCall({ query: q, pageSize: 5, snippetVerbosity: "BRIEF" })) || {};
-    for (const g of p.files || []) {
-      if (used.has(g.id)) continue;
-      const t = parseFiled(g.title);
-      const text = String(g.title || "") + " " + String(g.contentSnippet || "");
-      const titleOk = t && Math.abs(Math.abs(t.amount) - amt) < 0.005 && (!word || text.toLowerCase().includes(word) || !t.vendor);
-      const textOk = forms.some(f => text.includes(f)) && (!word || text.toLowerCase().includes(word));
-      if (!titleOk && !textOk) continue;
-      const url = String(g.viewUrl || "");
-      used.add(g.id);
-      return { id: g.id, name: String(g.title || "").slice(0, 160), url: /^https:\/\/(drive|docs)\.google\.com\//.test(url) ? url : "" };
+    const look = async (q, possible) => {
+      const p = (await driveCall({ query: q, pageSize: 5, snippetVerbosity: "DETAILED" })) || {};
+      for (const g of p.files || []) {
+        if (used.has(g.id)) continue;
+        const t = parseFiled(g.title);
+        const text = String(g.title || "") + " " + String(g.contentSnippet || "");
+        const titleOk = t && Math.abs(Math.abs(t.amount) - amt) < 0.005;
+        if (!titleOk && !hasAmount(text, forms)) continue;
+        const url = String(g.viewUrl || "");
+        used.add(g.id);
+        return { id: g.id, name: String(g.title || "").slice(0, 160), url: /^https:\/\/(drive|docs)\.google\.com\//.test(url) ? url : "", possible };
+      }
+      return null;
+    };
+    if (word) {
+      const hit = await look(base + " and fullText contains '" + word.replace(/'/g, "") + "'", false);
+      if (hit) return hit;
     }
-    return null;
+    return amt.toFixed(2).endsWith(".00") ? null : look(base, true);
   }
   let searching = false;
   const searched = new Set();   // charges already searched on this visit; another click goes on to the next ones
@@ -2335,7 +2353,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const byCard = new Map();
       for (const [c, f] of hits) {
         if (!byCard.has(c.cardId)) byCard.set(c.cardId, {});
-        byCard.get(c.cardId)[c.k] = { id: f.id, name: f.name, url: f.url, at: new Date().toISOString() };
+        byCard.get(c.cardId)[c.k] = { id: f.id, name: f.name, url: f.url, at: new Date().toISOString(), possible: !!f.possible };
       }
       for (const [id, add] of byCard) {
         const d = state.cards.get(id);
@@ -2347,7 +2365,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         } catch (e) { banner(dbMessage(e), true); }
       }
       const more = flagged.length - list.length;
-      setStatus("Searched Drive for " + list.length + " flagged " + (list.length === 1 ? "charge" : "charges") + ": " + hits.size + (hits.size === 1 ? " receipt found." : " receipts found.") +
+      const sure = [...hits.values()].filter(f => !f.possible).length, maybe = hits.size - sure;
+      setStatus("Searched Drive for " + list.length + " flagged " + (list.length === 1 ? "charge" : "charges") + ": " + sure + (sure === 1 ? " receipt found" : " receipts found") +
+        (maybe ? ", " + maybe + (maybe === 1 ? " possible match" : " possible matches") + " to check in the Check tab." : ".") +
         (failed ? " " + failed + " searches didn't answer." : "") + (more > 0 ? " Click again for the next " + Math.min(more, 150) + "." : ""));
     } catch (e) {
       banner(driveMessage(e), true);
@@ -2619,7 +2639,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     for (const c of charges) {
       if (c.payment || c.marked || byCharge.has(c.k)) continue;
       const f = ((state.cards.get(c.cardId) || {}).found || {})[c.k];
-      if (f) byCharge.set(c.k, { filed: { card: "Found in Drive", vendor: f.name, amount: c.amount, url: f.url, ym: c.date.slice(0, 7), name: f.name }, quality: "filed" });
+      if (f && !f.rejected) byCharge.set(c.k, { filed: { card: f.possible ? "Possible match in Drive" : "Found in Drive", vendor: f.name, amount: c.amount, url: f.url, ym: c.date.slice(0, 7), name: f.name, found: true }, quality: f.possible ? "check" : "filed" });
     }
     return { charges, byCharge, byReceipt, from: days[0], to: days[days.length - 1] };
   }
@@ -2688,6 +2708,19 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       render();
     } catch (e) { banner(dbMessage(e), true); }
   }
+  async function markFound(c, action) {
+    const d = state.cards.get(c.cardId);
+    if (!d || !db) return;
+    const found = Object.assign({}, d.found || {});
+    const f = found[c.k];
+    if (!f) return;
+    found[c.k] = action === "confirm" ? Object.assign({}, f, { possible: false }) : Object.assign({}, f, { rejected: true });
+    try {
+      await db.collection("cards").doc(c.cardId).update({ found });
+      state.cards.set(c.cardId, Object.assign({}, d, { found }));
+      render();
+    } catch (e) { banner(dbMessage(e), true); }
+  }
   function stat(label, value, extra, cls) {
     const s = el("div", "stat" + (cls ? " " + cls : ""));
     s.append(el("b", null, String(value)), el("span", null, label));
@@ -2750,6 +2783,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const HINTS = {
       matched: "Charges matched to a receipt that came in by email (Home Depot, Amazon, Uber and the rest).",
       drive: "Charges with a receipt filed in Company Receipts (same amount and vendor, same month), or found anywhere in Drive by Search all of Drive.",
+      check: "Possible receipts to confirm: a file in Drive with the same amount where the vendor couldn't be confirmed, or an Amazon order whose total needs checking. Open the file, then Confirm or Not it.",
       missing: "Charges with no emailed receipt and nothing filed in Company Receipts. Search all of Drive looks for the rest by amount and vendor. Some may have a receipt attached in QuickBooks, which this page can't see.",
       nocharge: "Receipts with no posted charge in this QuickBooks report yet. Usually the charge is still waiting in Bank transactions, or it was paid on an account the report doesn't cover.",
       skipped: "Card payments, transfers and deposits, plus charges marked No receipt needed."
@@ -2804,7 +2838,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const hit = model.byCharge.get(c.k);
       const s = chargeState(c);
       if (hit && hit.filed) {
-        m.append(el("span", "pill m-matched", "In Drive"));
+        m.append(el("span", "pill " + (hit.quality === "check" ? "m-check" : "m-matched"), hit.quality === "check" ? "Possible, check" : "In Drive"));
         const label = [hit.filed.card, hit.filed.vendor || "receipt", money(hit.filed.amount)].filter(Boolean).join(" · ");
         if (hit.filed.url) {
           const a = el("a", "linkbtn", label);
@@ -2835,6 +2869,20 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         b.type = "button";
         b.onclick = () => markCharge(c, c.marked ? "" : "no_receipt");
         act.append(b);
+      }
+      if (hit && hit.filed && hit.filed.found) {
+        if (hit.quality === "check") {
+          const ok = el("button", "btn small", "Confirm");
+          ok.type = "button";
+          ok.title = "This file is the receipt for this charge";
+          ok.onclick = () => markFound(c, "confirm");
+          act.append(ok);
+        }
+        const no = el("button", "btn small ghost", "Not it");
+        no.type = "button";
+        no.title = "This file isn't the receipt; flag the charge again";
+        no.onclick = () => markFound(c, "reject");
+        act.append(no);
       }
       row.append(act);
       box.append(row);
