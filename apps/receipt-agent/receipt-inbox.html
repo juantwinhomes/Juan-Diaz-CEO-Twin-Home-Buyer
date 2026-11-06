@@ -258,7 +258,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v23</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v24</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -2341,8 +2341,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         const d = state.cards.get(id);
         if (!d) continue;
         const found = Object.assign({}, d.found || {}, add);
-        await db.collection("cards").doc(id).update({ found });
-        d.found = found;
+        try {
+          await db.collection("cards").doc(id).update({ found });
+          state.cards.set(id, Object.assign({}, d, { found }));
+        } catch (e) { banner(dbMessage(e), true); }
       }
       const more = flagged.length - list.length;
       setStatus("Searched Drive for " + list.length + " flagged " + (list.length === 1 ? "charge" : "charges") + ": " + hits.size + (hits.size === 1 ? " receipt found." : " receipts found.") +
@@ -2682,7 +2684,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (mark) marks[c.k] = mark; else delete marks[c.k];
     try {
       await db.collection("cards").doc(c.cardId).update({ marks });
-      d.marks = marks;
+      state.cards.set(c.cardId, Object.assign({}, d, { marks }));
       render();
     } catch (e) { banner(dbMessage(e), true); }
   }
@@ -2958,7 +2960,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         render();
       }, err => { clearTimeout(timer); banner(dbMessage(err), true); });
       db.collection("cards").onSnapshot(snap => {
-        state.cards = new Map(snap.docs.map(d => [d.id, d.data()]));
+        state.cards = new Map(snap.docs.map(d => [d.id, Object.assign({}, d.data())]));
         render();
       }, () => {});
       db.doc("meta/cardholders").onSnapshot(s => {
