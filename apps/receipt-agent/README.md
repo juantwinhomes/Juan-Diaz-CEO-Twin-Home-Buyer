@@ -95,6 +95,14 @@ subject:(fwd OR fw)`) so forwarded invoices count whatever their subject says. F
 from the forwarded message (Gmail's forwarded header, or the Send My Receipts note), not from the teammate who forwarded
 it or the day it was forwarded. Refunds and credits with no matching receipt count as "No receipt needed (refund)".
 
+**Card vendors search.** Besides the fixed sources, each scan builds searches from the loaded card report: one term
+per vendor (its billing domain when known, such as apple.com, google.com, intuit.com, pge.com; otherwise its name as a
+phrase, such as "lyngso materials"), plus payment services small vendors bill through (Square, PayPal, Stripe, Toast,
+Clover, Intuit, Venmo, Invoice2go, Joist, Housecall Pro, Jobber), limited to receipt, invoice and paid-bill subjects
+and leaving out quotes and estimates. Vendors with unmatched charges come first; Amazon, Home Depot, Uber and Waymo keep
+their own searches; fuel, fast food, cash, our own accounts and Anthropic are left out. New vendors on a new report are
+searched automatically.
+
 **Receipt Agent Data sheet.** https://docs.google.com/spreadsheets/d/1Tnh8nUd8F5MM02aL_k-aNtjfif-6txOS6JUuqsK9s6g/edit
 (in Seth's Receipt Agent folder). Save to Sheet writes, through the viewer's Google Sheets connector
 (update_values, batch_clear_values): the Receipts tab (one row per saved receipt, with its card charge

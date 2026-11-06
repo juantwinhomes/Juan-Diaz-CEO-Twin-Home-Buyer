@@ -258,7 +258,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v27</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v28</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -374,8 +374,58 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     { key: "juan", label: "Juan's forwards", q: "from:juan@twinhomebuyer.com subject:(fwd OR fw) (receipt OR order OR trip OR ride OR purchase)" },
     { key: "other", label: "Crew & other", q: 'subject:receipt -from:amazon.com -from:homedepot.com -from:"home depot" -subject:waymo -subject:uber -subject:"receipt agent" -subject:"receipt inbox"' },
     // Receipts and invoices teammates forward to receipts@ (by hand, by Gmail filter, or with Send My Receipts), whatever the subject says.
-    { key: "forwards", label: "Forwarded to receipts@", q: 'list:receipts.twinhomebuyer.com subject:(fwd OR fw) -subject:"receipt agent" -subject:"receipt inbox"' }
+    { key: "forwards", label: "Forwarded to receipts@", q: 'list:receipts.twinhomebuyer.com subject:(fwd OR fw) -subject:"receipt agent" -subject:"receipt inbox"' },
+    // Every other vendor on the card report (Apple, Google, Intuit, PG&E, Lyngso Materials...): built at scan time by vendorSources().
+    { key: "vendors", label: "Card vendors", q: null }
   ];
+  // Subjects vendors use for receipts, invoices and paid bills.
+  const BILL_WORDS = 'receipt OR invoice OR "payment received" OR "payment confirmation" OR "order confirmation" OR "your order" OR "your bill" OR "bill is ready" OR statement OR "thanks for your payment" OR "payment successful" OR "amount paid"';
+  // Billing senders for vendors whose card names don't match their email (checked in order).
+  const VENDOR_DOMAINS = [
+    [/apple/i, "apple.com"], [/google|gsuite|workspace/i, "google.com"], [/intuit|quickbooks/i, "intuit.com"], [/pg&e|\bpge\b|pacific gas/i, "pge.com"],
+    [/comcast|xfinity/i, "comcast.net"], [/ebmud|east bay municipal/i, "ebmud.com"], [/upwork/i, "upwork.com"], [/facebook|\bmeta\b|\bfb\b/i, "facebookmail.com"],
+    [/instantly/i, "instantly.ai"], [/airbnb/i, "airbnb.com"], [/doordash|\bdd \*/i, "doordash.com"], [/volaris/i, "volaris.com"], [/cubicasa/i, "cubicasa.com"],
+    [/craigslist/i, "craigslist.org"], [/twilio/i, "twilio.com"], [/perplexity/i, "perplexity.ai"], [/grok|x\.ai/i, "x.ai"], [/signnow/i, "signnow.com"],
+    [/payroll ?hero/i, "payrollhero.com"], [/lowe'?s/i, "lowes.com"], [/starlink/i, "starlink.com"], [/yelp/i, "yelp.com"], [/retell/i, "retellai.com"],
+    [/hubstaff/i, "hubstaff.com"], [/melio/i, "meliopayments.com"], [/deputy/i, "deputy.com"], [/best ?buy/i, "bestbuy.com"], [/nordstrom/i, "nordstrom.com"],
+    [/springhill|marriott/i, "marriott.com"], [/canva/i, "canva.com"], [/zapier/i, "zapier.com"], [/openai|chatgpt/i, "openai.com"], [/godaddy/i, "godaddy.com"],
+    [/wpengine|wp engine/i, "wpengine.com"], [/dropbox/i, "dropbox.com"], [/adobe/i, "adobe.com"], [/microsoft|msft/i, "microsoft.com"], [/linkedin/i, "linkedin.com"]
+  ];
+  // Payment services small vendors send receipts and invoices through.
+  const PAY_SENDERS = ["squareup.com", "paypal.com", "stripe.com", "toasttab.com", "clover.com", "intuit.com", "venmo.com", "invoice2go.com", "joist.com", "housecallpro.com", "jobber.com"];
+  const GENERIC_WORDS = new Set(["gas", "food", "mart", "market", "station", "service", "services", "supply", "supplies", "store", "shop", "company", "corp", "the", "inc", "llc",
+    "purchase", "authorized", "withdrawal", "cash", "payment", "online", "transfer", "fee", "fees", "bill", "billing", "card", "credit", "debit", "intl", "recurring",
+    "san", "carlos", "mateo", "jose", "francisco", "fresno", "madera", "oakland", "modesto", "redwood", "city", "county", "state", "california", "calif", "united", "states"]);
+  // Paper-receipt places (fuel, fast food, cash) and our own accounts never email a receipt: leave them out of the search.
+  const NO_EMAIL = /chevron|\bshell\b|\barco\b|valero|\bunion\b|exxon|chipotle|jack in the box|wendy|mcdonald|taqueria|safeway|eleven|car wash|\batm\b|\bcash\b|withdrawal|wells fargo|juan diaz|matrix group|purchase intl|authorized on|online transfer|recurring payment/i;
+  // One search term per card vendor: its billing domain when known, else its name as a phrase ("lyngso materials", "jet black").
+  function vendorTerm(c) {
+    const t = String(c.name || "") + " " + String(c.memo || "");
+    for (const [re, dom] of VENDOR_DOMAINS) if (re.test(t)) return dom;
+    if (/anthropic|claude/i.test(t) || NO_EMAIL.test(t)) return null;   // Gmail keeps Anthropic emails from Claude's tools
+    const name = String(c.name || "").replace(/^\s*(aplpay|tst\*|sq ?\*|py ?\*|paypal ?\*|dd ?\*|sp )\s*/i, "").replace(/\bx{2,}\d+.*$/i, "").replace(/[^A-Za-z0-9&' ]+/g, " ").trim();
+    const words = name.toLowerCase().split(/\s+/).filter(w => w && !["the", "inc", "llc", "co", "corp", "ca"].includes(w));
+    if (!words.length || words[0].length < 3 || GENERIC_WORDS.has(words[0])) return null;
+    if (words.length === 1) return words[0].length >= 5 && /^[a-z]+$/.test(words[0]) && !GENERIC_WORDS.has(words[0]) ? words[0] : null;
+    return '"' + words.slice(0, 2).join(" ") + '"';
+  }
+  function vendorSources() {
+    if (!model || !model.charges.length) return [];
+    const counts = new Map();
+    for (const c of model.charges) {
+      if (c.payment || c.amount <= 0 || isStatement(c)) continue;
+      if (/amazon|amzn|home\s*depot|homedepot|uber|waymo/i.test(c.name + " " + c.memo)) continue;   // searched on their own above
+      const term = vendorTerm(c);
+      if (term) counts.set(term, (counts.get(term) || 0) + (chargeState(c) === "missing" ? 3 : 1));
+    }
+    const terms = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]).slice(0, 120);
+    for (const p of PAY_SENDERS) if (!terms.includes(p)) terms.push(p);
+    const out = [];
+    for (let i = 0; i < terms.length; i += 15) {
+      out.push({ key: "vendors", label: "Card vendors", q: "from:(" + terms.slice(i, i + 15).join(" OR ") + ") subject:(" + BILL_WORDS + ") -subject:(quote OR estimate OR proposal)" });
+    }
+    return out;
+  }
   // Company Receipts shared drive: one folder per card, one folder per month, files named "$852.41 - Home Depot".
   const DRIVE = "Google Drive";
   // Receipt Agent Data (Google Sheet): Summary, Receipts and Card match tabs. Each save replaces the two data tabs.
@@ -1511,7 +1561,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       else if (d3) fwdDate = d3[1] + "-" + d3[2] + "-" + d3[3];
       if (fwdDate && (fwdDate > localDay(new Date().toISOString()) || fwdDate < "2020-01-01")) fwdDate = null;
     }
-    if (!vendor && m.source === "other" && !/@twinhomebuyer\.com/i.test(String(m.sender || ""))) {
+    if (!vendor && (m.source === "other" || m.source === "vendors") && !/@twinhomebuyer\.com/i.test(String(m.sender || ""))) {
       const nm = String(m.sender || "").replace(/<.*>/, "").replace(/"/g, "").trim();
       const dom = (String(m.sender || "").match(/@([a-z0-9-]+)\.[a-z.]+>?\s*$/i) || [])[1];
       vendor = nm && !/@/.test(nm) ? nm.slice(0, 60) : dom ? dom.charAt(0).toUpperCase() + dom.slice(1) : null;
@@ -1553,7 +1603,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (!refund && (m.source === "waymo" || /\b(trip|ride)\b/i.test(subject))) x.kind = "ride";
     if (!refund && /uber\s*eats/i.test(where)) x.kind = "food";
     // Unpaid invoices and quotes, and Juan's reply chains, are not receipts (vendor receipt emails are left alone).
-    if (m.source === "juan" || m.source === "other" || m.source === "forwards") {
+    if (m.source === "juan" || m.source === "other" || m.source === "forwards" || m.source === "vendors") {
       const unpaid = /\b(invoice|quote|estimate|proposal)\b/i.test(text)
         && /(deposit due|due on receipt|balance (due|remaining)|amount due|don'?t pay|approval needed)/i.test(text)
         && !/(paid in full|payment received|thank you for your payment|amount paid)/i.test(text);
@@ -1700,8 +1750,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       }
       const mode = scanMode();
       const skipped = [];
-      for (const s of SOURCES) {
-        setStatus("Searching " + s.label + "…");
+      const vs = vendorSources();
+      for (const s of SOURCES.filter(x => x.q).concat(vs)) {
+        setStatus("Searching " + s.label + (s.key === "vendors" && vs.length > 1 ? " (" + (vs.indexOf(s) + 1) + " of " + vs.length + ")" : "") + "…");
         let token = null, pages = 0;
         try {
         do {
