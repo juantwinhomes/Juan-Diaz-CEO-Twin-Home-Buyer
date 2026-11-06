@@ -116,6 +116,13 @@ needs edit access to Company Receipts.
 same business (American Rock and Rent billing as Jet Black Logistics), a same-amount, same-window match from a payment
 service is a possible match in the Check tab.
 
+**Receipts the team sends to receipts@.** An email addressed (To or Cc) to receipts@ counts as a receipt even from a
+company address, so a teammate's photo or screenshot ("Starlink Mounts Receipt" from era@) is no longer dropped by the
+internal-email rule. A "Sent to receipts@ by the team" search also picks up team emails with an attachment whatever the
+subject says. **Receipt photos:** when a receipt has no amount and its only receipt is an image (no PDF), Fill with
+Claude sends the image (the larger pictures in the email, shrunk to 1600 pixels, up to 2) to Claude on the quick tier and
+saves the vendor, date, amount, items and card it reads. The page declares `sample: {images: true}`.
+
 **Receipt Agent Data sheet.** https://docs.google.com/spreadsheets/d/1Tnh8nUd8F5MM02aL_k-aNtjfif-6txOS6JUuqsK9s6g/edit
 (in Seth's Receipt Agent folder). Save to Sheet writes, through the viewer's Google Sheets connector
 (update_values, batch_clear_values): the Receipts tab (one row per saved receipt, with its card charge

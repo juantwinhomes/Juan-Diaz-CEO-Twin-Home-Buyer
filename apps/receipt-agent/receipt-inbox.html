@@ -262,7 +262,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v29</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v30</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -380,6 +380,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     // Receipts and invoices teammates forward to receipts@ (by hand, by Gmail filter, or with Send My Receipts), whatever the subject says.
     { key: "forwards", label: "Forwarded to receipts@", q: 'list:receipts.twinhomebuyer.com subject:(fwd OR fw) -subject:"receipt agent" -subject:"receipt inbox"' },
     // Every other vendor on the card report (Apple, Google, Intuit, PG&E, Lyngso Materials...): built at scan time by vendorSources().
+    { key: "teamsent", label: "Sent to receipts@ by the team", q: 'list:receipts.twinhomebuyer.com from:twinhomebuyer.com has:attachment -subject:(fwd OR fw OR re) -subject:"receipt agent" -subject:"receipt inbox"' },
     { key: "vendors", label: "Card vendors", q: null }
   ];
   // Subjects vendors use for receipts, invoices and paid bills.
@@ -1513,6 +1514,46 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return out;
   }
 
+  // Receipt photos and screenshots: the larger images in the email (small ones are logos), shrunk to 1600 pixels.
+  async function receiptImages(id) {
+    try {
+      const parts = (await fileParts(id)).filter(p => !p.pdf && p.bytes.length >= 15000).slice(0, 2);
+      const out = [];
+      for (const p of parts) out.push(await shrinkImage(new Blob([p.bytes], { type: p.type })));
+      return out.filter(Boolean);
+    } catch (e) { return []; }
+  }
+  async function shrinkImage(blob) {
+    try {
+      const bmp = await createImageBitmap(blob);
+      const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+      if (k === 1 && blob.size < 1500000) return blob;
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+      cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+      return await new Promise(res => cv.toBlob(b => res(b || blob), "image/jpeg", 0.85));
+    } catch (e) { return blob; }
+  }
+  let imagesOk = null;
+  async function extractImages(list) {
+    const out = new Map();
+    if (!list.length || !sample || sampleOff) return out;
+    if (imagesOk === null) { try { imagesOk = !!(sample.limits && (await sample.limits()).images); } catch (e) { imagesOk = false; } }
+    if (!imagesOk) { banner(list.length + (list.length === 1 ? " receipt is" : " receipts are") + " only a photo. Claude can't read photos in this view yet; type the amount on the receipt or upload it on its charge."); return out; }
+    for (let i = 0; i < list.length; i++) {
+      setStatus("Reading receipt photo " + (i + 1) + " of " + list.length + "…");
+      try {
+        const res = await sample.json(prompt([list[i]]) + "\n\nThe receipt itself is the attached image (a photo or a screenshot). Read the vendor, date, total, tax, items, ship-to or store address and card digits from the image.", { modelTier: "quick", images: list[i].images });
+        const o = Array.isArray(res) ? res[0] : res;
+        if (o && typeof o === "object") out.set(list[i].id, cleanExtract(o));
+      } catch (e) {
+        const c = e && e.code;
+        if (c === "rate_limited") { banner("Claude's usage limit was reached. The rest stay blank; try again later."); break; }
+        if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed", "images_unavailable"].includes(c)) { banner("Claude isn't allowed to read photos on this page. Allow it from this page's Permissions menu."); break; }
+      }
+    }
+    return out;
+  }
   function trimForClaude(body) {
     let t = String(body || "")
       .replace(/https?:\/\/\S+/g, "")
@@ -1612,7 +1653,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (!refund && (m.source === "waymo" || /\b(trip|ride)\b/i.test(subject))) x.kind = "ride";
     if (!refund && /uber\s*eats/i.test(where)) x.kind = "food";
     // Unpaid invoices and quotes, and Juan's reply chains, are not receipts (vendor receipt emails are left alone).
-    if (m.source === "juan" || m.source === "other" || m.source === "forwards" || m.source === "vendors") {
+    if (m.source === "juan" || m.source === "other" || m.source === "forwards" || m.source === "vendors" || m.source === "teamsent") {
       const unpaid = /\b(invoice|quote|estimate|proposal)\b/i.test(text)
         && /(deposit due|due on receipt|balance (due|remaining)|amount due|don'?t pay|approval needed)/i.test(text)
         && !/(paid in full|payment received|thank you for your payment|amount paid)/i.test(text);
@@ -1620,7 +1661,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const teammate = /@twinhomebuyer\.com/i.test(snd) && !/receipts@twinhomebuyer\.com/i.test(snd);
       const replyChain = teammate && /^\s*re\s*:/i.test(subject);
       // A teammate's own email counts only when it forwards a receipt or is a crew photo ("Receipt $142.37 820 28th St").
-      const internal = m.source === "other" && teammate && !/^\s*(fwd?|fw)\s*:/i.test(subject) && !crew;
+      const internal = m.source === "other" && teammate && !m.viaReceipts && !/^\s*(fwd?|fw)\s*:/i.test(subject) && !crew;
       if (unpaid || replyChain || internal) { x.isReceipt = false; x.kind = "other"; }
     }
     return x;
@@ -1695,7 +1736,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const fromPdf = await fillFromPdfs(ids);
       ids = ids.filter(id => { const r = allRows().find(x => x.id === id); return r && needsClaude(r); });
       if (!ids.length) { setStatus("Filled " + fromPdf + " from the receipt PDFs. No Claude needed."); return; }
-      const msgs = [];
+      const msgs = [], imgMsgs = [];
       let held = 0;
       for (let i = 0; i < ids.length; i++) {
         setStatus("Reading email " + (i + 1) + " of " + ids.length + " for Claude…");
@@ -1711,9 +1752,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
             if (t.trim()) body = "RECEIPT PDF:\n" + t.slice(0, 1500) + "\n\nEMAIL:\n" + body;
           } catch (e) { /* email text only */ }
         }
-        msgs.push({ id: ids[i], subject: String(m.subject || ""), sender: String(m.sender || ""), emailDate: isoOf(m.date), body });
+        const entry = { id: ids[i], subject: String(m.subject || ""), sender: String(m.sender || ""), emailDate: isoOf(m.date), body };
+        // A photo or screenshot of the receipt (and no PDF): Claude reads the picture.
+        const imgs = !/^RECEIPT PDF:/.test(body) && fileAttachments(m).some(a => /^image\//i.test(String(a.mimeType || ""))) ? await receiptImages(ids[i]) : [];
+        if (imgs.length) { entry.images = imgs; imgMsgs.push(entry); } else msgs.push(entry);
       }
       const details = await extract(msgs);
+      for (const [id, x] of await extractImages(imgMsgs)) details.set(id, x);
       let done = 0;
       for (const [id, x] of details) {
         const cur = allRows().find(r => r.id === id);
@@ -1721,7 +1766,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         if (x.isReceipt === false && cur && (cur.status || "new") === "new") patch.status = "not_receipt";
         if (await saveFields(id, patch)) done++;
       }
-      if (done) await countUsage(done, Math.ceil(msgs.length / BATCH));
+      if (done) await countUsage(done, Math.ceil(msgs.length / BATCH) + imgMsgs.length);
       setStatus("Claude filled in " + done + " of " + ids.length + (ids.length === 1 ? " receipt." : " receipts."));
       if (held) banner(held + (held === 1 ? " email was" : " emails were") + " held back by Gmail and skipped. Mark them Not a receipt.");
     } catch (e) {
@@ -1824,7 +1869,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           emailDate: isoOf(m.date),
           viewUrl: String(m.viewUrl || ""),
           body: String(m.plaintextBody || m.snippet || ""),
-          attachments: fileAttachments(m)
+          attachments: fileAttachments(m),
+          // Sent to receipts@ on purpose (a teammate's photo or screenshot): a receipt, even from a company address.
+          viaReceipts: [].concat(m.toRecipients || [], m.ccRecipients || []).some(a => /receipts@twinhomebuyer\.com/i.test(String(a)))
         });
       }
 
