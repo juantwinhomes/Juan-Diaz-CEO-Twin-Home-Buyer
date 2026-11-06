@@ -56,15 +56,19 @@ p { margin: 0; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 button, select, input { font: inherit; color: inherit; }
 
-/* Top bar */
-.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
-.brand { display: grid; gap: 0; margin-right: auto; min-width: 0; }
-.brand .eyebrow { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
-.brand h1 { font-size: 1.45rem; line-height: 1.1; }
-.inbox { font-size: 0.78rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
-.inbox.live { color: var(--ok); border-color: var(--ok); }
-.inbox.test { color: var(--warn); border-color: var(--warn); }
-.scanbox { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* Top bar: brand and view on the first row, the tools for the open view on the second */
+.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.brand { display: grid; gap: 1px; margin-right: auto; min-width: 0; }
+.brand .eyebrow { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.brand h1 { font-size: 1.5rem; line-height: 1.1; }
+.inbox { font-size: 0.76rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.inbox.live { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); background: var(--ok-soft); }
+.inbox.test { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); background: var(--warn-soft); }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.toolbar .statusline { flex: 1 1 260px; min-width: 0; }
+.tgroup { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-left: 10px; border-left: 1px solid var(--line); }
+.tgroup:first-of-type { border-left: 0; padding-left: 0; }
+.tgroup > label { font-size: 0.76rem; color: var(--muted); }
 .scanbox label { font-size: 0.78rem; color: var(--muted); }
 select, input[type="text"], input[type="search"] {
   background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; min-width: 0;
@@ -81,33 +85,35 @@ select, input[type="text"], input[type="search"] {
 .btn.ghost { background: transparent; }
 .btn.small { font-size: 0.78rem; padding: 4px 9px; }
 kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius: 4px; border: 1px solid currentColor; opacity: 0.7; }
-.statusline { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--muted); min-height: 1.2em; }
+.statusline { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 0.8rem; color: var(--muted); min-height: 1.2em; }
+.statusline #status { color: var(--ink); }
 .statusline span:empty { display: none; }
 .banner { border-radius: 8px; padding: 8px 12px; background: var(--warn-soft); border: 1px solid var(--warn); font-size: 0.88rem; }
 .banner.bad { background: var(--bad-soft); border-color: var(--bad); }
 
 /* Two panes */
 .app {
-  flex: 1; min-height: 0; display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 12px;
+  flex: 1; min-height: 0; display: grid; grid-template-columns: clamp(340px, 27vw, 430px) minmax(0, 1fr); gap: 12px;
 }
 .pane { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 
 /* Queue */
-.qhead { display: grid; gap: 8px; padding: 10px; border-bottom: 1px solid var(--line); }
+.qhead { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px; border-bottom: 1px solid var(--line); }
 .segs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; background: var(--sunk); border-radius: 9px; padding: 3px; }
-.seg { cursor: pointer; border: 0; background: transparent; border-radius: 7px; padding: 5px 4px; display: grid; justify-items: center; gap: 0; color: var(--muted); }
+.seg { cursor: pointer; border: 0; background: transparent; border-radius: 7px; padding: 5px 4px; min-width: 0; display: grid; justify-items: center; gap: 0; color: var(--muted); }
 .seg .seg-count { font-family: var(--display); font-weight: 700; font-size: 1.05rem; line-height: 1.1; color: var(--ink); }
-.seg .seg-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
+.seg .seg-label { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; white-space: normal; text-align: center; line-height: 1.15; }
 .seg[aria-selected="true"] { background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
 .seg[data-key="new"][aria-selected="true"] .seg-label { color: var(--accent); }
 .seg[data-key="follow_up"][aria-selected="true"] .seg-label { color: var(--warn); }
 .seg[data-key="good"][aria-selected="true"] .seg-label { color: var(--ok); }
 .tools { display: flex; gap: 6px; }
-.tools input { flex: 1 1 auto; }
+.tools input { flex: 1 1 auto; min-width: 0; }
 .tools select { flex: 0 0 auto; max-width: 46%; }
 .qmeta { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--muted); }
 .qmeta label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.qmeta #listCount { margin-left: auto; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.qmeta { min-width: 0; }
+.qmeta #listCount { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; background: var(--accent-soft); border-bottom: 1px solid var(--line); }
 .bulk #bulkCount { font-weight: 600; font-size: 0.82rem; margin-right: auto; }
 .copybox { margin: 8px 10px; min-height: 90px; font-family: var(--mono); font-size: 0.75rem; border: 1px solid var(--line); border-radius: 8px; background: var(--sunk); color: var(--ink); padding: 6px; }
@@ -165,7 +171,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .pv-pdf { display: grid; gap: 10px; width: calc(var(--zoom, 1) * 100%); max-width: none; }
 .pv-page { display: block; width: 100%; height: auto; background: var(--paper); border-radius: 4px; box-shadow: 0 1px 2px rgba(15, 23, 32, 0.18), 0 6px 18px rgba(15, 23, 32, 0.08); }
 .pv-files img { display: block; width: calc(var(--zoom, 1) * 100%); max-width: none; height: auto; border-radius: 6px; background: var(--paper); }
-.pv-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.86rem; line-height: 1.55; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; max-width: 80ch; }
+.pv-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.84rem; line-height: 1.6; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; max-width: 72ch; margin-inline: auto; }
 .pv-note { color: var(--muted); font-size: 0.85rem; }
 .facts { position: sticky; top: 56px; display: grid; gap: 14px; background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
 .field { display: grid; gap: 4px; }
@@ -180,62 +186,102 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .d-empty b { display: block; color: var(--ink); font-size: 1.05rem; margin-bottom: 6px; }
 
 /* View switch, and the card charges view */
-.views { display: inline-flex; background: var(--sunk); border: 1px solid var(--line); border-radius: 9px; padding: 3px; }
-.views button { cursor: pointer; border: 0; background: transparent; border-radius: 7px; padding: 5px 12px; font-weight: 600; font-size: 0.85rem; color: var(--muted); }
-.views button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+.views { display: inline-flex; background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.views button { cursor: pointer; border: 0; background: transparent; border-radius: 7px; padding: 6px 14px; font-weight: 600; font-size: 0.86rem; color: var(--muted); }
+.views button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(15, 23, 32, 0.12), 0 0 0 1px var(--line); }
 .app[hidden], .cards[hidden] { display: none; }
 .cards { flex: 1; min-height: 0; }
-.c-head { display: grid; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-.c-stats { display: flex; flex-wrap: wrap; gap: 8px 26px; }
-.stat { display: grid; }
-.stat b { font-family: var(--display); font-size: 1.35rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.stat span { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.stat small { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
-.stat.bad b { color: var(--bad); }
-.stat.warn b { color: var(--warn); }
-.stat.ok b { color: var(--ok); }
-.c-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.c-tools .segs { flex: 1 1 520px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
-.c-range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--muted); }
+.c-head { display: grid; gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
+.c-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.c-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-right: auto; min-width: 0; }
+.c-title h2 { font-size: 1.25rem; line-height: 1.15; }
+.c-title .c-total { font-size: 1.05rem; color: var(--muted); }
+.c-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.c-range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 0.8rem; color: var(--muted); }
 .c-range label { display: inline-flex; align-items: center; gap: 6px; }
 .c-range input[type="date"] { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; color: var(--ink); }
-.c-hint { padding: 10px 14px; font-size: 0.8rem; color: var(--muted); border-bottom: 1px solid var(--line); background: var(--sunk); }
-.c-files { font-size: 0.78rem; color: var(--muted); }
+.c-note { color: var(--muted); }
+/* Status tiles: each one is the count, the label and the dollars, and clicking it opens that list */
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.kpi { cursor: pointer; text-align: left; display: grid; gap: 2px; align-content: start; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--sunk); color: var(--ink); min-width: 0; position: relative; }
+.kpi::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; border-radius: 10px 0 0 10px; background: var(--tone, var(--line)); }
+.kpi:hover { border-color: var(--tone, var(--accent)); }
+.kpi[aria-selected="true"] { background: var(--surface); border-color: var(--tone, var(--accent)); box-shadow: 0 0 0 1px var(--tone, var(--accent)); }
+.kpi-count { font-family: var(--display); font-size: 1.5rem; font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; color: var(--tone, var(--ink)); }
+.kpi-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); line-height: 1.2; }
+.kpi-sum { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.kpi.t-bad { --tone: var(--bad); }
+.kpi.t-warn { --tone: var(--warn); }
+.kpi.t-ok { --tone: var(--ok); }
+.kpi.t-info { --tone: var(--accent); }
+.kpi.t-mute { --tone: var(--wait); }
+.c-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; }
+.c-hint { display: flex; gap: 8px; align-items: baseline; padding: 9px 16px; font-size: 0.8rem; color: var(--muted); border-bottom: 1px solid var(--line); background: var(--sunk); }
+.c-hint::before { content: "i"; flex: 0 0 auto; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; font: 600 0.68rem/1 var(--mono); color: var(--accent); border: 1px solid var(--accent); }
+.c-files { font-size: 0.76rem; color: var(--muted); }
 .c-holders { font-size: 0.8rem; color: var(--muted); }
-.up-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px 12px; border-bottom: 1px solid var(--line); background: var(--accent-soft); font-size: 0.84rem; }
+.c-holders summary { cursor: pointer; width: fit-content; color: var(--accent); font-weight: 600; }
+.c-holders-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 14px; padding: 10px 0 2px; }
+.c-holders-list label { display: grid; gap: 3px; }
+.c-holders-list input { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; color: var(--ink); font: inherit; }
+.up-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--accent-soft); font-size: 0.84rem; }
 .up-panel label { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .up-panel select, .up-panel input[type="file"] { max-width: 100%; min-width: 0; }
 .up-panel .up-name { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); overflow-wrap: anywhere; }
-.c-holders summary { cursor: pointer; width: fit-content; }
-.c-holders-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 14px; padding: 8px 0 2px; }
-.c-holders-list label { display: grid; gap: 3px; }
-.c-holders-list input { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; color: var(--ink); font: inherit; }
 .c-list { flex: 1; overflow: auto; }
-.crow { display: grid; grid-template-columns: 70px minmax(0, 1.2fr) minmax(0, 1fr) 92px minmax(0, 1.5fr) 128px; gap: 12px; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--line); font-size: 0.86rem; }
-.crow.head { position: sticky; top: 0; z-index: 1; background: var(--sunk); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.crow .amt { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
-.crow .payee { font-weight: 600; overflow-wrap: anywhere; }
-.crow small { display: block; color: var(--muted); font-weight: 400; font-size: 0.76rem; overflow-wrap: anywhere; }
-.crow .match { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-width: 0; }
-.crow .c-act { justify-self: end; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
-.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; font-weight: 600; text-align: left; }
+/* Charges table */
+.crow { display: grid; grid-template-columns: 64px minmax(0, 1.6fr) minmax(0, 1.25fr) minmax(0, 1fr) 108px minmax(0, 1.35fr) 172px; gap: 14px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 0.85rem; }
+.crow:not(.head):hover { background: var(--sunk); }
+.crow.head { position: sticky; top: 0; z-index: 1; background: var(--surface); box-shadow: 0 1px 0 var(--line); padding-block: 8px; font-size: 0.64rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+.crow .c-date { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+.crow .amt { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; font-weight: 500; white-space: nowrap; }
+.crow .amt.neg { color: var(--ok); }
+.crow .c-charge { min-width: 0; }
+.crow .c-charge b { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.crow small { display: block; color: var(--muted); font-weight: 400; font-size: 0.75rem; overflow-wrap: anywhere; }
+/* Date and card line under the charge: phones and tablets only (the desktop table has its own columns). */
+.m-line, .crow small.m-line { display: none; font-size: 0.75rem; color: var(--muted); }
+.crow .c-memo { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.crow .c-for, .crow .c-card { min-width: 0; display: grid; gap: 3px; justify-items: start; }
+.crow .c-for > span:first-child, .crow .c-card > span:first-child { overflow-wrap: anywhere; }
+.chip { display: inline-block; max-width: 100%; font-size: 0.72rem; font-weight: 600; padding: 1px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip.office { background: var(--wait-soft); color: var(--wait); }
+.chip.unset { background: var(--warn-soft); color: var(--warn); }
+.chip.stmt { background: var(--wait-soft); color: var(--wait); font-weight: 500; }
+.crow .c-rcpt { display: grid; gap: 3px; justify-items: start; min-width: 0; }
+.crow .c-rcpt .linkbtn, .crow .c-rcpt > span:not(.pill) { font-size: 0.76rem; overflow-wrap: anywhere; }
+.crow .c-act { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+.crow .c-act:empty { visibility: hidden; }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; font-weight: 600; text-align: left; text-decoration: none; }
 .linkbtn:hover { text-decoration: underline; }
 .pill.m-matched { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
 .pill.m-check { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
 .pill.m-missing { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
 .badge.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
-@media (max-width: 900px) {
-  .crow { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; }
+@media (max-width: 1400px) {
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* Narrow screens: each charge becomes a small card */
+@media (max-width: 1100px) {
+  .crow { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "charge amt" "meta meta" "rcpt act"; gap: 6px 12px; padding: 12px 14px; }
   .crow.head { display: none; }
-  .crow > .c-date { grid-column: 1 / -1; grid-row: 1; color: var(--muted); font-size: 0.76rem; }
-  .crow > .payee { grid-column: 1; grid-row: 2; }
-  .crow > .amt { grid-column: 2; grid-row: 2; align-self: start; }
-  .crow > .c-cat { grid-column: 1 / -1; grid-row: 3; }
-  .crow > .match { grid-column: 1 / -1; grid-row: 4; }
-  .crow > .c-act { grid-column: 1 / -1; grid-row: 5; justify-self: start; }
-  .crow > .c-act:empty { display: none; }
-  .c-tools .segs { flex-basis: 100%; }
-  .c-tools .seg .seg-label { white-space: normal; text-align: center; line-height: 1.15; }
+  .crow > .c-charge { grid-area: charge; }
+  .crow > .amt { grid-area: amt; align-self: start; font-size: 0.95rem; }
+  .crow > .c-date, .crow > .c-for, .crow > .c-card { grid-area: meta; }
+  .crow > .c-date { display: none; }
+  .crow > .c-for { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+  .crow > .c-card { display: none; }
+  .crow > .c-rcpt { grid-area: rcpt; }
+  .crow > .c-act { grid-area: act; align-self: end; }
+  .crow small.m-line { display: block; }
+}
+@media (max-width: 640px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi-count { font-size: 1.25rem; }
+  .crow { grid-template-areas: "charge amt" "meta meta" "rcpt rcpt" "act act"; }
+  .crow > .c-act { justify-content: flex-start; }
+  .tgroup { border-left: 0; padding-left: 0; }
+  .c-actions, .c-actions .tgroup { width: 100%; }
 }
 
 @media (max-width: 1280px) {
@@ -243,6 +289,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   .facts { position: static; order: -1; }
 }
 @media (max-width: 900px) {
+  html, body { height: auto; }
+  .shell { height: auto; min-height: 100%; }
+  .cards, .cards.pane, .c-list { overflow: visible; flex: none; }
   .app { grid-template-columns: minmax(0, 1fr); }
   .detail { display: none; }
   body.show-detail .detail { display: flex; }
@@ -262,7 +311,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v30</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v31</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -270,7 +319,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       <button type="button" id="viewCards" aria-pressed="false">Card charges</button>
     </div>
     <span id="inbox" class="inbox">Inbox: shown after the first scan</span>
-    <div class="scanbox">
+  </header>
+  <div class="toolbar">
+    <div class="statusline">
+      <span id="status" role="status" aria-live="polite"></span>
+      <span id="usage"></span>
+    </div>
+    <div class="tgroup scanbox" aria-label="Scan email">
       <label for="days">Look back</label>
       <select id="days">
         <option value="1">1 day</option>
@@ -283,13 +338,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       </select>
       <button id="scan" class="btn primary" type="button">Scan inbox</button>
       <button id="fillClaude" class="btn" type="button" hidden></button>
+    </div>
+    <div class="tgroup" aria-label="Receipt Agent Data sheet">
       <button id="saveSheet" class="btn" type="button" title="Write every saved receipt and card match to the Receipt Agent Data sheet">Save to Sheet</button>
       <a id="openSheet" class="btn ghost" target="_blank" rel="noopener" title="Open the Receipt Agent Data sheet">Sheet ↗</a>
     </div>
-  </header>
-  <div class="statusline">
-    <span id="status" role="status" aria-live="polite"></span>
-    <span id="usage"></span>
   </div>
   <div id="banner" class="banner" role="alert" hidden></div>
 
@@ -332,29 +385,41 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 
   <section class="pane cards" id="cards" aria-label="Card charges" hidden>
     <div class="c-head">
-      <div class="c-stats" id="cStats"></div>
-      <div class="c-tools">
-        <div class="segs" id="cTabs" role="tablist" aria-label="Match status"></div>
-        <button type="button" class="btn primary" id="cardUpload">Upload card report</button>
-        <button type="button" class="btn" id="driveCheck">Check Company Receipts</button>
-        <button type="button" class="btn" id="driveSearch" title="Looks for each flagged charge's receipt anywhere in your Google Drive, by amount and vendor">Search all of Drive</button>
-        <input type="file" id="cardFile" accept=".xlsx,.xls,.csv" hidden>
-        <button type="button" class="btn" id="copyReport">Copy report for Juan</button>
-        <button type="button" class="btn" id="cardExport" title="Excel file for the dates shown: Flags, Every charge, Receipt no charge">Export to Excel</button>
+      <div class="c-top">
+        <div class="c-title" id="cStats"></div>
+        <div class="c-actions">
+          <div class="tgroup" aria-label="Card report">
+            <button type="button" class="btn" id="cardUpload" title="Upload a QuickBooks Transaction Detail by Account export">Upload card report</button>
+            <input type="file" id="cardFile" accept=".xlsx,.xls,.csv" hidden>
+          </div>
+          <div class="tgroup" aria-label="Find receipts">
+            <button type="button" class="btn" id="driveCheck" title="Read every receipt filed in Company Receipts">Check Company Receipts</button>
+            <button type="button" class="btn" id="driveSearch" title="Look for each flagged charge's receipt anywhere in your Google Drive, by amount and vendor">Search all of Drive</button>
+          </div>
+          <div class="tgroup" aria-label="Report">
+            <button type="button" class="btn" id="copyReport" title="Copy the typed report for the dates shown">Copy report for Juan</button>
+            <button type="button" class="btn primary" id="cardExport" title="Excel file for the dates shown: Flags, Every charge, Receipt no charge">Export to Excel</button>
+          </div>
+        </div>
       </div>
       <div class="c-range">
+        <div class="vseg" role="group" aria-label="Dates shown">
+          <button type="button" id="cLast" aria-pressed="false">Latest day</button>
+          <button type="button" id="cSince" aria-pressed="false">Since first receipt</button>
+          <button type="button" id="cAll" aria-pressed="false">All dates</button>
+        </div>
         <label for="cFrom">From <input type="date" id="cFrom"></label>
         <label for="cTo">To <input type="date" id="cTo"></label>
-        <button type="button" class="btn small ghost" id="cLast">Latest date</button>
-        <button type="button" class="btn small ghost" id="cSince">Since first receipt</button>
-        <button type="button" class="btn small ghost" id="cAll">All dates</button>
-        <span id="cRangeNote"></span>
+        <span id="cRangeNote" class="c-note"></span>
       </div>
-      <details class="c-holders" id="cHolders">
-        <summary>Who holds each card <span id="cHoldersNote"></span></summary>
-        <div class="c-holders-list" id="cHoldersList"></div>
-      </details>
-      <p class="c-files" id="cFiles"></p>
+      <div class="kpis" id="cTabs" role="tablist" aria-label="Match status"></div>
+      <div class="c-meta">
+        <p class="c-files" id="cFiles"></p>
+        <details class="c-holders" id="cHolders">
+          <summary>Who holds each card <span id="cHoldersNote"></span></summary>
+          <div class="c-holders-list" id="cHoldersList"></div>
+        </details>
+      </div>
     </div>
     <textarea id="reportBox" class="copybox" aria-label="Report text" readonly hidden></textarea>
     <div class="c-list" id="cList"></div>
@@ -850,7 +915,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     fact("Card", x.cardLast4 ? "•••• " + x.cardLast4 : "Not shown", !!x.cardLast4);
     fact("Order", x.orderNumber, true);
     fact("Location", x.location);
-    fact("Juan's note", x.note);
+    fact(r.source === "juan" ? "Juan's note" : "Note from sender", x.note);
     if (model && model.charges.length) {
       const cm = model.byReceipt.get(r.id);
       fact("Card charge", cm ? [cm.c.account, shortDate(cm.c.date), money(cm.c.amount), cm.quality === "check" ? "amount to check" : ""].filter(Boolean).join(" · ") : "None found in the card report");
@@ -1121,7 +1186,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     // HTML emails turned into text leave table borders behind; drop them.
     s = s.split(/\r?\n/)
       .map(l => l.replace(/\[\]/g, "").replace(/^[\s|]+|[\s|]+$/g, "").replace(/\s*\|\s*/g, "   ").trim())
-      .filter(l => l && !/^[-_=*•·.\s|]+$/.test(l))
+      .filter(l => l && !/^[-_=*•·.\s|]+$/.test(l) && !/^https?:\/\/\S+$/i.test(l))
       .join("\n");
     const cut = s.search(/\n[^\n]*(unsubscribe|privacy notice|all rights reserved|©)/i);
     if (cut > 600) s = s.slice(0, cut);
@@ -3000,71 +3065,77 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (extra) s.append(el("small", null, extra));
     return s;
   }
+  const TILE_TONE = { missing: "t-bad", check: "t-warn", matched: "t-ok", drive: "t-ok", skipped: "t-mute", nocharge: "t-info" };
+  function placeChip(c) {
+    if (c.payment) return null;
+    const place = placeOf(c.split);
+    if (!place) return el("span", "chip unset", "Property not set");
+    const cls = place === "Property not set" ? "chip unset" : /^(office|iriga office|owner \(personal\)|vehicles and equipment|several)$/i.test(place) ? "chip office" : "chip";
+    const ch = el("span", cls, place);
+    ch.title = c.split || place;
+    return ch;
+  }
   function renderCards() {
     if (!state.cRangeSet && model && model.to) { state.cFrom = state.cTo = model.to; state.cRangeSet = true; }
     const counts = cardCounts();
     const st = $("cStats");
     st.textContent = "";
     const n = model.charges.filter(c => !c.payment && inRange(c.date));
-    st.append(
-      stat("Card charges", n.length, n.length ? money(sumOf(n)) : ""),
-      stat("Matched email", counts.matched.length, "", counts.matched.length ? "ok" : ""),
-      stat("Filed in Drive", counts.drive.length, "", counts.drive.length ? "ok" : ""),
-      stat("Check", counts.check.length, "", counts.check.length ? "warn" : ""),
-      stat("No receipt found", counts.missing.length, counts.missing.length ? money(sumOf(counts.missing)) : "", counts.missing.length ? "bad" : ""),
-      stat("Receipt, no charge", counts.nocharge.length)
-    );
+    st.append(el("h2", null, n.length + (n.length === 1 ? " card charge" : " card charges")), el("span", "c-total num", n.length ? money(sumOf(n)) : ""));
     const fi = $("cFrom"), ti = $("cTo");
     fi.value = state.cFrom;
     ti.value = state.cTo;
     fi.min = ti.min = model.from || "";
     fi.max = ti.max = model.to || "";
     $("cRangeNote").textContent = state.cFrom || state.cTo
-      ? ((f, t) => f === t ? "Showing " + longDate(f) + "." : "Showing " + longDate(f) + " to " + longDate(t) + ".")(state.cFrom || model.from, state.cTo || model.to)
-      : (model.from ? "Showing all dates in the report (" + longDate(model.from) + " to " + longDate(model.to) + ")." : "");
+      ? ((f, t) => f === t ? longDate(f) : longDate(f) + " to " + longDate(t))(state.cFrom || model.from, state.cTo || model.to)
+      : (model.from ? longDate(model.from) + " to " + longDate(model.to) : "");
+    const first = firstReceiptDay();
+    $("cLast").setAttribute("aria-pressed", String(!!model.to && state.cFrom === model.to && state.cTo === model.to));
+    $("cSince").setAttribute("aria-pressed", String(!!first && state.cFrom === first && !state.cTo));
+    $("cAll").setAttribute("aria-pressed", String(!state.cFrom && !state.cTo));
     const tabs = $("cTabs");
     tabs.textContent = "";
     for (const t of CTABS) {
-      const b = el("button", "seg");
+      const list = counts[t.key] || [];
+      const b = el("button", "kpi " + (TILE_TONE[t.key] || ""));
       b.type = "button";
       b.dataset.key = t.key;
       b.setAttribute("role", "tab");
       b.setAttribute("aria-selected", String(state.cTab === t.key));
-      b.append(el("span", "seg-count", String(counts[t.key].length)), el("span", "seg-label", t.label));
+      const sum = list.length ? money(list.reduce((a, x) => a + (x.amount !== undefined ? x.amount : (amountOf(x).value || 0)), 0)) : "";
+      b.append(el("span", "kpi-count", String(list.length)), el("span", "kpi-label", t.label), el("span", "kpi-sum", sum || " "));
       b.onclick = () => { state.cTab = t.key; render(); };
       tabs.append(b);
     }
     renderHolders();
     const files = [...state.cards.values()].sort((a, b) => String(a.account).localeCompare(String(b.account)));
     const loaded = files.length > 4
-      ? "Loaded: " + files.length + " accounts, " + shortDate(files.map(d => d.from).sort()[0]) + " to " + shortDate(files.map(d => d.to).sort().pop()) + ", uploaded " + shortDate(files.map(d => d.uploadedAt).sort().pop())
-      : files.length ? "Loaded: " + files.map(d => d.account + " (" + shortDate(d.from) + " to " + shortDate(d.to) + ", uploaded " + shortDate(d.uploadedAt) + ")").join(" · ") : "";
+      ? "Card report: " + files.length + " accounts, " + shortDate(files.map(d => d.from).sort()[0]) + " to " + shortDate(files.map(d => d.to).sort().pop()) + ", uploaded " + shortDate(files.map(d => d.uploadedAt).sort().pop())
+      : files.length ? "Card report: " + files.map(d => d.account + " (" + shortDate(d.from) + " to " + shortDate(d.to) + ")").join(" · ") : "";
     if (state.filed === null && !filedLoading && mcp && model.charges.length) setTimeout(() => loadFiled(false), 0);
-    $("cFiles").textContent = [
-      loaded,
-      state.filedNote
-    ].filter(Boolean).join("  ·  ");
+    $("cFiles").textContent = [loaded, state.filedNote].filter(Boolean).join("  ·  ");
     const box = $("cList");
     box.textContent = "";
     if (!model.charges.length) {
       const e = el("div", "empty");
       e.append(el("b", null, "No card report yet"),
-        el("p", null, "In QuickBooks: Accounting → Chart of accounts → the card's Action menu → Run report → Last 30 days → Export to Excel. Then click Upload card report. One file per card."));
+        el("p", null, "In QuickBooks: Reports → Transaction Detail by Account → pick the dates → Export to Excel. Then click Upload card report."));
       box.append(e);
       return;
     }
     const HINTS = {
       matched: "Charges matched to a receipt that came in by email (Home Depot, Amazon, Uber and the rest).",
-      drive: "Charges with a receipt filed in Company Receipts (same amount and vendor, same month), or found anywhere in Drive by Search all of Drive.",
-      check: "Possible receipts to confirm: a file in Drive with the same amount where the vendor couldn't be confirmed, or an Amazon order whose total needs checking. Open the file, then Confirm or Not it.",
-      missing: "Charges with no emailed receipt and nothing filed in Company Receipts. Search all of Drive looks for the rest by amount and vendor. Some may have a receipt attached in QuickBooks, which this page can't see.",
-      nocharge: "Receipts with no posted charge in this QuickBooks report yet. Usually the charge is still waiting in Bank transactions, or it was paid on an account the report doesn't cover.",
-      skipped: "Card payments, transfers and deposits, refunds and credits, plus charges marked No receipt needed."
+      drive: "Charges with a receipt filed in Company Receipts, found anywhere in Drive, or uploaded here.",
+      check: "Possible receipts to confirm: same amount, but the vendor couldn't be confirmed. Open the receipt, then Confirm or Not it.",
+      missing: "Charges with no receipt yet. Upload one, or mark it No receipt needed. Some may have a receipt attached in QuickBooks, which this page can't see.",
+      nocharge: "Receipts with no posted charge in the card report yet. Usually the charge hasn't posted, or it was paid on an account the report doesn't cover.",
+      skipped: "Card payments, transfers, deposits, refunds and credits, plus charges marked No receipt needed."
     };
     if (HINTS[state.cTab]) box.append(el("div", "c-hint", HINTS[state.cTab]));
     const head = el("div", "crow head");
     if (state.cTab === "nocharge") {
-      ["Date", "Receipt", "Source", "Amount", "Status", ""].forEach(t => head.append(el("span", t === "Amount" ? "amt" : null, t)));
+      ["Date", "Receipt", "Source", "Card", "Amount", "Status", ""].forEach(t => head.append(el("span", t === "Amount" ? "amt" : null, t)));
       box.append(head);
       const list = counts.nocharge;
       if (!list.length) { box.append(emptyNote("Every receipt in these dates has a card charge.")); return; }
@@ -3072,14 +3143,18 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         const row = el("div", "crow");
         const x = r.extracted || {};
         row.append(el("span", "c-date", shortDate(x.date || r.emailDate)));
-        const p = el("span", "payee", x.vendor || senderName(r));
-        if (x.items) p.append(el("small", null, x.items));
-        row.append(p, el("span", "c-cat", SOURCE_LABEL[r.source] || "Other"), el("span", "amt", amountOf(r).label));
-        const m = el("span", "match");
+        const p = el("div", "c-charge");
+        p.append(el("b", null, x.vendor || senderName(r)));
+        if (x.items) p.append(el("small", "c-memo", x.items));
+        p.append(el("small", "m-line", [shortDate(x.date || r.emailDate), SOURCE_LABEL[r.source] || "Other", x.cardLast4 ? "card " + x.cardLast4 : ""].filter(Boolean).join(" · ")));
+        const amtR = amountOf(r);
+        row.append(p, el("div", "c-for", SOURCE_LABEL[r.source] || "Other"), el("div", "c-card", x.cardLast4 ? "Card " + x.cardLast4 : "Card not shown"),
+          el("span", "amt" + (amtR.value !== null && amtR.value < 0 ? " neg" : ""), amtR.label));
+        const m = el("div", "c-rcpt");
         m.append(el("span", "pill s-" + (r.status || "new"), STATUS_LABEL[r.status || "new"]));
         if (state.temp.has(r.id)) m.append(el("span", "pill test", "Test"));
         row.append(m);
-        const act = el("span", "c-act");
+        const act = el("div", "c-act");
         const open = el("button", "btn small", "Open receipt");
         open.type = "button";
         open.onclick = () => openReceipt(r.id);
@@ -3089,30 +3164,41 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       }
       return;
     }
-    ["Date", "Payee", "Card · what for · buyer", "Amount", "Receipt", ""].forEach(t => head.append(el("span", t === "Amount" ? "amt" : null, t)));
+    ["Date", "Charge", "For · property", "Card · buyer", "Amount", "Receipt", ""].forEach(t => head.append(el("span", t === "Amount" ? "amt" : null, t)));
     box.append(head);
     const list = counts[state.cTab] || [];
     if (!list.length) {
-      box.append(emptyNote(state.cTab === "missing" ? "Every card charge has a receipt." : "Nothing here."));
+      box.append(emptyNote(state.cTab === "missing" ? "Every card charge in these dates has a receipt." : "Nothing here for these dates."));
       return;
     }
-    for (const c of list.slice().sort((a, b) => b.date.localeCompare(a.date))) {
+    for (const c of list.slice().sort((a, b) => b.date.localeCompare(a.date) || b.amount - a.amount)) {
       const row = el("div", "crow");
-      row.append(el("span", "c-date", shortDate(c.date)));
-      const p = el("span", "payee", c.name || c.memo || "No payee");
-      if (c.memo && c.memo !== c.name) p.append(el("small", null, c.memo));
-      row.append(p);
-      const cat = el("span", "c-cat", c.account);
-      const place = placeOf(c.split), buyer = buyerOf(c);
-      cat.append(el("small", null, [c.payment ? c.type : whatFor(c), c.payment ? "" : place, c.payment ? "" : buyer.who ? "Bought by " + buyer.who : buyer.card ? (buyer.kind === "card" ? "Card " : "Account ") + buyer.card : ""].filter(Boolean).join(" · ")));
-      cat.title = [c.type, c.split].filter(Boolean).join(" · ");
-      row.append(cat, el("span", "amt", money(c.amount)));
-      const m = el("span", "match");
       const hit = model.byCharge.get(c.k);
       const s = chargeState(c);
+      const buyer = buyerOf(c);
+      const who = buyer.who ? buyer.who : buyer.card ? (buyer.kind === "card" ? "Card " : "Account ") + buyer.card : "";
+      row.append(el("span", "c-date", shortDate(c.date)));
+      const p = el("div", "c-charge");
+      p.append(el("b", null, c.name || c.memo || "No payee"));
+      if (c.memo && c.memo !== c.name) p.append(el("small", "c-memo", c.memo));
+      p.append(el("small", "m-line", [shortDate(c.date), c.account, who].filter(Boolean).join(" · ")));
+      row.append(p);
+      const f = el("div", "c-for");
+      f.append(el("span", null, c.payment ? c.type : whatFor(c)));
+      const chip = placeChip(c);
+      if (chip) f.append(chip);
+      if (!c.payment && s === "missing" && isStatement(c)) f.append(el("span", "chip stmt", "Bill, loan, tax or payroll"));
+      f.title = [c.type, c.split].filter(Boolean).join(" · ");
+      row.append(f);
+      const cd = el("div", "c-card");
+      cd.append(el("span", null, c.account));
+      if (who && !c.payment) cd.append(el("small", null, buyer.who ? "Bought by " + who : who));
+      row.append(cd);
+      row.append(el("span", "amt" + (c.amount < 0 ? " neg" : ""), money(c.amount)));
+      const m = el("div", "c-rcpt");
       if (hit && hit.filed) {
         m.append(el("span", "pill " + (hit.quality === "check" ? "m-check" : "m-matched"), hit.quality === "check" ? "Possible, check" : "In Drive"));
-        const label = [hit.filed.card, hit.filed.vendor || "receipt", money(hit.filed.amount)].filter(Boolean).join(" · ");
+        const label = [hit.filed.card, hit.filed.vendor || "receipt"].filter(Boolean).join(" · ");
         if (hit.filed.url) {
           const a = el("a", "linkbtn", label);
           a.href = hit.filed.url;
@@ -3133,22 +3219,23 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         m.append(el("span", "pill", c.payment ? "Payment or transfer" : isRefund(c) ? "Refund" : "No receipt needed"));
       } else {
         m.append(el("span", "pill m-missing", "No receipt found"));
-        if (isStatement(c)) m.append(el("small", null, "Bill, loan, tax or payroll"));
       }
       row.append(m);
-      const act = el("span", "c-act");
-      if (!c.payment && !hit && !(c.amount < 0 && !c.marked)) {
-        const b = el("button", "btn small ghost", c.marked ? "Undo" : "No receipt needed");
-        b.type = "button";
-        b.onclick = () => markCharge(c, c.marked ? "" : "no_receipt");
-        act.append(b);
-      }
+      const act = el("div", "c-act");
       if (!c.payment && c.amount > 0 && (!hit || hit.quality === "check")) {
-        const up = el("button", "btn small", "Upload receipt");
+        const up = el("button", "btn small", "Upload");
         up.type = "button";
-        up.title = "Save the receipt to Company Receipts and match it to this charge";
+        up.title = "Upload the receipt: it's saved to Company Receipts and matched to this charge";
+        if (state.uploadFor === c.k) up.classList.add("primary");
         up.onclick = () => { state.uploadFor = state.uploadFor === c.k ? "" : c.k; render(); };
         act.append(up);
+      }
+      if (!c.payment && !hit && !(c.amount < 0 && !c.marked)) {
+        const b = el("button", "btn small ghost", c.marked ? "Undo" : "Not needed");
+        b.type = "button";
+        b.title = c.marked ? "Flag this charge again" : "Mark: no receipt needed for this charge";
+        b.onclick = () => markCharge(c, c.marked ? "" : "no_receipt");
+        act.append(b);
       }
       if (hit && hit.filed && hit.filed.found) {
         if (hit.quality === "check") {

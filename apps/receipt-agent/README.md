@@ -12,6 +12,16 @@ Kristine opens it; it reads accounting@ through her own Gmail connection, uses C
 in vendor, date, amount, order number and location, and lists every receipt with a checkbox
 (Good, Needs follow-up, Not a receipt) and a Property box. Email text is never stored.
 
+**Layout (v31).** The header holds the brand and the Receipts / Card charges switch; a toolbar
+under it holds the status, the scan (Look back, Scan inbox) and the Sheet buttons. In Card
+charges, six status tiles (No receipt found, Check, Matched email, Filed in Drive, No receipt
+needed, Receipt with no charge) show count and dollars and open that list when clicked; they
+replace the old stat line and tabs. Buttons are grouped: card report, Drive search, report and
+export. Each charge row has fixed columns: date, charge and memo, what it was for with a property
+chip (address, Office, or "No property" in amber), card and buyer, amount, receipt, and actions.
+Below 1100px wide each charge becomes a stacked card with the date and card on one line under the
+name, and below 900px the whole page scrolls instead of a boxed list.
+
 **Which scans are saved.** accounting@ scans its whole inbox. Any other company inbox that is a
 member of the receipts@ Google Group (Seth) scans only the receipts@ copies in it
 (`list:receipts.twinhomebuyer.com`); those are saved too. Anything else runs as a test.
