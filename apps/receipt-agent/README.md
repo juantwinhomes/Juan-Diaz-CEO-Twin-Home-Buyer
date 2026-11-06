@@ -65,7 +65,7 @@ conflicting vendor or card digits. Check Company Receipts reruns it; uploading a
 (in Seth's Receipt Agent folder). Save to Sheet writes, through the viewer's Google Sheets connector
 (update_values, batch_clear_values): the Receipts tab (one row per saved receipt, with its card charge
 and category when matched) and the Card match tab (one row per charge in the uploaded report, with its
-match), replacing both each time, and stamps Summary!B2 with the time. The Summary tab counts both tabs
+match, property or office, buyer, approver and receipt YES/NO in columns N to Q), replacing both each time, and stamps Summary!B2 with the time. The Summary tab counts both tabs
 with formulas. Text that starts like a number, date or formula is written with a leading apostrophe
 so Sheets keeps it as text; Card, Order # and Receipt ID columns are formatted as plain text.
 Whoever saves needs edit access to the sheet.
