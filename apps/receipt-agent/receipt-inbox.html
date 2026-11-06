@@ -258,7 +258,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v22</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v23</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -333,9 +333,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         <div class="segs" id="cTabs" role="tablist" aria-label="Match status"></div>
         <button type="button" class="btn primary" id="cardUpload">Upload card report</button>
         <button type="button" class="btn" id="driveCheck">Check Company Receipts</button>
+        <button type="button" class="btn" id="driveSearch" title="Looks for each flagged charge's receipt anywhere in your Google Drive, by amount and vendor">Search all of Drive</button>
         <input type="file" id="cardFile" accept=".xlsx,.xls,.csv" hidden>
         <button type="button" class="btn" id="copyReport">Copy report for Juan</button>
-        <button type="button" class="btn ghost" id="cardCsv">Download CSV</button>
+        <button type="button" class="btn" id="cardExport" title="Excel file for the dates shown: Flags, Every charge, Receipt no charge">Export to Excel</button>
       </div>
       <div class="c-range">
         <label for="cFrom">From <input type="date" id="cFrom"></label>
@@ -1015,7 +1016,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       for (const f of files) await uploadCards(f);
     };
     $("copyReport").onclick = copyReport;
-    $("cardCsv").onclick = downloadCardCsv;
+    $("cardExport").onclick = exportExcel;
+    $("driveSearch").onclick = searchDrive;
     $("fillClaude").onclick = () => fillWithClaude(allRows().filter(r => needsClaude(r) && (r.status || "new") !== "not_receipt").map(r => r.id));
     $("selAll").onchange = e => {
       for (const r of visibleRows()) { if (e.target.checked) state.selected.add(r.id); else state.selected.delete(r.id); }
@@ -2263,6 +2265,97 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (c === "needs_reauth") return "Google Drive needs to be reconnected in claude.ai Settings, Connectors.";
     return "Company Receipts couldn't be read just now: " + ((e && e.message) || "unknown error") + ".";
   }
+  async function inPool(items, n, fn) {
+    let i = 0;
+    const worker = async () => { while (i < items.length) { const item = items[i++]; await fn(item); } };
+    await Promise.all(Array.from({ length: Math.min(n, items.length) }, worker));
+  }
+  // ---------- Search all of Drive: a flagged charge's receipt saved anywhere, found by amount and vendor ----------
+  // Drive reads the text inside PDFs and photos, so "410.10" plus "google" finds a Google Ads payment receipt.
+  const amountForms = a => {
+    const fixed = a.toFixed(2), comma = a.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const set = new Set([fixed, comma]);
+    if (fixed.endsWith(".00")) { set.add(String(Math.round(a))); set.add(Math.round(a).toLocaleString("en-US")); }
+    return [...set];
+  };
+  function vendorWord(c) {
+    const vk = vendorKey(c.name + " " + c.memo);
+    if (vk === "homedepot") return "depot";
+    if (vk) return vk;
+    const words = [...nameTokens(c.name || c.memo)].filter(w => /^[a-z]{3,}$/.test(w)).sort((a, b) => b.length - a.length);
+    return words[0] || "";
+  }
+  const isoDay = (day, shift) => new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) + shift * 86400000).toISOString().slice(0, 19) + "Z";
+  async function driveFind(c, used) {
+    const amt = Math.abs(c.amount);
+    const forms = amountForms(amt), word = vendorWord(c);
+    const q = "(" + forms.map(f => "fullText contains '" + f + "'").join(" or ") + ")" +
+      (word ? " and fullText contains '" + word.replace(/'/g, "") + "'" : "") +
+      " and (mimeType = 'application/pdf' or mimeType contains 'image/') and createdTime > '" + isoDay(c.date, -20) + "'";
+    const p = (await driveCall({ query: q, pageSize: 5, snippetVerbosity: "BRIEF" })) || {};
+    for (const g of p.files || []) {
+      if (used.has(g.id)) continue;
+      const t = parseFiled(g.title);
+      const text = String(g.title || "") + " " + String(g.contentSnippet || "");
+      const titleOk = t && Math.abs(Math.abs(t.amount) - amt) < 0.005 && (!word || text.toLowerCase().includes(word) || !t.vendor);
+      const textOk = forms.some(f => text.includes(f)) && (!word || text.toLowerCase().includes(word));
+      if (!titleOk && !textOk) continue;
+      const url = String(g.viewUrl || "");
+      used.add(g.id);
+      return { id: g.id, name: String(g.title || "").slice(0, 160), url: /^https:\/\/(drive|docs)\.google\.com\//.test(url) ? url : "" };
+    }
+    return null;
+  }
+  let searching = false;
+  const searched = new Set();   // charges already searched on this visit; another click goes on to the next ones
+  async function searchDrive() {
+    if (searching) return;
+    if (!mcp || !db) { banner("Open this page in claude.ai to search Google Drive.", true); return; }
+    if (!model || !model.charges.length) { banner("Upload a card report first."); return; }
+    const flagged = cardCounts().missing.filter(c => c.amount > 0 && !searched.has(c.k));
+    const list = flagged.filter(c => !isStatement(c)).sort((a, b) => b.amount - a.amount)
+      .concat(flagged.filter(isStatement).sort((a, b) => b.amount - a.amount)).slice(0, 150);
+    if (!list.length) { banner("Every flagged charge in these dates has been searched. Pick other dates, or reload the page to search again."); return; }
+    searching = true;
+    const btn = $("driveSearch");
+    btn.disabled = true;
+    banner("");
+    const used = new Set(), hits = new Map();
+    for (const d of state.cards.values()) for (const f of Object.values(d.found || {})) if (f && f.id) used.add(f.id);
+    let done = 0, failed = 0;
+    try {
+      await inPool(list, 4, async c => {
+        try { const f = await driveFind(c, used); if (f) hits.set(c, f); }
+        catch (e) { if (FATAL.has(e && e.code)) throw e; failed++; }
+        searched.add(c.k);
+        done++;
+        setStatus("Searching Drive: " + done + " of " + list.length + " flagged charges, " + hits.size + " receipts found…");
+      });
+      // Keep what was found with the charge's account, so everyone using the page sees it.
+      const byCard = new Map();
+      for (const [c, f] of hits) {
+        if (!byCard.has(c.cardId)) byCard.set(c.cardId, {});
+        byCard.get(c.cardId)[c.k] = { id: f.id, name: f.name, url: f.url, at: new Date().toISOString() };
+      }
+      for (const [id, add] of byCard) {
+        const d = state.cards.get(id);
+        if (!d) continue;
+        const found = Object.assign({}, d.found || {}, add);
+        await db.collection("cards").doc(id).update({ found });
+        d.found = found;
+      }
+      const more = flagged.length - list.length;
+      setStatus("Searched Drive for " + list.length + " flagged " + (list.length === 1 ? "charge" : "charges") + ": " + hits.size + (hits.size === 1 ? " receipt found." : " receipts found.") +
+        (failed ? " " + failed + " searches didn't answer." : "") + (more > 0 ? " Click again for the next " + Math.min(more, 150) + "." : ""));
+    } catch (e) {
+      banner(driveMessage(e), true);
+      setStatus("");
+    } finally {
+      searching = false;
+      btn.disabled = false;
+      render();
+    }
+  }
   let filedLoading = false;
   async function loadFiled(manual) {
     if (filedLoading || !mcp) return;
@@ -2281,17 +2374,20 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         const found = await driveAll("mimeType = 'application/vnd.google-apps.folder' and title contains '" + label + "'", 20);
         for (const f of found) if (cardName.has(f.parentId)) monthFolders.push({ id: f.id, card: cardName.get(f.parentId), ym });
       }
-      const files = [];
-      for (let i = 0; i < monthFolders.length; i += 15) {
-        const chunk = monthFolders.slice(i, i + 15);
-        const byId = new Map(chunk.map(f => [f.id, f]));
-        const q = "(" + chunk.map(f => "parentId = '" + f.id + "'").join(" or ") + ") and mimeType != 'application/vnd.google-apps.folder'";
-        for (const g of await driveAll(q, 10)) {
-          const mf = byId.get(g.parentId), p = parseFiled(g.title);
+      // Drive lists a folder 5 files per page, so each month folder is read to the end, four folders at a time.
+      const files = [], seenIds = new Set();
+      let done = 0;
+      await inPool(monthFolders, 4, async mf => {
+        for (const g of await driveAll("parentId = '" + mf.id + "' and mimeType != 'application/vnd.google-apps.folder'", 150)) {
+          if (seenIds.has(g.id)) continue;
+          seenIds.add(g.id);
+          const p = parseFiled(g.title);
           const url = String(g.viewUrl || "");
-          if (mf && p) files.push(Object.assign(p, { card: mf.card, ym: mf.ym, name: String(g.title || "").slice(0, 160), url: /^https:\/\/(drive|docs)\.google\.com\//.test(url) ? url : "" }));
+          if (p) files.push(Object.assign(p, { card: mf.card, ym: mf.ym, name: String(g.title || "").slice(0, 160), url: /^https:\/\/(drive|docs)\.google\.com\//.test(url) ? url : "" }));
         }
-      }
+        done++;
+        setStatus("Reading Company Receipts: " + done + " of " + monthFolders.length + " folders, " + files.length + " receipts so far…");
+      });
       state.filed = files;
       state.filedNote = "Company Receipts: " + files.length + " filed " + (files.length === 1 ? "receipt" : "receipts") + " read for " +
         months.map(ym => { const n = MONTH_NAMES[+ym.slice(5, 7) - 1]; return n.charAt(0).toUpperCase() + n.slice(1, 3); }).join(", ") + " (" + monthFolders.length + (monthFolders.length === 1 ? " card folder)." : " card folders).");
@@ -2380,7 +2476,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   // Bills, loans, taxes, payroll and related-company transfers: the paperwork is a statement or payroll record, not a store receipt.
   const STATEMENT = /mortgage|mtg|kiavi|anchor loans|\bloans?\b|interest|taxes|insurance|payroll|salar|wages|labor cost|\bemd\b|due from|owner'?s pay|personal|bank charges|utilities|telephone/i;
-  const isStatement = c => STATEMENT.test(c.split || "") || /^(irs|franchise tax board|gusto|wise inc|lendinghome)$/i.test(c.name || "");
+  const isStatement = c => STATEMENT.test(c.split || "") || (!c.split && /payroll|loan pymt|mortgage/i.test(c.memo || "")) || /^(irs|franchise tax board|gusto|wise inc|lendinghome)$/i.test(c.name || "");
   // The card a charge was made on: on a card account, the card member at the end of the bank's memo ("XXXX5004", "- 1175");
   // otherwise the account's own number.
   const CARD_ACCT = /amex|american express|capital one|citi|discover|home depot|\bcc\b|visa|master ?card|credit/i;
@@ -2517,6 +2613,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         if (best !== null) { used.add(best); byCharge.set(c.k, { filed: state.filed[best], quality: "filed" }); }
       }
     }
+    // Receipts found by Search all of Drive, saved with the charge.
+    for (const c of charges) {
+      if (c.payment || c.marked || byCharge.has(c.k)) continue;
+      const f = ((state.cards.get(c.cardId) || {}).found || {})[c.k];
+      if (f) byCharge.set(c.k, { filed: { card: "Found in Drive", vendor: f.name, amount: c.amount, url: f.url, ym: c.date.slice(0, 7), name: f.name }, quality: "filed" });
+    }
     return { charges, byCharge, byReceipt, from: days[0], to: days[days.length - 1] };
   }
   function chargeState(c) {
@@ -2645,8 +2747,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     }
     const HINTS = {
       matched: "Charges matched to a receipt that came in by email (Home Depot, Amazon, Uber and the rest).",
-      drive: "Charges with a receipt Kristine already filed in Company Receipts (same amount and vendor, same month).",
-      missing: "Charges with no emailed receipt and nothing filed in Company Receipts. Some may have a receipt attached in QuickBooks, which this page can't see.",
+      drive: "Charges with a receipt filed in Company Receipts (same amount and vendor, same month), or found anywhere in Drive by Search all of Drive.",
+      missing: "Charges with no emailed receipt and nothing filed in Company Receipts. Search all of Drive looks for the rest by amount and vendor. Some may have a receipt attached in QuickBooks, which this page can't see.",
       nocharge: "Receipts with no posted charge in this QuickBooks report yet. Usually the charge is still waiting in Bank transactions, or it was paid on an account the report doesn't cover.",
       skipped: "Card payments, transfers and deposits, plus charges marked No receipt needed."
     };
@@ -2801,24 +2903,37 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       setStatus("Press Ctrl+C (Cmd+C on a Mac) to copy the report.");
     }
   }
-  async function downloadCardCsv() {
-    if (!model.charges.length) { banner("Upload a card report first."); return; }
-    const q = v => '"' + String(v === null || v === undefined ? "" : v).replace(/"/g, '""') + '"';
-    const label = { missing: "No receipt found", check: "Check amount", matched: "Matched email", drive: "In Drive", skipped: "No receipt needed" };
-    const head = ["Date", "Card", "Type", "Payee", "Memo", "Category", "Amount", "Match", "Receipt vendor", "Receipt date", "Receipt amount", "Property", "Email", "Property or office", "Buyer", "Approver", "Receipt"];
-    const tail = c => c.payment ? ["", "", "", ""] : [placeOf(c.split), buyerOf(c).label, "not recorded", RECEIPT_WORD[chargeState(c)]];
-    const lines = [head.map(q).join(",")];
-    for (const c of model.charges.filter(x => inRange(x.date)).sort((a, b) => a.date.localeCompare(b.date))) {
-      const hit = model.byCharge.get(c.k);
-      const r = hit && hit.r, x = (r && r.extracted) || {};
-      if (hit && hit.filed) {
-        lines.push([c.date, c.account, c.type, c.name, c.memo, c.split, c.amount.toFixed(2), "In Drive", hit.filed.vendor, hit.filed.ym, money(hit.filed.amount), hit.filed.card, hit.filed.url].concat(tail(c)).map(q).join(","));
-        continue;
-      }
-      lines.push([c.date, c.account, c.type, c.name, c.memo, c.split, c.amount.toFixed(2), c.payment ? "Card payment" : label[chargeState(c)],
-        r ? (x.vendor || senderName(r)) : "", r ? localDay(x.date || r.emailDate) : "", r ? amountOf(r).label : "", r ? r.property || "" : "", r ? r.viewUrl || "" : ""].concat(tail(c)).map(q).join(","));
-    }
-    await saveFile("Card match " + localDay(new Date().toISOString()) + ".csv", lines.join("\r\n"));
+  async function exportExcel() {
+    if (!model || !model.charges.length) { banner("Upload a card report first."); return; }
+    let X;
+    try { X = await xlsxLib(); } catch (e) { banner("The spreadsheet tool didn't load. Check the connection and try again.", true); return; }
+    const c = cardCounts();
+    const from = state.cFrom || model.from, to = state.cTo || model.to;
+    const head = ["Date", "Charge", "What it's for", "Property or office", "Amount", "Buyer", "Approver", "Receipt", "Card or account", "Type", "Memo", "QuickBooks category", "Receipt found", "Receipt link"];
+    const line = x => {
+      const hit = model.byCharge.get(x.k), b = buyerOf(x);
+      const r = hit && hit.r, f = hit && hit.filed, rx = (r && r.extracted) || {};
+      return [x.date, x.name || x.memo || "", x.payment ? x.type : whatFor(x), x.payment ? "" : placeOf(x.split) || "Not set", x.amount,
+        x.payment ? "" : b.who || (b.card ? b.kind + " " + b.card : x.account), x.payment ? "" : "not recorded",
+        x.payment ? "Payment or transfer" : RECEIPT_WORD[chargeState(x)], x.account, x.type, x.memo || "", x.split || "",
+        r ? [rx.vendor || senderName(r), localDay(rx.date || r.emailDate) || "", amountOf(r).label].join(", ") : f ? [f.card, f.vendor || f.name].filter(Boolean).join(", ") : "",
+        r ? r.viewUrl || "" : f ? f.url || "" : ""];
+    };
+    const flagOf = x => chargeState(x) === "check" ? "Amount to check" : isStatement(x) ? "No receipt found (bill, loan, tax or payroll)" : "No receipt found (purchase)";
+    const flags = c.check.concat(c.missing.filter(x => !isStatement(x)).sort((p, q) => q.amount - p.amount), c.missing.filter(isStatement).sort((p, q) => q.amount - p.amount));
+    const all = model.charges.filter(x => inRange(x.date)).sort((p, q) => p.date.localeCompare(q.date) || q.amount - p.amount);
+    const sheet = (rows, widths) => { const ws = X.utils.aoa_to_sheet(rows); ws["!cols"] = widths.map(w => ({ wch: w })); return ws; };
+    const W = [11, 30, 24, 22, 12, 22, 13, 11, 26, 18, 40, 40, 34, 40];
+    const wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, sheet([["Flag"].concat(head)].concat(flags.map(x => [flagOf(x)].concat(line(x)))), [34].concat(W)), "Flags");
+    X.utils.book_append_sheet(wb, sheet([head].concat(all.map(line)), W), "Every charge");
+    X.utils.book_append_sheet(wb, sheet([["Date", "Vendor", "Amount", "Source", "Status", "Email link"]].concat(c.nocharge.map(r => {
+      const rx = r.extracted || {};
+      return [localDay(rx.date || r.emailDate) || "", rx.vendor || senderName(r), amountOf(r).value, SOURCE_LABEL[r.source] || "Other", STATUS_LABEL[r.status || "new"], r.viewUrl || ""];
+    })), [11, 30, 12, 16, 12, 40]), "Receipt no charge");
+    const out = X.write(wb, { bookType: "xlsx", type: "array" });
+    const name = "Expense report " + from + (to && to !== from ? " to " + to : "") + ".xlsx";
+    await saveFile(name, new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
   }
 
 

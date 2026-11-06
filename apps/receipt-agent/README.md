@@ -60,6 +60,21 @@ The Card charges view reads only those file names through the viewer's Google Dr
 for the months the card report covers, then their files. A charge with no emailed receipt counts as
 matched ("In Drive") when a filed receipt has the same amount, the same or next month, and no
 conflicting vendor or card digits. Check Company Receipts reruns it; uploading a report reruns it.
+Drive lists a folder 5 files per page, so every month folder is read to the end, four folders at a
+time, with a running count in the status line (before v23 only the first 50 files per batch were read,
+which left most filed receipts unmatched).
+
+**Search all of Drive.** For flagged charges in the dates shown (purchases first, largest first, 150
+per click; another click goes on to the next 150), the page asks Drive's full-text search, which reads
+the text inside PDFs and photos, for the charge's amount (410.10, 4,500.00, 4,500) and one vendor word,
+in PDFs and images created from 20 days before the charge. A hit counts only when the file name
+carries the same amount, or the text Drive returns shows the amount and the vendor word. Each file
+matches one charge. Hits are saved on the charge's account document (`cards/<account>.found`), so
+everyone sees them; they show as Filed in Drive ("Found in Drive") with a link to the file.
+
+**Export to Excel** (replaces Download CSV) writes one workbook for the dates shown: Flags (each
+flag, purchases before bills, loans, taxes and payroll), Every charge (Juan's columns plus account,
+memo, QuickBooks category and the receipt link), and Receipt no charge.
 
 **Receipt Agent Data sheet.** https://docs.google.com/spreadsheets/d/1Tnh8nUd8F5MM02aL_k-aNtjfif-6txOS6JUuqsK9s6g/edit
 (in Seth's Receipt Agent folder). Save to Sheet writes, through the viewer's Google Sheets connector
