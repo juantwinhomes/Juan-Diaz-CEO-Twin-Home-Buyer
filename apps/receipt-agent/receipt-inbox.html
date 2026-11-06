@@ -191,7 +191,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .views button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(15, 23, 32, 0.12), 0 0 0 1px var(--line); }
 .app[hidden], .cards[hidden] { display: none; }
 .cards { flex: 1; min-height: 0; }
-.c-head { display: grid; gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
+.c-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
 .c-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 .c-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-right: auto; min-width: 0; }
 .c-title h2 { font-size: 1.25rem; line-height: 1.15; }
@@ -201,6 +201,14 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .c-range label { display: inline-flex; align-items: center; gap: 6px; }
 .c-range input[type="date"] { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; color: var(--ink); }
 .c-note { color: var(--muted); }
+.c-title .c-note { font-size: 0.82rem; }
+.c-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-left: 12px; border-left: 1px solid var(--line); min-width: 0; }
+.c-pick label { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.c-pick select { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; color: var(--ink); min-width: 0; max-width: 100%; font-variant-numeric: tabular-nums; }
+.c-pick #cCard { width: 300px; }
+.c-pick select.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.fchip { cursor: pointer; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 1px 10px; font-size: 0.78rem; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fchip:hover { background: var(--surface); }
 /* Status tiles: each one is the count, the label and the dollars, and clicking it opens that list */
 .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .kpi { cursor: pointer; text-align: left; display: grid; gap: 2px; align-content: start; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--sunk); color: var(--ink); min-width: 0; position: relative; }
@@ -282,6 +290,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   .crow > .c-act { justify-content: flex-start; }
   .tgroup { border-left: 0; padding-left: 0; }
   .c-actions, .c-actions .tgroup { width: 100%; }
+  .c-pick { border-left: 0; padding-left: 0; width: 100%; }
+  .c-pick label { flex: 1 1 100%; }
+  .c-pick select, .c-pick #cCard { flex: 1 1 0; width: 100%; }
 }
 
 @media (max-width: 1280px) {
@@ -311,7 +322,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v31</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v32</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -397,8 +408,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
             <button type="button" class="btn" id="driveSearch" title="Look for each flagged charge's receipt anywhere in your Google Drive, by amount and vendor">Search all of Drive</button>
           </div>
           <div class="tgroup" aria-label="Report">
-            <button type="button" class="btn" id="copyReport" title="Copy the typed report for the dates shown">Copy report for Juan</button>
-            <button type="button" class="btn primary" id="cardExport" title="Excel file for the dates shown: Flags, Every charge, Receipt no charge">Export to Excel</button>
+            <button type="button" class="btn" id="copyReport" title="Copy the typed report for the dates and card shown">Copy report for Juan</button>
+            <button type="button" class="btn primary" id="cardExport" title="Excel file for the dates and card shown, in the order shown: Flags, Every charge, Receipt no charge">Export to Excel</button>
           </div>
         </div>
       </div>
@@ -410,7 +421,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         </div>
         <label for="cFrom">From <input type="date" id="cFrom"></label>
         <label for="cTo">To <input type="date" id="cTo"></label>
-        <span id="cRangeNote" class="c-note"></span>
+        <div class="c-pick" role="group" aria-label="Card and order">
+          <label for="cCard">Card <select id="cCard"></select></label>
+          <label for="cSort">Sort <select id="cSort"></select></label>
+        </div>
       </div>
       <div class="kpis" id="cTabs" role="tablist" aria-label="Match status"></div>
       <div class="c-meta">
@@ -550,9 +564,14 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     cFrom: "",          // date filter for the Card charges view
     cTo: "",
     cRangeSet: false,   // the date filter opens on the report's last day
+    cCard: memo("ri-ccard", ""),          // card filter: "" all, "a:<account>", or "c:<account>|<card number>"
+    cSort: memo("ri-csort", "date-desc"), // order of the charge list
     holders: {}         // card number -> who holds the card, shared (meta/cardholders)
   };
   let model = null;     // card charges matched to receipts, rebuilt on every render
+  // This viewer's last Card and Sort picks (a convenience only; the page works without it).
+  function memo(key, fallback) { try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; } }
+  function remember(key, v) { try { localStorage.setItem(key, v); } catch (e) {} }
   const msgCache = new Map(); // email text and photos loaded for the inline view, this visit only
   let db = null, mcp = null, sample = null, sampleOff = false;
   const $ = id => document.getElementById(id);
@@ -1133,6 +1152,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("cLast").onclick = () => { state.cFrom = state.cTo = (model && model.to) || ""; state.cRangeSet = true; render(); };
     $("cAll").onclick = () => { state.cFrom = ""; state.cTo = ""; state.cRangeSet = true; render(); };
     $("cSince").onclick = () => { state.cFrom = firstReceiptDay() || ""; state.cTo = ""; state.cRangeSet = true; render(); };
+    $("cCard").onchange = e => { state.cCard = e.target.value || ""; remember("ri-ccard", state.cCard); render(); };
+    $("cSort").onchange = e => { state.cSort = e.target.value || "date-desc"; remember("ri-csort", state.cSort); render(); };
     $("cardUpload").onclick = () => $("cardFile").click();
     $("cardFile").onchange = async e => {
       const files = [...(e.target.files || [])];
@@ -2853,8 +2874,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   function receiptsNoCharge() {
     if (!model || !model.charges.length) return [];
+    const digits = pickedDigits();
     return allRows().filter(r => {
       if ((r.status || "new") === "not_receipt" || model.byReceipt.has(r.id)) return false;
+      if (digits && !digits.has(String((r.extracted && r.extracted.cardLast4) || ""))) return false;
       if (amountOf(r).value === null) return false;
       const d = localDay((r.extracted && r.extracted.date) || r.emailDate);
       const from = state.cFrom && state.cFrom > model.from ? state.cFrom : model.from;
@@ -2863,6 +2886,110 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     });
   }
   const inRange = d => (!state.cFrom || d >= state.cFrom) && (!state.cTo || d <= state.cTo);
+  // Card filter: a whole account ("a:Amex - 2001") or one card number on it ("c:Amex - 2001|5004").
+  const cardKey = c => String(c.account || "") + "|" + (cardOf(c) || "");
+  function cardPick(c) {
+    const f = state.cCard;
+    if (!f) return true;
+    return f.startsWith("a:") ? String(c.account || "") === f.slice(2) : "c:" + cardKey(c) === f;
+  }
+  const shown = c => inRange(c.date) && cardPick(c);
+  function cardLabel(f) {
+    if (!f) return "All cards";
+    if (f.startsWith("a:")) return f.slice(2);
+    const [acct, num] = f.slice(2).split("|");
+    return acct + (num ? ", card " + num : "");
+  }
+  // Card numbers on the picked card or account, to match receipts that show their last four digits.
+  function pickedDigits() {
+    if (!state.cCard || !model) return null;
+    const set = new Set();
+    for (const c of model.charges) {
+      if (!cardPick(c)) continue;
+      for (const d of String(cardOf(c) || "").split(/\s*&\s*/)) if (d) set.add(d);
+      for (const d of String(c.account || "").match(/\d{4}(?!\d)/g) || []) set.add(d);
+    }
+    return set;
+  }
+  // Spend per account and per card number, for the dates shown (payments and transfers left out; refunds count against it).
+  function cardOptions() {
+    const accts = new Map();
+    let n = 0, sum = 0;
+    for (const c of model.charges) {
+      const a = String(c.account || "");
+      if (!accts.has(a)) accts.set(a, { n: 0, sum: 0, cards: new Map() });
+      const A = accts.get(a), d = cardOf(c) || "";
+      if (!A.cards.has(d)) A.cards.set(d, { n: 0, sum: 0 });
+      if (c.payment || !inRange(c.date)) continue;
+      const C = A.cards.get(d);
+      A.n++; A.sum += c.amount; C.n++; C.sum += c.amount; n++; sum += c.amount;
+    }
+    const line = (label, o) => label + "  ·  " + money(Math.round(o.sum * 100) / 100) + "  ·  " + o.n;
+    const out = [{ value: "", text: line("All cards", { n, sum }) }];
+    for (const [a, A] of [...accts.entries()].sort((p, q) => q[1].sum - p[1].sum || p[0].localeCompare(q[0]))) {
+      out.push({ value: "a:" + a, text: line(a, A) });
+      const nums = [...A.cards.entries()].filter(([d]) => d);
+      if (nums.length < 2) continue;
+      for (const [d, C] of nums.sort((p, q) => q[1].sum - p[1].sum || p[0].localeCompare(q[0]))) {
+        const v = "c:" + a + "|" + d;
+        if (!C.n && state.cCard !== v) continue;
+        const who = state.holders[d];
+        out.push({ value: v, text: line("\u2003\u21b3 Card " + d + (who ? " (" + who + ")" : ""), C) });
+      }
+    }
+    return out;
+  }
+  const SORTS = [
+    ["date-desc", "Newest first"], ["date-asc", "Oldest first"], ["amt-desc", "Largest amount first"], ["amt-asc", "Smallest amount first"],
+    ["name", "Vendor, A to Z"], ["card", "Card, then newest"], ["place", "Property, missing first"]
+  ];
+  function sortCharges(list) {
+    const byDate = (a, b) => b.date.localeCompare(a.date) || b.amount - a.amount;
+    const name = c => String(c.name || c.memo || "");
+    const place = c => c.payment ? "" : placeOf(c.split) || "";
+    const cmp = {
+      "date-desc": byDate,
+      "date-asc": (a, b) => a.date.localeCompare(b.date) || b.amount - a.amount,
+      "amt-desc": (a, b) => b.amount - a.amount || byDate(a, b),
+      "amt-asc": (a, b) => a.amount - b.amount || byDate(a, b),
+      "name": (a, b) => name(a).localeCompare(name(b), "en", { sensitivity: "base" }) || byDate(a, b),
+      "card": (a, b) => String(a.account || "").localeCompare(String(b.account || "")) || String(cardOf(a)).localeCompare(String(cardOf(b))) || byDate(a, b),
+      "place": (a, b) => (place(a) ? 1 : 0) - (place(b) ? 1 : 0) || place(a).localeCompare(place(b), "en", { sensitivity: "base" }) || byDate(a, b)
+    }[state.cSort] || byDate;
+    return list.slice().sort(cmp);
+  }
+  function sortReceipts(list) {
+    const day = r => localDay((r.extracted && r.extracted.date) || r.emailDate) || "";
+    const amt = r => amountOf(r).value || 0;
+    const name = r => String((r.extracted && r.extracted.vendor) || senderName(r));
+    const byDate = (a, b) => day(b).localeCompare(day(a)) || amt(b) - amt(a);
+    const cmp = {
+      "date-asc": (a, b) => day(a).localeCompare(day(b)) || amt(b) - amt(a),
+      "amt-desc": (a, b) => amt(b) - amt(a) || byDate(a, b),
+      "amt-asc": (a, b) => amt(a) - amt(b) || byDate(a, b),
+      "name": (a, b) => name(a).localeCompare(name(b), "en", { sensitivity: "base" }) || byDate(a, b),
+      "card": (a, b) => String((a.extracted || {}).cardLast4 || "~").localeCompare(String((b.extracted || {}).cardLast4 || "~")) || byDate(a, b),
+      "place": (a, b) => (a.property ? 1 : 0) - (b.property ? 1 : 0) || String(a.property || "").localeCompare(String(b.property || "")) || byDate(a, b)
+    }[state.cSort] || byDate;
+    return list.slice().sort(cmp);
+  }
+  let pickSig = "";
+  function renderPickers() {
+    if (state.cCard && !model.charges.some(cardPick)) state.cCard = "";   // that card isn't in this report
+    const opts = cardOptions();
+    const sig = JSON.stringify(opts) + "#" + state.cCard;
+    const cs = $("cCard"), ss = $("cSort");
+    if (sig !== pickSig) {
+      pickSig = sig;
+      cs.textContent = "";
+      for (const o of opts) { const op = el("option", null, o.text); op.value = o.value; cs.append(op); }
+    }
+    cs.value = state.cCard;
+    cs.classList.toggle("on", !!state.cCard);
+    if (!ss.options.length) for (const [v, t] of SORTS) { const op = el("option", null, t); op.value = v; ss.append(op); }
+    ss.value = SORTS.some(x => x[0] === state.cSort) ? state.cSort : "date-desc";
+    ss.classList.toggle("on", ss.value !== "date-desc");
+  }
   function firstReceiptDay() {
     let first = "";
     for (const r of allRows()) {
@@ -2874,7 +3001,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   function cardCounts() {
     const out = { missing: [], check: [], matched: [], drive: [], skipped: [] };
-    for (const c of model.charges) if (inRange(c.date)) out[chargeState(c)].push(c);
+    for (const c of model.charges) if (shown(c)) out[chargeState(c)].push(c);
     out.nocharge = receiptsNoCharge();
     return out;
   }
@@ -3077,11 +3204,23 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   function renderCards() {
     if (!state.cRangeSet && model && model.to) { state.cFrom = state.cTo = model.to; state.cRangeSet = true; }
+    if (model.charges.length) renderPickers();
     const counts = cardCounts();
     const st = $("cStats");
     st.textContent = "";
-    const n = model.charges.filter(c => !c.payment && inRange(c.date));
+    const n = model.charges.filter(c => !c.payment && shown(c));
     st.append(el("h2", null, n.length + (n.length === 1 ? " card charge" : " card charges")), el("span", "c-total num", n.length ? money(sumOf(n)) : ""));
+    if (state.cCard) {
+      const fc = el("button", "fchip", cardLabel(state.cCard) + "  \u2715");
+      fc.type = "button";
+      fc.title = "Show all cards";
+      fc.setAttribute("aria-label", "Card: " + cardLabel(state.cCard) + ". Show all cards");
+      fc.onclick = () => { state.cCard = ""; remember("ri-ccard", ""); render(); };
+      st.append(fc);
+    }
+    const rn = el("span", "c-note");
+    rn.id = "cRangeNote";
+    st.append(rn);
     const fi = $("cFrom"), ti = $("cTo");
     fi.value = state.cFrom;
     ti.value = state.cTo;
@@ -3129,7 +3268,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       drive: "Charges with a receipt filed in Company Receipts, found anywhere in Drive, or uploaded here.",
       check: "Possible receipts to confirm: same amount, but the vendor couldn't be confirmed. Open the receipt, then Confirm or Not it.",
       missing: "Charges with no receipt yet. Upload one, or mark it No receipt needed. Some may have a receipt attached in QuickBooks, which this page can't see.",
-      nocharge: "Receipts with no posted charge in the card report yet. Usually the charge hasn't posted, or it was paid on an account the report doesn't cover.",
+      nocharge: "Receipts with no posted charge in the card report yet. Usually the charge hasn't posted, or it was paid on an account the report doesn't cover." + (state.cCard ? " With a card picked, only receipts that show its last four digits are listed." : ""),
       skipped: "Card payments, transfers, deposits, refunds and credits, plus charges marked No receipt needed."
     };
     if (HINTS[state.cTab]) box.append(el("div", "c-hint", HINTS[state.cTab]));
@@ -3138,8 +3277,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       ["Date", "Receipt", "Source", "Card", "Amount", "Status", ""].forEach(t => head.append(el("span", t === "Amount" ? "amt" : null, t)));
       box.append(head);
       const list = counts.nocharge;
-      if (!list.length) { box.append(emptyNote("Every receipt in these dates has a card charge.")); return; }
-      for (const r of list) {
+      if (!list.length) { box.append(emptyNote(state.cCard ? "No receipt showing this card's number is waiting for a charge in these dates." : "Every receipt in these dates has a card charge.")); return; }
+      for (const r of sortReceipts(list)) {
         const row = el("div", "crow");
         const x = r.extracted || {};
         row.append(el("span", "c-date", shortDate(x.date || r.emailDate)));
@@ -3168,10 +3307,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     box.append(head);
     const list = counts[state.cTab] || [];
     if (!list.length) {
-      box.append(emptyNote(state.cTab === "missing" ? "Every card charge in these dates has a receipt." : "Nothing here for these dates."));
+      const where = state.cCard ? " on " + cardLabel(state.cCard) : "";
+      box.append(emptyNote(state.cTab === "missing" ? "Every card charge" + where + " in these dates has a receipt." : "Nothing here" + where + " for these dates."));
       return;
     }
-    for (const c of list.slice().sort((a, b) => b.date.localeCompare(a.date) || b.amount - a.amount)) {
+    for (const c of sortCharges(list)) {
       const row = el("div", "crow");
       const hit = model.byCharge.get(c.k);
       const s = chargeState(c);
@@ -3274,11 +3414,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const c = cardCounts();
     const from = state.cFrom || model.from, to = state.cTo || model.to;
     const span = from === to ? longDate(from) : longDate(from) + " to " + longDate(to);
-    const charges = model.charges.filter(x => !x.payment && inRange(x.date)).sort((a, b) => a.date.localeCompare(b.date) || b.amount - a.amount);
+    const charges = model.charges.filter(x => !x.payment && shown(x)).sort((a, b) => a.date.localeCompare(b.date) || b.amount - a.amount);
     const payee = x => x.name || x.memo || "No payee";
     const flagLine = (x, i) => (i + 1) + ". " + [shortDate(x.date), payee(x), money(x.amount), whatFor(x), placeOf(x.split) || "Not set", "buyer: " + buyerOf(x).label, x.account].join(", ");
     const found = c.matched.length + c.drive.length;
-    const lines = ["Expense report: charges posted in QuickBooks, " + span + ". Pacific Time.",
+    const lines = ["Expense report: charges posted in QuickBooks, " + span + (state.cCard ? ", " + cardLabel(state.cCard) + " only" : "") + ". Pacific Time.",
       charges.length + (charges.length === 1 ? " charge, " : " charges, ") + money(sumOf(charges)) + ". Receipt found: " + found + ". No receipt found: " + c.missing.length + ". Amount to check: " + c.check.length + ".", "",
       "FLAGS"];
     const buys = c.missing.filter(x => !isStatement(x)).sort((a, b) => b.amount - a.amount);
@@ -3301,7 +3441,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       lines.push([shortDate(x.date), payee(x), whatFor(x), placeOf(x.split) || "Not set", money(x.amount), b.who || (b.card ? b.kind + " " + b.card : x.account), "not recorded", receiptWord(x)].join(" | "));
     });
     if (charges.length > 150) lines.push("...and " + (charges.length - 150) + " more. Pick fewer dates in the Receipt Inbox page, or open the Receipt Agent Data sheet.");
-    const pays = model.charges.filter(x => x.payment && inRange(x.date)).length;
+    const pays = model.charges.filter(x => x.payment && shown(x)).length;
     const refunds = charges.filter(x => receiptWord(x) === "Refund").length;
     lines.push("", "Refunds and credits (no receipt needed): " + refunds + ". Not listed: " + pays + " card payments, deposits and transfers between our own accounts. Receipts with no posted charge yet: " + c.nocharge.length + ".");
     lines.push("Source: QuickBooks Transaction Detail by Account (posted charges; charges still waiting in Bank transactions aren't in it). Receipts: the accounting@ inbox, receipts@ and Company Receipts in Google Drive.");
@@ -3340,7 +3480,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     };
     const flagOf = x => chargeState(x) === "check" ? "Amount to check" : isStatement(x) ? "No receipt found (bill, loan, tax or payroll)" : "No receipt found (purchase)";
     const flags = c.check.concat(c.missing.filter(x => !isStatement(x)).sort((p, q) => q.amount - p.amount), c.missing.filter(isStatement).sort((p, q) => q.amount - p.amount));
-    const all = model.charges.filter(x => inRange(x.date)).sort((p, q) => p.date.localeCompare(q.date) || q.amount - p.amount);
+    const all = sortCharges(model.charges.filter(shown));
     const sheet = (rows, widths) => { const ws = X.utils.aoa_to_sheet(rows); ws["!cols"] = widths.map(w => ({ wch: w })); return ws; };
     const W = [11, 30, 24, 22, 12, 22, 13, 11, 26, 18, 40, 40, 34, 40];
     const wb = X.utils.book_new();
@@ -3351,7 +3491,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       return [localDay(rx.date || r.emailDate) || "", rx.vendor || senderName(r), amountOf(r).value, SOURCE_LABEL[r.source] || "Other", STATUS_LABEL[r.status || "new"], r.viewUrl || ""];
     })), [11, 30, 12, 16, 12, 40]), "Receipt no charge");
     const out = X.write(wb, { bookType: "xlsx", type: "array" });
-    const name = "Expense report " + from + (to && to !== from ? " to " + to : "") + ".xlsx";
+    const name = "Expense report " + from + (to && to !== from ? " to " + to : "") + (state.cCard ? " " + cardLabel(state.cCard).replace(/[^A-Za-z0-9 &()-]+/g, " ").replace(/\s+/g, " ").trim() : "") + ".xlsx";
     await saveFile(name, new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
   }
 

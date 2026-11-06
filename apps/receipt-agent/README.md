@@ -22,6 +22,16 @@ chip (address, Office, or "No property" in amber), card and buyer, amount, recei
 Below 1100px wide each charge becomes a stacked card with the date and card on one line under the
 name, and below 900px the whole page scrolls instead of a boxed list.
 
+**Card and Sort (v32).** Next to the dates, **Card** lists every account in the card report with its
+spend and charge count for the dates shown (payments and transfers left out, refunds netted),
+largest first. Accounts with more than one card number (Amex 5004 and 1102, Capital One 1175 and
+others) list each card under the account, with the holder's name once it's set. Picking one filters
+the tiles, the total, the list, the typed report ("..., Amex - 2001 only") and the Excel export,
+and a chip beside the total clears it. In Receipt, no charge, a picked card shows only receipts
+that print its last four digits. **Sort** orders the list: newest or oldest first, largest or
+smallest amount, vendor A to Z, card, or property with the missing ones first; the Excel "Every
+charge" tab uses the same order. Both picks are remembered in that browser only.
+
 **Which scans are saved.** accounting@ scans its whole inbox. Any other company inbox that is a
 member of the receipts@ Google Group (Seth) scans only the receipts@ copies in it
 (`list:receipts.twinhomebuyer.com`); those are saved too. Anything else runs as a test.
