@@ -79,6 +79,22 @@ everyone sees them; they show as Filed in Drive ("Found in Drive") with a link t
 flag, purchases before bills, loans, taxes and payroll), Every charge (Juan's columns plus account,
 memo, QuickBooks category and the receipt link), and Receipt no charge.
 
+**Send My Receipts (past receipts in teammates' inboxes).** https://claude.ai/artifact/LzMyRE7saT4PX8bCcSqwxN,
+source `send-my-receipts.html`. A separate page with no database and no company data: each teammate opens it in their
+own Claude, picks dates (Oct 1 to today by default) and it searches only their own Gmail (search_threads, get_thread for
+long monthly-receipt threads) for receipt and invoice emails, leaving out @twinhomebuyer.com senders, their sent mail,
+quotes and estimates, and Anthropic and Claude emails (Gmail keeps those from Claude's tools). They untick anything
+personal and click Send; each email is forwarded from their account to receipts@ (Gmail forward, with its PDF) with a
+note "Sent with Send My Receipts (ref <message id>). From: Vendor <address> Date: YYYY-MM-DD". The ref marks it as sent
+on any device (the page reads its own sent notes back), and the From and Date give the Receipt Inbox the original vendor
+and day. Nobody logs into anyone else's inbox. Share this link with the team; keep the Receipt Inbox shared only with
+the people who run it.
+
+**Receipts forwarded to receipts@.** The scan has a "Forwarded to receipts@" source (`list:receipts.twinhomebuyer.com
+subject:(fwd OR fw)`) so forwarded invoices count whatever their subject says. For a forward, the vendor and the date come
+from the forwarded message (Gmail's forwarded header, or the Send My Receipts note), not from the teammate who forwarded
+it or the day it was forwarded. Refunds and credits with no matching receipt count as "No receipt needed (refund)".
+
 **Receipt Agent Data sheet.** https://docs.google.com/spreadsheets/d/1Tnh8nUd8F5MM02aL_k-aNtjfif-6txOS6JUuqsK9s6g/edit
 (in Seth's Receipt Agent folder). Save to Sheet writes, through the viewer's Google Sheets connector
 (update_values, batch_clear_values): the Receipts tab (one row per saved receipt, with its card charge

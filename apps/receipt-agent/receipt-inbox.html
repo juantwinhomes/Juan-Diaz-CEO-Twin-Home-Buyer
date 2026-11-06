@@ -258,7 +258,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v25</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v27</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -372,7 +372,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     { key: "waymo", label: "Waymo", q: "subject:waymo" },
     { key: "uber", label: "Uber", q: "subject:uber subject:(trip OR receipt OR order)" },
     { key: "juan", label: "Juan's forwards", q: "from:juan@twinhomebuyer.com subject:(fwd OR fw) (receipt OR order OR trip OR ride OR purchase)" },
-    { key: "other", label: "Crew & other", q: 'subject:receipt -from:amazon.com -from:homedepot.com -from:"home depot" -subject:waymo -subject:uber -subject:"receipt agent" -subject:"receipt inbox"' }
+    { key: "other", label: "Crew & other", q: 'subject:receipt -from:amazon.com -from:homedepot.com -from:"home depot" -subject:waymo -subject:uber -subject:"receipt agent" -subject:"receipt inbox"' },
+    // Receipts and invoices teammates forward to receipts@ (by hand, by Gmail filter, or with Send My Receipts), whatever the subject says.
+    { key: "forwards", label: "Forwarded to receipts@", q: 'list:receipts.twinhomebuyer.com subject:(fwd OR fw) -subject:"receipt agent" -subject:"receipt inbox"' }
   ];
   // Company Receipts shared drive: one folder per card, one folder per month, files named "$852.41 - Home Depot".
   const DRIVE = "Google Drive";
@@ -1490,6 +1492,25 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       else if (/home\s*depot/i.test(where)) vendor = "Home Depot";
       else if (/amazon/i.test(head)) vendor = "Amazon";
     }
+    // A forwarded receipt: the vendor and the date come from the forwarded message, not from the teammate who forwarded it.
+    let fwdDate = null;
+    // Send My Receipts also writes "From: Vendor <address> Date: 2026-10-16" in its note, for forwards without Gmail's header.
+    const hdrAt = fwdAt >= 0 ? fwdAt : m.source === "forwards" ? 0 : -1;
+    if (hdrAt >= 0) {
+      const hdr = raw.slice(hdrAt, hdrAt + 800);
+      const ff = hdr.match(/From:\s*\**\s*"?([^"<\n*]*?)"?\s*<([^>\s]+@[^>\s]+)>/i) || hdr.match(/From:\s*\**\s*()([^\s<>]+@[^\s<>]+)/i);
+      if (!vendor && ff && !/@twinhomebuyer\.com/i.test(ff[2])) {
+        const nm = String(ff[1] || "").trim(), dom = (ff[2].match(/@(?:[a-z0-9-]+\.)*?([a-z0-9-]+)\.[a-z]{2,}$/i) || [])[1];
+        vendor = nm && !/@/.test(nm) ? nm.slice(0, 60) : dom ? dom.charAt(0).toUpperCase() + dom.slice(1) : null;
+      }
+      const d1 = hdr.match(/Date:\s*\**\s*(?:[A-Za-z]{3,9},?\s+)?([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})/);
+      const d2 = hdr.match(/Date:\s*\**\s*(?:[A-Za-z]{3,9},?\s+)?(\d{1,2})\s+([A-Za-z]{3})[a-z]*\.?\s+(\d{4})/);
+      const d3 = hdr.match(/Date:\s*\**\s*(\d{4})-(\d{2})-(\d{2})/);
+      if (d1 && MONTHS[d1[1].toLowerCase()]) fwdDate = d1[3] + "-" + pad2(MONTHS[d1[1].toLowerCase()]) + "-" + pad2(d1[2]);
+      else if (d2 && MONTHS[d2[2].toLowerCase()]) fwdDate = d2[3] + "-" + pad2(MONTHS[d2[2].toLowerCase()]) + "-" + pad2(d2[1]);
+      else if (d3) fwdDate = d3[1] + "-" + d3[2] + "-" + d3[3];
+      if (fwdDate && (fwdDate > localDay(new Date().toISOString()) || fwdDate < "2020-01-01")) fwdDate = null;
+    }
     if (!vendor && m.source === "other" && !/@twinhomebuyer\.com/i.test(String(m.sender || ""))) {
       const nm = String(m.sender || "").replace(/<.*>/, "").replace(/"/g, "").trim();
       const dom = (String(m.sender || "").match(/@([a-z0-9-]+)\.[a-z.]+>?\s*$/i) || [])[1];
@@ -1499,6 +1520,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       isReceipt: true, kind: "purchase", vendor, date: null, total: null, itemsSubtotal: null, tax: null,
       orderNumber: null, items: null, location: null, note, cardLast4: null, readBy: "rules"
     };
+    if (fwdDate) x.date = fwdDate;
     // Crew photos: subject like "Receipt $142.37 820 28th St"
     const crew = subject.match(/receipt\s*[:\-]?\s*\$\s?([\d,]+\.\d{2})\s*(.*)$/i);
     if (crew) { x.total = num(crew[1]); x.location = str(crew[2], 160); x.items = "Crew receipt photo"; }
@@ -1531,7 +1553,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (!refund && (m.source === "waymo" || /\b(trip|ride)\b/i.test(subject))) x.kind = "ride";
     if (!refund && /uber\s*eats/i.test(where)) x.kind = "food";
     // Unpaid invoices and quotes, and Juan's reply chains, are not receipts (vendor receipt emails are left alone).
-    if (m.source === "juan" || m.source === "other") {
+    if (m.source === "juan" || m.source === "other" || m.source === "forwards") {
       const unpaid = /\b(invoice|quote|estimate|proposal)\b/i.test(text)
         && /(deposit due|due on receipt|balance (due|remaining)|amount due|don'?t pay|approval needed)/i.test(text)
         && !/(paid in full|payment received|thank you for your payment|amount paid)/i.test(text);
@@ -2191,7 +2213,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           r ? (ra === null ? "" : ra) : f ? f.amount : "",
           r ? cellText(r.property) : f ? cellText(f.card) : "",
           r ? (r.viewUrl || "") : f ? (f.url || "") : "",
-          c.payment ? "" : cellText(placeOf(c.split)), c.payment ? "" : cellText(buyerOf(c).label), c.payment ? "" : "not recorded", c.payment ? "" : RECEIPT_WORD[chargeState(c)]
+          c.payment ? "" : cellText(placeOf(c.split)), c.payment ? "" : cellText(buyerOf(c).label), c.payment ? "" : "not recorded", c.payment ? "" : receiptWord(c)
         ];
       });
       await sheetCall("batch_clear_values", { spreadsheetId: SHEET_ID, ranges: ["Receipts!A2:Q", "'Card match'!A2:Q"] });
@@ -2522,6 +2544,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return { card, kind, who: who || "", label: who ? who + " (" + kind + " " + card + ")" : card ? kind + " " + card + ", holder not set" : c.account + ", holder not set" };
   }
   const RECEIPT_WORD = { matched: "YES", drive: "YES", check: "CHECK", skipped: "Not needed", missing: "NO" };
+  const isRefund = c => c.amount < 0 && !c.payment && !c.marked;
+  const receiptWord = c => { const st = chargeState(c); return st === "skipped" && isRefund(c) ? "Refund" : RECEIPT_WORD[st]; };
   async function saveHolder(card, name) {
     if (!db) { banner("Open this page in claude.ai to save card holders.", true); return; }
     const holders = Object.assign({}, state.holders);
@@ -2646,7 +2670,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   function chargeState(c) {
     if (c.payment || c.marked) return "skipped";
     const m = model.byCharge.get(c.k);
-    return m ? (m.quality === "filed" ? "drive" : m.quality) : "missing";
+    if (m) return m.quality === "filed" ? "drive" : m.quality;
+    return c.amount < 0 ? "skipped" : "missing";   // a refund is money back: nothing to chase
   }
   function receiptsNoCharge() {
     if (!model || !model.charges.length) return [];
@@ -2786,7 +2811,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       check: "Possible receipts to confirm: a file in Drive with the same amount where the vendor couldn't be confirmed, or an Amazon order whose total needs checking. Open the file, then Confirm or Not it.",
       missing: "Charges with no emailed receipt and nothing filed in Company Receipts. Search all of Drive looks for the rest by amount and vendor. Some may have a receipt attached in QuickBooks, which this page can't see.",
       nocharge: "Receipts with no posted charge in this QuickBooks report yet. Usually the charge is still waiting in Bank transactions, or it was paid on an account the report doesn't cover.",
-      skipped: "Card payments, transfers and deposits, plus charges marked No receipt needed."
+      skipped: "Card payments, transfers and deposits, refunds and credits, plus charges marked No receipt needed."
     };
     if (HINTS[state.cTab]) box.append(el("div", "c-hint", HINTS[state.cTab]));
     const head = el("div", "crow head");
@@ -2857,14 +2882,14 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         link.onclick = () => openReceipt(hit.r.id);
         m.append(link);
       } else if (s === "skipped") {
-        m.append(el("span", "pill", c.payment ? "Payment or transfer" : "No receipt needed"));
+        m.append(el("span", "pill", c.payment ? "Payment or transfer" : isRefund(c) ? "Refund" : "No receipt needed"));
       } else {
         m.append(el("span", "pill m-missing", "No receipt found"));
         if (isStatement(c)) m.append(el("small", null, "Bill, loan, tax or payroll"));
       }
       row.append(m);
       const act = el("span", "c-act");
-      if (!c.payment && !hit) {
+      if (!c.payment && !hit && !(c.amount < 0 && !c.marked)) {
         const b = el("button", "btn small ghost", c.marked ? "Undo" : "No receipt needed");
         b.type = "button";
         b.onclick = () => markCharge(c, c.marked ? "" : "no_receipt");
@@ -2930,11 +2955,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     lines.push("", "EVERY CHARGE", "Date | Charge | What it's for | Property or office | Amount | Buyer | Approver | Receipt");
     charges.slice(0, 150).forEach(x => {
       const b = buyerOf(x);
-      lines.push([shortDate(x.date), payee(x), whatFor(x), placeOf(x.split) || "Not set", money(x.amount), b.who || (b.card ? b.kind + " " + b.card : x.account), "not recorded", RECEIPT_WORD[chargeState(x)]].join(" | "));
+      lines.push([shortDate(x.date), payee(x), whatFor(x), placeOf(x.split) || "Not set", money(x.amount), b.who || (b.card ? b.kind + " " + b.card : x.account), "not recorded", receiptWord(x)].join(" | "));
     });
     if (charges.length > 150) lines.push("...and " + (charges.length - 150) + " more. Pick fewer dates in the Receipt Inbox page, or open the Receipt Agent Data sheet.");
     const pays = model.charges.filter(x => x.payment && inRange(x.date)).length;
-    lines.push("", "Not listed: " + pays + " card payments, deposits and transfers between our own accounts. Receipts with no posted charge yet: " + c.nocharge.length + ".");
+    const refunds = charges.filter(x => receiptWord(x) === "Refund").length;
+    lines.push("", "Refunds and credits (no receipt needed): " + refunds + ". Not listed: " + pays + " card payments, deposits and transfers between our own accounts. Receipts with no posted charge yet: " + c.nocharge.length + ".");
     lines.push("Source: QuickBooks Transaction Detail by Account (posted charges; charges still waiting in Bank transactions aren't in it). Receipts: the accounting@ inbox, receipts@ and Company Receipts in Google Drive.");
     return lines.join("\n");
   }
@@ -2965,7 +2991,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const r = hit && hit.r, f = hit && hit.filed, rx = (r && r.extracted) || {};
       return [x.date, x.name || x.memo || "", x.payment ? x.type : whatFor(x), x.payment ? "" : placeOf(x.split) || "Not set", x.amount,
         x.payment ? "" : b.who || (b.card ? b.kind + " " + b.card : x.account), x.payment ? "" : "not recorded",
-        x.payment ? "Payment or transfer" : RECEIPT_WORD[chargeState(x)], x.account, x.type, x.memo || "", x.split || "",
+        x.payment ? "Payment or transfer" : receiptWord(x), x.account, x.type, x.memo || "", x.split || "",
         r ? [rx.vendor || senderName(r), localDay(rx.date || r.emailDate) || "", amountOf(r).label].join(", ") : f ? [f.card, f.vendor || f.name].filter(Boolean).join(", ") : "",
         r ? r.viewUrl || "" : f ? f.url || "" : ""];
     };

@@ -1,0 +1,407 @@
+<title>Send My Receipts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column, like a form you fill once. Dates and the find button on top, then the list of emails with a send bar that stays in reach. */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --sunk: #f5f7f9;
+  --ink: #16202b;
+  --muted: #5d6877;
+  --line: #d6dce3;
+  --accent: #1f4e9c;
+  --accent-ink: #ffffff;
+  --accent-soft: #e5ecf8;
+  --ok: #1b7349; --ok-soft: #e2f1e9;
+  --warn: #9a5a05; --warn-soft: #faefdc;
+  --bad: #ad2a22; --bad-soft: #fae6e4;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1218; --surface: #151c25; --sunk: #111821; --ink: #e6ebf1; --muted: #9ba6b4; --line: #27313e;
+    --accent: #8fb0ef; --accent-ink: #0d1218; --accent-soft: #1b2843;
+    --ok: #6fd1a0; --ok-soft: #13301f; --warn: #f0b45a; --warn-soft: #382811; --bad: #f28b82; --bad-soft: #3b1917;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1218; --surface: #151c25; --sunk: #111821; --ink: #e6ebf1; --muted: #9ba6b4; --line: #27313e;
+  --accent: #8fb0ef; --accent-ink: #0d1218; --accent-soft: #1b2843;
+  --ok: #6fd1a0; --ok-soft: #13301f; --warn: #f0b45a; --warn-soft: #382811; --bad: #f28b82; --bad-soft: #3b1917;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14px; line-height: 1.5; }
+.wrap {
+  max-width: 880px; margin: 0 auto; box-sizing: border-box; display: grid; gap: 16px;
+  padding-block: 20px 28px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2 { font-family: var(--display); margin: 0; text-wrap: balance; }
+p { margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button, input { font: inherit; color: inherit; }
+
+header { display: grid; gap: 6px; }
+.eyebrow { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: 1.7rem; line-height: 1.1; }
+.lede { color: var(--muted); max-width: 64ch; }
+.lede b { color: var(--ink); font-weight: 600; }
+.addr { font-family: var(--mono); font-size: 0.86em; color: var(--ink); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 16px; padding: 14px 16px; }
+.field { display: grid; gap: 4px; font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+.field input { background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; color: var(--ink); font-weight: 400; font-size: 0.9rem; }
+.inbox { margin-left: auto; font-size: 0.78rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); align-self: center; overflow-wrap: anywhere; }
+.inbox.ok { color: var(--ok); border-color: var(--ok); }
+.inbox.warn { color: var(--warn); border-color: var(--warn); }
+
+.btn { font-weight: 600; font-size: 0.88rem; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 8px 14px; line-height: 1.25; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: transparent; }
+.btn.small { font-size: 0.8rem; padding: 5px 10px; }
+.btn:disabled { opacity: 0.55; cursor: default; }
+
+.banner { padding: 10px 14px; border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 0.88rem; }
+.banner.bad { background: var(--bad-soft); color: var(--bad); }
+.status { font-size: 0.85rem; color: var(--muted); min-height: 1.3em; }
+
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 18px 16px; }
+.step { display: grid; gap: 4px; align-content: start; }
+.step b { font-family: var(--display); font-size: 1.05rem; }
+.step span { color: var(--muted); font-size: 0.86rem; }
+.step .n { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); }
+
+.listbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); position: sticky; top: env(safe-area-inset-top, 0px); background: var(--surface); border-radius: 12px 12px 0 0; z-index: 2; }
+.listbar .count { font-size: 0.85rem; color: var(--muted); margin-right: auto; }
+.listbar .count b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; background: var(--accent-soft); border-bottom: 1px solid var(--line); font-size: 0.88rem; }
+.confirm p { margin-right: auto; min-width: 0; }
+
+.rows { display: grid; }
+.row { display: grid; grid-template-columns: 24px 74px minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; padding: 10px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.row:last-child { border-bottom: 0; }
+.row:hover { background: var(--sunk); }
+.row input { margin: 3px 0 0; width: 16px; height: 16px; accent-color: var(--accent); }
+.row .date { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 1px; }
+.row .what { min-width: 0; display: grid; gap: 1px; }
+.row .who { font-weight: 600; overflow-wrap: anywhere; }
+.row .subj { overflow-wrap: anywhere; }
+.row .snip { color: var(--muted); font-size: 0.8rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+.pill { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; align-self: start; }
+.pill.sent { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.pill.before { background: var(--sunk); }
+.pill.fail { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+.empty { padding: 22px 16px; color: var(--muted); }
+.notes { font-size: 0.8rem; color: var(--muted); display: grid; gap: 4px; padding-inline: 2px; }
+
+@media (max-width: 640px) {
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .inbox { margin-left: 0; }
+  .row { grid-template-columns: 24px minmax(0, 1fr) auto; }
+  .row .date { grid-column: 2; grid-row: 1; }
+  .row .what { grid-column: 2 / -1; grid-row: 2; }
+  .row .pill { grid-column: 3; grid-row: 1; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Twin Home Buyer &middot; Receipts</span>
+    <h1>Send My Receipts</h1>
+    <p class="lede">Finds receipt and invoice emails in <b>your own Gmail</b> and forwards the ones you pick to <span class="addr">receipts@twinhomebuyer.com</span>, where accounting matches them to the company card charges. Nothing else leaves your inbox, and this page shows no one else's data.</p>
+  </header>
+
+  <section class="panel controls" aria-label="Dates to search">
+    <label class="field" for="from">From <input type="date" id="from"></label>
+    <label class="field" for="to">To <input type="date" id="to"></label>
+    <button type="button" class="btn primary" id="find">Find my receipts</button>
+    <span class="inbox" id="inbox">Your inbox: shown after you search</span>
+  </section>
+
+  <div class="banner" id="banner" role="alert" hidden></div>
+  <p class="status" id="status" aria-live="polite"></p>
+
+  <section class="panel" id="intro">
+    <div class="steps">
+      <div class="step"><span class="n">Step 1</span><b>Find</b><span>Pick the dates, usually from Oct 1 to today, and click Find my receipts. The first time, allow Gmail for this page when asked.</span></div>
+      <div class="step"><span class="n">Step 2</span><b>Check the list</b><span>Every email that looks like a receipt or invoice is ticked. Untick anything personal or unrelated to the company.</span></div>
+      <div class="step"><span class="n">Step 3</span><b>Send</b><span>Click Send. Each email is forwarded from your account to receipts@, with its PDF. Emails you sent before are marked so they don't go twice.</span></div>
+    </div>
+  </section>
+
+  <section class="panel" id="results" aria-label="Receipt emails" hidden>
+    <div class="listbar">
+      <p class="count" id="count"></p>
+      <button type="button" class="btn small ghost" id="all">Select all</button>
+      <button type="button" class="btn small ghost" id="none">Select none</button>
+      <button type="button" class="btn primary" id="send" disabled>Send</button>
+    </div>
+    <div class="confirm" id="confirm" hidden>
+      <p id="confirmText"></p>
+      <button type="button" class="btn primary small" id="confirmYes">Forward</button>
+      <button type="button" class="btn small" id="confirmNo">Cancel</button>
+    </div>
+    <div class="rows" id="rows"></div>
+  </section>
+
+  <div class="notes">
+    <p>Searched: emails with receipt, invoice, payment received, payment confirmation or order confirmation in the subject, or sent from a billing or receipts address. Emails from @twinhomebuyer.com and your own sent mail are left out.</p>
+    <p>Not included: Anthropic and Claude invoices. Gmail keeps those from Claude's tools, so download them from the Claude billing page and give them to accounting.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const TO = "receipts@twinhomebuyer.com";
+  const DOMAIN = "@twinhomebuyer.com";
+  const MARK = "Sent with Send My Receipts";
+  const START = "2026-10-01";
+  const FATAL = new Set(["server_not_connected", "needs_reauth", "not_in_manifest", "approval_required", "consent_required", "selection_required", "blocked_by_policy", "not_granted", "capability_disabled", "capability_removed"]);
+  const QUERY = '(subject:(receipt OR invoice OR "payment received" OR "payment confirmation" OR "order confirmation" OR "thanks for your payment" OR "payment successful") OR from:(receipts OR billing OR invoice OR invoices))' +
+    " -from:twinhomebuyer.com -from:anthropic.com -from:claude.com -from:claude.ai -in:sent -in:chats -in:spam -in:trash -subject:(quote OR estimate OR proposal)";
+
+  const $ = id => document.getElementById(id);
+  const state = { mcp: null, account: "", items: [], busy: false };
+  let localSent = new Set();
+  try { localSent = new Set(JSON.parse(localStorage.getItem("smr-sent") || "[]")); } catch (e) { /* storage is a convenience */ }
+  const remember = () => { try { localStorage.setItem("smr-sent", JSON.stringify([...localSent].slice(-3000))); } catch (e) { /* ignore */ } };
+
+  const pad2 = n => String(n).padStart(2, "0");
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
+  const gday = iso => iso.replace(/-/g, "/");
+  const nextDay = iso => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + 1); return d.getFullYear() + "/" + pad2(d.getMonth() + 1) + "/" + pad2(d.getDate()); };
+  const shortDate = v => { const d = new Date(v); return isNaN(d) ? "" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
+  const longDate = iso => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const dayOf = v => { const d = new Date(v); return isNaN(d) ? "" : d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined && text !== null) e.textContent = text; return e; }
+  function banner(text, bad) { const b = $("banner"); b.textContent = text || ""; b.hidden = !text; b.className = "banner" + (bad ? " bad" : ""); }
+  function status(text) { $("status").textContent = text || ""; }
+  const unescape = s => String(s || "").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+  function senderName(m) {
+    const from = String(m.sender || "");
+    const dn = (m.addressDisplayNames || []).find(a => a && a.emailAddress && from.toLowerCase().includes(String(a.emailAddress).toLowerCase()));
+    const name = dn && dn.displayName ? dn.displayName : from.replace(/<.*>/, "").replace(/"/g, "").trim();
+    return name || from;
+  }
+
+  function message(e) {
+    const c = e && e.code;
+    if (c === "server_not_connected") return "Gmail isn't connected to your Claude. Add it in claude.ai Settings, Connectors, then click Find my receipts again.";
+    if (c === "not_in_manifest" || c === "approval_required" || c === "consent_required") return "Gmail needs your OK for this page. Click Find my receipts and choose Allow.";
+    if (c === "needs_reauth") return "Gmail needs to be reconnected in claude.ai Settings, Connectors.";
+    if (c === "blocked_by_policy" || c === "not_granted") return "Your organization's settings don't let this page use Gmail. Forward your receipts to " + TO + " by hand instead.";
+    if (c === "rate_limited") return "Gmail asked us to slow down. Wait a minute, then try again.";
+    return "Gmail didn't answer: " + ((e && e.message) || "unknown error") + ".";
+  }
+  async function call(tool, input) {
+    try { return (await state.mcp.callTool("Gmail", tool, input)).payload || {}; }
+    catch (e) {
+      if (e && e.retryable && tool !== "forward") {
+        await sleep(Math.min(e.retryAfterMs || 1500, 15000) + Math.random() * 800);
+        return (await state.mcp.callTool("Gmail", tool, input)).payload || {};
+      }
+      throw e;
+    }
+  }
+  function noteAccount(viewUrl) {
+    if (state.account || !viewUrl) return;
+    try { const who = new URL(viewUrl).searchParams.get("authuser"); if (who && who.includes("@")) state.account = who.toLowerCase(); } catch (e) { /* no account in the link */ }
+    const chip = $("inbox");
+    if (!state.account) return;
+    const company = state.account.endsWith(DOMAIN);
+    chip.textContent = "Your inbox: " + state.account + (company ? "" : " (not a company inbox)");
+    chip.className = "inbox " + (company ? "ok" : "warn");
+  }
+
+  // Emails already forwarded with this page carry their message id in the note at the top, so they show up from any device.
+  async function sentBefore(fromIso) {
+    const ids = new Set();
+    let token = null, pages = 0;
+    do {
+      const input = { query: 'in:sent to:' + TO + ' "' + MARK + '" after:' + gday(fromIso), pageSize: 50 };
+      if (token) input.pageToken = token;
+      const p = await call("search_threads", input);
+      for (const t of p.threads || []) for (const m of t.messages || []) {
+        const hit = String(m.snippet || "").match(/ref ([0-9a-f]{10,})/i);
+        if (hit) ids.add(hit[1].toLowerCase());
+      }
+      token = p.nextPageToken || null;
+      pages++;
+    } while (token && pages < 10);
+    return ids;
+  }
+
+  async function find() {
+    if (state.busy) return;
+    const from = $("from").value || START, to = $("to").value || today();
+    if (from > to) { banner("The From date is after the To date. Swap them and try again.", true); return; }
+    if (!state.mcp) { banner("Open this page in claude.ai, with Gmail connected to your Claude, to search your inbox.", true); return; }
+    state.busy = true; banner(""); $("find").disabled = true; $("confirm").hidden = true;
+    let found = false;
+    try {
+      status("Searching your Gmail from " + longDate(from) + " to " + longDate(to) + "…");
+      const byId = new Map();
+      let token = null, pages = 0, held = 0;
+      const deep = [];
+      do {
+        const input = { query: QUERY + " after:" + gday(from) + " before:" + nextDay(to), pageSize: 50 };
+        if (token) input.pageToken = token;
+        let p;
+        try { p = await call("search_threads", input); }
+        catch (e) { if (FATAL.has(e && e.code)) throw e; held++; break; }
+        for (const t of p.threads || []) {
+          const msgs = t.messages || [];
+          for (const m of msgs) { noteAccount(m.viewUrl); add(byId, m, from, to); }
+          if ((t.messageCount || 0) > msgs.length) deep.push(t.id);
+          noteAccount(t.viewUrl);
+        }
+        token = p.nextPageToken || null;
+        pages++;
+        status("Searching your Gmail… " + byId.size + " found so far.");
+      } while (token && pages < 8);
+      // Gmail groups a vendor's monthly receipts into one conversation; read those in full so no month is missed.
+      for (let i = 0; i < deep.length && i < 60; i++) {
+        try {
+          const th = await call("get_thread", { threadId: deep[i], messageFormat: "MINIMAL" });
+          for (const m of th.messages || []) add(byId, m, from, to);
+        } catch (e) { if (FATAL.has(e && e.code)) throw e; held++; }
+      }
+      let before = new Set();
+      try { before = await sentBefore(from); } catch (e) { if (FATAL.has(e && e.code)) throw e; }
+      state.items = [...byId.values()].sort((a, b) => b.day.localeCompare(a.day));
+      for (const it of state.items) {
+        it.done = before.has(it.id.toLowerCase()) || localSent.has(it.id);
+        it.pick = !it.done;
+        it.result = "";
+      }
+      found = true;
+      const fresh = state.items.filter(i => !i.done).length;
+      status(state.items.length ? state.items.length + (state.items.length === 1 ? " email found" : " emails found") + (state.items.length - fresh ? ", " + (state.items.length - fresh) + " already sent before." : ".") + " Untick anything personal, then click Send." : "");
+      if (held) banner("Gmail held back part of the search, usually because of an automated email it won't share with Claude. If a receipt is missing from the list, forward it to " + TO + " by hand.");
+    } catch (e) {
+      banner(message(e), true);
+      status("");
+    } finally {
+      state.busy = false; $("find").disabled = false;
+      if (found) render();
+    }
+  }
+  function add(byId, m, from, to) {
+    if (!m || !m.id || byId.has(m.id)) return;
+    const sender = String(m.sender || "").toLowerCase();
+    if (sender.includes(DOMAIN) || (state.account && sender.includes(state.account))) return;
+    if ((m.labelIds || []).some(l => l === "SENT" || l === "DRAFT" || l === "SPAM" || l === "TRASH")) return;
+    const day = dayOf(m.date);
+    if (!day || day < from || day > to) return;
+    const addr = (String(m.sender || "").match(/[^\s<>"]+@[^\s<>"]+/) || [""])[0];
+    byId.set(m.id, { id: m.id, day, addr, who: unescape(senderName(m)), subject: unescape(m.subject || "(no subject)"), snippet: unescape(m.snippet || "") });
+  }
+
+  function render() {
+    $("results").hidden = false;
+    $("intro").hidden = true;
+    const rows = $("rows");
+    rows.textContent = "";
+    if (!state.items.length) {
+      rows.append(el("p", "empty", "No receipt or invoice emails in your inbox between " + longDate($("from").value || START) + " and " + longDate($("to").value || today()) + ". If you know one is there, forward it to " + TO + " by hand."));
+    }
+    for (const it of state.items) {
+      const row = el("label", "row");
+      row.htmlFor = "pick-" + it.id;
+      const box = document.createElement("input");
+      box.type = "checkbox"; box.id = "pick-" + it.id; box.checked = it.pick;
+      box.disabled = state.busy || it.result === "sent";
+      box.onchange = () => { it.pick = box.checked; counts(); };
+      const what = el("span", "what");
+      what.append(el("span", "who", it.who), el("span", "subj", it.subject));
+      if (it.snippet) what.append(el("span", "snip", it.snippet));
+      const pill = it.result === "sent" ? el("span", "pill sent", "Sent")
+        : it.result ? el("span", "pill fail", "Didn't send")
+        : it.done ? el("span", "pill before", "Sent before")
+        : el("span", "pill", "Ready");
+      if (it.result && it.result !== "sent") pill.title = it.result;
+      row.append(box, el("span", "date", shortDate(it.day + "T12:00:00")), what, pill);
+      rows.append(row);
+    }
+    counts();
+  }
+  function counts() {
+    const n = state.items.filter(i => i.pick && i.result !== "sent").length;
+    $("count").innerHTML = "";
+    const b = el("b", null, String(n));
+    $("count").append(b, document.createTextNode(" of " + state.items.length + " selected to send"));
+    $("send").textContent = n ? "Send " + n : "Send";
+    $("send").disabled = !n || state.busy;
+    $("all").disabled = $("none").disabled = state.busy || !state.items.length;
+  }
+
+  function askSend() {
+    const n = state.items.filter(i => i.pick && i.result !== "sent").length;
+    if (!n) return;
+    $("confirmText").textContent = "Forward " + n + (n === 1 ? " email" : " emails") + " from your account to " + TO + "?";
+    $("confirmYes").textContent = "Forward " + n;
+    $("confirm").hidden = false;
+    $("confirmYes").focus();
+  }
+  async function send() {
+    $("confirm").hidden = true;
+    const list = state.items.filter(i => i.pick && i.result !== "sent");
+    if (!list.length || state.busy) return;
+    state.busy = true; banner(""); render();
+    let ok = 0, failed = 0;
+    try {
+      for (let i = 0; i < list.length; i++) {
+        const it = list[i];
+        status("Forwarding " + (i + 1) + " of " + list.length + "…");
+        try {
+          // The note names the original sender and date, so accounting matches the receipt to the right day.
+          const who = it.who.replace(/[<>"\n]/g, " ").trim();
+          await call("forward", { messageId: it.id, to: [TO], forwardText: MARK + " (ref " + it.id + "). From: " + (who && who !== it.addr ? who + " " : "") + "<" + (it.addr || "unknown") + "> Date: " + it.day });
+          it.result = "sent"; it.done = true; it.pick = false; ok++;
+          localSent.add(it.id); remember();
+        } catch (e) {
+          if (FATAL.has(e && e.code)) throw e;
+          it.result = (e && e.message) || "Gmail didn't forward it"; failed++;
+        }
+        render();
+        await sleep(250);
+      }
+      status("Sent " + ok + (ok === 1 ? " email" : " emails") + " to " + TO + "." + (failed ? " " + failed + " didn't send; they stay ticked, so click Send to try them again." : " Accounting picks them up on the next scan."));
+    } catch (e) {
+      banner(message(e) + (ok ? " " + ok + " were sent before it stopped." : ""), true);
+      status("");
+    } finally {
+      state.busy = false; render();
+    }
+  }
+
+  $("from").value = START;
+  $("to").value = today();
+  $("from").max = $("to").max = today();
+  $("find").onclick = find;
+  $("send").onclick = askSend;
+  $("confirmYes").onclick = send;
+  $("confirmNo").onclick = () => { $("confirm").hidden = true; };
+  $("all").onclick = () => { for (const i of state.items) if (i.result !== "sent") i.pick = true; render(); };
+  $("none").onclick = () => { for (const i of state.items) i.pick = false; render(); };
+
+  (async () => {
+    const C = window.claude;
+    if (!C || typeof C.use !== "function") { banner("Open this page in claude.ai, with Gmail connected to your Claude, to search your inbox."); return; }
+    state.mcp = await C.use("mcp");
+    if (!state.mcp) banner("This view can't reach Gmail. Open the page in claude.ai with Gmail connected to your Claude.");
+  })();
+})();
+</script>
