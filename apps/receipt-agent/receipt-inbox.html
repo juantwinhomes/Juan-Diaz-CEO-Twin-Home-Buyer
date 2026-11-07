@@ -107,9 +107,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .seg[data-key="new"][aria-selected="true"] .seg-label { color: var(--accent); }
 .seg[data-key="follow_up"][aria-selected="true"] .seg-label { color: var(--warn); }
 .seg[data-key="good"][aria-selected="true"] .seg-label { color: var(--ok); }
-.tools { display: flex; gap: 6px; }
-.tools input { flex: 1 1 auto; min-width: 0; }
-.tools select { flex: 0 0 auto; max-width: 46%; }
+.tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.tools input { flex: 1 1 100%; min-width: 0; }
+.tools select { flex: 1 1 0; min-width: 0; }
 .qmeta { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--muted); }
 .qmeta label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .qmeta { min-width: 0; }
@@ -355,7 +355,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v38</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v39</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -399,6 +399,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           <input type="search" id="search" placeholder="Search vendor, amount, order #" aria-label="Search receipts">
           <select id="source" aria-label="Source">
             <option value="all">All sources</option>
+          </select>
+          <select id="cmatch" aria-label="Card match">
+            <option value="all">Any card match</option>
+            <option value="on">On a card charge</option>
+            <option value="confirm">Confirm a charge</option>
+            <option value="none">No card charge</option>
           </select>
         </div>
         <div class="qmeta">
@@ -449,8 +455,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       </div>
       <div class="c-range">
         <div class="vseg" role="group" aria-label="Dates shown">
+          <button type="button" id="cWeek" aria-pressed="false">Last 7 days</button>
           <button type="button" id="cLast" aria-pressed="false">Latest day</button>
-          <button type="button" id="cSince" aria-pressed="false">Since first receipt</button>
           <button type="button" id="cAll" aria-pressed="false">All dates</button>
         </div>
         <label for="cFrom">From <input type="date" id="cFrom"></label>
@@ -597,6 +603,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     filed: null,
     cardFolders: null,  // Company Receipts card folders [{id, title}], this visit only
     feeds: null,        // Bank transactions exports picked for upload, waiting for their accounts to be confirmed
+    cmatch: "all",      // receipts list: all, on a card charge, confirm a charge, no card charge
     uploadFor: "",     // the charge whose upload panel is open        // receipts already filed in Company Receipts (file names only, this visit only)
     filedNote: "",
     cFrom: "",          // date filter for the Card charges view
@@ -648,6 +655,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0") + "-01";
   }
   const inWindow = day => !day || day >= windowStart();
+  // Today and the 6 days before it.
+  function weekStart() {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
   function isoOf(v) {
     const d = new Date(v || "");
     return isNaN(d) ? "" : d.toISOString();
@@ -751,6 +764,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   function matchesFilters(r) {
     if (state.source !== "all" && r.source !== state.source) return false;
+    if (state.cmatch !== "all") {
+      const on = model && model.byReceipt.get(r.id);
+      const want = on ? (on.quality === "matched" ? "on" : "confirm") : "none";
+      if (want !== state.cmatch) return false;
+    }
     const q = state.query.trim().toLowerCase();
     if (!q) return true;
     const x = r.extracted || {};
@@ -1278,6 +1296,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const srcSel = $("source");
     for (const s of SOURCES) { const o = document.createElement("option"); o.value = s.key; o.textContent = s.label; srcSel.append(o); }
     srcSel.onchange = () => { state.source = srcSel.value; state.selected.clear(); render(); };
+    $("cmatch").onchange = e => { state.cmatch = e.target.value || "all"; state.selected.clear(); render(); };
     $("search").addEventListener("input", e => { state.query = e.target.value; render(); });
     $("scan").onclick = scan;
     $("viewReceipts").onclick = () => { state.view = "receipts"; render(); };
@@ -1289,7 +1308,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("cTo").onchange = e => { state.cTo = e.target.value || ""; state.cRangeSet = true; render(); };
     $("cLast").onclick = () => { state.cFrom = state.cTo = (model && model.to) || ""; state.cRangeSet = true; render(); };
     $("cAll").onclick = () => { state.cFrom = ""; state.cTo = ""; state.cRangeSet = true; render(); };
-    $("cSince").onclick = () => { state.cFrom = firstReceiptDay() || ""; state.cTo = ""; state.cRangeSet = true; render(); };
+    $("cWeek").onclick = () => { state.cFrom = weekStart(); state.cTo = ""; state.cRangeSet = true; render(); };
     $("cCard").onchange = e => { state.cCard = e.target.value || ""; remember("ri-ccard", state.cCard); render(); };
     $("cSort").onchange = e => { state.cSort = e.target.value || "urgent"; remember("ri-csort", state.cSort); render(); };
     $("cardUpload").onclick = () => $("cardFile").click();
@@ -3268,7 +3287,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (u.waiting.length) {
       const oldest = u.waiting.reduce((a, r) => receivedDays(r) > receivedDays(a) ? r : a, u.waiting[0]);
       item("bad", u.waiting.length, "to review, waiting " + REVIEW_DUE_DAYS + "+ days", "Oldest first", () => {
-        state.view = "receipts"; state.tab = "new"; state.source = "all"; $("source").value = "all"; state.query = ""; $("search").value = "";
+        state.view = "receipts"; state.tab = "new"; state.source = "all"; $("source").value = "all"; state.cmatch = "all"; $("cmatch").value = "all"; state.query = ""; $("search").value = "";
         select(oldest.id);
       }, "Receipts in To review that arrived more than " + REVIEW_DUE_DAYS + " days ago.");
     }
@@ -3425,6 +3444,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     state.tab = r.status || "new";
     state.source = "all";
     $("source").value = "all";
+    state.cmatch = "all";
+    $("cmatch").value = "all";
     state.query = "";
     $("search").value = "";
     state.selected.clear();
@@ -3606,7 +3627,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return ch;
   }
   function renderCards() {
-    if (!state.cRangeSet && model && model.to) { state.cFrom = state.cTo = model.to; state.cRangeSet = true; }
+    if (!state.cRangeSet && model && model.to) { state.cFrom = weekStart(); state.cTo = ""; state.cRangeSet = true; }
     if (model.charges.length) renderPickers();
     const counts = cardCounts();
     const st = $("cStats");
@@ -3634,9 +3655,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("cRangeNote").textContent = state.cFrom || state.cTo
       ? ((f, t) => f === t ? longDate(f) : longDate(f) + " to " + longDate(t))(state.cFrom || model.from, state.cTo || model.to)
       : (model.from ? longDate(model.from) + " to " + longDate(model.to) : "");
-    const first = firstReceiptDay();
+    $("cWeek").setAttribute("aria-pressed", String(state.cFrom === weekStart() && !state.cTo));
     $("cLast").setAttribute("aria-pressed", String(!!model.to && state.cFrom === model.to && state.cTo === model.to));
-    $("cSince").setAttribute("aria-pressed", String(!!first && state.cFrom === first && !state.cTo));
     $("cAll").setAttribute("aria-pressed", String(!state.cFrom && !state.cTo));
     const tabs = $("cTabs");
     tabs.textContent = "";

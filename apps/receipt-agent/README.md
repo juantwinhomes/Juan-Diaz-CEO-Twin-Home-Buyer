@@ -45,6 +45,12 @@ Good) and **Not this charge** (unlinks it; the charge goes back to No receipt fo
 are saved on the receipt as `chargeOk` / `chargeNo`, matching honors them, and a rescan keeps
 them. The Card charges view has the same Confirm / Not it on possible email matches.
 
+**Last 7 days and card match (v39).** Card charges opens on **Last 7 days** (today and the 6 days
+before), next to Latest day and All dates. The Receipts list has a **Card match** filter beside
+Source: On a card charge, Confirm a charge, No card charge. To clear matched receipts in one go:
+To review tab, Card match "On a card charge", Select all, Good. Select all only takes what the
+filters show, so unmatched receipts are left alone.
+
 **Date window (v38).** Everything gathered stays within this month and the two months before it
 (Sep 1 onward in November, Oct 1 onward in December): card report uploads, For review uploads, card
 charges saved earlier, receipts in the queue and in matching, inbox scans, and the Send My Receipts
