@@ -193,6 +193,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .views button { cursor: pointer; border: 0; background: transparent; border-radius: 7px; padding: 6px 14px; font-weight: 600; font-size: 0.86rem; color: var(--muted); }
 .views button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(15, 23, 32, 0.12), 0 0 0 1px var(--line); }
 .app[hidden], .cards[hidden] { display: none; }
+.pv-drive { display: grid; gap: 10px; justify-items: start; padding: 6px 2px; }
 .cards { flex: 1; min-height: 0; }
 .pane.cards { display: block; overflow-y: auto; overscroll-behavior: contain; }
 .c-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
@@ -395,7 +396,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v46</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v47</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -425,6 +426,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     </div>
     <div class="tgroup" aria-label="Receipt Agent Data sheet">
       <button id="saveSheet" class="btn" type="button" title="Write every saved receipt and card match to the Receipt Agent Data sheet">Save to Sheet</button>
+      <button id="copyDrive" class="btn" type="button" title="Save each receipt's PDF, photo or email text into Company Receipts › Inbox copies, so anyone can open receipts that came into another inbox. Run it from accounting@.">Copy receipts to Drive</button>
       <a id="openSheet" class="btn ghost" target="_blank" rel="noopener" title="Open the Receipt Agent Data sheet">Sheet ↗</a>
     </div>
   </div>
@@ -710,6 +712,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (s !== null) return { value: s, label: money(s), note: "items, plus tax" };
     return { value: null, label: "—", note: "" };
   }
+  // The receipt link anyone can open: the Drive copy when there is one, else the email in the inbox it came into.
+  const linkOf = r => (r && r.driveCopy && r.driveCopy[0] && r.driveCopy[0].url) || (r && r.viewUrl) || "";
   function shortDate(iso) {
     if (!iso) return "";
     const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso + "T12:00:00" : iso);
@@ -1188,6 +1192,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       }
     }
     fact("From", senderName(r));
+    if (r.driveCopy && r.driveCopy.length) {
+      const dd = el("dd");
+      r.driveCopy.forEach((f, i) => { const a = el("a", "linkbtn", r.driveCopy.length > 1 ? "Copy " + (i + 1) + " ↗" : "Open ↗"); a.href = f.url; a.target = "_blank"; a.rel = "noopener"; a.title = f.name; if (i) dd.append(document.createTextNode(" · ")); dd.append(a); });
+      dl.append(el("dt", null, "Drive copy"), dd);
+    }
     if (status === "new") { const w = receivedDays(r); if (w > REVIEW_DUE_DAYS) fact("Waiting", "Received " + w + " days ago. Review within " + REVIEW_DUE_DAYS + " days."); }
     const keys = el("p", "keys", "J / K next and previous · G good · F follow-up · N not a receipt · D download");
     facts.append(field, dl);
@@ -1203,6 +1212,17 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const c = msgCache.get(r.id);
     if (!c) { box.append(el("p", "pv-note", mcp ? "Loading the receipt…" : "Open this page in claude.ai to see the receipt.")); return; }
     if (c.error) { box.append(el("p", "pv-note", c.error)); return; }
+    if (c.driveCopy) {
+      const w = el("div", "pv-drive");
+      w.append(el("p", "pv-note", "This receipt came into another inbox. Its copy is in Company Receipts › Inbox copies:"));
+      for (const f of c.driveCopy) {
+        const a = el("a", "btn", (f.kind === "pdf" ? "Open the PDF" : f.kind === "image" ? "Open the photo" : "Open the email text") + " in Drive ↗");
+        a.href = f.url; a.target = "_blank"; a.rel = "noopener"; a.title = f.name;
+        w.append(a);
+      }
+      box.append(w);
+      return;
+    }
     const hasFile = c.attachments.length > 0;
     const mode = hasFile && state.viewMode === "file" ? "file" : "email";
     const bar = el("div", "vbar");
@@ -1408,6 +1428,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("viewCards").onclick = () => { state.view = "cards"; render(); };
     $("driveCheck").onclick = () => loadFiled(true);
     $("saveSheet").onclick = saveToSheet;
+    $("copyDrive").onclick = copyReceiptsToDrive;
     $("openSheet").href = SHEET_URL;
     $("cFrom").onchange = e => { state.cFrom = e.target.value || ""; state.cRangeSet = true; render(); };
     $("cTo").onchange = e => { state.cTo = e.target.value || ""; state.cRangeSet = true; render(); };
@@ -1548,11 +1569,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         try { local = r ? await findLocalCopy(r) : null; } catch (e2) { local = null; }
         if (local && local !== id) { localIds.set(id, local); return loadPreviewOnce(id, true); }
       }
-      msgCache.set(id, {
-        error: e && e.code === "tool_error"
-          ? "This receipt was saved from another inbox and isn't in yours. Open the page signed into that Gmail to see it here."
-          : gmailMessage(e)
-      });
+      const rr = allRows().find(x => x.id === id);
+      msgCache.set(id, rr && rr.driveCopy && rr.driveCopy.length && e && e.code === "tool_error"
+        ? { driveCopy: rr.driveCopy }
+        : { error: e && e.code === "tool_error"
+          ? "This receipt came into another inbox and isn't in yours, and it has no copy in Drive yet. Ask Christine to click Copy receipts to Drive on accounting@."
+          : gmailMessage(e) });
       refreshPreview(id);
     }
   }
@@ -2298,6 +2320,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           reviewedAt: prev.reviewedAt || null,
           chargeOk: prev.chargeOk || null,
           chargeNo: prev.chargeNo || [],
+          driveCopy: prev.driveCopy || [],
           scannedAt: now,
           scannedBy: state.account || ""
         };
@@ -2922,7 +2945,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           x.cardLast4 || "", x.orderNumber || "", cellText(x.items), cellText(x.location), cellText(r.property),
           STATUS_LABEL[r.status || "new"], SOURCE_LABEL[r.source] || "Other",
           cm ? cellText([cm.c.account, longDate(cm.c.date), money(cm.c.amount)].join(", ")) : "", cm ? cellText(cm.c.split) : "",
-          x.readBy || "", cellText(r.scannedBy), r.viewUrl || "", r.id
+          x.readBy || "", cellText(r.scannedBy), linkOf(r), r.id
         ];
       });
       const label = { missing: "No receipt found", check: "Check amount", matched: "Matched email", drive: "In Drive", skipped: "No receipt needed" };
@@ -2937,7 +2960,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           r ? (localDay(x.date || r.emailDate) || "") : "",
           r ? (ra === null ? "" : ra) : f ? f.amount : "",
           r ? cellText(r.property) : f ? cellText(f.card) : "",
-          r ? (r.viewUrl || "") : f ? (f.url || "") : "",
+          r ? linkOf(r) : f ? (f.url || "") : "",
           c.payment ? "" : cellText(propertyOf(c)), c.payment ? "" : cellText(boughtByOf(c)), c.payment ? "" : cellText(approvedByOf(c)), c.payment ? "" : receiptWord(c)
         ];
       });
@@ -2954,7 +2977,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const tracker = (model ? model.charges.filter(c => !c.payment) : [])
         .sort((a, b) => String(a.account).localeCompare(String(b.account)) || a.date.localeCompare(b.date)).slice(0, 1999).map(c => {
           const hit = model.byCharge.get(c.k), parts = catParts(c), fl = flagsOf(c);
-          const link = hit && hit.r ? hit.r.viewUrl || "" : hit && hit.filed ? hit.filed.url || "" : "";
+          const link = hit && hit.r ? linkOf(hit.r) : hit && hit.filed ? hit.filed.url || "" : "";
           return [us(c.date), receiptWord(c), cellText(c.name || c.memo), c.amount, cellText(whatForOf(c)), "",
             c.pending ? "Not in QuickBooks yet" : "In QuickBooks", cellText(parts[0] || ""), cellText(parts.length > 1 ? parts[parts.length - 1] : ""),
             expenseType(c), cellText(propertyOf(c)), "", "", cellText(boughtByOf(c)), cellText(approvedByOf(c)), cellText(c.k),
@@ -3949,6 +3972,96 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     } catch (e) { if (FATAL.has(e && e.code)) throw e; }
     return { id: cardFolder.id, title: "the card folder (no " + label + " folder yet)" };   // never lose the receipt
   }
+  // ---------- Inbox copies: every receipt's file in Drive (Company Receipts › Inbox copies › MONTH YEAR) ----------
+  // Only the inbox a receipt arrived in can read it from Gmail. A copy in Drive lets everyone else see it.
+  let copying = false, copyStop = false, inboxRoot = null;
+  async function inboxCopiesFolder() {
+    if (inboxRoot) return inboxRoot;
+    inboxRoot = await findOrMakeInboxCopies();
+    return inboxRoot;
+  }
+  async function findOrMakeInboxCopies() {
+    const kids = await driveAll("parentId = '" + RECEIPTS_ROOT + "' and mimeType = 'application/vnd.google-apps.folder'", 20);
+    const hit = kids.find(f => /^inbox copies$/i.test(String(f.title || "").trim()));
+    if (hit) return { id: hit.id, title: "Inbox copies" };
+    const made = (await mcp.callTool(DRIVE, "create_file", { title: "Inbox copies", parentId: RECEIPTS_ROOT, contentMimeType: "application/vnd.google-apps.folder" })).payload || {};
+    if (!made.id) throw new Error("Drive didn't create the Inbox copies folder");
+    return { id: made.id, title: "Inbox copies" };
+  }
+  const safeName = t => String(t || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+  async function copyReceiptsToDrive() {
+    if (copying) { copyStop = true; setStatus("Stopping after this receipt…"); return; }
+    if (!mcp || !db) { banner("Open this page in claude.ai to copy receipts to Drive.", true); return; }
+    const todo = allRows().filter(r => !state.temp.has(r.id) && (r.status || "new") !== "not_receipt" && !(r.driveCopy && r.driveCopy.length));
+    if (!todo.length) { setStatus("Every saved receipt already has its copy in Drive."); return; }
+    copying = true; copyStop = false;
+    const btn = $("copyDrive");
+    btn.textContent = "Stop copying";
+    banner("");
+    let done = 0, notHere = 0, failed = 0;
+    try {
+      const root = await inboxCopiesFolder();
+      const months = new Map();
+      for (let i = 0; i < todo.length && !copyStop; i++) {
+        const r = todo[i], x = r.extracted || {};
+        setStatus("Copying receipts to Drive: " + (i + 1) + " of " + todo.length + " (" + done + " copied)…");
+        // The email, from this inbox (or this inbox's own copy of it).
+        let m = null;
+        try { m = await gmail("get_message", { messageId: gid(r.id), messageFormat: "PLAIN_TEXT" }); }
+        catch (e) {
+          if (FATAL.has(e && e.code)) throw e;
+          let local = null;
+          try { local = localIds.has(r.id) ? null : await findLocalCopy(r); } catch (e2) { local = null; }
+          if (local) { localIds.set(r.id, local); try { m = await gmail("get_message", { messageId: local, messageFormat: "PLAIN_TEXT" }); } catch (e3) { if (FATAL.has(e3 && e3.code)) throw e3; } }
+        }
+        if (!m) { notHere++; continue; }
+        try {
+          const day = localDay(x.date || r.emailDate) || localDay(new Date().toISOString());
+          const label = MONTH_UP[+day.slice(5, 7) - 1] + " " + day.slice(0, 4);
+          if (!months.has(label)) months.set(label, await monthFolder(root, day));
+          const folder = months.get(label);
+          const a = amountOf(r).value;
+          const base = (a === null ? "No amount" : moneyName(a)) + " - " + (safeName(vendorOf(r)) || "Receipt") + " - " + shortDate(day);
+          const files = [];
+          let parts = [];
+          if (fileAttachments(m).length) { try { parts = (await fileParts(r.id)).filter(p => p.pdf || p.bytes.length >= 15000).slice(0, 3); } catch (e) { parts = []; } }
+          for (let j = 0; j < parts.length; j++) {
+            const p = parts[j];
+            const ext = p.pdf ? "pdf" : /png/i.test(p.type) ? "png" : "jpg";
+            const name = base + (parts.length > 1 ? " (" + (j + 1) + ")" : "") + "." + ext;
+            const made = (await mcp.callTool(DRIVE, "create_file", { title: name, parentId: folder.id, base64Content: await toBase64(new Blob([p.bytes], { type: p.type })), contentMimeType: p.type, disableConversionToGoogleType: true })).payload || {};
+            if (made.id) files.push({ id: made.id, name, kind: p.pdf ? "pdf" : "image", url: /^https:\/\/(drive|docs)\.google\.com\//.test(String(made.viewUrl || "")) ? made.viewUrl : "https://drive.google.com/file/d/" + made.id + "/view" });
+          }
+          if (!files.length) {
+            // No file in the email: keep the email's own text, with who sent it and when.
+            const text = ["From: " + String(m.sender || r.sender || ""), "Date: " + String(m.date || r.emailDate || ""), "Subject: " + String(m.subject || r.subject || ""), "", readable(m.plaintextBody || m.snippet || "")].join("\n");
+            const name = base + ".txt";
+            const made = (await mcp.callTool(DRIVE, "create_file", { title: name, parentId: folder.id, base64Content: await toBase64(new Blob([text], { type: "text/plain" })), contentMimeType: "text/plain", disableConversionToGoogleType: true })).payload || {};
+            if (made.id) files.push({ id: made.id, name, kind: "text", url: /^https:\/\/(drive|docs)\.google\.com\//.test(String(made.viewUrl || "")) ? made.viewUrl : "https://drive.google.com/file/d/" + made.id + "/view" });
+          }
+          if (files.length && await saveFields(r.id, { driveCopy: files })) done++; else failed++;
+        } catch (e) {
+          if (FATAL.has(e && e.code)) throw e;
+          failed++;
+        }
+      }
+      const left = todo.length - done - notHere - failed;
+      setStatus("Copied " + done + (done === 1 ? " receipt" : " receipts") + " to Company Receipts › Inbox copies." +
+        (notHere ? " " + notHere + (notHere === 1 ? " isn't" : " aren't") + " in this inbox: run this from the inbox they came into (accounting@)." : "") +
+        (failed ? " " + failed + " didn't copy; click again to retry them." : "") +
+        (copyStop && left > 0 ? " Stopped with " + left + " left; click again to carry on." : ""));
+    } catch (e) {
+      const code = e && e.code;
+      banner(code === "not_in_manifest" || code === "approval_required" || code === "consent_required"
+        ? "Google Drive or Gmail needs your OK for this page. Click Copy receipts to Drive again and choose Allow."
+        : code === "tool_error" ? "Drive didn't save the copies. You need edit access to Company Receipts. (" + ((e && e.message) || "") + ")"
+        : gmailMessage(e), true);
+    } finally {
+      copying = false; copyStop = false;
+      btn.textContent = "Copy receipts to Drive";
+      render();
+    }
+  }
   let uploading = false;
   async function uploadReceipt(c, file, folderId) {
     if (uploading) return;
@@ -4447,7 +4560,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         x.payment ? "" : boughtByOf(x) || "unknown", x.payment ? "" : approvedByOf(x) || "none",
         x.payment ? "Payment or transfer" : receiptWord(x), x.account, x.type, x.memo || "", x.split || "",
         r ? [vendorOf(r), localDay(rx.date || r.emailDate) || "", amountOf(r).label].join(", ") : f ? [f.card, f.vendor || f.name].filter(Boolean).join(", ") : "",
-        r ? r.viewUrl || "" : f ? f.url || "" : ""];
+        r ? linkOf(r) : f ? f.url || "" : ""];
     };
     const flagOf = x => (chargeState(x) === "check" ? ["Amount to check"] : []).concat(flagsOf(x)).join(", ");
     const flags = model.charges.filter(x => shown(x) && (chargeState(x) === "check" || flagsOf(x).length)).sort((p, q) => q.amount - p.amount);
@@ -4458,9 +4571,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const dueCell = x => { const d = dueInfo(x); return d ? dueText(d) : ""; };
     X.utils.book_append_sheet(wb, sheet([["Flags", "Due", "Ask", "By"].concat(head)].concat(flags.map(x => [flagOf(x), dueCell(x), askOf(x), dueDay(x)].concat(line(x)))), [44, 14, 26, 11].concat(W)), "Flags");
     X.utils.book_append_sheet(wb, sheet([head].concat(all.map(line)), W), "Every charge");
-    X.utils.book_append_sheet(wb, sheet([["Date", "Vendor", "Amount", "Source", "Status", "Email link"]].concat(c.nocharge.map(r => {
+    X.utils.book_append_sheet(wb, sheet([["Date", "Vendor", "Amount", "Source", "Status", "Receipt link"]].concat(c.nocharge.map(r => {
       const rx = r.extracted || {};
-      return [localDay(rx.date || r.emailDate) || "", vendorOf(r), amountOf(r).value, SOURCE_LABEL[r.source] || "Other", STATUS_LABEL[r.status || "new"], r.viewUrl || ""];
+      return [localDay(rx.date || r.emailDate) || "", vendorOf(r), amountOf(r).value, SOURCE_LABEL[r.source] || "Other", STATUS_LABEL[r.status || "new"], linkOf(r)];
     })), [11, 30, 12, 16, 12, 40]), "Receipt no charge");
     const out = X.write(wb, { bookType: "xlsx", type: "array" });
     const name = "Expense report " + from + (to && to !== from ? " to " + to : "") + (state.cCard ? " " + cardLabel(state.cCard).replace(/[^A-Za-z0-9 &()-]+/g, " ").replace(/\s+/g, " ").trim() : "") + ".xlsx";

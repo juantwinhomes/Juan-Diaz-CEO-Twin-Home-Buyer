@@ -68,6 +68,21 @@ clear**, counts purchases with No property, No approver, Unknown buyer and Perso
 opens with FLAG COUNTS and lists each flag with who to ask and by when; Every charge shows the
 filled-in buyer and approver. Excel's Flags tab lists every flag with Ask and By.
 
+**Copy receipts to Drive (v47).** A receipt's email can only be read by the inbox it came into,
+so Darlyn (on darlyn@) saw "isn't in your inbox" on the ~366 receipts accounting@ saved. The
+Copy receipts to Drive button (toolbar, beside Save to Sheet) is run once from accounting@: for
+every saved receipt in the window (not "Not a receipt") it saves the PDF, or a photo of at least
+15 KB, up to 3 per email, into Company Receipts › Inbox copies › MONTH YEAR, named like the card
+folders (`$87.49 - Amazon - Sep 8.pdf`). An email with no file is saved as a .txt with From, Date,
+Subject and the email text. Each receipt records its copies in `driveCopy` (kept on rescans).
+It skips receipts that already have a copy, so it's safe to click again after new scans, and a
+second click while it runs stops it. Receipts not in the inbox running it are counted and left
+for the right inbox. When someone opens a receipt that isn't in their Gmail and it has a copy,
+the page shows "Open the PDF in Drive" (or photo, or email text) and a Drive copy line in the
+facts. The Sheet (Receipts, Card match, Daily Expense Tracker) and the card export's Receipt link
+use the Drive copy when there is one, so Darlyn's links open too. Until accounting@ forwards to
+darlyn@, receipts that arrive at accounting@ only show for Darlyn after the next copy run.
+
 **Home Depot Pro Xtra (v46).** Pro Xtra's Purchase Tracking export (CSV: Receipt Added Date,
 Order Origin, Purchaser, Transaction ID, Job Name, Total Amount Paid, Order Number, Payment, Card
 nickname, Invoice Number) goes in through Upload card report. It's saved one month per record in
