@@ -283,6 +283,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .chip.office { background: var(--wait-soft); color: var(--wait); }
 .chip.unset { background: var(--warn-soft); color: var(--warn); }
 .chip.stmt { background: var(--wait-soft); color: var(--wait); font-weight: 500; }
+.chip.pend { background: transparent; color: var(--warn); border: 1px dashed var(--warn); font-weight: 600; }
+.feed-panel { display: grid; gap: 10px; justify-items: start; }
+.feed-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.feed-line select { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; color: var(--ink); max-width: 100%; }
+.feed-line select.on { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
 .crow .c-rcpt { display: grid; gap: 3px; justify-items: start; min-width: 0; }
 .crow .c-rcpt .linkbtn, .crow .c-rcpt > span:not(.pill) { font-size: 0.76rem; overflow-wrap: anywhere; }
 .crow .c-act { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
@@ -350,7 +355,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v34</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v35</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -429,8 +434,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         <div class="c-title" id="cStats"></div>
         <div class="c-actions">
           <div class="tgroup" aria-label="Card report">
-            <button type="button" class="btn" id="cardUpload" title="Upload a QuickBooks Transaction Detail by Account export">Upload card report</button>
-            <input type="file" id="cardFile" accept=".xlsx,.xls,.csv" hidden>
+            <button type="button" class="btn" id="cardUpload" title="QuickBooks Transaction Detail by Account (.xlsx), and Bank transactions For review exports (.csv) for charges not posted yet">Upload card report</button>
+            <input type="file" id="cardFile" accept=".xlsx,.xls,.csv" multiple hidden>
           </div>
           <div class="tgroup" aria-label="Find receipts">
             <button type="button" class="btn" id="driveCheck" title="Read every receipt filed in Company Receipts">Check Company Receipts</button>
@@ -591,6 +596,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     cTab: "missing",
     filed: null,
     cardFolders: null,  // Company Receipts card folders [{id, title}], this visit only
+    feeds: null,        // Bank transactions exports picked for upload, waiting for their accounts to be confirmed
     uploadFor: "",     // the charge whose upload panel is open        // receipts already filed in Company Receipts (file names only, this visit only)
     filedNote: "",
     cFrom: "",          // date filter for the Card charges view
@@ -1283,7 +1289,19 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("cardFile").onchange = async e => {
       const files = [...(e.target.files || [])];
       e.target.value = "";
-      for (const f of files) await uploadCards(f);
+      const feeds = [];
+      for (const f of files) {
+        let feed = null;
+        try { feed = await readFeed(f); } catch (err) { feed = null; }
+        if (feed) feeds.push(feed); else await uploadCards(f);
+      }
+      if (feeds.length) {
+        for (const f of feeds) f.account = guessAccount(f);
+        state.feeds = feeds;
+        state.view = "cards";
+        render();
+        setStatus("Read " + feeds.length + " Bank transactions " + (feeds.length === 1 ? "file" : "files") + ". Check the account for each one, then click Load.");
+      }
     };
     $("copyReport").onclick = copyReport;
     $("cardExport").onclick = exportExcel;
@@ -2398,6 +2416,155 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return out;
   }
   const slug = s => String(s || "card").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "card";
+  // ---------- QuickBooks Bank transactions exports (For review = not posted yet) ----------
+  function parseCsv(text) {
+    const rows = [];
+    let row = [], cell = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (q) {
+        if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+        else cell += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === ",") { row.push(cell); cell = ""; }
+      else if (ch === "\n" || ch === "\r") { if (ch === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+      else cell += ch;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(r => r.some(c => String(c).trim()));
+  }
+  // Columns: Date, Bank description, Spent, Received, From/To, then Match/Categorize (For review) or Transaction Posted (Categorized).
+  async function readFeed(file) {
+    if (!/\.csv$/i.test(file.name)) return null;
+    const rows = parseCsv((await file.text()).replace(/^\ufeff/, ""));
+    if (!rows.length) return null;
+    const h = rows[0].map(x => String(x).trim().toLowerCase());
+    const ci = { date: h.indexOf("date"), desc: h.indexOf("bank description"), spent: h.indexOf("spent"), recv: h.indexOf("received"),
+      payee: h.indexOf("from/to"), posted: h.indexOf("transaction posted"), suggest: h.indexOf("match/categorize") };
+    if (ci.date < 0 || ci.desc < 0 || ci.spent < 0 || ci.recv < 0) return null;
+    const amt = v => { const n = parseFloat(String(v || "").replace(/[$,\s]/g, "")); return isNaN(n) ? 0 : n; };
+    const out = [];
+    for (const r of rows.slice(1)) {
+      const m = String(r[ci.date] || "").trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (!m) continue;
+      const spent = amt(r[ci.spent]), recv = amt(r[ci.recv]);
+      if (!spent && !recv) continue;
+      out.push({
+        date: m[3] + "-" + pad2(+m[1]) + "-" + pad2(+m[2]),
+        desc: String(r[ci.desc] || "").replace(/\s+/g, " ").trim().slice(0, 120),
+        payee: ci.payee >= 0 ? String(r[ci.payee] || "").trim().slice(0, 80) : "",
+        suggest: ci.suggest >= 0 ? String(r[ci.suggest] || "").trim().slice(0, 120) : "",
+        amount: Math.round((spent ? spent : -recv) * 100) / 100
+      });
+    }
+    return { name: String(file.name).slice(0, 120), kind: ci.posted >= 0 ? "posted" : "pending", rows: out, account: "" };
+  }
+  const feedHead = t => String(t || "").toLowerCase().replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 2).join(" ");
+  const feedNameOf = f => String(f.name).replace(/\.csv$/i, "").replace(/^P(?=[A-Z])/, "").replace(/_+/g, " ").replace(/\s*\(\d+\)\s*$/, "").trim();
+  // Which card account a file belongs to: the card numbers in the bank text, then the way the bank words its lines.
+  function guessAccount(feed) {
+    if (!model || !model.charges.length) return "";
+    const info = new Map();
+    for (const c of model.charges) {
+      if (c.pending) continue;
+      if (!info.has(c.account)) info.set(c.account, { digits: new Set(String(c.account).match(/\d{4}(?!\d)/g) || []), heads: new Set() });
+      const I = info.get(c.account);
+      for (const d of String(cardOf(c) || "").split(/\s*&\s*/)) if (d) I.digits.add(d);
+      const hd = feedHead(c.memo || c.name);
+      if (hd) I.heads.add(hd);
+    }
+    const score = new Map();
+    for (const r of feed.rows) {
+      const ds = [...String(r.desc).matchAll(/(?:x{2,}|\*{2,}|\s-\s)(\d{4})\b/gi)].map(m => m[1]);
+      const hd = feedHead(r.desc);
+      for (const [a, I] of info) {
+        let n = 0;
+        for (const d of ds) if (I.digits.has(d)) n += 3;
+        if (hd && I.heads.has(hd)) n += 1;
+        if (n) score.set(a, (score.get(a) || 0) + n);
+      }
+    }
+    const best = [...score.entries()].sort((p, q) => q[1] - p[1]);
+    return best.length && (best.length === 1 || best[0][1] > best[1][1]) ? best[0][0] : "";
+  }
+  const FEED_PAYMENT = /payment (received|credited)|thank you|autopay|online payment|mobile payment|electronic payment/i;
+  async function loadFeeds() {
+    if (!db) { banner("Saving is off in this view. Open the page in claude.ai to upload.", true); return; }
+    const picks = (state.feeds || []).filter(f => f.kind === "pending" && f.rows.length);
+    const missing = picks.filter(f => !f.account);
+    if (missing.length) { banner("Pick the account for " + missing.map(f => f.name).join(", ") + ".", true); return; }
+    banner("");
+    const byAcct = new Map();
+    for (const f of picks) { if (!byAcct.has(f.account)) byAcct.set(f.account, []); byAcct.get(f.account).push(f); }
+    let n = 0;
+    for (const [account, fs] of byAcct) {
+      const id = "pending-" + slug(account);
+      const prev = state.cards.get(id) || {};
+      const seen = new Map(), rows = [];
+      for (const f of fs) for (const r of f.rows) {
+        const base = [account, r.date, r.desc, r.amount.toFixed(2)].join("|");
+        const dup = (seen.get(base) || 0) + 1;
+        seen.set(base, dup);
+        rows.push({ k: hashKey("pending|" + base + "|" + dup), date: r.date, type: "Pending", num: "", name: (r.payee || r.desc).slice(0, 80),
+          memo: r.desc, split: "", suggest: r.suggest, account, amount: r.amount, payment: r.amount < 0 && FEED_PAYMENT.test(r.desc) });
+      }
+      rows.sort((a, b) => a.date.localeCompare(b.date));
+      const doc = { account, pending: true, rows, marks: prev.marks || {}, found: prev.found || {},
+        from: rows[0].date, to: rows[rows.length - 1].date, uploadedAt: new Date().toISOString(), file: fs.map(f => f.name).join(", ").slice(0, 240) };
+      try { await db.collection("cards").doc(id).set(doc); state.cards.set(id, doc); n += rows.length; }
+      catch (e) { banner(dbMessage(e), true); return; }
+    }
+    state.feeds = null;
+    setStatus("Loaded " + n + " charges that aren't in QuickBooks yet, from " + [...byAcct.keys()].join(", ") + ". Each new upload for a card replaces its list.");
+    render();
+  }
+  function feedPanel() {
+    const p = el("div", "up-panel feed-panel");
+    p.append(el("b", null, "QuickBooks Bank transactions"));
+    const accts = [...new Set(model.charges.filter(c => !c.pending).map(c => c.account))].sort();
+    let n = 0;
+    const done = state.feeds.filter(f => f.kind !== "pending");
+    for (const f of state.feeds.filter(x => x.kind === "pending")) {
+      const line = el("div", "feed-line");
+      const days = f.rows.map(r => r.date).sort();
+      const span = days.length ? shortDate(days[0]) + (days[0] !== days[days.length - 1] ? " to " + shortDate(days[days.length - 1]) : "") : "";
+      line.append(el("span", "up-name", f.name),
+        el("span", null, (f.kind === "pending" ? "For review, not in QuickBooks yet: " : "Already posted: ") + f.rows.length + (f.rows.length === 1 ? " charge" : " charges") + (span ? ", " + span : "")));
+      if (f.kind === "pending") {
+        n += f.rows.length;
+        const sel = document.createElement("select");
+        sel.append(new Option("Pick the account", ""));
+        for (const a of accts) sel.append(new Option(a, a));
+        const own = feedNameOf(f);
+        if (own && !accts.includes(own)) sel.append(new Option("Not in the card report: " + own, own));
+        sel.value = f.account || "";
+        if (!f.account) sel.classList.add("on");
+        sel.onchange = () => { f.account = sel.value; sel.classList.toggle("on", !sel.value); };
+        const lab = el("label", null, "Account ");
+        lab.append(sel);
+        line.append(lab);
+      }
+      p.append(line);
+    }
+    if (!n) p.append(el("p", "c-note", "None of these files are from the For review tab. Export For review (the list of charges not posted yet) for each card."));
+    if (done.length) {
+      const sk = el("p", "c-note", "Skipped " + done.length + (done.length === 1 ? " file" : " files") + " of charges already posted in QuickBooks (the card report has them): " + done.map(f => f.name).join(", ") + ".");
+      p.append(sk);
+    }
+    const row = el("div", "matchbtns");
+    if (n) {
+      const go = el("button", "btn small primary", "Load " + n + " charges");
+      go.type = "button";
+      go.onclick = loadFeeds;
+      row.append(go);
+    }
+    const cancel = el("button", "btn small ghost", n ? "Cancel" : "Close");
+    cancel.type = "button";
+    cancel.onclick = () => { state.feeds = null; render(); };
+    row.append(cancel);
+    p.append(row);
+    return p;
+  }
   async function uploadCards(file) {
     if (!db) { banner("Saving is off in this view. Open the page in claude.ai to upload the card report.", true); return; }
     banner("");
@@ -2917,9 +3084,19 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   function cardModel() {
     const charges = [];
+    const pend = [];
     for (const [id, d] of state.cards) {
       const marks = d.marks || {};
-      for (const r of (d.rows || [])) charges.push(Object.assign({}, r, { cardId: id, account: r.account || d.account, marked: marks[r.k] || "" }));
+      for (const r of (d.rows || [])) (d.pending ? pend : charges).push(Object.assign({}, r, { cardId: id, account: r.account || d.account, marked: marks[r.k] || "", pending: !!d.pending }));
+    }
+    // A charge still For review when its list was exported may be posted by the next card report: same card, amount and bank text within 3 days counts once.
+    const posted = new Map();
+    for (const c of charges) { const key = c.account + "|" + c.amount.toFixed(2); if (!posted.has(key)) posted.set(key, []); posted.get(key).push(c); }
+    const usedPosted = new Set();
+    const sameText = (a, b) => { const x = String(a || "").toLowerCase().replace(/[^a-z0-9]+/g, ""), y = String(b || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); return x && (x === y || feedHead(a) === feedHead(b)); };
+    for (const c of pend) {
+      const hit = (posted.get(c.account + "|" + c.amount.toFixed(2)) || []).find(p => !usedPosted.has(p.k) && Math.abs(dayNum(p.date) - dayNum(c.date)) <= 3 && (sameText(p.memo, c.memo) || sameText(p.name, c.name)));
+      if (hit) usedPosted.add(hit.k); else charges.push(c);
     }
     const byCharge = new Map(), byReceipt = new Map();
     if (!charges.length) return { charges, byCharge, byReceipt, from: null, to: null };
@@ -3419,6 +3596,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     st.textContent = "";
     const n = model.charges.filter(c => !c.payment && shown(c));
     st.append(el("h2", null, n.length + (n.length === 1 ? " card charge" : " card charges")), el("span", "c-total num", n.length ? money(sumOf(n)) : ""));
+    const np = n.filter(c => c.pending).length;
+    if (np) { const pc = el("span", "chip pend", np + " not in QuickBooks yet"); pc.title = "Still in QuickBooks Bank transactions, For review: Christine hasn't posted them."; st.append(pc); }
     if (state.cCard) {
       const fc = el("button", "fchip", cardLabel(state.cCard) + "  \u2715");
       fc.type = "button";
@@ -3461,14 +3640,18 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       tabs.append(b);
     }
     renderHolders();
-    const files = [...state.cards.values()].sort((a, b) => String(a.account).localeCompare(String(b.account)));
+    const files = [...state.cards.values()].filter(d => !d.pending).sort((a, b) => String(a.account).localeCompare(String(b.account)));
+    const pendDocs = [...state.cards.values()].filter(d => d.pending);
+    const pendN = model.charges.filter(c => c.pending).length;
+    const pendNote = pendDocs.length ? "Not in QuickBooks yet: " + pendN + " charges from " + pendDocs.map(d => d.account).join(", ") + " (For review, uploaded " + shortDate(pendDocs.map(d => d.uploadedAt).sort().pop()) + ")" : "";
     const loaded = files.length > 4
       ? "Card report: " + files.length + " accounts, " + shortDate(files.map(d => d.from).sort()[0]) + " to " + shortDate(files.map(d => d.to).sort().pop()) + ", uploaded " + shortDate(files.map(d => d.uploadedAt).sort().pop())
       : files.length ? "Card report: " + files.map(d => d.account + " (" + shortDate(d.from) + " to " + shortDate(d.to) + ")").join(" · ") : "";
     if (state.filed === null && !filedLoading && mcp && model.charges.length) setTimeout(() => loadFiled(false), 0);
-    $("cFiles").textContent = [loaded, state.filedNote].filter(Boolean).join("  ·  ");
+    $("cFiles").textContent = [loaded, pendNote, state.filedNote].filter(Boolean).join("  ·  ");
     const box = $("cList");
     box.textContent = "";
+    if (state.feeds) box.append(feedPanel());
     if (!model.charges.length) {
       const e = el("div", "empty");
       e.append(el("b", null, "No card report yet"),
@@ -3481,7 +3664,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       drive: "Charges with a receipt filed in Company Receipts, found anywhere in Drive, or uploaded here.",
       check: "Possible receipts to confirm: same amount, but the vendor couldn't be confirmed. Open the receipt, then Confirm or Not it.",
       missing: "Charges with no receipt yet. Upload one, or mark it No receipt needed. Some may have a receipt attached in QuickBooks, which this page can't see.",
-      nocharge: "Receipts with no posted charge in the card report yet. Usually the charge hasn't posted, or it was paid on an account the report doesn't cover." + (state.cCard ? " With a card picked, only receipts that show its last four digits are listed." : ""),
+      nocharge: "Receipts with no charge in the card report yet. Usually the charge is still in QuickBooks Bank transactions (upload the For review export for that card), or it was paid on an account the report doesn't cover." + (state.cCard ? " With a card picked, only receipts that show its last four digits are listed." : ""),
       skipped: "Card payments, transfers, deposits, refunds and credits, plus charges marked No receipt needed."
     };
     if (HINTS[state.cTab]) box.append(el("div", "c-hint", HINTS[state.cTab]));
@@ -3537,8 +3720,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       p.append(el("small", "m-line", [shortDate(c.date), c.account, who].filter(Boolean).join(" · ")));
       row.append(p);
       const f = el("div", "c-for");
-      f.append(el("span", null, c.payment ? c.type : whatFor(c)));
-      const chip = placeChip(c);
+      f.append(el("span", null, c.payment ? c.type : c.pending ? (c.suggest ? "Suggested: " + whatFor({ split: c.suggest }) : "Not categorized yet") : whatFor(c)));
+      if (c.pending) { const pc = el("span", "chip pend", "Not in QuickBooks yet"); pc.title = "In Bank transactions, For review. QuickBooks' suggestion: " + (c.suggest || "none"); f.append(pc); }
+      const chip = placeChip(c.pending ? Object.assign({}, c, { split: c.suggest || "" }) : c);
       if (chip) f.append(chip);
       if (!c.payment && s === "missing" && isStatement(c)) f.append(el("span", "chip stmt", "Bill, loan, tax or payroll"));
       f.title = [c.type, c.split].filter(Boolean).join(" · ");
@@ -3679,7 +3863,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const pays = model.charges.filter(x => x.payment && shown(x)).length;
     const refunds = charges.filter(x => receiptWord(x) === "Refund").length;
     lines.push("", "Refunds and credits (no receipt needed): " + refunds + ". Not listed: " + pays + " card payments, deposits and transfers between our own accounts. Receipts with no posted charge yet: " + c.nocharge.length + ".");
-    lines.push("Source: QuickBooks Transaction Detail by Account (posted charges; charges still waiting in Bank transactions aren't in it). Receipts: the accounting@ inbox, receipts@ and Company Receipts in Google Drive.");
+    const pendIn = charges.filter(x => x.pending).length;
+    if (pendIn) lines.push("Includes " + pendIn + " charges still in QuickBooks Bank transactions (For review), not posted yet.");
+    lines.push("Source: QuickBooks Transaction Detail by Account (posted charges) and Bank transactions For review exports where uploaded. Receipts: the accounting@ inbox, receipts@ and Company Receipts in Google Drive.");
     return lines.join("\n");
   }
   async function copyReport() {

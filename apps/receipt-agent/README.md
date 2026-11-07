@@ -45,6 +45,20 @@ Good) and **Not this charge** (unlinks it; the charge goes back to No receipt fo
 are saved on the receipt as `chargeOk` / `chargeNo`, matching honors them, and a rescan keeps
 them. The Card charges view has the same Confirm / Not it on possible email matches.
 
+**Charges not posted yet (v35).** The card report only has posted charges. Charges still waiting in
+QuickBooks Bank transactions come in from the **For review** export: Banking, pick the card, For
+review tab, Export (one CSV per card, at most 1,000 rows each). Upload card report takes those CSVs,
+several at once, next to the Transaction Detail by Account file. Each file shows in a panel with
+its account picked from the card numbers in the bank text (XXXX5004 is Amex - 2001, "- 7260" is
+Capital One Business - 2680) or the way the bank words its lines ("sale original invoice" is Home
+Depot - 5253); check it and click Load. Files from the Categorized tab (already posted) are listed
+and skipped. Each card's For review list is saved as `cards/pending-<account>` and replaced by the
+next upload for that card. Those charges carry a dashed "Not in QuickBooks yet" chip and
+QuickBooks' suggested category, count in every tile, deadline and filter, and match receipts like
+any charge. When a later card report has the same card, amount and bank text within 3 days, the
+charge counts once. First run (Nov 7): Amex 93, Capital One Business 38, Home Depot 5253 5 = 136
+charges ($28,380); 16 receipts matched them, Receipt with no charge went from 113 to 97.
+
 **Deadlines and urgency (v33).** Two rules, set at the top of the script: a purchase needs its
 receipt within **7 days** of the charge (`RECEIPT_DUE_DAYS`), and a receipt in To review gets
 looked at within **2 days** of arriving (`REVIEW_DUE_DAYS`). Bills, loans, taxes, payroll and bank
