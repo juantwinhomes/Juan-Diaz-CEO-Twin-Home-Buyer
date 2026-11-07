@@ -68,6 +68,16 @@ clear**, counts purchases with No property, No approver, Unknown buyer and Perso
 opens with FLAG COUNTS and lists each flag with who to ask and by when; Every charge shows the
 filled-in buyer and approver. Excel's Flags tab lists every flag with Ask and By.
 
+**Email receipts keep their layout (v48).** v47 saved a receipt with no PDF or photo as a .txt
+of the email's words, which read badly (116 of the first 216 copies, 101 of them Amazon). v48
+takes the email's own HTML part from the full message (quoted-printable or base64, in its
+charset), drops scripts, hidden preview text and tracking pixels, puts a From / Date (PT) /
+Subject / Copied from block on top, and uploads it as HTML so Drive turns it into a Google Doc that
+looks like the email (tested Nov 7: a Stripe-style receipt kept its layout, tables and colors).
+An email with no HTML part becomes a Doc of its text. Receipts whose only copy is a v47 .txt are
+copied again on the next click; the old .txt is listed in the receipt's `driveOld` for clean-up
+(the page can't delete Drive files). The viewer says "Open the email in Drive" for these.
+
 **Copy receipts to Drive (v47).** A receipt's email can only be read by the inbox it came into,
 so Darlyn (on darlyn@) saw "isn't in your inbox" on the ~366 receipts accounting@ saved. The
 Copy receipts to Drive button (toolbar, beside Save to Sheet) is run once from accounting@: for

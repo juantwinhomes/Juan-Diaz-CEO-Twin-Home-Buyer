@@ -396,7 +396,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v47</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v48</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -426,7 +426,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     </div>
     <div class="tgroup" aria-label="Receipt Agent Data sheet">
       <button id="saveSheet" class="btn" type="button" title="Write every saved receipt and card match to the Receipt Agent Data sheet">Save to Sheet</button>
-      <button id="copyDrive" class="btn" type="button" title="Save each receipt's PDF, photo or email text into Company Receipts › Inbox copies, so anyone can open receipts that came into another inbox. Run it from accounting@.">Copy receipts to Drive</button>
+      <button id="copyDrive" class="btn" type="button" title="Save each receipt's PDF or photo, or the email itself as a Google Doc, into Company Receipts › Inbox copies, so anyone can open receipts that came into another inbox. Run it from accounting@.">Copy receipts to Drive</button>
       <a id="openSheet" class="btn ghost" target="_blank" rel="noopener" title="Open the Receipt Agent Data sheet">Sheet ↗</a>
     </div>
   </div>
@@ -1216,7 +1216,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const w = el("div", "pv-drive");
       w.append(el("p", "pv-note", "This receipt came into another inbox. Its copy is in Company Receipts › Inbox copies:"));
       for (const f of c.driveCopy) {
-        const a = el("a", "btn", (f.kind === "pdf" ? "Open the PDF" : f.kind === "image" ? "Open the photo" : "Open the email text") + " in Drive ↗");
+        const a = el("a", "btn", (f.kind === "pdf" ? "Open the PDF" : f.kind === "image" ? "Open the photo" : f.kind === "email" ? "Open the email" : "Open the email text") + " in Drive ↗");
         a.href = f.url; a.target = "_blank"; a.rel = "noopener"; a.title = f.name;
         w.append(a);
       }
@@ -1607,7 +1607,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         .flatMap(chunk => mimeParts(chunk.replace(/^\r?\n/, ""), depth + 1));
     }
     const nm = (headers["content-disposition"] || "").match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i) || ct.match(/name="?([^";]+)"?/i);
-    return [{ type: ct.split(";")[0].trim().toLowerCase(), enc: (headers["content-transfer-encoding"] || "").toLowerCase(), name: nm ? nm[1] : "", body }];
+    const cs = ct.match(/charset="?([^";\s]+)"?/i);
+    return [{ type: ct.split(";")[0].trim().toLowerCase(), enc: (headers["content-transfer-encoding"] || "").toLowerCase(), name: nm ? nm[1] : "", charset: cs ? cs[1] : "", body }];
   }
   // PDF and photo attachments, read from the full email once per visit. No Claude usage.
   const rawCache = new Map();
@@ -2321,6 +2322,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           chargeOk: prev.chargeOk || null,
           chargeNo: prev.chargeNo || [],
           driveCopy: prev.driveCopy || [],
+          driveOld: prev.driveOld || [],
           scannedAt: now,
           scannedBy: state.account || ""
         };
@@ -3975,6 +3977,51 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   // ---------- Inbox copies: every receipt's file in Drive (Company Receipts › Inbox copies › MONTH YEAR) ----------
   // Only the inbox a receipt arrived in can read it from Gmail. A copy in Drive lets everyone else see it.
   let copying = false, copyStop = false, inboxRoot = null;
+  // Stripe, Amazon, Square and most stores send the receipt as the email itself. Its HTML part, decoded, keeps the layout.
+  function decodePart(part) {
+    let t = String(part.body || "");
+    if (/[^\u0000-\u00ff]/.test(t)) return t; // already text
+    if (/base64/.test(part.enc)) { try { t = atob(t.replace(/[^A-Za-z0-9+/=]/g, "")); } catch (e) { return ""; } }
+    else if (/quoted-printable/.test(part.enc)) t = t.replace(/=\r?\n/g, "").replace(/=([0-9A-F]{2})/gi, (m0, h) => String.fromCharCode(parseInt(h, 16)));
+    const bytes = new Uint8Array(t.length);
+    for (let i = 0; i < t.length; i++) bytes[i] = t.charCodeAt(i) & 255;
+    let dec;
+    try { dec = new TextDecoder(part.charset || "utf-8"); } catch (e) { dec = new TextDecoder("utf-8"); }
+    return dec.decode(bytes);
+  }
+  async function emailHtml(id) {
+    const p = await gmail("get_message", { messageId: gid(id), messageFormat: "RAW" });
+    const raw = typeof p === "string" ? p : (p && (p.raw || p.rawContent || p.raw_content || p.content || "")) || "";
+    const part = mimeParts(decodeRaw(String(raw))).find(x => x.type === "text/html" && !x.name);
+    return part ? decodePart(part) : "";
+  }
+  const escHtml = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  function ptStamp(v) {
+    const d = new Date(v);
+    return isNaN(d) ? String(v || "") : d.toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" }) + " PT";
+  }
+  // The copy: who sent it, when and from which inbox, then the email as it looked. Drive turns it into a Google Doc.
+  function receiptDocHtml(r, m, html) {
+    const head = '<table width="100%" cellpadding="6" cellspacing="0" border="0" style="font-family:Arial,sans-serif;font-size:11px;color:#444;border:1px solid #ccc"><tr><td>' +
+      "<b>From:</b> " + escHtml(r.sender || m.sender) + "<br><b>Date:</b> " + escHtml(ptStamp(m.date || r.emailDate)) +
+      "<br><b>Subject:</b> " + escHtml(m.subject || r.subject) + (state.account ? "<br><b>Copied from:</b> " + escHtml(state.account) : "") +
+      "</td></tr></table><br>";
+    let body = "";
+    if (html) {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      doc.querySelectorAll("script, noscript, iframe, object, embed, form, link, meta, title, base").forEach(n => n.remove());
+      // Hidden preview text and tracking pixels would show up in the Doc.
+      doc.querySelectorAll("[style]").forEach(n => { if (/display\s*:\s*none|mso-hide\s*:\s*all|visibility\s*:\s*hidden|max-height\s*:\s*0(px)?\s*(;|$)/i.test(n.getAttribute("style") || "")) n.remove(); });
+      doc.querySelectorAll("img").forEach(n => { const w = parseInt(n.getAttribute("width"), 10), h = parseInt(n.getAttribute("height"), 10); if (w <= 2 || h <= 2) n.remove(); });
+      const styles = [...doc.querySelectorAll("style")].map(x => x.outerHTML).join("");
+      doc.querySelectorAll("style").forEach(x => x.remove());
+      body = doc.body ? styles + doc.body.innerHTML : "";
+    }
+    if (!body.replace(/<[^>]*>/g, "").trim()) body = '<div style="font-family:Arial,sans-serif;font-size:13px;white-space:pre-wrap">' + escHtml(readable(m.plaintextBody || m.snippet || "")) + "</div>";
+    return '<!doctype html><html><head><meta charset="utf-8"></head><body>' + head + body + "</body></html>";
+  }
+  // A receipt needs a copy when it has none, or only the plain-text kind v47 made.
+  const needsCopy = r => !(r.driveCopy && r.driveCopy.some(f => f && f.kind !== "text"));
   async function inboxCopiesFolder() {
     if (inboxRoot) return inboxRoot;
     inboxRoot = await findOrMakeInboxCopies();
@@ -3992,13 +4039,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   async function copyReceiptsToDrive() {
     if (copying) { copyStop = true; setStatus("Stopping after this receipt…"); return; }
     if (!mcp || !db) { banner("Open this page in claude.ai to copy receipts to Drive.", true); return; }
-    const todo = allRows().filter(r => !state.temp.has(r.id) && (r.status || "new") !== "not_receipt" && !(r.driveCopy && r.driveCopy.length));
+    const todo = allRows().filter(r => !state.temp.has(r.id) && (r.status || "new") !== "not_receipt" && needsCopy(r));
     if (!todo.length) { setStatus("Every saved receipt already has its copy in Drive."); return; }
     copying = true; copyStop = false;
     const btn = $("copyDrive");
     btn.textContent = "Stop copying";
     banner("");
-    let done = 0, notHere = 0, failed = 0;
+    let done = 0, notHere = 0, failed = 0, redone = 0;
     try {
       const root = await inboxCopiesFolder();
       const months = new Map();
@@ -4033,20 +4080,27 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
             if (made.id) files.push({ id: made.id, name, kind: p.pdf ? "pdf" : "image", url: /^https:\/\/(drive|docs)\.google\.com\//.test(String(made.viewUrl || "")) ? made.viewUrl : "https://drive.google.com/file/d/" + made.id + "/view" });
           }
           if (!files.length) {
-            // No file in the email: keep the email's own text, with who sent it and when.
-            const text = ["From: " + String(m.sender || r.sender || ""), "Date: " + String(m.date || r.emailDate || ""), "Subject: " + String(m.subject || r.subject || ""), "", readable(m.plaintextBody || m.snippet || "")].join("\n");
-            const name = base + ".txt";
-            const made = (await mcp.callTool(DRIVE, "create_file", { title: name, parentId: folder.id, base64Content: await toBase64(new Blob([text], { type: "text/plain" })), contentMimeType: "text/plain", disableConversionToGoogleType: true })).payload || {};
-            if (made.id) files.push({ id: made.id, name, kind: "text", url: /^https:\/\/(drive|docs)\.google\.com\//.test(String(made.viewUrl || "")) ? made.viewUrl : "https://drive.google.com/file/d/" + made.id + "/view" });
+            // The receipt is the email itself: keep it as it looked, as a Google Doc anyone can open and print.
+            let html = "";
+            try { html = await emailHtml(r.id); } catch (e) { if (FATAL.has(e && e.code)) throw e; html = ""; }
+            const upload = async h => ((await mcp.callTool(DRIVE, "create_file", { title: base, parentId: folder.id, base64Content: await toBase64(new Blob([receiptDocHtml(r, m, h)], { type: "text/html" })), contentMimeType: "text/html" })).payload || {});
+            let made;
+            try { made = await upload(html); }
+            catch (e) { if (FATAL.has(e && e.code) || !html) throw e; made = await upload(""); } // a layout Drive can't take: keep the words
+            if (made.id) files.push({ id: made.id, name: base, kind: "email", url: /^https:\/\/(drive|docs)\.google\.com\//.test(String(made.viewUrl || "")) ? made.viewUrl : "https://docs.google.com/document/d/" + made.id + "/edit" });
           }
-          if (files.length && await saveFields(r.id, { driveCopy: files })) done++; else failed++;
+          // v47's plain-text copies are listed in driveOld, so they can be cleared from Drive.
+          const old = (r.driveCopy || []).filter(f => f && f.kind === "text").map(f => ({ id: f.id, name: f.name }));
+          const patch = old.length ? { driveCopy: files, driveOld: (r.driveOld || []).concat(old) } : { driveCopy: files };
+          if (files.length && await saveFields(r.id, patch)) { done++; if (old.length) redone++; } else failed++;
         } catch (e) {
           if (FATAL.has(e && e.code)) throw e;
           failed++;
         }
       }
       const left = todo.length - done - notHere - failed;
-      setStatus("Copied " + done + (done === 1 ? " receipt" : " receipts") + " to Company Receipts › Inbox copies." +
+      setStatus("Copied " + done + (done === 1 ? " receipt" : " receipts") + " to Company Receipts › Inbox copies" +
+        (redone === 1 ? " (1 was a plain-text copy, now saved as it looks)." : redone ? " (" + redone + " were plain-text copies, now saved as they look)." : ".") +
         (notHere ? " " + notHere + (notHere === 1 ? " isn't" : " aren't") + " in this inbox: run this from the inbox they came into (accounting@)." : "") +
         (failed ? " " + failed + " didn't copy; click again to retry them." : "") +
         (copyStop && left > 0 ? " Stopped with " + left + " left; click again to carry on." : ""));
