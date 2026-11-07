@@ -24,7 +24,8 @@ name, and below 900px the whole page scrolls instead of a boxed list.
 
 **Card and Sort (v32).** Next to the dates, **Card** lists every account in the card report with its
 spend and charge count for the dates shown (payments and transfers left out, refunds netted),
-largest first. Accounts with more than one card number (Amex 5004 and 1102, Capital One 1175 and
+largest first. The first line names the dates ("All cards, Nov 5"), and accounts with no charges on
+those dates are grouped at the bottom under "No charges ..." instead of showing $0.00. Accounts with more than one card number (Amex 5004 and 1102, Capital One 1175 and
 others) list each card under the account, with the holder's name once it's set. Picking one filters
 the tiles, the total, the list, the typed report ("..., Amex - 2001 only") and the Excel export,
 and a chip beside the total clears it. In Receipt, no charge, a picked card shows only receipts

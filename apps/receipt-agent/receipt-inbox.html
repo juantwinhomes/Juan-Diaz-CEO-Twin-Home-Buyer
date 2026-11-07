@@ -350,7 +350,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v33</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v34</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -3119,20 +3119,24 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const C = A.cards.get(d);
       A.n++; A.sum += c.amount; C.n++; C.sum += c.amount; n++; sum += c.amount;
     }
-    const line = (label, o) => label + "  ·  " + money(Math.round(o.sum * 100) / 100) + "  ·  " + o.n;
-    const out = [{ value: "", text: line("All cards", { n, sum }) }];
+    const line = (label, o) => label + "  ·  " + money(Math.round(o.sum * 100) / 100) + "  ·  " + o.n + (o.n === 1 ? " charge" : " charges");
+    const f = state.cFrom || model.from, t = state.cTo || model.to;
+    const span = f === t ? shortDate(f) : shortDate(f) + " to " + shortDate(t);
+    const out = [{ value: "", group: "", text: line("All cards, " + span, { n, sum }) }];
+    const idle = [];
     for (const [a, A] of [...accts.entries()].sort((p, q) => q[1].sum - p[1].sum || p[0].localeCompare(q[0]))) {
-      out.push({ value: "a:" + a, text: line(a, A) });
+      if (!A.n) { idle.push({ value: "a:" + a, group: "No charges " + span, text: a }); continue; }
+      out.push({ value: "a:" + a, group: "Charges " + span, text: line(a, A) });
       const nums = [...A.cards.entries()].filter(([d]) => d);
       if (nums.length < 2) continue;
       for (const [d, C] of nums.sort((p, q) => q[1].sum - p[1].sum || p[0].localeCompare(q[0]))) {
         const v = "c:" + a + "|" + d;
         if (!C.n && state.cCard !== v) continue;
         const who = state.holders[d];
-        out.push({ value: v, text: line("\u2003\u21b3 Card " + d + (who ? " (" + who + ")" : ""), C) });
+        out.push({ value: v, group: "Charges " + span, text: line("\u2003\u21b3 Card " + d + (who ? " (" + who + ")" : ""), C) });
       }
     }
-    return out;
+    return out.concat(idle.sort((p, q) => p.text.localeCompare(q.text)));
   }
   const SORTS = [
     ["urgent", "Most urgent first"], ["date-desc", "Newest first"], ["date-asc", "Oldest first"], ["amt-desc", "Largest amount first"], ["amt-asc", "Smallest amount first"],
@@ -3180,7 +3184,14 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (sig !== pickSig) {
       pickSig = sig;
       cs.textContent = "";
-      for (const o of opts) { const op = el("option", null, o.text); op.value = o.value; cs.append(op); }
+      let grp = null;
+      for (const o of opts) {
+        const op = el("option", null, o.text);
+        op.value = o.value;
+        if (!o.group) { cs.append(op); continue; }
+        if (!grp || grp.label !== o.group) { grp = document.createElement("optgroup"); grp.label = o.group; cs.append(grp); }
+        grp.append(op);
+      }
     }
     cs.value = state.cCard;
     cs.classList.toggle("on", !!state.cCard);
