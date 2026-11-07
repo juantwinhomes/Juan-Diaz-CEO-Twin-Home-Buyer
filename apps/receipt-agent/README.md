@@ -62,6 +62,12 @@ clear**, counts purchases with No property, No approver, Unknown buyer and Perso
 opens with FLAG COUNTS and lists each flag with who to ask and by when; Every charge shows the
 filled-in buyer and approver. Excel's Flags tab lists every flag with Ask and By.
 
+**Receipts date filter (v45).** The Receipts list has a Dates filter beside Source and Card match:
+Any date, Today, Last 7 days, Last 30 days, This month, Last month, or Pick dates (From and To).
+It uses the receipt's own date, else the email's, and the tab counts, total and Select all follow
+it. The choice is remembered in that browser (except Pick dates). Opening a receipt from Card
+charges or the urgency bar clears it so the receipt shows.
+
 **Card report saved by month (v44).** Each card's lines are saved one month per record,
 `cards/<account>--YYYY-MM`, so a busy card (Amex runs about 470 lines a month) never hits the size
 of one record; the old one-record-per-card form (`cards/<account>`, capped at 900 lines) is retired

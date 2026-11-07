@@ -109,7 +109,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .seg[data-key="good"][aria-selected="true"] .seg-label { color: var(--ok); }
 .tools { display: flex; flex-wrap: wrap; gap: 6px; }
 .tools input { flex: 1 1 100%; min-width: 0; }
-.tools select { flex: 1 1 0; min-width: 0; }
+.tools select { flex: 1 1 110px; min-width: 0; }
+.rrange { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 0.78rem; color: var(--muted); }
+.rrange label { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 140px; min-width: 0; }
+.rrange input { flex: 1 1 auto; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; color: var(--ink); }
 .qmeta { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--muted); }
 .qmeta label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .qmeta { min-width: 0; }
@@ -117,7 +120,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; background: var(--accent-soft); border-bottom: 1px solid var(--line); }
 .bulk #bulkCount { font-weight: 600; font-size: 0.82rem; margin-right: auto; }
 .copybox { margin: 8px 10px; min-height: 90px; font-family: var(--mono); font-size: 0.75rem; border: 1px solid var(--line); border-radius: 8px; background: var(--sunk); color: var(--ink); padding: 6px; }
-.items { flex: 1; overflow: auto; }
+.items { flex: 1; overflow-y: auto; overflow-x: hidden; }
 .item {
   display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start;
   padding: 10px 12px; border-bottom: 1px solid var(--line); cursor: pointer;
@@ -392,7 +395,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v44</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v45</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -443,6 +446,19 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
             <option value="confirm">Confirm a charge</option>
             <option value="none">No card charge</option>
           </select>
+          <select id="rdate" aria-label="Receipt dates">
+            <option value="all">Any date</option>
+            <option value="today">Today</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="month">This month</option>
+            <option value="lastmonth">Last month</option>
+            <option value="custom">Pick dates…</option>
+          </select>
+          <div class="rrange" id="rRange" hidden>
+            <label for="rFrom">From <input type="date" id="rFrom"></label>
+            <label for="rTo">To <input type="date" id="rTo"></label>
+          </div>
         </div>
         <div class="qmeta">
           <label for="selAll"><input type="checkbox" id="selAll"> Select all</label>
@@ -654,6 +670,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     cardFolders: null,  // Company Receipts card folders [{id, title}], this visit only
     feeds: null,        // Bank transactions exports picked for upload, waiting for their accounts to be confirmed
     cmatch: "all",      // receipts list: all, on a card charge, confirm a charge, no card charge
+    rDate: memo("ri-rdate", "all"), // receipts list dates: all, today, 7, 30, month, lastmonth, custom
+    rFrom: "", rTo: "",
     info: new Map(),    // charge key -> { boughtBy, approvedBy, whatFor, property, flag } filled in by Darlyn (shared)
     editFor: "",        // the charge whose edit panel is open
     cSel: new Set(),    // charges ticked for a bulk fill-in
@@ -709,6 +727,20 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0") + "-01";
   }
   const inWindow = day => !day || day >= windowStart();
+  // The Receipts list date filter, as [from, to] days, or null for any date. The receipt's own date, else the email's.
+  function receiptRange() {
+    const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    const now = new Date(), today = iso(now);
+    switch (state.rDate) {
+      case "today": return [today, today];
+      case "7": return [weekStart(), today];
+      case "30": { const d = new Date(); d.setDate(d.getDate() - 29); return [iso(d), today]; }
+      case "month": return [today.slice(0, 8) + "01", today];
+      case "lastmonth": { const a = new Date(now.getFullYear(), now.getMonth() - 1, 1), b = new Date(now.getFullYear(), now.getMonth(), 0); return [iso(a), iso(b)]; }
+      case "custom": return state.rFrom || state.rTo ? [state.rFrom || "0000-01-01", state.rTo || "9999-12-31"] : null;
+      default: return null;
+    }
+  }
   // Today and the 6 days before it.
   function weekStart() {
     const d = new Date();
@@ -818,6 +850,11 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   function matchesFilters(r) {
     if (state.source !== "all" && r.source !== state.source) return false;
+    const rng = receiptRange();
+    if (rng) {
+      const d = localDay(((r.extracted || {}).date) || r.emailDate);
+      if (!d || d < rng[0] || d > rng[1]) return false;
+    }
     if (state.cmatch !== "all") {
       const on = model && model.byReceipt.get(r.id);
       const want = on ? (on.quality === "matched" ? "on" : "confirm") : "none";
@@ -1353,6 +1390,17 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     for (const s of SOURCES) { const o = document.createElement("option"); o.value = s.key; o.textContent = s.label; srcSel.append(o); }
     srcSel.onchange = () => { state.source = srcSel.value; state.selected.clear(); render(); };
     $("cmatch").onchange = e => { state.cmatch = e.target.value || "all"; state.selected.clear(); render(); };
+    $("rdate").value = state.rDate;
+    $("rRange").hidden = state.rDate !== "custom";
+    $("rdate").onchange = e => {
+      state.rDate = e.target.value || "all";
+      remember("ri-rdate", state.rDate === "custom" ? "all" : state.rDate);
+      $("rRange").hidden = state.rDate !== "custom";
+      state.selected.clear();
+      render();
+    };
+    $("rFrom").onchange = e => { state.rFrom = e.target.value || ""; state.selected.clear(); render(); };
+    $("rTo").onchange = e => { state.rTo = e.target.value || ""; state.selected.clear(); render(); };
     $("search").addEventListener("input", e => { state.query = e.target.value; render(); });
     $("scan").onclick = scan;
     $("viewReceipts").onclick = () => { state.view = "receipts"; render(); };
@@ -3422,7 +3470,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (u.waiting.length) {
       const oldest = u.waiting.reduce((a, r) => receivedDays(r) > receivedDays(a) ? r : a, u.waiting[0]);
       item("bad", u.waiting.length, "to review, waiting " + REVIEW_DUE_DAYS + "+ days", "Oldest first", () => {
-        state.view = "receipts"; state.tab = "new"; state.source = "all"; $("source").value = "all"; state.cmatch = "all"; $("cmatch").value = "all"; state.query = ""; $("search").value = "";
+        state.view = "receipts"; state.tab = "new"; state.source = "all"; $("source").value = "all"; state.cmatch = "all"; $("cmatch").value = "all"; state.rDate = "all"; $("rdate").value = "all"; $("rRange").hidden = true; state.query = ""; $("search").value = "";
         select(oldest.id);
       }, "Receipts in To review that arrived more than " + REVIEW_DUE_DAYS + " days ago.");
     }
@@ -3731,6 +3779,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("source").value = "all";
     state.cmatch = "all";
     $("cmatch").value = "all";
+    state.rDate = "all";
+    $("rdate").value = "all";
+    $("rRange").hidden = true;
     state.query = "";
     $("search").value = "";
     state.selected.clear();
