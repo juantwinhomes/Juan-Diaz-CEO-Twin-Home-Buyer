@@ -57,10 +57,14 @@ next upload for that card; lines more than 3 months older than the newest line (
 left in For review) are skipped. Those charges carry a dashed "Not in QuickBooks yet" chip and
 QuickBooks' suggested category, count in every tile, deadline and filter, and match receipts like
 any charge. When a later card report has the same card, amount and bank text within 3 days, the
-charge counts once. First run (Nov 7): Amex 93, Capital One Business 38, Home Depot 5253 5 = 136
+charge counts once. A cleared check ("CHECK 3252") pairs with a posted check or bill payment by
+check on the same account for the same amount within 30 days, since the card report has no check
+number. On bank accounts, money coming in (deposits, interest) counts as a transfer, and QuickBooks'
+suggested category decides whether a statement covers the line (EMD, auto loans). First run (Nov 7): Amex 93, Capital One Business 38, Home Depot 5253 5 = 136
 charges ($28,380); 16 receipts matched them, Receipt with no charge went from 113 to 97. Second
 batch (Capital One CC 4, Discover 4, Wells Fargo 8251 6, WF 8263 1; WF 0002 had none) brought it
-to 150 charges. Of 101 Amazon receipts dated Oct 1 to Nov 5, 50 ($10,083) match no Amazon line on
+to 150 lines; after pairing the two Wells Fargo checks already in the books, 146 charges ($33,886)
+are not in QuickBooks yet. Of 101 Amazon receipts dated Oct 1 to Nov 5, 50 ($10,083) match no Amazon line on
 any connected card, posted or For review, so they were most likely paid on a card that doesn't
 feed QuickBooks (the Nov 7 Banking page showed feed errors on WF CC 3269 and Citi 2149).
 

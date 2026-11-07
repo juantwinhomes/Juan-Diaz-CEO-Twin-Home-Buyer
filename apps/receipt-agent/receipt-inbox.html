@@ -355,7 +355,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v36</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v37</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -2509,7 +2509,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         const dup = (seen.get(base) || 0) + 1;
         seen.set(base, dup);
         rows.push({ k: hashKey("pending|" + base + "|" + dup), date: r.date, type: "Pending", num: "", name: (r.payee || r.desc).slice(0, 80),
-          memo: r.desc, split: "", suggest: r.suggest, account, amount: r.amount, payment: r.amount < 0 && FEED_PAYMENT.test(r.desc) });
+          memo: r.desc, split: "", suggest: r.suggest, account, amount: r.amount, payment: r.amount < 0 && (FEED_PAYMENT.test(r.desc) || !CARD_ACCT.test(account)) });
       }
       rows.sort((a, b) => a.date.localeCompare(b.date));
       if (!rows.length) continue;
@@ -3013,7 +3013,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   // Bills, loans, taxes, payroll and related-company transfers: the paperwork is a statement or payroll record, not a store receipt.
   const STATEMENT = /mortgage|mtg|kiavi|anchor loans|\bloans?\b|interest|taxes|insurance|payroll|salar|wages|labor cost|\bemd\b|due from|owner'?s pay|personal|bank charges|utilities|telephone/i;
-  const isStatement = c => STATEMENT.test(c.split || "") || (!c.split && /payroll|loan pymt|mortgage/i.test(c.memo || "")) || /\bpmt\b/i.test(c.memo || "") || /^(irs|franchise tax board|gusto|wise inc|lendinghome)$/i.test(c.name || "");
+  const isStatement = c => STATEMENT.test(c.split || c.suggest || "") || (!c.split && /payroll|loan pymt|mortgage/i.test(c.memo || "")) || /\bpmt\b/i.test(c.memo || "") || /^(irs|franchise tax board|gusto|wise inc|lendinghome)$/i.test(c.name || "");
   // The card a charge was made on: on a card account, the card member at the end of the bank's memo ("XXXX5004", "- 1175");
   // otherwise the account's own number.
   const CARD_ACCT = /amex|american express|capital one|citi|discover|home depot|\bcc\b|visa|master ?card|credit/i;
@@ -3098,8 +3098,16 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     for (const c of charges) { const key = c.account + "|" + c.amount.toFixed(2); if (!posted.has(key)) posted.set(key, []); posted.get(key).push(c); }
     const usedPosted = new Set();
     const sameText = (a, b) => { const x = String(a || "").toLowerCase().replace(/[^a-z0-9]+/g, ""), y = String(b || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); return x && (x === y || feedHead(a) === feedHead(b)); };
+    const checkNo = c => (String(c.memo || "").match(/^check\s*#?\s*(\d{3,})\b/i) || [])[1] || "";
     for (const c of pend) {
-      const hit = (posted.get(c.account + "|" + c.amount.toFixed(2)) || []).find(p => !usedPosted.has(p.k) && Math.abs(dayNum(p.date) - dayNum(c.date)) <= 3 && (sameText(p.memo, c.memo) || sameText(p.name, c.name)));
+      const no = checkNo(c);
+      const hit = (posted.get(c.account + "|" + c.amount.toFixed(2)) || []).find(p => {
+        if (usedPosted.has(p.k)) return false;
+        const gap = Math.abs(dayNum(p.date) - dayNum(c.date));
+        // The card report often has no check number: a posted check or bill payment by check, same amount, within 30 days.
+        if (no) return gap <= 30 && (String(p.num || "").replace(/\D/g, "") === no || /check/i.test(p.type || ""));
+        return gap <= 3 && (sameText(p.memo, c.memo) || sameText(p.name, c.name));
+      });
       if (hit) usedPosted.add(hit.k); else charges.push(c);
     }
     const byCharge = new Map(), byReceipt = new Map();
