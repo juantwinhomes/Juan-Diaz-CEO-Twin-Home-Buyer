@@ -395,7 +395,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v45</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v46</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -493,7 +493,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         <div class="c-title" id="cStats"></div>
         <div class="c-actions">
           <div class="tgroup" aria-label="Card report">
-            <button type="button" class="btn" id="cardUpload" title="QuickBooks Transaction Detail by Account (.xlsx), and Bank transactions For review exports (.csv) for charges not posted yet">Upload card report</button>
+            <button type="button" class="btn" id="cardUpload" title="QuickBooks Transaction Detail by Account (.xlsx), Bank transactions For review exports (.csv), and Home Depot Pro Xtra purchase history (.csv)">Upload card report</button>
             <input type="file" id="cardFile" accept=".xlsx,.xls,.csv" multiple hidden>
           </div>
           <div class="tgroup" aria-label="Find receipts">
@@ -636,7 +636,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     { key: "missing", label: "No receipt found" },
     { key: "check", label: "Check" },
     { key: "matched", label: "Matched email" },
-    { key: "drive", label: "Filed in Drive" },
+    { key: "drive", label: "Filed (Drive, Pro Xtra)" },
     { key: "skipped", label: "No receipt needed" },
     { key: "nocharge", label: "Receipt, no charge" }
   ];
@@ -669,6 +669,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     filed: null,
     cardFolders: null,  // Company Receipts card folders [{id, title}], this visit only
     feeds: null,        // Bank transactions exports picked for upload, waiting for their accounts to be confirmed
+    vendors: new Map(), // vendor purchase histories (Home Depot Pro Xtra), one record per month
     cmatch: "all",      // receipts list: all, on a card charge, confirm a charge, no card charge
     rDate: memo("ri-rdate", "all"), // receipts list dates: all, today, 7, 30, month, lastmonth, custom
     rFrom: "", rTo: "",
@@ -1432,7 +1433,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       for (const f of files) {
         let feed = null;
         try { feed = await readFeed(f); } catch (err) { feed = null; }
-        if (feed) feeds.push(feed); else await uploadCards(f);
+        let pro = null;
+        if (!feed) { try { pro = await readProXtra(f); } catch (err) { pro = null; } }
+        if (pro) await saveProXtra(pro);
+        else if (feed) feeds.push(feed); else await uploadCards(f);
       }
       if (feeds.length) {
         for (const f of feeds) f.account = guessAccount(f);
@@ -2566,6 +2570,69 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return out;
   }
   const slug = s => String(s || "card").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "card";
+  // ---------- Home Depot Pro Xtra: Purchase Tracking export (CSV) ----------
+  // Columns: Date, Receipt Added Date, Order Origin, Purchaser, Transaction ID, Register Number, Project Name, Job Name,
+  // Program Disc Amt, Other Disc, Pre-tax Amount, Total Amount Paid, Order Number, Payment, Text2Confirm, Card/Account Nickname, Invoice Number.
+  async function readProXtra(file) {
+    if (!/\.csv$/i.test(file.name)) return null;
+    const rows = parseCsv((await file.text()).replace(/^\ufeff/, ""));
+    const hi = rows.findIndex(r => r.some(c => /^total amount paid$/i.test(String(c).trim())) && r.some(c => /^order number$/i.test(String(c).trim())));
+    if (hi < 0) return null;
+    const h = rows[hi].map(x => String(x).trim().toLowerCase());
+    const col = n => h.indexOf(n);
+    const amt = v => { const t = String(v || "").replace(/[$,\s]/g, ""); const n = parseFloat(t.replace(/^\((.*)\)$/, "-$1")); return isNaN(n) ? 0 : n; };
+    const dayOf = v => {
+      const t = String(v || "").trim();
+      let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return m[1] + "-" + m[2] + "-" + m[3];
+      m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      if (m) return (m[3].length === 2 ? "20" + m[3] : m[3]) + "-" + pad2(+m[1]) + "-" + pad2(+m[2]);
+      return "";
+    };
+    const out = [], seen = new Map();
+    for (const r of rows.slice(hi + 1)) {
+      const g = n => col(n) >= 0 ? String(r[col(n)] || "").trim() : "";
+      const date = dayOf(g("date")) || dayOf(g("receipt added date"));
+      const total = Math.round(amt(g("total amount paid")) * 100) / 100;
+      if (!date || !total) continue;
+      const base = [date, g("transaction id"), g("register number"), g("order number"), total.toFixed(2)].join("|");
+      const dup = (seen.get(base) || 0) + 1;
+      seen.set(base, dup);
+      out.push({
+        k: hashKey("proxtra|" + base + "|" + dup), date, total,
+        store: g("order origin").slice(0, 60), purchaser: g("purchaser").slice(0, 60), job: g("job name").replace(/\s+/g, " ").slice(0, 80),
+        order: g("order number").slice(0, 40), cards: (g("payment").match(/\d{4}(?=\b)/g) || []).slice(0, 6), payment: g("payment").slice(0, 80),
+        nickname: g("card/account nickname").slice(0, 40), invoice: g("invoice number").slice(0, 40)
+      });
+    }
+    return out.length ? { name: String(file.name).slice(0, 120), rows: out } : null;
+  }
+  async function saveProXtra(pro) {
+    if (!db) { banner("Saving is off in this view. Open the page in claude.ai to upload.", true); return; }
+    const cutoff = windowStart();
+    const keep = pro.rows.filter(r => r.date >= cutoff);
+    const days = keep.map(r => r.date).sort();
+    if (!days.length) { banner("No Home Depot purchases from " + shortDate(cutoff) + " on in " + pro.name + ".", true); return; }
+    const from = days[0], to = days[days.length - 1];
+    const old = [...state.vendors.entries()].filter(([id]) => id.startsWith("proxtra--"));
+    const merged = old.flatMap(([, d]) => d.rows || []).filter(r => (r.date < from || r.date > to) && r.date >= cutoff).concat(keep);
+    const byMonth = new Map();
+    for (const r of merged) { const m = r.date.slice(0, 7); if (!byMonth.has(m)) byMonth.set(m, []); byMonth.get(m).push(r); }
+    const now = new Date().toISOString();
+    try {
+      for (const [m, rows] of byMonth) {
+        rows.sort((a, b) => a.date.localeCompare(b.date));
+        const doc = { source: "proxtra", month: m, rows, from: rows[0].date, to: rows[rows.length - 1].date, uploadedAt: now, file: pro.name };
+        await db.collection("vendors").doc("proxtra--" + m).set(doc);
+        state.vendors.set("proxtra--" + m, doc);
+      }
+      for (const [id] of old) if (!byMonth.has(id.slice(9))) { await db.collection("vendors").doc(id).delete(); state.vendors.delete(id); }
+    } catch (e) { banner(dbMessage(e), true); return; }
+    state.view = "cards";
+    render();
+    const n = model ? [...model.byCharge.values()].filter(h => h.filed && h.filed.proxtra).length : 0;
+    setStatus("Loaded " + keep.length + " Home Depot Pro Xtra purchases (" + shortDate(from) + " to " + shortDate(to) + "). " + n + " Home Depot charges now have their receipt from Pro Xtra." + (pro.rows.length > keep.length ? " Skipped " + (pro.rows.length - keep.length) + " before " + shortDate(cutoff) + "." : ""));
+  }
   // ---------- QuickBooks Bank transactions exports (For review = not posted yet) ----------
   function parseCsv(text) {
     const rows = [];
@@ -3386,6 +3453,28 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const f = ((state.cards.get(c.cardId) || {}).found || {})[c.k];
       if (f && !f.rejected) byCharge.set(c.k, { filed: { card: f.uploaded ? "Uploaded to Company Receipts" : f.possible ? "Possible match in Drive" : "Found in Drive", vendor: f.name, amount: c.amount, url: f.url, ym: c.date.slice(0, 7), name: f.name, found: true }, quality: f.possible ? "check" : "filed" });
     }
+    // Home Depot charges still without a receipt: the purchase in Pro Xtra (same amount, bought 0 to 6 days before the charge
+    // posts, or up to 2 after). Card numbers there can be Apple Pay numbers, so a matching card only breaks ties.
+    const proRows = [...state.vendors.values()].filter(d => d.source === "proxtra").flatMap(d => d.rows || []).filter(r => inWindow(r.date));
+    if (proRows.length) {
+      const usedPro = new Set();
+      const isHD = c => /home\s*depot|homedepot/i.test([c.name, c.memo, c.account].join(" "));
+      for (const c of charges.slice().sort((a, b) => a.date.localeCompare(b.date))) {
+        if (c.payment || c.marked || byCharge.has(c.k) || !isHD(c)) continue;
+        const digits = cardDigits(c.account, c.memo);
+        let best = null, bestScore = 1e9;
+        for (const p of proRows) {
+          if (usedPro.has(p.k) || Math.abs(p.total - c.amount) > 0.005) continue;
+          const gap = dayNum(c.date) - dayNum(p.date);
+          if (gap < -2 || gap > 6) continue;
+          const score = Math.abs(gap) - ((p.cards || []).some(x => digits.has(x)) ? 10 : 0);
+          if (score < bestScore) { best = p; bestScore = score; }
+        }
+        if (!best) continue;
+        usedPro.add(best.k);
+        byCharge.set(c.k, { filed: { card: "Home Depot Pro Xtra", vendor: [best.store, best.order || (best.invoice ? "invoice " + best.invoice : "")].filter(Boolean).join(" · "), amount: best.total, url: null, ym: best.date.slice(0, 7), name: best.order, job: best.job, proxtra: true }, quality: "filed" });
+      }
+    }
     // Matching ran on every charge; the list, tiles, deadlines, report and exports leave the hidden kinds out unless shown.
     const hiddenList = charges.filter(isHiddenKind);
     const kept = state.showBills ? charges : charges.filter(c => !isHiddenKind(c));
@@ -3613,7 +3702,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const own = infoOf(c).property;
     if (own) return own;
     const p = placeOf(c.pending ? c.suggest : c.split) || "";
-    return p === "Property not set" ? "" : p;
+    if (p && p !== "Property not set") return p;
+    const hit = model && model.byCharge.get(c.k);
+    return hit && hit.filed && hit.filed.proxtra && hit.filed.job ? "Job: " + hit.filed.job : "";
   }
   const flaggedOf = c => !!infoOf(c).flag || isPersonal(c);
   // Purchases carry the flags: not payments, refunds, or bills a statement covers.
@@ -4051,7 +4142,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       ? "Card report: " + files.length + " accounts, " + shortDate(files.map(d => d.from).sort()[0]) + " to " + shortDate(files.map(d => d.to).sort().pop()) + ", uploaded " + shortDate(files.map(d => d.uploadedAt).sort().pop())
       : files.length ? "Card report: " + files.map(d => d.account + " (" + shortDate(d.from) + " to " + shortDate(d.to) + ")").join(" · ") : "";
     if (state.filed === null && !filedLoading && mcp && model.charges.length) setTimeout(() => loadFiled(false), 0);
-    $("cFiles").textContent = [loaded, pendNote, state.filedNote, "Dates kept: " + shortDate(windowStart()) + " onward (this month and the 2 before)"].filter(Boolean).join("  ·  ");
+    const proDocs = [...state.vendors.values()].filter(d => d.source === "proxtra");
+    const proN = proDocs.reduce((a, d) => a + (d.rows || []).length, 0);
+    const proNote = proDocs.length ? "Home Depot Pro Xtra: " + proN + " purchases, " + shortDate(proDocs.map(d => d.from).sort()[0]) + " to " + shortDate(proDocs.map(d => d.to).sort().pop()) + ", uploaded " + shortDate(proDocs.map(d => d.uploadedAt).sort().pop()) : "";
+    $("cFiles").textContent = [loaded, pendNote, proNote, state.filedNote, "Dates kept: " + shortDate(windowStart()) + " onward (this month and the 2 before)"].filter(Boolean).join("  ·  ");
     const box = $("cList");
     box.textContent = "";
     if (state.feeds) box.append(feedPanel());
@@ -4064,7 +4158,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     }
     const HINTS = {
       matched: "Charges matched to a receipt that came in by email (Home Depot, Amazon, Uber and the rest).",
-      drive: "Charges with a receipt filed in Company Receipts, found anywhere in Drive, or uploaded here.",
+      drive: "Charges with a receipt filed in Company Receipts, found anywhere in Drive, uploaded here, or on file in Home Depot Pro Xtra (the receipt is in Pro Xtra's purchase history under that order number).",
       check: "Possible receipts to confirm: same amount, but the vendor couldn't be confirmed. Open the receipt, then Confirm or Not it.",
       missing: "Charges with no receipt yet. Upload one, or mark it No receipt needed. Some may have a receipt attached in QuickBooks, which this page can't see.",
       nocharge: "Receipts with no charge in the card report yet. Usually the charge is still in QuickBooks Bank transactions (upload the For review export for that card), or it was paid on an account the report doesn't cover." + (state.cCard ? " With a card picked, only receipts that show its last four digits are listed." : ""),
@@ -4167,7 +4261,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       row.append(el("span", "amt" + (c.amount < 0 ? " neg" : ""), money(c.amount)));
       const m = el("div", "c-rcpt");
       if (hit && hit.filed) {
-        m.append(el("span", "pill " + (hit.quality === "check" ? "m-check" : "m-matched"), hit.quality === "check" ? "Possible, check" : "In Drive"));
+        m.append(el("span", "pill " + (hit.quality === "check" ? "m-check" : "m-matched"), hit.quality === "check" ? "Possible, check" : hit.filed.proxtra ? "Pro Xtra" : "In Drive"));
+        if (hit.filed.proxtra && hit.filed.job) m.append(el("small", null, "Job: " + hit.filed.job));
         const label = [hit.filed.card, hit.filed.vendor || "receipt"].filter(Boolean).join(" · ");
         if (hit.filed.url) {
           const a = el("a", "linkbtn", label);
@@ -4395,6 +4490,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       }, err => { clearTimeout(timer); banner(dbMessage(err), true); });
       db.collection("cards").onSnapshot(snap => {
         state.cards = new Map(snap.docs.map(d => [d.id, Object.assign({}, d.data())]));
+        render();
+      }, () => {});
+      db.collection("vendors").onSnapshot(snap => {
+        state.vendors = new Map(snap.docs.map(d => [d.id, Object.assign({}, d.data())]));
         render();
       }, () => {});
       db.collection("charges").onSnapshot(snap => {

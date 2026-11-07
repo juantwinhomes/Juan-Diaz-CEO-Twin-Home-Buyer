@@ -62,6 +62,19 @@ clear**, counts purchases with No property, No approver, Unknown buyer and Perso
 opens with FLAG COUNTS and lists each flag with who to ask and by when; Every charge shows the
 filled-in buyer and approver. Excel's Flags tab lists every flag with Ask and By.
 
+**Home Depot Pro Xtra (v46).** Pro Xtra's Purchase Tracking export (CSV: Receipt Added Date,
+Order Origin, Purchaser, Transaction ID, Job Name, Total Amount Paid, Order Number, Payment, Card
+nickname, Invoice Number) goes in through Upload card report. It's saved one month per record in
+`vendors/proxtra--YYYY-MM`, from the window start on; a new export replaces its own dates. A Home
+Depot charge with no receipt takes the Pro Xtra purchase with the same amount, bought 0 to 6 days
+before the charge (or up to 2 after); the card number there only breaks ties, since Pro Xtra shows
+Apple Pay numbers (0858 matched Amex 5004 charges, 1614 "Cap One Personal" matched Capital One CC,
+0712 is named Capital One Business). Those charges show a "Pro Xtra" receipt with the store, order or
+invoice number and the job name, count under the "Filed (Drive, Pro Xtra)" tile, and the job name
+fills the property when QuickBooks has none ("Job: 972 norton"). Nov 7 load (Seth's export, Aug 1
+to Nov 7): 311 purchases from Sep 1 on; 83 Home Depot charges got their receipt, No receipt found
+fell by 52.
+
 **Receipts date filter (v45).** The Receipts list has a Dates filter beside Source and Card match:
 Any date, Today, Last 7 days, Last 30 days, This month, Last month, or Pick dates (From and To).
 It uses the receipt's own date, else the email's, and the tab counts, total and Select all follow
