@@ -47,8 +47,9 @@ them. The Card charges view has the same Confirm / Not it on possible email matc
 
 **Hidden for now (v40, Seth's call on Nov 7).** The goal is purchases that need a receipt or
 invoice. Card charges hides mortgage and interest, insurance, taxes, EMD wires, auto and equipment
-loans, payroll and labor cost (including Matrix payroll by bank memo), bank fees and owner's pay: a
-statement covers them. The rule (`isHiddenKind`) reads the QuickBooks category (or QuickBooks'
+loans, payroll and labor cost (including Matrix payroll by bank memo) and bank fees: a statement
+covers them. Owner's pay and personal purchases came back in v41 (Seth's call): they show as purchases
+with a red "Owner (personal)" chip and a receipt deadline, so Darlyn can flag them. The rule (`isHiddenKind`) reads the QuickBooks category (or QuickBooks'
 suggestion for a charge not posted yet), the payee (IRS, Franchise Tax Board, Gusto, LendingHome,
 Kiavi), the bank memo (PMT, PYMT, auto finance, EFT debit, payroll) and asset-named loan accounts
 ("2025 Bobcat - Wells Fargo"). Hidden lines drop out of the list, tiles, deadlines, report, Excel and
@@ -56,6 +57,11 @@ sheet; matching still runs on them. A link beside the file line shows the count 
 toggles them back (remembered in that browser). Still shown: utilities, telephone, due-from
 related-company charges, and legal & professional fees. Effect on Oct 1 to Nov 5: No receipt found
 went from 524 ($537,910) to 398 ($197,595); 130 lines ($340,435) hidden.
+
+**Fill with Claude on someone else's receipt (v41).** A receipt saved from another inbox (accounting@,
+or the sender's) has another id, or isn't there at all, in yours. Fill with Claude now looks for
+your copy first; if there isn't one, it names the receipt and says Christine can fill it from
+accounting@. It no longer says to mark it Not a receipt.
 
 **Last 7 days and card match (v39).** Card charges opens on **Last 7 days** (today and the 6 days
 before), next to Latest day and All dates. The Receipts list has a **Card match** filter beside
