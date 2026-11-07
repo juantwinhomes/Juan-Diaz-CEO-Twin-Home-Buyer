@@ -45,6 +45,39 @@ Good) and **Not this charge** (unlinks it; the charge goes back to No receipt fo
 are saved on the receipt as `chargeOk` / `chargeNo`, matching honors them, and a rescan keeps
 them. The Card charges view has the same Confirm / Not it on possible email matches.
 
+**Who bought, who approved, and Darlyn's fill-ins (v42).** Juan's email asks that every expense show
+who bought it and who approved it; Darlyn's asks for payee, what for, property, amount, card, buyer,
+receipt YES/NO and approver, with flags that say who to ask and by when. Each purchase now has:
+- **Bought by**: the card holder (Who holds each card) until someone fills in another name.
+- **Approved by**: filled in by Darlyn. Nothing is assumed.
+- **What it's for** and **Property or office**: from QuickBooks, overridable.
+- **Personal or unusual**: a mark, plus everything in Owner's Pay & Personal.
+"Fill in" on a row edits one charge; tick boxes (and the tick-all box in the header) open a bar
+pinned to the bottom that fills the same values into every ticked charge. Saved in the shared
+collection `charges/<charge key>` ({boughtBy, approvedBy, whatFor, property, flag, at, by}); a
+charge first seen For review keeps its fill-ins once it posts. A second tile row, **Flags to
+clear**, counts purchases with No property, No approver, Unknown buyer and Personal or unusual
+(purchases = not payments, refunds or statement-covered bills). Every flagged row says "Ask
+<buyer> by <receipt deadline>" (Christine while the card holder isn't set). The report for Juan
+opens with FLAG COUNTS and lists each flag with who to ask and by when; Every charge shows the
+filled-in buyer and approver. Excel's Flags tab lists every flag with Ask and By.
+
+**Darlyn's tracker columns (v42).** Save to Sheet also fills the **Daily Expense Tracker** tab of
+the Receipt Agent Data sheet in her columns, A to P in her order (Date, Receipt, Payee, Amount,
+What is this for?, Who paid?, Status, Category, Sub Category, Expense Type, Property, two blank,
+Paid By, Approved By, Unique ID), so rows paste straight into her card tabs; Q to U add Card,
+Flags, Ask, By when and the receipt link. Status is "In QuickBooks" or "Not in QuickBooks yet";
+Category and Sub Category come from the QuickBooks category; Expense Type is Property, Marketing,
+Overhead - Peninsula or Overhead. "Who paid?" is left blank (her own rows leave it blank).
+
+**QuickBooks charges by email, no upload (Christine sets it up once).** QuickBooks can email a
+saved report on a schedule: Reports, Transaction Detail by Account, set the dates to cover the last
+3 months, Save customization; then Reports, Custom reports, Edit, turn on Set email schedule, pick
+daily if offered, send to accounting@, tick "Attach the report as an Excel file". Needs QuickBooks
+Essentials, Plus or Advanced; check the first email is an Excel file. Once a sample arrives, the
+page will read it on Scan inbox (not built yet). For review lists can't be scheduled, so the P
+files stay a manual export.
+
 **Hidden for now (v40, Seth's call on Nov 7).** The goal is purchases that need a receipt or
 invoice. Card charges hides mortgage and interest, insurance, taxes, EMD wires, auto and equipment
 loans, payroll and labor cost (including Matrix payroll by bank memo) and bank fees: a statement
