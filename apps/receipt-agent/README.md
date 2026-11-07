@@ -32,6 +32,30 @@ that print its last four digits. **Sort** orders the list: newest or oldest firs
 smallest amount, vendor A to Z, card, or property with the missing ones first; the Excel "Every
 charge" tab uses the same order. Both picks are remembered in that browser only.
 
+**Which vendor, which card (v33).** The "Card vendors" source is now "Vendor emails" (receipts
+from the vendors on the card report). A receipt sent through QuickBooks Payments, PayPal or Melio
+shows the business that was paid, read from the subject ("Invoice #3745-(A&B Trailer Hitch)"),
+with "via QuickBooks Payments" under it. Every receipt in the list carries a card tag: green "On
+Amex - 2001, card 5004 · Oct 28", amber "Confirm: ..." for a possible match, or grey "No card
+charge found" / "Before the card report (starts Oct 1)". The receipt's detail shows the card
+charge, what the card statement says ("Card shows"), the holder and the category, and for a
+possible match asks "Is this the charge?" with **Yes, this charge** (links it for good and marks it
+Good) and **Not this charge** (unlinks it; the charge goes back to No receipt found). The answers
+are saved on the receipt as `chargeOk` / `chargeNo`, matching honors them, and a rescan keeps
+them. The Card charges view has the same Confirm / Not it on possible email matches.
+
+**Deadlines and urgency (v33).** Two rules, set at the top of the script: a purchase needs its
+receipt within **7 days** of the charge (`RECEIPT_DUE_DAYS`), and a receipt in To review gets
+looked at within **2 days** of arriving (`REVIEW_DUE_DAYS`). Bills, loans, taxes, payroll and bank
+memos marked PMT have no deadline (a statement covers them). A bar under the toolbar, on both
+views, counts across every date and card: receipts late (red), due in 2 days (amber), matches to
+confirm (amber), and To review items waiting 2+ days (red); each opens its list. In Card charges,
+every charge with no receipt shows "Due in N days", "Due today" or "N days late", late rows get a
+red edge, the No receipt found tile shows the late count and dollars, and the default sort is
+**Most urgent first** (late purchases, largest first, then due soon, then to confirm). The report
+for Juan opens with a LATE line and marks each flag with its due status; the Excel Flags tab has a
+Due column.
+
 **Which scans are saved.** accounting@ scans its whole inbox. Any other company inbox that is a
 member of the receipts@ Google Group (Seth) scans only the receipts@ copies in it
 (`list:receipts.twinhomebuyer.com`); those are saved too. Anything else runs as a test.

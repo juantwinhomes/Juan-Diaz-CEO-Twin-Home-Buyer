@@ -201,6 +201,33 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .c-range label { display: inline-flex; align-items: center; gap: 6px; }
 .c-range input[type="date"] { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; color: var(--ink); }
 .c-note { color: var(--muted); }
+/* Urgency bar: what's late, what's due, what to confirm. Each one opens its list. */
+.urgent { display: flex; flex-wrap: wrap; gap: 8px; }
+.u-item { cursor: pointer; display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 7px; padding: 7px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 0.84rem; text-align: left; box-shadow: inset 3px 0 0 var(--tone, var(--line)); max-width: 100%; }
+.u-item b { font-family: var(--display); font-size: 1.05rem; color: var(--tone, var(--ink)); }
+.u-item.bad { --tone: var(--bad); background: var(--bad-soft); border-color: transparent; }
+.u-item.warn { --tone: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.u-item.ok { --tone: var(--ok); background: var(--ok-soft); border-color: transparent; cursor: default; }
+.u-item .u-go { font-weight: 600; color: var(--tone, var(--accent)); white-space: nowrap; }
+.u-item:not(.ok):hover { box-shadow: inset 3px 0 0 var(--tone), 0 0 0 1px var(--tone); }
+.kpi-alert { font-size: 0.72rem; font-weight: 700; color: var(--bad); }
+.crow .due { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; }
+.crow .due.late { color: var(--bad); }
+.crow .due.soon { color: var(--warn); }
+.crow .due.ok { color: var(--muted); font-weight: 500; }
+.crow.late { box-shadow: inset 3px 0 0 var(--bad); }
+.crow.soon { box-shadow: inset 3px 0 0 var(--warn); }
+.ctag { display: inline-block; max-width: 100%; font-size: 0.74rem; font-weight: 600; padding: 1px 8px; border-radius: 6px; overflow-wrap: anywhere; }
+.ctag.ok { background: var(--ok-soft); color: var(--ok); }
+.ctag.warn { background: var(--warn-soft); color: var(--warn); }
+.ctag.none { background: var(--sunk); color: var(--muted); border: 1px solid var(--line); font-weight: 500; }
+.badge.late { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+.matchbox { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); box-shadow: inset 3px 0 0 var(--tone, var(--line)); }
+.matchbox.ok { --tone: var(--ok); }
+.matchbox.warn { --tone: var(--warn); }
+.matchbox b { color: var(--tone, var(--ink)); }
+.matchbox p { font-size: 0.8rem; color: var(--muted); }
+.matchbtns { display: flex; flex-wrap: wrap; gap: 6px; }
 .c-title .c-note { font-size: 0.82rem; }
 .c-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-left: 12px; border-left: 1px solid var(--line); min-width: 0; }
 .c-pick label { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
@@ -291,6 +318,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   .tgroup { border-left: 0; padding-left: 0; }
   .c-actions, .c-actions .tgroup { width: 100%; }
   .c-pick { border-left: 0; padding-left: 0; width: 100%; }
+  .u-item { width: 100%; }
   .c-pick label { flex: 1 1 100%; }
   .c-pick select, .c-pick #cCard { flex: 1 1 0; width: 100%; }
 }
@@ -322,7 +350,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v32</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v33</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -355,6 +383,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       <a id="openSheet" class="btn ghost" target="_blank" rel="noopener" title="Open the Receipt Agent Data sheet">Sheet ↗</a>
     </div>
   </div>
+  <div id="urgent" class="urgent" role="region" aria-label="Late and due" hidden></div>
   <div id="banner" class="banner" role="alert" hidden></div>
 
   <div class="app">
@@ -460,7 +489,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     { key: "forwards", label: "Forwarded to receipts@", q: 'list:receipts.twinhomebuyer.com subject:(fwd OR fw) -subject:"receipt agent" -subject:"receipt inbox"' },
     // Every other vendor on the card report (Apple, Google, Intuit, PG&E, Lyngso Materials...): built at scan time by vendorSources().
     { key: "teamsent", label: "Sent to receipts@ by the team", q: 'list:receipts.twinhomebuyer.com from:twinhomebuyer.com has:attachment -subject:(fwd OR fw OR re) -subject:"receipt agent" -subject:"receipt inbox"' },
-    { key: "vendors", label: "Card vendors", q: null }
+    { key: "vendors", label: "Vendor emails", q: null }
   ];
   // Subjects vendors use for receipts, invoices and paid bills.
   const BILL_WORDS = 'receipt OR invoice OR "payment received" OR "payment confirmation" OR "order confirmation" OR "your order" OR "your bill" OR "bill is ready" OR statement OR "thanks for your payment" OR "payment successful" OR "amount paid"';
@@ -506,7 +535,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     for (const p of PAY_SENDERS) if (!terms.includes(p)) terms.push(p);
     const out = [];
     for (let i = 0; i < terms.length; i += 15) {
-      out.push({ key: "vendors", label: "Card vendors", q: "from:(" + terms.slice(i, i + 15).join(" OR ") + ") subject:(" + BILL_WORDS + ") -subject:(quote OR estimate OR proposal)" });
+      out.push({ key: "vendors", label: "Vendor emails", q: "from:(" + terms.slice(i, i + 15).join(" OR ") + ") subject:(" + BILL_WORDS + ") -subject:(quote OR estimate OR proposal)" });
     }
     return out;
   }
@@ -523,6 +552,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   const SKIP = " -from:anthropic.com -from:claude.com -from:claude.ai -from:claude";
   // Errors that mean Gmail can't be used at all. Anything else skips one search or one email and the scan goes on.
   const FATAL = new Set(["server_not_connected", "needs_reauth", "not_in_manifest", "approval_required", "consent_required", "selection_required", "blocked_by_policy", "not_granted", "capability_disabled", "capability_removed"]);
+  // Deadlines. A purchase needs its receipt within 7 days of the charge; a receipt in To review gets looked at within 2 days.
+  const RECEIPT_DUE_DAYS = 7;
+  const REVIEW_DUE_DAYS = 2;
   const CTABS = [
     { key: "missing", label: "No receipt found" },
     { key: "check", label: "Check" },
@@ -565,7 +597,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     cTo: "",
     cRangeSet: false,   // the date filter opens on the report's last day
     cCard: memo("ri-ccard", ""),          // card filter: "" all, "a:<account>", or "c:<account>|<card number>"
-    cSort: memo("ri-csort", "date-desc"), // order of the charge list
+    cSort: memo("ri-csort", "urgent"),    // order of the charge list
     holders: {}         // card number -> who holds the card, shared (meta/cardholders)
   };
   let model = null;     // card charges matched to receipts, rebuilt on every render
@@ -673,6 +705,29 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 
   // ---------- layout: the queue on the left, the selected receipt on the right ----------
   const narrow = () => window.matchMedia("(max-width: 900px)").matches;
+  function payVendor(r) {
+    const s = String((r && r.subject) || "");
+    const m = s.match(/invoice\s*#[^(]*\(([^)]{3,80})\)/i) || s.match(/payment to\s+([A-Z][^,.\n]{2,60})/);
+    return m && !PROCESSOR.test(m[1]) ? m[1].trim() : "";
+  }
+  // The business that was paid, never the payment service.
+  function vendorOf(r) {
+    const x = (r && r.extracted) || {};
+    const v = x.vendor || senderName(r);
+    if (PROCESSOR.test(v + " " + senderName(r))) { const p = payVendor(r); if (p) return p; }
+    return v;
+  }
+  // "QuickBooks Payments" when the receipt came through a payment service.
+  function viaOf(r) {
+    const v = vendorOf(r), raw = ((r && r.extracted) || {}).vendor || senderName(r);
+    return v !== raw ? raw : "";
+  }
+  // "Amex - 2001, card 5004": the account, plus the card number when the account name doesn't already say it.
+  function cardName(c) {
+    const a = String(c.account || "").replace(/\s+/g, " ").trim();
+    const n = cardOf(c);
+    return n && !a.includes(n) ? a + ", card " + n : a;
+  }
   function senderName(r) {
     return String((r && r.sender) || "").replace(/<.*>/, "").replace(/"/g, "").trim() || "Unknown sender";
   }
@@ -686,7 +741,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const q = state.query.trim().toLowerCase();
     if (!q) return true;
     const x = r.extracted || {};
-    return [x.vendor, x.items, x.orderNumber, x.location, x.note, x.cardLast4, r.subject, r.property, senderName(r), amountOf(r).label]
+    return [x.vendor, vendorOf(r), x.items, x.orderNumber, x.location, x.note, x.cardLast4, r.subject, r.property, senderName(r), amountOf(r).label]
       .filter(Boolean).join(" ").toLowerCase().includes(q);
   }
   function visibleRows() {
@@ -699,6 +754,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   function render() {
     model = cardModel();
     renderViews();
+    renderUrgent();
     if (state.view === "cards") renderCards();
     renderTabs();
     renderList();
@@ -739,15 +795,16 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     cb.type = "checkbox";
     cb.id = "sel-" + r.id;
     cb.checked = state.selected.has(r.id);
-    cb.setAttribute("aria-label", "Select " + (x.vendor || "receipt"));
+    cb.setAttribute("aria-label", "Select " + vendorOf(r));
     cb.addEventListener("click", ev => ev.stopPropagation());
     cb.onchange = () => { if (cb.checked) state.selected.add(r.id); else state.selected.delete(r.id); renderBulk(); };
 
     const main = el("div", "item-main");
     const top = el("div", "item-top");
-    top.append(el("span", "item-vendor", x.vendor || senderName(r)), el("span", "item-amt", amountOf(r).label));
+    top.append(el("span", "item-vendor", vendorOf(r)), el("span", "item-amt", amountOf(r).label));
     const sub = el("div", "item-sub");
-    sub.append(el("span", null, shortDate(x.date || r.emailDate)), el("span", null, SOURCE_LABEL[r.source] || "Other"));
+    const via = viaOf(r);
+    sub.append(el("span", null, shortDate(x.date || r.emailDate)), el("span", null, via ? "via " + via : SOURCE_LABEL[r.source] || "Other"));
     if (r.property) sub.append(el("span", null, r.property));
     else if (x.orderNumber) sub.append(el("span", "mono", x.orderNumber));
     main.append(top, sub);
@@ -755,13 +812,31 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (needsClaude(r)) flags.append(el("span", "badge", "Needs Claude"));
     if (x.kind === "refund") flags.append(el("span", "badge", "Refund"));
     if (state.temp.has(r.id)) flags.append(el("span", "badge warn", "Test"));
-    const onCard = model && model.byReceipt.get(r.id);
-    if (onCard) flags.append(el("span", "badge" + (onCard.quality === "matched" ? " ok" : " warn"), onCard.quality === "matched" ? "On card" : "Check card"));
+    const wait = (r.status || "new") === "new" ? receivedDays(r) : 0;
+    if (wait > REVIEW_DUE_DAYS) flags.append(el("span", "badge late", "Received " + wait + " days ago"));
+    const ct = cardTag(r);
+    if (ct) flags.append(ct);
     if (flags.childNodes.length) main.append(flags);
 
     item.append(cb, main);
     item.onclick = () => select(r.id);
     return item;
+  }
+  function cardTag(r) {
+    if (!model || !model.charges.length) return null;
+    const on = model.byReceipt.get(r.id);
+    if (on) {
+      const t = el("span", "ctag " + (on.quality === "matched" ? "ok" : "warn"),
+        (on.quality === "matched" ? "On " : "Confirm: ") + cardName(on.c) + " · " + shortDate(on.c.date));
+      t.title = on.quality === "matched" ? "Matched to this card charge" : "Possible card charge: open the receipt and confirm it";
+      return t;
+    }
+    if ((r.status || "new") === "not_receipt" || amountOf(r).value === null) return null;
+    const d = localDay(((r.extracted || {}).date) || r.emailDate);
+    const text = d && d < model.from ? "Before the card report (starts " + shortDate(model.from) + ")"
+      : d && d > model.to ? "Charge not in the card report yet"
+      : "No card charge found";
+    return el("span", "ctag none", text);
   }
   function renderList() {
     const shown = visibleRows();
@@ -826,6 +901,20 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("detail").scrollTop = 0;
   }
 
+  async function confirmCharge(r, c, yes) {
+    const rows = visibleRows();
+    const i = rows.findIndex(x => x.id === r.id);
+    const next = rows[i + 1] || rows[i - 1] || null;
+    const patch = yes
+      ? { chargeOk: c.k, chargeNo: (r.chargeNo || []).filter(k => k !== c.k), status: "good", reviewedAt: new Date().toISOString() }
+      : { chargeNo: [...new Set((r.chargeNo || []).concat(c.k))], chargeOk: r.chargeOk === c.k ? null : (r.chargeOk || null) };
+    if (!(await saveFields(r.id, patch))) return;
+    Object.assign(r, patch);
+    if (yes && state.view === "receipts" && state.tab !== "good") state.selectedId = next ? next.id : null;
+    setStatus(yes ? "Matched to " + cardName(c) + ", " + shortDate(c.date) + ", " + money(c.amount) + ", and marked Good."
+      : "Unlinked from " + cardName(c) + ", " + shortDate(c.date) + ". That charge shows as No receipt found again.");
+    render();
+  }
   function renderDetail() {
     const pane = $("detail");
     pane.textContent = "";
@@ -850,8 +939,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     back.onclick = () => { document.body.classList.remove("show-detail"); render(); };
     const title = el("div", "d-title");
     const left = el("div");
-    left.append(el("h2", null, x.vendor || senderName(r)),
-      el("div", "d-meta", [longDate(x.date || r.emailDate), SOURCE_LABEL[r.source] || "Other", x.items].filter(Boolean).join(" · ")));
+    left.append(el("h2", null, vendorOf(r)),
+      el("div", "d-meta", [longDate(x.date || r.emailDate), viaOf(r) ? "via " + viaOf(r) : SOURCE_LABEL[r.source] || "Other", x.items].filter(Boolean).join(" · ")));
     const right = el("div", "d-amt");
     right.append(el("span", "num", amt.label));
     if (amt.note) right.append(el("small", null, amt.note));
@@ -935,14 +1024,50 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     fact("Order", x.orderNumber, true);
     fact("Location", x.location);
     fact(r.source === "juan" ? "Juan's note" : "Note from sender", x.note);
+    let matchBox = null;
     if (model && model.charges.length) {
       const cm = model.byReceipt.get(r.id);
-      fact("Card charge", cm ? [cm.c.account, shortDate(cm.c.date), money(cm.c.amount), cm.quality === "check" ? "amount to check" : ""].filter(Boolean).join(" · ") : "None found in the card report");
-      if (cm && cm.c.split) fact("Category", cm.c.split);
+      if (cm) {
+        const c = cm.c, b = buyerOf(c);
+        fact("Card charge", [cardName(c), shortDate(c.date), money(c.amount)].join(" · "));
+        fact("Card shows", [c.name, c.memo && c.memo !== c.name ? c.memo : ""].filter(Boolean).join(" · ").slice(0, 160));
+        if (b.who) fact("Bought by", b.who);
+        if (c.split) fact("Category", c.split);
+        matchBox = el("div", "matchbox " + (cm.quality === "matched" ? "ok" : "warn"));
+        if (cm.quality === "matched") {
+          matchBox.append(el("b", null, r.chargeOk === c.k ? "Confirmed: this is the charge" : "Matched to this charge"),
+            el("p", null, r.chargeOk === c.k ? "Confirmed by a person." : "Same amount, vendor and dates line up."));
+        } else {
+          const gap = Math.abs(dayNum(c.date) - dayNum(localDay(((r.extracted || {}).date) || r.emailDate) || c.date));
+          const why = viaOf(r) || PROCESSOR.test(senderName(r))
+            ? "Paid through " + (viaOf(r) || senderName(r)) + ", so the card shows a different name. Same amount, " + (gap ? gap + (gap === 1 ? " day" : " days") + " apart." : "same day.")
+            : num(x.total) === null ? "The receipt shows the subtotal; the charge is within tax and shipping of it."
+            : "Same amount, but the vendor name on the card couldn't be confirmed.";
+          matchBox.append(el("b", null, "Is this the charge?"), el("p", null, why));
+          const row = el("div", "matchbtns");
+          const yes = el("button", "btn small good", "Yes, this charge");
+          yes.type = "button";
+          yes.onclick = () => confirmCharge(r, c, true);
+          row.append(yes);
+          matchBox.append(row);
+        }
+        const no = el("button", "btn small ghost", "Not this charge");
+        no.type = "button";
+        no.title = "Unlink this receipt from the charge; the charge goes back to No receipt found";
+        no.onclick = () => confirmCharge(r, c, false);
+        (matchBox.querySelector(".matchbtns") || matchBox.appendChild(el("div", "matchbtns"))).append(no);
+      } else if (amt.value !== null) {
+        const d = localDay(x.date || r.emailDate);
+        fact("Card charge", d && d < model.from ? "Before the card report, which starts " + longDate(model.from)
+          : d && d > model.to ? "Not in the card report yet (it ends " + longDate(model.to) + ")" : "None found in the card report");
+      }
     }
     fact("From", senderName(r));
+    if (status === "new") { const w = receivedDays(r); if (w > REVIEW_DUE_DAYS) fact("Waiting", "Received " + w + " days ago. Review within " + REVIEW_DUE_DAYS + " days."); }
     const keys = el("p", "keys", "J / K next and previous · G good · F follow-up · N not a receipt · D download");
-    facts.append(field, dl, keys);
+    facts.append(field, dl);
+    if (matchBox) facts.append(matchBox);
+    facts.append(keys);
 
     body.append(viewer, facts);
     pane.append(head, actions, body);
@@ -1153,7 +1278,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("cAll").onclick = () => { state.cFrom = ""; state.cTo = ""; state.cRangeSet = true; render(); };
     $("cSince").onclick = () => { state.cFrom = firstReceiptDay() || ""; state.cTo = ""; state.cRangeSet = true; render(); };
     $("cCard").onchange = e => { state.cCard = e.target.value || ""; remember("ri-ccard", state.cCard); render(); };
-    $("cSort").onchange = e => { state.cSort = e.target.value || "date-desc"; remember("ri-csort", state.cSort); render(); };
+    $("cSort").onchange = e => { state.cSort = e.target.value || "urgent"; remember("ri-csort", state.cSort); render(); };
     $("cardUpload").onclick = () => $("cardFile").click();
     $("cardFile").onchange = async e => {
       const files = [...(e.target.files || [])];
@@ -1999,6 +2124,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           status: prev.status || dupStatus || (x && x.isReceipt === false ? "not_receipt" : "new"),
           property: prev.property || "",
           reviewedAt: prev.reviewedAt || null,
+          chargeOk: prev.chargeOk || null,
+          chargeNo: prev.chargeNo || [],
           scannedAt: now,
           scannedBy: state.account || ""
         };
@@ -2386,7 +2513,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         const a = amountOf(r).value, tax = num(x.tax);
         const cm = model && model.byReceipt.get(r.id);
         return [
-          localDay(x.date || r.emailDate) || "", cellText(x.vendor || senderName(r)), a === null ? "" : a, tax === null ? "" : tax,
+          localDay(x.date || r.emailDate) || "", cellText(vendorOf(r)), a === null ? "" : a, tax === null ? "" : tax,
           x.cardLast4 || "", x.orderNumber || "", cellText(x.items), cellText(x.location), cellText(r.property),
           STATUS_LABEL[r.status || "new"], SOURCE_LABEL[r.source] || "Other",
           cm ? cellText([cm.c.account, longDate(cm.c.date), money(cm.c.amount)].join(", ")) : "", cm ? cellText(cm.c.split) : "",
@@ -2401,7 +2528,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         return [
           c.date, cellText(c.account), cellText(c.type), cellText(c.name), cellText(c.memo), cellText(c.split), c.amount,
           c.payment ? "Payment or transfer" : label[chargeState(c)],
-          r ? cellText(x.vendor || senderName(r)) : f ? cellText(f.vendor) : "",
+          r ? cellText(vendorOf(r)) : f ? cellText(f.vendor) : "",
           r ? (localDay(x.date || r.emailDate) || "") : "",
           r ? (ra === null ? "" : ra) : f ? f.amount : "",
           r ? cellText(r.property) : f ? cellText(f.card) : "",
@@ -2715,7 +2842,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   // Bills, loans, taxes, payroll and related-company transfers: the paperwork is a statement or payroll record, not a store receipt.
   const STATEMENT = /mortgage|mtg|kiavi|anchor loans|\bloans?\b|interest|taxes|insurance|payroll|salar|wages|labor cost|\bemd\b|due from|owner'?s pay|personal|bank charges|utilities|telephone/i;
-  const isStatement = c => STATEMENT.test(c.split || "") || (!c.split && /payroll|loan pymt|mortgage/i.test(c.memo || "")) || /^(irs|franchise tax board|gusto|wise inc|lendinghome)$/i.test(c.name || "");
+  const isStatement = c => STATEMENT.test(c.split || "") || (!c.split && /payroll|loan pymt|mortgage/i.test(c.memo || "")) || /\bpmt\b/i.test(c.memo || "") || /^(irs|franchise tax board|gusto|wise inc|lendinghome)$/i.test(c.name || "");
   // The card a charge was made on: on a card account, the card member at the end of the bank's memo ("XXXX5004", "- 1175");
   // otherwise the account's own number.
   const CARD_ACCT = /amex|american express|capital one|citi|discover|home depot|\bcc\b|visa|master ?card|credit/i;
@@ -2804,6 +2931,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const vc = vendorKey(c.name + " " + c.memo);
       const digits = cardDigits(c.account, c.memo);
       for (const r of receipts) {
+        if (r.chargeNo && r.chargeNo.includes(c.k)) continue;
+        if (r.chargeOk) { if (r.chargeOk === c.k) pairs.push({ c, r, quality: "matched", score: -100 }); continue; }
         const x = r.extracted;
         const t = num(x.total), sub = num(x.itemsSubtotal);
         let quality = null, score = 0;
@@ -2886,6 +3015,72 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     });
   }
   const inRange = d => (!state.cFrom || d >= state.cFrom) && (!state.cTo || d <= state.cTo);
+  const todayDay = () => localDay(new Date().toISOString());
+  // A purchase with no receipt: how long until (or past) its receipt deadline. Bills, loans, taxes and payroll are covered by a statement: no deadline.
+  function dueInfo(c) {
+    if (c.payment || c.amount <= 0 || isStatement(c) || chargeState(c) !== "missing") return null;
+    const left = RECEIPT_DUE_DAYS - (dayNum(todayDay()) - dayNum(c.date));
+    return { left, late: left < 0, soon: left >= 0 && left <= 2 };
+  }
+  const dueText = d => d.left > 1 ? "Due in " + d.left + " days" : d.left === 1 ? "Due tomorrow" : d.left === 0 ? "Due today"
+    : d.left === -1 ? "1 day late" : -d.left + " days late";
+  function receivedDays(r) {
+    const d = localDay(r.emailDate);
+    return d ? dayNum(todayDay()) - dayNum(d) : 0;
+  }
+  // Across every date and card, whatever the filters show.
+  function urgency() {
+    const u = { late: [], soon: [], check: [], waiting: [] };
+    if (model && model.charges.length) for (const c of model.charges) {
+      if (chargeState(c) === "check") u.check.push(c);
+      const d = dueInfo(c);
+      if (d && d.late) u.late.push(c); else if (d && d.soon) u.soon.push(c);
+    }
+    for (const r of allRows()) if ((r.status || "new") === "new" && !state.temp.has(r.id) && receivedDays(r) > REVIEW_DUE_DAYS) u.waiting.push(r);
+    return u;
+  }
+  function showCards(tab) {
+    state.view = "cards"; state.cTab = tab;
+    state.cFrom = ""; state.cTo = ""; state.cRangeSet = true;
+    state.cCard = ""; remember("ri-ccard", "");
+    state.cSort = "urgent"; remember("ri-csort", "urgent");
+    render();
+    window.scrollTo(0, 0);
+  }
+  function renderUrgent() {
+    const box = $("urgent");
+    box.textContent = "";
+    const u = urgency();
+    const dollars = n => "$" + Math.round(n).toLocaleString("en-US");
+    const item = (tone, count, text, go, onclick, tip) => {
+      const b = el("button", "u-item " + tone);
+      b.type = "button";
+      if (tip) b.title = tip;
+      b.append(el("b", "num", String(count)), el("span", null, text));
+      if (go) b.append(el("span", "u-go", go + " \u2192"));
+      b.onclick = onclick;
+      box.append(b);
+    };
+    const has = model && model.charges.length;
+    if (u.late.length) {
+      const oldest = u.late.reduce((a, c) => c.date < a ? c.date : a, u.late[0].date);
+      item("bad", u.late.length, (u.late.length === 1 ? "receipt late" : "receipts late") + " · " + dollars(sumOf(u.late)) + " · oldest " + shortDate(oldest), "Show", () => showCards("missing"),
+        "Purchases with no receipt " + RECEIPT_DUE_DAYS + " days after the charge, every card and date. Bills, loans, taxes and payroll don't count: a statement covers them.");
+    }
+    if (u.soon.length) item("warn", u.soon.length, "due in 2 days · " + dollars(sumOf(u.soon)), "Show", () => showCards("missing"),
+      "Purchases whose receipt is due today, tomorrow or the day after.");
+    if (u.check.length) item("warn", u.check.length, (u.check.length === 1 ? "match" : "matches") + " to confirm", "Confirm", () => showCards("check"),
+      "Same amount and date, but the card shows another name. Say yes or no.");
+    if (u.waiting.length) {
+      const oldest = u.waiting.reduce((a, r) => receivedDays(r) > receivedDays(a) ? r : a, u.waiting[0]);
+      item("bad", u.waiting.length, "to review, waiting " + REVIEW_DUE_DAYS + "+ days", "Oldest first", () => {
+        state.view = "receipts"; state.tab = "new"; state.source = "all"; $("source").value = "all"; state.query = ""; $("search").value = "";
+        select(oldest.id);
+      }, "Receipts in To review that arrived more than " + REVIEW_DUE_DAYS + " days ago.");
+    }
+    if (!box.childNodes.length && has) item("ok", "0", "late receipts. Nothing is waiting on review.", "", () => {});
+    box.hidden = !box.childNodes.length;
+  }
   // Card filter: a whole account ("a:Amex - 2001") or one card number on it ("c:Amex - 2001|5004").
   const cardKey = c => String(c.account || "") + "|" + (cardOf(c) || "");
   function cardPick(c) {
@@ -2940,14 +3135,16 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return out;
   }
   const SORTS = [
-    ["date-desc", "Newest first"], ["date-asc", "Oldest first"], ["amt-desc", "Largest amount first"], ["amt-asc", "Smallest amount first"],
+    ["urgent", "Most urgent first"], ["date-desc", "Newest first"], ["date-asc", "Oldest first"], ["amt-desc", "Largest amount first"], ["amt-asc", "Smallest amount first"],
     ["name", "Vendor, A to Z"], ["card", "Card, then newest"], ["place", "Property, missing first"]
   ];
   function sortCharges(list) {
     const byDate = (a, b) => b.date.localeCompare(a.date) || b.amount - a.amount;
     const name = c => String(c.name || c.memo || "");
     const place = c => c.payment ? "" : placeOf(c.split) || "";
+    const tier = c => { const d = dueInfo(c); return d ? (d.late ? 3 : d.soon ? 2 : 1) : chargeState(c) === "check" ? 1.5 : 0; };
     const cmp = {
+      "urgent": (a, b) => tier(b) - tier(a) || b.amount - a.amount || byDate(a, b),
       "date-desc": byDate,
       "date-asc": (a, b) => a.date.localeCompare(b.date) || b.amount - a.amount,
       "amt-desc": (a, b) => b.amount - a.amount || byDate(a, b),
@@ -2964,6 +3161,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const name = r => String((r.extracted && r.extracted.vendor) || senderName(r));
     const byDate = (a, b) => day(b).localeCompare(day(a)) || amt(b) - amt(a);
     const cmp = {
+      "urgent": (a, b) => day(a).localeCompare(day(b)) || amt(b) - amt(a),
       "date-asc": (a, b) => day(a).localeCompare(day(b)) || amt(b) - amt(a),
       "amt-desc": (a, b) => amt(b) - amt(a) || byDate(a, b),
       "amt-asc": (a, b) => amt(a) - amt(b) || byDate(a, b),
@@ -2987,8 +3185,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     cs.value = state.cCard;
     cs.classList.toggle("on", !!state.cCard);
     if (!ss.options.length) for (const [v, t] of SORTS) { const op = el("option", null, t); op.value = v; ss.append(op); }
-    ss.value = SORTS.some(x => x[0] === state.cSort) ? state.cSort : "date-desc";
-    ss.classList.toggle("on", ss.value !== "date-desc");
+    ss.value = SORTS.some(x => x[0] === state.cSort) ? state.cSort : "urgent";
+    ss.classList.toggle("on", ss.value !== "urgent");
   }
   function firstReceiptDay() {
     let first = "";
@@ -3244,6 +3442,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       b.setAttribute("aria-selected", String(state.cTab === t.key));
       const sum = list.length ? money(list.reduce((a, x) => a + (x.amount !== undefined ? x.amount : (amountOf(x).value || 0)), 0)) : "";
       b.append(el("span", "kpi-count", String(list.length)), el("span", "kpi-label", t.label), el("span", "kpi-sum", sum || " "));
+      if (t.key === "missing") {
+        const late = list.filter(c => { const d = dueInfo(c); return d && d.late; });
+        if (late.length) b.append(el("span", "kpi-alert", late.length + " late · " + money(sumOf(late))));
+      }
       b.onclick = () => { state.cTab = t.key; render(); };
       tabs.append(b);
     }
@@ -3283,7 +3485,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         const x = r.extracted || {};
         row.append(el("span", "c-date", shortDate(x.date || r.emailDate)));
         const p = el("div", "c-charge");
-        p.append(el("b", null, x.vendor || senderName(r)));
+        p.append(el("b", null, vendorOf(r)));
         if (x.items) p.append(el("small", "c-memo", x.items));
         p.append(el("small", "m-line", [shortDate(x.date || r.emailDate), SOURCE_LABEL[r.source] || "Other", x.cardLast4 ? "card " + x.cardLast4 : ""].filter(Boolean).join(" · ")));
         const amtR = amountOf(r);
@@ -3350,7 +3552,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       } else if (hit) {
         m.append(el("span", "pill m-" + hit.quality, hit.quality === "matched" ? "Matched" : "Check amount"));
         const x = hit.r.extracted || {};
-        const link = el("button", "linkbtn", [x.vendor || senderName(hit.r), shortDate(x.date || hit.r.emailDate), amountOf(hit.r).label].join(" · "));
+        const link = el("button", "linkbtn", [vendorOf(hit.r), shortDate(x.date || hit.r.emailDate), amountOf(hit.r).label].join(" · "));
         link.type = "button";
         link.title = "Open this receipt";
         link.onclick = () => openReceipt(hit.r.id);
@@ -3359,10 +3561,15 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         m.append(el("span", "pill", c.payment ? "Payment or transfer" : isRefund(c) ? "Refund" : "No receipt needed"));
       } else {
         m.append(el("span", "pill m-missing", "No receipt found"));
+        const d = dueInfo(c);
+        if (d) {
+          m.append(el("span", "due " + (d.late ? "late" : d.soon ? "soon" : "ok"), dueText(d)));
+          if (d.late) row.classList.add("late"); else if (d.soon) row.classList.add("soon");
+        } else if (isStatement(c)) m.append(el("span", "due ok", "Statement covers it"));
       }
       row.append(m);
       const act = el("div", "c-act");
-      if (!c.payment && c.amount > 0 && (!hit || hit.quality === "check")) {
+      if (!c.payment && c.amount > 0 && (!hit || (hit.quality === "check" && !hit.r))) {
         const up = el("button", "btn small", "Upload");
         up.type = "button";
         up.title = "Upload the receipt: it's saved to Company Receipts and matched to this charge";
@@ -3376,6 +3583,20 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         b.title = c.marked ? "Flag this charge again" : "Mark: no receipt needed for this charge";
         b.onclick = () => markCharge(c, c.marked ? "" : "no_receipt");
         act.append(b);
+      }
+      if (hit && hit.r) {
+        if (hit.quality === "check") {
+          const ok = el("button", "btn small", "Confirm");
+          ok.type = "button";
+          ok.title = "This email is the receipt for this charge";
+          ok.onclick = () => confirmCharge(hit.r, c, true);
+          act.append(ok);
+        }
+        const no = el("button", "btn small ghost", "Not it");
+        no.type = "button";
+        no.title = "This email isn't the receipt; flag the charge again";
+        no.onclick = () => confirmCharge(hit.r, c, false);
+        act.append(no);
       }
       if (hit && hit.filed && hit.filed.found) {
         if (hit.quality === "check") {
@@ -3416,10 +3637,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const span = from === to ? longDate(from) : longDate(from) + " to " + longDate(to);
     const charges = model.charges.filter(x => !x.payment && shown(x)).sort((a, b) => a.date.localeCompare(b.date) || b.amount - a.amount);
     const payee = x => x.name || x.memo || "No payee";
-    const flagLine = (x, i) => (i + 1) + ". " + [shortDate(x.date), payee(x), money(x.amount), whatFor(x), placeOf(x.split) || "Not set", "buyer: " + buyerOf(x).label, x.account].join(", ");
+    const flagLine = (x, i) => { const d = dueInfo(x); return (i + 1) + ". " + [shortDate(x.date), payee(x), money(x.amount), whatFor(x), placeOf(x.split) || "Not set", "buyer: " + buyerOf(x).label, x.account].concat(d ? [dueText(d).toUpperCase()] : []).join(", "); };
     const found = c.matched.length + c.drive.length;
+    const lateList = c.missing.filter(x => { const d = dueInfo(x); return d && d.late; }).sort((a, b) => b.amount - a.amount);
+    const soonList = c.missing.filter(x => { const d = dueInfo(x); return d && !d.late && d.soon; });
     const lines = ["Expense report: charges posted in QuickBooks, " + span + (state.cCard ? ", " + cardLabel(state.cCard) + " only" : "") + ". Pacific Time.",
-      charges.length + (charges.length === 1 ? " charge, " : " charges, ") + money(sumOf(charges)) + ". Receipt found: " + found + ". No receipt found: " + c.missing.length + ". Amount to check: " + c.check.length + ".", "",
+      charges.length + (charges.length === 1 ? " charge, " : " charges, ") + money(sumOf(charges)) + ". Receipt found: " + found + ". No receipt found: " + c.missing.length + ". Amount to check: " + c.check.length + ".",
+      "LATE: " + lateList.length + (lateList.length === 1 ? " purchase" : " purchases") + " past the " + RECEIPT_DUE_DAYS + "-day receipt deadline" + (lateList.length ? ", " + money(sumOf(lateList)) + ", oldest " + shortDate(lateList.reduce((a, x) => x.date < a ? x.date : a, lateList[0].date)) : "") + ". Due in the next 2 days: " + soonList.length + ".", "",
       "FLAGS"];
     const buys = c.missing.filter(x => !isStatement(x)).sort((a, b) => b.amount - a.amount);
     const bills = c.missing.filter(isStatement).sort((a, b) => b.amount - a.amount);
@@ -3475,7 +3699,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       return [x.date, x.name || x.memo || "", x.payment ? x.type : whatFor(x), x.payment ? "" : placeOf(x.split) || "Not set", x.amount,
         x.payment ? "" : b.who || (b.card ? b.kind + " " + b.card : x.account), x.payment ? "" : "not recorded",
         x.payment ? "Payment or transfer" : receiptWord(x), x.account, x.type, x.memo || "", x.split || "",
-        r ? [rx.vendor || senderName(r), localDay(rx.date || r.emailDate) || "", amountOf(r).label].join(", ") : f ? [f.card, f.vendor || f.name].filter(Boolean).join(", ") : "",
+        r ? [vendorOf(r), localDay(rx.date || r.emailDate) || "", amountOf(r).label].join(", ") : f ? [f.card, f.vendor || f.name].filter(Boolean).join(", ") : "",
         r ? r.viewUrl || "" : f ? f.url || "" : ""];
     };
     const flagOf = x => chargeState(x) === "check" ? "Amount to check" : isStatement(x) ? "No receipt found (bill, loan, tax or payroll)" : "No receipt found (purchase)";
@@ -3484,11 +3708,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const sheet = (rows, widths) => { const ws = X.utils.aoa_to_sheet(rows); ws["!cols"] = widths.map(w => ({ wch: w })); return ws; };
     const W = [11, 30, 24, 22, 12, 22, 13, 11, 26, 18, 40, 40, 34, 40];
     const wb = X.utils.book_new();
-    X.utils.book_append_sheet(wb, sheet([["Flag"].concat(head)].concat(flags.map(x => [flagOf(x)].concat(line(x)))), [34].concat(W)), "Flags");
+    const dueCell = x => { const d = dueInfo(x); return d ? dueText(d) : ""; };
+    X.utils.book_append_sheet(wb, sheet([["Flag", "Due"].concat(head)].concat(flags.map(x => [flagOf(x), dueCell(x)].concat(line(x)))), [34, 14].concat(W)), "Flags");
     X.utils.book_append_sheet(wb, sheet([head].concat(all.map(line)), W), "Every charge");
     X.utils.book_append_sheet(wb, sheet([["Date", "Vendor", "Amount", "Source", "Status", "Email link"]].concat(c.nocharge.map(r => {
       const rx = r.extracted || {};
-      return [localDay(rx.date || r.emailDate) || "", rx.vendor || senderName(r), amountOf(r).value, SOURCE_LABEL[r.source] || "Other", STATUS_LABEL[r.status || "new"], r.viewUrl || ""];
+      return [localDay(rx.date || r.emailDate) || "", vendorOf(r), amountOf(r).value, SOURCE_LABEL[r.source] || "Other", STATUS_LABEL[r.status || "new"], r.viewUrl || ""];
     })), [11, 30, 12, 16, 12, 40]), "Receipt no charge");
     const out = X.write(wb, { bookType: "xlsx", type: "array" });
     const name = "Expense report " + from + (to && to !== from ? " to " + to : "") + (state.cCard ? " " + cardLabel(state.cCard).replace(/[^A-Za-z0-9 &()-]+/g, " ").replace(/\s+/g, " ").trim() : "") + ".xlsx";
