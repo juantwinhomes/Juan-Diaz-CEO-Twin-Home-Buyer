@@ -62,6 +62,12 @@ clear**, counts purchases with No property, No approver, Unknown buyer and Perso
 opens with FLAG COUNTS and lists each flag with who to ask and by when; Every charge shows the
 filled-in buyer and approver. Excel's Flags tab lists every flag with Ask and By.
 
+**Layout fix (v43).** The Card charges panel scrolls as one piece, with the column headings pinned,
+so nothing that opens in the header can get stuck out of reach. Card holders open in their own
+window (Card holders button beside the file line): one row per card with its account, charge count
+and a holder box, scrolling on its own. Status tiles are slimmer and the four flags sit in one thin
+row. A flagged row says "Ask Christine" while its card has no holder.
+
 **Darlyn's tracker columns (v42).** Save to Sheet also fills the **Daily Expense Tracker** tab of
 the Receipt Agent Data sheet in her columns, A to P in her order (Date, Receipt, Payee, Amount,
 What is this for?, Who paid?, Status, Category, Sub Category, Expense Type, Property, two blank,
