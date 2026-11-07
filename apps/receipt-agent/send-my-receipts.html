@@ -133,7 +133,7 @@ h1 { font-size: 1.7rem; line-height: 1.1; }
 
   <section class="panel" id="intro">
     <div class="steps">
-      <div class="step"><span class="n">Step 1</span><b>Find</b><span>Pick the dates, usually from Oct 1 to today, and click Find my receipts. The first time, allow Gmail for this page when asked.</span></div>
+      <div class="step"><span class="n">Step 1</span><b>Find</b><span>Pick the dates and click Find my receipts. It searches this month and the two before it (Sep 1 onward in November). The first time, allow Gmail for this page when asked.</span></div>
       <div class="step"><span class="n">Step 2</span><b>Check the list</b><span>Every email that looks like a receipt or invoice is ticked. Untick anything personal or unrelated to the company.</span></div>
       <div class="step"><span class="n">Step 3</span><b>Send</b><span>Click Send. Each email is forwarded from your account to receipts@, with its PDF. Emails you sent before are marked so they don't go twice.</span></div>
     </div>
@@ -166,7 +166,8 @@ h1 { font-size: 1.7rem; line-height: 1.1; }
   const TO = "receipts@twinhomebuyer.com";
   const DOMAIN = "@twinhomebuyer.com";
   const MARK = "Sent with Send My Receipts";
-  const START = "2026-10-01";
+  // Only this month and the two months before it: Sep 1 onward in November, Oct 1 onward in December.
+  const START = (() => { const d = new Date(); const m = new Date(d.getFullYear(), d.getMonth() - 2, 1); return m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0") + "-01"; })();
   const FATAL = new Set(["server_not_connected", "needs_reauth", "not_in_manifest", "approval_required", "consent_required", "selection_required", "blocked_by_policy", "not_granted", "capability_disabled", "capability_removed"]);
   const QUERY = '(subject:(receipt OR invoice OR "payment received" OR "payment confirmation" OR "order confirmation" OR "thanks for your payment" OR "payment successful") OR from:(receipts OR billing OR invoice OR invoices))' +
     " -from:twinhomebuyer.com -from:anthropic.com -from:claude.com -from:claude.ai -in:sent -in:chats -in:spam -in:trash -subject:(quote OR estimate OR proposal)";
@@ -245,7 +246,7 @@ h1 { font-size: 1.7rem; line-height: 1.1; }
 
   async function find() {
     if (state.busy) return;
-    const from = $("from").value || START, to = $("to").value || today();
+    const from = ($("from").value || START) < START ? START : ($("from").value || START), to = $("to").value || today();
     if (from > to) { banner("The From date is after the To date. Swap them and try again.", true); return; }
     if (!state.mcp) { banner("Open this page in claude.ai, with Gmail connected to your Claude, to search your inbox.", true); return; }
     state.busy = true; banner(""); $("find").disabled = true; $("confirm").hidden = true;
@@ -390,6 +391,7 @@ h1 { font-size: 1.7rem; line-height: 1.1; }
   $("from").value = START;
   $("to").value = today();
   $("from").max = $("to").max = today();
+  $("from").min = $("to").min = START;
   $("find").onclick = find;
   $("send").onclick = askSend;
   $("confirmYes").onclick = send;

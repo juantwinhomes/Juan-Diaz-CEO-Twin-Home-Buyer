@@ -45,6 +45,11 @@ Good) and **Not this charge** (unlinks it; the charge goes back to No receipt fo
 are saved on the receipt as `chargeOk` / `chargeNo`, matching honors them, and a rescan keeps
 them. The Card charges view has the same Confirm / Not it on possible email matches.
 
+**Date window (v38).** Everything gathered stays within this month and the two months before it
+(Sep 1 onward in November, Oct 1 onward in December): card report uploads, For review uploads, card
+charges saved earlier, receipts in the queue and in matching, inbox scans, and the Send My Receipts
+search (its From date can't go earlier). The Card charges view says which date it keeps from.
+
 **Charges not posted yet (v35).** The card report only has posted charges. Charges still waiting in
 QuickBooks Bank transactions come in from the **For review** export: Banking, pick the card, For
 review tab, Export (one CSV per card, at most 1,000 rows each). Upload card report takes those CSVs,

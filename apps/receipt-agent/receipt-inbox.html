@@ -355,7 +355,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v37</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v38</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -640,7 +640,14 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const d = new Date(ms);
     return d.getFullYear() + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + String(d.getDate()).padStart(2, "0");
   }
-  const gmailAfter = days => gmailDay(Date.now() - days * 86400000);
+  const gmailAfter = days => gmailDay(Math.max(Date.now() - days * 86400000, Date.parse(windowStart() + "T00:00:00")));
+  // Only this month and the two months before it are gathered and shown: Sep 1 onward in November, Oct 1 onward in December.
+  function windowStart() {
+    const d = new Date();
+    const m = new Date(d.getFullYear(), d.getMonth() - 2, 1);
+    return m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0") + "-01";
+  }
+  const inWindow = day => !day || day >= windowStart();
   function isoOf(v) {
     const d = new Date(v || "");
     return isNaN(d) ? "" : d.toISOString();
@@ -689,7 +696,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   function allRows() {
     const m = new Map(state.docs);
     for (const [k, v] of state.temp) m.set(k, v);
-    return [...m.values()].sort((a, b) => {
+    return [...m.values()].filter(r => inWindow(localDay((r.extracted && r.extracted.date) || r.emailDate))).sort((a, b) => {
       const da = (a.extracted && a.extracted.date) || a.emailDate || "";
       const dbb = (b.extracted && b.extracted.date) || b.emailDate || "";
       return String(dbb).localeCompare(String(da));
@@ -2499,8 +2506,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     let n = 0, old = 0;
     for (const [account, fs] of byAcct) {
       const id = "pending-" + slug(account);
-      const newest = fs.flatMap(f => f.rows.map(r => r.date)).sort().pop();
-      const cutoff = new Date(Date.UTC(+newest.slice(0, 4), +newest.slice(5, 7) - 1, +newest.slice(8, 10)) - 92 * 86400000).toISOString().slice(0, 10);
+      const cutoff = windowStart();
       const prev = state.cards.get(id) || {};
       const seen = new Map(), rows = [];
       for (const f of fs) for (const r of f.rows) {
@@ -2519,7 +2525,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       catch (e) { banner(dbMessage(e), true); return; }
     }
     state.feeds = null;
-    setStatus("Loaded " + n + " charges that aren't in QuickBooks yet, from " + [...byAcct.keys()].join(", ") + "." + (old ? " Skipped " + old + " older than 3 months." : "") + " Each new upload for a card replaces its list.");
+    setStatus("Loaded " + n + " charges that aren't in QuickBooks yet, from " + [...byAcct.keys()].join(", ") + "." + (old ? " Skipped " + old + " before " + shortDate(windowStart()) + "." : "") + " Each new upload for a card replaces its list.");
     render();
   }
   function feedPanel() {
@@ -2585,9 +2591,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       setStatus("");
       return;
     }
-    // Only recent charges matter: keep the 92 days up to the newest charge in the file.
-    const newest = rows.reduce((m, r) => (r.date > m ? r.date : m), "");
-    const cutoff = newest ? new Date(Date.UTC(+newest.slice(0, 4), +newest.slice(5, 7) - 1, +newest.slice(8, 10)) - 92 * 86400000).toISOString().slice(0, 10) : "";
+    // Only this month and the two before it.
+    const cutoff = windowStart();
     const older = rows.filter(r => r.date < cutoff).length;
     rows = rows.filter(r => r.date >= cutoff);
     const unnamed = rows.some(r => r.unnamed);
@@ -2643,7 +2648,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     state.view = "cards";
     state.filed = null;
     state.cRangeSet = false;
-    setStatus("Loaded " + saved + " card " + (saved === 1 ? "line" : "lines") + " from " + file.name + "." + (older ? " Skipped " + older + " older than 3 months." : ""));
+    setStatus("Loaded " + saved + " card " + (saved === 1 ? "line" : "lines") + " from " + file.name + "." + (older ? " Skipped " + older + " before " + shortDate(cutoff) + "." : ""));
     render();
   }
 
@@ -3091,7 +3096,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const pend = [];
     for (const [id, d] of state.cards) {
       const marks = d.marks || {};
-      for (const r of (d.rows || [])) (d.pending ? pend : charges).push(Object.assign({}, r, { cardId: id, account: r.account || d.account, marked: marks[r.k] || "", pending: !!d.pending }));
+      for (const r of (d.rows || [])) if (inWindow(r.date)) (d.pending ? pend : charges).push(Object.assign({}, r, { cardId: id, account: r.account || d.account, marked: marks[r.k] || "", pending: !!d.pending }));
     }
     // A charge still For review when its list was exported may be posted by the next card report: same card, amount and bank text within 3 days counts once.
     const posted = new Map();
@@ -3654,13 +3659,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     renderHolders();
     const files = [...state.cards.values()].filter(d => !d.pending).sort((a, b) => String(a.account).localeCompare(String(b.account)));
     const pendDocs = [...state.cards.values()].filter(d => d.pending);
-    const pendN = model.charges.filter(c => c.pending).length;
+    const pendN = model.charges.filter(c => c.pending && !c.payment).length;
     const pendNote = pendDocs.length ? "Not in QuickBooks yet: " + pendN + " charges from " + pendDocs.map(d => d.account).join(", ") + " (For review, uploaded " + shortDate(pendDocs.map(d => d.uploadedAt).sort().pop()) + ")" : "";
     const loaded = files.length > 4
       ? "Card report: " + files.length + " accounts, " + shortDate(files.map(d => d.from).sort()[0]) + " to " + shortDate(files.map(d => d.to).sort().pop()) + ", uploaded " + shortDate(files.map(d => d.uploadedAt).sort().pop())
       : files.length ? "Card report: " + files.map(d => d.account + " (" + shortDate(d.from) + " to " + shortDate(d.to) + ")").join(" · ") : "";
     if (state.filed === null && !filedLoading && mcp && model.charges.length) setTimeout(() => loadFiled(false), 0);
-    $("cFiles").textContent = [loaded, pendNote, state.filedNote].filter(Boolean).join("  ·  ");
+    $("cFiles").textContent = [loaded, pendNote, state.filedNote, "Dates kept: " + shortDate(windowStart()) + " onward (this month and the 2 before)"].filter(Boolean).join("  ·  ");
     const box = $("cList");
     box.textContent = "";
     if (state.feeds) box.append(feedPanel());
