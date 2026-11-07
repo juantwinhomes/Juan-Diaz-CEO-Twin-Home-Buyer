@@ -7,6 +7,12 @@ under accounting@. Seth never touches QuickBooks.
 
 ## Receipt Inbox page (current direction)
 
+**Guide for the team:** https://claude.ai/artifact/RELEQGGfhPZGSCWP7xZQRK (source in `guide/`). It walks
+through the daily routine as an animated step-by-step, labels every button on both screens with
+numbered markers, and covers where data comes from, where it goes, and the rules. Its screenshots
+come from `guide/shots.js`, which runs the real page on made-up example data; rerun it and rebuild
+from `guide/template.html` when the page changes.
+
 Live page: https://claude.ai/artifact/T5JzERnp9mbpL4jMtaxDq3 (source: `receipt-inbox.html`).
 Kristine opens it; it reads accounting@ through her own Gmail connection, uses Claude to fill
 in vendor, date, amount, order number and location, and lists every receipt with a checkbox

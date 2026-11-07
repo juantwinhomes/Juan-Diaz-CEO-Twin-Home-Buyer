@@ -1,0 +1,857 @@
+<title>Receipt Inbox Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: an operations manual for the receipt desk. A sticky section bar, then one column of sections; the walkthrough player is the one animated centerpiece, the screen tours use numbered pins on real screenshots. Same type family as the Receipt Inbox itself. */
+:root {
+  --bg: #eef2f6;
+  --surface: #ffffff;
+  --sunk: #f4f7fa;
+  --ink: #15202c;
+  --muted: #586577;
+  --line: #d4dbe4;
+  --accent: #1f4e9c;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2eaf7;
+  --ok: #1b7349; --ok-soft: #e1f1e8;
+  --warn: #965703; --warn-soft: #faeed9;
+  --bad: #ad2a22; --bad-soft: #fae4e2;
+  --pin: #ffb020; --pin-ink: #1a1203;
+  --shot-bg: #0e141b;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1016; --surface: #131a23; --sunk: #0f151d; --ink: #e4e9ef; --muted: #98a3b1; --line: #253040;
+    --accent: #8fb0ef; --accent-ink: #0b1016; --accent-soft: #1a2741;
+    --ok: #6fd1a0; --ok-soft: #12301f; --warn: #f0b45a; --warn-soft: #362710; --bad: #f28b82; --bad-soft: #3a1917;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1016; --surface: #131a23; --sunk: #0f151d; --ink: #e4e9ef; --muted: #98a3b1; --line: #253040;
+  --accent: #8fb0ef; --accent-ink: #0b1016; --accent-soft: #1a2741;
+  --ok: #6fd1a0; --ok-soft: #12301f; --warn: #f0b45a; --warn-soft: #362710; --bad: #f28b82; --bad-soft: #3a1917;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 1160px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; line-height: 1.12; }
+h2 { font-size: clamp(1.5rem, 2.6vw, 2rem); }
+h3 { font-size: 1.12rem; }
+p { margin: 0; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button { font: inherit; color: inherit; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+/* Section bar */
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; }
+.nav b { font-family: var(--display); font-size: 1.05rem; white-space: nowrap; }
+.navlinks { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
+.navlinks::-webkit-scrollbar { display: none; }
+.navlinks a { text-decoration: none; color: var(--muted); font-size: 0.85rem; font-weight: 500; padding: 5px 10px; border-radius: 7px; white-space: nowrap; }
+.navlinks a:hover, .navlinks a.on { background: var(--accent-soft); color: var(--accent); }
+
+section { padding-block: 44px 8px; scroll-margin-top: 70px; }
+.sec-head { display: grid; gap: 8px; margin-bottom: 22px; max-width: 72ch; }
+.sec-head p { color: var(--muted); }
+
+/* Hero */
+.hero { padding-block: 40px 10px; display: grid; gap: 22px; }
+.hero h1 { font-size: clamp(2.1rem, 5vw, 3.4rem); letter-spacing: -0.01em; }
+.hero .lede { font-size: 1.08rem; max-width: 64ch; color: var(--muted); }
+.hero .lede b { color: var(--ink); font-weight: 600; }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; padding: 9px 15px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:hover { border-color: var(--accent); }
+.note { font-size: 0.82rem; color: var(--muted); }
+
+/* Flow diagram */
+.flow { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; overflow-x: auto; }
+.flow svg { display: block; width: 100%; min-width: 700px; height: auto; }
+.flow .box { fill: var(--sunk); stroke: var(--line); }
+.flow .core { fill: var(--accent-soft); stroke: var(--accent); }
+.flow .t { fill: var(--ink); font-family: var(--body); font-size: 13px; font-weight: 600; }
+.flow .s { fill: var(--muted); font-family: var(--body); font-size: 11px; }
+.flow .h { fill: var(--accent); font-family: var(--display); font-size: 18px; font-weight: 700; }
+.flow .lab { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; }
+.flow path.wire { fill: none; stroke: var(--line); stroke-width: 2; }
+.flow .dot { fill: var(--accent); }
+.flow .dot.ok { fill: var(--ok); }
+
+/* Walkthrough player */
+.player { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 18px; align-items: start; }
+.stage-wrap { background: var(--shot-bg); border-radius: 14px; padding: 8px; box-shadow: 0 18px 40px rgba(10, 20, 35, 0.18); }
+.stage { position: relative; aspect-ratio: 16 / 10; border-radius: 8px; overflow: hidden; background: var(--shot-bg); }
+.stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity 0.45s ease; }
+.ring { position: absolute; border: 3px solid var(--pin); border-radius: 8px; box-shadow: 0 0 0 4000px rgba(5, 9, 14, 0.38); transition: left 0.85s cubic-bezier(.5,.1,.2,1), top 0.85s cubic-bezier(.5,.1,.2,1), width 0.85s cubic-bezier(.5,.1,.2,1), height 0.85s cubic-bezier(.5,.1,.2,1); pointer-events: none; }
+.ring::after { content: ""; position: absolute; inset: -9px; border: 2px solid var(--pin); border-radius: 12px; opacity: 0; animation: halo 1.6s ease-out infinite; }
+@keyframes halo { 0% { opacity: 0.9; transform: scale(0.96); } 100% { opacity: 0; transform: scale(1.08); } }
+.cursor { position: absolute; width: 30px; height: 36px; margin-left: -4px; margin-top: -3px; transition: left 0.95s cubic-bezier(.45,.05,.2,1), top 0.95s cubic-bezier(.45,.05,.2,1); pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.5)); z-index: 3; }
+.cursor svg { width: 100%; height: 100%; }
+.ripple { position: absolute; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; border: 3px solid var(--pin); opacity: 0; pointer-events: none; z-index: 2; }
+.ripple.go { animation: ripple 0.7s ease-out; }
+@keyframes ripple { 0% { opacity: 1; transform: scale(0.3); } 100% { opacity: 0; transform: scale(1.6); } }
+.caption { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 12px; }
+.caption .count { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); letter-spacing: 0.06em; }
+.caption h3 { font-size: 1.35rem; }
+.caption .where { display: inline-flex; width: fit-content; font-size: 0.75rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.caption p.text { min-height: 6.2em; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.controls .btn { padding: 7px 12px; }
+.bar { height: 4px; background: var(--sunk); border-radius: 4px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.4s ease; }
+.dots { display: flex; flex-wrap: wrap; gap: 5px; }
+.dots button { width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line); background: var(--sunk); font-family: var(--mono); font-size: 0.72rem; cursor: pointer; color: var(--muted); }
+.dots button[aria-current="step"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+/* Annotated screenshots */
+.tour { display: grid; gap: 14px; }
+.tour-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.frame { position: relative; background: var(--shot-bg); border-radius: 12px; padding: 6px; }
+.frame .inner { position: relative; border-radius: 7px; overflow: hidden; aspect-ratio: 16 / 10; }
+.frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mark { position: absolute; border: 2px solid transparent; border-radius: 6px; cursor: pointer; padding: 0; background: transparent; transition: border-color 0.2s, background 0.2s; }
+.mark .num { position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; border-radius: 50%; background: var(--pin); color: var(--pin-ink); font: 600 11px/22px var(--mono); text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.45); }
+.mark.on { border-color: var(--pin); background: rgba(255, 176, 32, 0.14); }
+.mark.on .num { animation: bump 0.5s ease; }
+@keyframes bump { 50% { transform: scale(1.35); } }
+.pointer { position: absolute; width: 64px; height: 64px; pointer-events: none; transition: left 0.75s cubic-bezier(.45,.05,.2,1), top 0.75s cubic-bezier(.45,.05,.2,1), opacity 0.3s; opacity: 0; z-index: 4; }
+.pointer.show { opacity: 1; }
+.pointer svg { width: 100%; height: 100%; animation: nudge 1.1s ease-in-out infinite; }
+@keyframes nudge { 50% { transform: translate(-5px, -5px); } }
+.keys { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+.keys li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.keys li:hover, .keys li.on { border-color: var(--pin); background: var(--warn-soft); }
+.keys .n { width: 24px; height: 24px; border-radius: 50%; background: var(--pin); color: var(--pin-ink); font: 600 11px/24px var(--mono); text-align: center; }
+.keys b { display: block; font-size: 0.92rem; }
+.keys span { font-size: 0.84rem; color: var(--muted); }
+
+/* Cards and grids */
+.grid { display: grid; gap: 12px; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card h3 { display: flex; gap: 8px; align-items: baseline; }
+.card p, .card li { font-size: 0.9rem; }
+.card ol, .card ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 0.72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--sunk); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.chip.who { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.chip.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.chip.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.chip.bad { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+
+/* Export paths: each click lights up in turn */
+.path { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.8rem; }
+.path span { padding: 3px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--sunk); animation: step 6s infinite; }
+.path i { color: var(--muted); font-style: normal; }
+@keyframes step { 0%, 100% { background: var(--sunk); border-color: var(--line); color: var(--ink); } 8%, 22% { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); } 30% { background: var(--sunk); border-color: var(--line); color: var(--ink); } }
+
+/* When to do what */
+.when { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.when .card { border-top: 4px solid var(--accent); }
+.when .card.daily { border-top-color: var(--bad); }
+.when .card.weekly { border-top-color: var(--warn); }
+.when .card.once { border-top-color: var(--ok); }
+
+/* Deadline ruler */
+.ruler { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 18px 8px; overflow-x: auto; }
+.ruler .track { position: relative; height: 56px; min-width: 560px; }
+.ruler .band { position: absolute; top: 18px; height: 12px; border-radius: 6px; }
+.ruler .tick { position: absolute; top: 0; font-size: 0.72rem; color: var(--muted); transform: translateX(-50%); white-space: nowrap; }
+.ruler .lbl { position: absolute; top: 36px; font-size: 0.78rem; font-weight: 600; transform: translateX(-50%); white-space: nowrap; }
+.ruler .runner { position: absolute; top: 14px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--surface); border: 3px solid var(--ink); animation: run 7s linear infinite; }
+@keyframes run { 0% { left: 2%; } 80% { left: 96%; } 100% { left: 96%; } }
+
+pre.report { margin: 0; background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 14px; font-family: var(--mono); font-size: 0.76rem; line-height: 1.5; overflow-x: auto; white-space: pre; }
+details.faq { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+details.faq summary { cursor: pointer; font-weight: 600; }
+details.faq p { margin-top: 8px; color: var(--muted); font-size: 0.92rem; }
+.rules dt { font-weight: 600; }
+.rules dd { margin: 2px 0 12px; color: var(--muted); font-size: 0.92rem; }
+footer { padding-block: 40px 60px; color: var(--muted); font-size: 0.82rem; }
+
+@media (max-width: 960px) {
+  .player { grid-template-columns: minmax(0, 1fr); }
+  .caption p.text { min-height: 0; }
+}
+@media (max-width: 560px) {
+  .nav b { display: none; }
+  .mark .num { width: 18px; height: 18px; line-height: 18px; font-size: 9px; left: -8px; top: -8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<nav class="nav" aria-label="Sections">
+  <div class="wrap">
+    <b>Receipt Inbox Guide</b>
+    <div class="navlinks">
+      <a href="#how">How it works</a>
+      <a href="#daily">Daily routine</a>
+      <a href="#when">When</a>
+      <a href="#receipts">Receipts screen</a>
+      <a href="#cards">Card charges screen</a>
+      <a href="#panels">Panels</a>
+      <a href="#inputs">Where data comes from</a>
+      <a href="#outputs">Where it goes</a>
+      <a href="#rules">Rules</a>
+      <a href="#faq">Questions</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="hero" id="how">
+    <span class="eyebrow">Twin Home Buyer · Receipt agent</span>
+    <h1>Every card charge, matched to its receipt</h1>
+    <p class="lede">The Receipt Inbox takes <b>every card charge from QuickBooks</b> and <b>every receipt that reaches us</b>, matches them up, and flags what is missing. Darlyn clears the flags and sends Juan the 5:00 PM report. Nobody checks charges by hand, and nothing is ever posted in QuickBooks from here.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://claude.ai/artifact/T5JzERnp9mbpL4jMtaxDq3" target="_blank" rel="noopener">Open the Receipt Inbox ↗</a>
+      <a class="btn" href="#daily">Watch the daily routine</a>
+      <span class="note">Screenshots on this page use made-up example charges and receipts.</span>
+    </div>
+    <div class="flow" role="img" aria-label="Card charges and receipts flow into the Receipt Inbox, which produces flags, the daily report, Darlyn's sheet and filed receipts in Drive.">
+      <svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
+        <text class="lab" x="20" y="22">WHAT COMES IN</text>
+        <text class="lab" x="390" y="22">THE PAGE</text>
+        <text class="lab" x="726" y="22">WHAT COMES OUT</text>
+        <g>
+          <rect class="box" x="20" y="38" width="250" height="52" rx="10"/><text class="t" x="36" y="60">QuickBooks card report</text><text class="s" x="36" y="78">Every posted charge, every card and account</text>
+          <rect class="box" x="20" y="100" width="250" height="52" rx="10"/><text class="t" x="36" y="122">Bank "For review" files</text><text class="s" x="36" y="140">Charges not posted in QuickBooks yet</text>
+          <rect class="box" x="20" y="162" width="250" height="52" rx="10"/><text class="t" x="36" y="184">Email receipts</text><text class="s" x="36" y="202">accounting@, receipts@, vendors, crew photos</text>
+          <rect class="box" x="20" y="224" width="250" height="52" rx="10"/><text class="t" x="36" y="246">Home Depot Pro Xtra</text><text class="s" x="36" y="264">Purchases with no email receipt</text>
+          <rect class="box" x="20" y="286" width="250" height="52" rx="10"/><text class="t" x="36" y="308">Company Receipts in Drive</text><text class="s" x="36" y="326">Receipts already filed by card and month</text>
+        </g>
+        <rect class="core" x="370" y="118" width="230" height="150" rx="16" stroke-width="2"/>
+        <text class="h" x="392" y="152">Receipt Inbox</text>
+        <text class="s" x="392" y="176">Matches each charge to a receipt:</text>
+        <text class="s" x="392" y="194">same amount, nearby date,</text>
+        <text class="s" x="392" y="212">same vendor and card.</text>
+        <text class="s" x="392" y="236">Flags what is missing, with</text>
+        <text class="s" x="392" y="254">who to ask and by when.</text>
+        <g>
+          <rect class="box" x="700" y="62" width="240" height="52" rx="10"/><text class="t" x="716" y="84">Flags to clear</text><text class="s" x="716" y="102">No receipt, approver, buyer, property</text>
+          <rect class="box" x="700" y="132" width="240" height="52" rx="10"/><text class="t" x="716" y="154">5:00 PM report to Juan</text><text class="s" x="716" y="172">Copy report for Juan, paste, send</text>
+          <rect class="box" x="700" y="202" width="240" height="52" rx="10"/><text class="t" x="716" y="224">Darlyn's tracker sheet</text><text class="s" x="716" y="242">Save to Sheet, her columns A to P</text>
+          <rect class="box" x="700" y="272" width="240" height="52" rx="10"/><text class="t" x="716" y="294">Receipts filed in Drive</text><text class="s" x="716" y="312">Upload: Company Receipts › card › month</text>
+        </g>
+        <path id="w1" class="wire" d="M270 64 C 330 64, 320 160, 370 168"/>
+        <path id="w2" class="wire" d="M270 126 C 330 126, 320 178, 370 182"/>
+        <path id="w3" class="wire" d="M270 188 C 320 188, 330 194, 370 194"/>
+        <path id="w4" class="wire" d="M270 250 C 330 250, 320 208, 370 206"/>
+        <path id="w5" class="wire" d="M270 312 C 330 312, 320 222, 370 220"/>
+        <path id="o1" class="wire" d="M600 168 C 650 168, 650 88, 700 88"/>
+        <path id="o2" class="wire" d="M600 186 C 650 186, 650 158, 700 158"/>
+        <path id="o3" class="wire" d="M600 204 C 650 204, 650 228, 700 228"/>
+        <path id="o4" class="wire" d="M600 222 C 650 222, 650 298, 700 298"/>
+        <g class="dots-in">
+          <circle class="dot" r="5"><animateMotion dur="3.2s" repeatCount="indefinite" begin="0s"><mpath href="#w1"/></animateMotion></circle>
+          <circle class="dot" r="5"><animateMotion dur="3.2s" repeatCount="indefinite" begin="0.6s"><mpath href="#w2"/></animateMotion></circle>
+          <circle class="dot" r="5"><animateMotion dur="3.2s" repeatCount="indefinite" begin="1.2s"><mpath href="#w3"/></animateMotion></circle>
+          <circle class="dot" r="5"><animateMotion dur="3.2s" repeatCount="indefinite" begin="1.8s"><mpath href="#w4"/></animateMotion></circle>
+          <circle class="dot" r="5"><animateMotion dur="3.2s" repeatCount="indefinite" begin="2.4s"><mpath href="#w5"/></animateMotion></circle>
+          <circle class="dot ok" r="5"><animateMotion dur="2.6s" repeatCount="indefinite" begin="0.3s"><mpath href="#o1"/></animateMotion></circle>
+          <circle class="dot ok" r="5"><animateMotion dur="2.6s" repeatCount="indefinite" begin="0.9s"><mpath href="#o2"/></animateMotion></circle>
+          <circle class="dot ok" r="5"><animateMotion dur="2.6s" repeatCount="indefinite" begin="1.5s"><mpath href="#o3"/></animateMotion></circle>
+          <circle class="dot ok" r="5"><animateMotion dur="2.6s" repeatCount="indefinite" begin="2.1s"><mpath href="#o4"/></animateMotion></circle>
+        </g>
+        <text class="s" x="20" y="374">QuickBooks is only read, never changed. Christine still posts everything under her own login.</text>
+      </svg>
+    </div>
+  </header>
+
+  <section id="daily">
+    <div class="sec-head">
+      <span class="eyebrow">Every day, before 5:00 PM</span>
+      <h2>The daily routine, step by step</h2>
+      <p>Press Play and the walkthrough clicks through the routine on the real page. Use Back and Next, or the numbers, to go at your own pace. The yellow box shows where to click.</p>
+    </div>
+    <div class="player" id="player">
+      <div class="stage-wrap">
+        <div class="stage" id="stage">
+          <img id="imgA" alt="">
+          <img id="imgB" alt="" style="opacity:0">
+          <div class="ring" id="ring"></div>
+          <span class="ripple" id="ripple"></span>
+          <div class="cursor" id="cursor" aria-hidden="true"><svg viewBox="0 0 30 36"><path d="M3 2 L3 28 L10 21.5 L15 33 L20 30.8 L15 19.6 L24.5 19.6 Z" fill="#ffffff" stroke="#111827" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        </div>
+      </div>
+      <div class="caption" aria-live="polite">
+        <span class="count" id="pCount"></span>
+        <span class="where" id="pWhere"></span>
+        <h3 id="pTitle"></h3>
+        <p class="text" id="pText"></p>
+        <div class="bar"><i id="pBar"></i></div>
+        <div class="controls">
+          <button class="btn" type="button" id="pBack">Back</button>
+          <button class="btn primary" type="button" id="pPlay">Play</button>
+          <button class="btn" type="button" id="pNext">Next</button>
+        </div>
+        <div class="dots" id="pDots" role="group" aria-label="Steps"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="when">
+    <div class="sec-head">
+      <span class="eyebrow">Who does what</span>
+      <h2>When to use it</h2>
+      <p>Most of the work is the daily routine. Two exports happen once a week, and a few things are set up once.</p>
+    </div>
+    <div class="when">
+      <div class="card daily">
+        <h3>Every day, by 5:00 PM</h3>
+        <div class="meta"><span class="chip who">Darlyn</span></div>
+        <ul>
+          <li>Scan inbox</li>
+          <li>Mark matched receipts Good, confirm possible matches, clear the junk</li>
+          <li>Chase "No receipt found": ask, then Upload when it arrives</li>
+          <li>Clear flags: approver, buyer, property, personal</li>
+          <li>Copy report for Juan, send it; Save to Sheet</li>
+        </ul>
+      </div>
+      <div class="card weekly">
+        <h3>Every Monday morning</h3>
+        <div class="meta"><span class="chip who">Darlyn or Christine</span></div>
+        <ul>
+          <li>QuickBooks "For review" export for each card (the P files)</li>
+          <li>Home Depot Pro Xtra purchase history, last 30 days</li>
+          <li>Upload both with Upload card report</li>
+        </ul>
+      </div>
+      <div class="card once">
+        <h3>Once, to set up</h3>
+        <div class="meta"><span class="chip who">Christine</span></div>
+        <ul>
+          <li>Card holders: who holds each card</li>
+          <li>Daily QuickBooks email of the card report (Excel attached, to accounting@)</li>
+          <li>Keep page sharing to Seth, Christine and Darlyn</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Whenever it happens</h3>
+        <div class="meta"><span class="chip who">Anyone</span></div>
+        <ul>
+          <li>A paper receipt turns up: Upload it on its charge</li>
+          <li>Crew buys something: email the photo to receipts@ with "Receipt $142.37 820 28th St" as the subject</li>
+          <li>Old receipts in a team inbox: Send My Receipts</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="receipts">
+    <div class="sec-head">
+      <span class="eyebrow">Screen 1 of 2</span>
+      <h2>The Receipts screen</h2>
+      <p>Everything that came in by email, one receipt at a time. Hover or tap a number to see where it is; press Play tour to have the arrow walk through every button.</p>
+    </div>
+    <div class="tour" data-tour="receipts"></div>
+  </section>
+
+  <section id="cards">
+    <div class="sec-head">
+      <span class="eyebrow">Screen 2 of 2</span>
+      <h2>The Card charges screen</h2>
+      <p>Every charge on every card, with its receipt status, its flags, and who to ask. This is where the 5:00 PM report comes from.</p>
+    </div>
+    <div class="tour" data-tour="cards"></div>
+  </section>
+
+  <section id="panels">
+    <div class="sec-head">
+      <span class="eyebrow">Panels that open on the page</span>
+      <h2>Filling in, approving, uploading</h2>
+      <p>These open in place when you click a button. Each one is shown with arrows on the parts you use.</p>
+    </div>
+    <div class="grid" style="gap:34px">
+      <div class="tour" data-tour="confirm"></div>
+      <div class="tour" data-tour="bulkreceipts"></div>
+      <div class="tour" data-tour="fillin"></div>
+      <div class="tour" data-tour="bulkfill"></div>
+      <div class="tour" data-tour="upload"></div>
+      <div class="tour" data-tour="holders"></div>
+      <div class="tour" data-tour="filed"></div>
+    </div>
+  </section>
+
+  <section id="inputs">
+    <div class="sec-head">
+      <span class="eyebrow">Inputs</span>
+      <h2>Where the data comes from</h2>
+      <p>Card charges come from QuickBooks. Receipts come from email, Drive and Home Depot. Every file goes in through the same button, Upload card report, and the page recognizes which kind it is.</p>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>QuickBooks card report</h3>
+        <div class="meta"><span class="chip who">Christine</span><span class="chip">Daily, by email once set up</span><span class="chip">.xlsx</span></div>
+        <p>The list of every charge on every card and bank account. Without it there is nothing to match.</p>
+        <div class="path"><span style="animation-delay:0s">Reports</span><i>›</i><span style="animation-delay:1.2s">Transaction Detail by Account</span><i>›</i><span style="animation-delay:2.4s">Dates</span><i>›</i><span style="animation-delay:3.6s">Export to Excel</span><i>›</i><span style="animation-delay:4.8s">Upload card report</span></div>
+        <p class="note">A new upload replaces the dates it covers, so uploading overlapping dates never doubles anything.</p>
+      </div>
+      <div class="card">
+        <h3>Bank "For review" files (the P files)</h3>
+        <div class="meta"><span class="chip who">Darlyn or Christine</span><span class="chip">Weekly</span><span class="chip">.csv, one per card</span></div>
+        <p>Charges the bank sent to QuickBooks that are not posted yet. Loading them lets receipts match days or weeks earlier.</p>
+        <div class="path"><span style="animation-delay:0s">Bank transactions</span><i>›</i><span style="animation-delay:1.2s">Pick the card</span><i>›</i><span style="animation-delay:2.4s">For review (Pending)</span><i>›</i><span style="animation-delay:3.6s">Export icon, next to Print</span><i>›</i><span style="animation-delay:4.8s">Upload card report</span></div>
+        <p class="note">Never click Add, Match, Categorize or Post on that screen: those change the books.</p>
+      </div>
+      <div class="card">
+        <h3>Home Depot Pro Xtra history</h3>
+        <div class="meta"><span class="chip who">Whoever owns the Pro Xtra login</span><span class="chip">Weekly</span><span class="chip">.csv</span></div>
+        <p>About 1 in 4 Home Depot purchases never sends an email receipt. Pro Xtra has all of them, with the job name and card.</p>
+        <div class="path"><span style="animation-delay:0s">Pro Xtra</span><i>›</i><span style="animation-delay:1.2s">Purchase Tracking</span><i>›</i><span style="animation-delay:2.4s">Last 30 days</span><i>›</i><span style="animation-delay:3.6s">Export</span><i>›</i><span style="animation-delay:4.8s">Upload card report</span></div>
+        <p class="note">It loads straight in. Do not turn on Pro Xtra's sync to QuickBooks.</p>
+      </div>
+      <div class="card">
+        <h3>Email receipts</h3>
+        <div class="meta"><span class="chip who">Automatic</span><span class="chip">Every Scan inbox</span></div>
+        <ul>
+          <li>accounting@ and the receipts@ copies</li>
+          <li>Home Depot, Amazon, Uber, Apple and every vendor on the card report</li>
+          <li>Juan's forwards and crew photos sent to receipts@</li>
+          <li>Old receipts from team inboxes, sent with Send My Receipts</li>
+        </ul>
+        <p class="note">Most emails are read for free. Photos and messy emails go to Claude with Fill with Claude.</p>
+      </div>
+      <div class="card">
+        <h3>Company Receipts in Drive</h3>
+        <div class="meta"><span class="chip who">Automatic</span><span class="chip">Check Company Receipts</span></div>
+        <p>Reads the card folders (AmEx Receipt, Home Depot Card *5253…) month by month and matches files by the amount in the file name, like <span class="mono">$852.41 - Home Depot.pdf</span>.</p>
+        <p class="note">Search all of Drive looks further, anywhere in Drive, for each missing receipt.</p>
+      </div>
+      <div class="tour" data-tour="feed"></div>
+    </div>
+  </section>
+
+  <section id="outputs">
+    <div class="sec-head">
+      <span class="eyebrow">Outputs</span>
+      <h2>Where things go</h2>
+      <p>The page writes to four places. It never writes to QuickBooks or to anyone's inbox.</p>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Company Receipts › card › month</h3>
+        <div class="meta"><span class="chip ok">Upload button</span></div>
+        <p>A receipt uploaded on a charge is saved in Google Drive, in that card's folder and month, named like <span class="mono">$1,646.00 - TAP Air Portugal.pdf</span>. The charge turns green right away.</p>
+      </div>
+      <div class="card">
+        <h3>Receipt Agent Data sheet</h3>
+        <div class="meta"><span class="chip ok">Save to Sheet</span></div>
+        <ul>
+          <li><b>Daily Expense Tracker</b>: Darlyn's columns A to P, ready to paste into her card tabs</li>
+          <li><b>Card match</b>: every charge with its receipt, buyer and approver</li>
+          <li><b>Receipts</b>: every receipt read</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>The 5:00 PM report</h3>
+        <div class="meta"><span class="chip ok">Copy report for Juan</span></div>
+        <p>Plain text for the email: totals, late receipts, flag counts, each flag with who to ask and by when, then every charge.</p>
+      </div>
+      <div class="card">
+        <h3>Excel file</h3>
+        <div class="meta"><span class="chip ok">Export to Excel</span></div>
+        <p>Three tabs for the dates and card shown: Flags, Every charge, Receipt no charge.</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>What the report looks like (example data)</h3>
+      <pre class="report">Expense report: charges posted in QuickBooks, Oct 20, 2026 to Nov 5, 2026. Pacific Time.
+18 charges, $14,018.80. Receipt found: 6. No receipt found: 11. Amount to check: 1.
+LATE: 2 purchases past the 7-day receipt deadline, $2,328.27, oldest Oct 20. Due in the next 2 days: 3.
+While a card has no holder set, Christine is the one to ask.
+FLAG COUNTS, purchases: No receipt 11. No property 1. No approver 17. Unknown buyer 3. Personal or unusual 1.
+
+FLAGS
+No receipt found, purchases: 11 ($6,606.34), largest first
+1. Oct 24, TAP Air Portugal, $1,646.00, Travel, Office, bought by Juan Diaz, approved by nobody yet, Amex - 2001, card 5004, 7 DAYS LATE. Ask Juan Diaz by Oct 31.
+2. Nov 2, BEC CFO, LLC, $1,300.00, Legal &amp; Professional Fees, Office, bought by Juan Diaz, approved by nobody yet, WELLS FARGO (8251), DUE IN 2 DAYS. Ask Juan Diaz by Nov 9.
+3. Nov 5, KZ Kitchen Cabinets, $802.69, Rehab Costs, 972 Norton St, bought by unknown, approved by nobody yet, Capital One CC, card 1175, DUE IN 5 DAYS. Ask Christine by Nov 12.
+4. Oct 20, Lyngso Materials, $682.27, Rehab Costs, 460 5th Ave, bought by Juan Diaz, approved by nobody yet, Amex - 2001, card 5004, 11 DAYS LATE. Ask Juan Diaz by Oct 27.
+...
+EVERY CHARGE
+Date | Charge | What it&#x27;s for | Property or office | Amount | Buyer | Approver | Receipt
+Oct 20 | Lyngso Materials | Rehab Costs | 460 5th Ave | $682.27 | Juan Diaz | none | NO
+Oct 24 | TAP Air Portugal | Travel | Office | $1,646.00 | Juan Diaz | none | NO
+Nov 1 | Jet Black Logistics | Rehab Costs | 22496 Avenue 18 3/4 | $2,273.25 | Juan Diaz | none | CHECK
+...</pre>
+    </div>
+  </section>
+
+  <section id="rules">
+    <div class="sec-head">
+      <span class="eyebrow">Rules</span>
+      <h2>The rules the page follows</h2>
+      <p>These are built in. If one needs to change, ask Seth; most are a single setting.</p>
+    </div>
+    <div class="ruler" aria-label="Receipt deadline: due 7 days after the charge">
+      <div class="track">
+        <div class="band" style="left:2%;width:62%;background:var(--ok-soft)"></div>
+        <div class="band" style="left:64%;width:16%;background:var(--warn-soft)"></div>
+        <div class="band" style="left:80%;width:18%;background:var(--bad-soft)"></div>
+        <span class="tick" style="left:2%">Day 0</span><span class="tick" style="left:64%">Day 5</span><span class="tick" style="left:80%">Day 7</span><span class="tick" style="left:96%">Day 8+</span>
+        <span class="lbl" style="left:16%;color:var(--ok)">Charge posts</span><span class="lbl" style="left:70%;color:var(--warn)">Due in 2 days</span><span class="lbl" style="left:80%;color:var(--warn)">Due today</span><span class="lbl" style="left:92%;color:var(--bad)">Late</span>
+        <span class="runner"></span>
+      </div>
+    </div>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="card">
+        <h3>Deadlines</h3>
+        <dl class="rules">
+          <dt>Receipt: 7 days after the charge</dt><dd>Then the charge counts as late, gets a red edge, and moves up in Most urgent first.</dd>
+          <dt>Review: 2 days after a receipt arrives</dt><dd>Receipts left in To review longer show "Received N days ago".</dd>
+          <dt>Dates kept: this month and the 2 before</dt><dd>Sep 1 onward in November, Oct 1 onward in December. Older data drops off.</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h3>How a match is made</h3>
+        <dl class="rules">
+          <dt>Email receipt</dt><dd>Same amount to the cent, receipt dated up to 10 days before the charge or 3 after, same vendor, and the same card when the receipt shows one.</dd>
+          <dt>Possible match</dt><dd>Same amount and dates, but the card shows another name (QuickBooks Payments, PayPal). It waits for Yes, this charge.</dd>
+          <dt>Drive file</dt><dd>The amount in the file name, in that card's folder, the same month.</dd>
+          <dt>Pro Xtra</dt><dd>A Home Depot charge with no receipt takes the Pro Xtra purchase with the same amount, bought 0 to 6 days before.</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h3>What gets flagged</h3>
+        <dl class="rules">
+          <dt>Purchases only</dt><dd>Card payments, transfers and refunds never need a receipt. Mortgage and interest, insurance, taxes, EMD wires, auto and equipment loans, payroll and bank fees are hidden: a statement covers them.</dd>
+          <dt>The five flags</dt><dd>No receipt, No property, No approver, Unknown buyer, Personal or unusual. Each one says who to ask and by when.</dd>
+          <dt>Who to ask</dt><dd>The card holder, or whoever is filled in as Bought by. Christine, while a card has no holder.</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h3>People rules</h3>
+        <dl class="rules">
+          <dt>No one uses anyone else's login or inbox</dt><dd>Each person runs the page and Send My Receipts on their own account.</dd>
+          <dt>QuickBooks is read, never changed</dt><dd>The page drafts and flags. Christine reviews and posts under her own login.</dd>
+          <dt>Card data stays with three people</dt><dd>Share the page and the sheet with Seth, Christine and Darlyn only.</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="sec-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Questions people ask</h2>
+    </div>
+    <div class="grid">
+      <details class="faq"><summary>If I upload a file that's already there, will it be duplicated?</summary><p>No. The card report, the P files and the Pro Xtra export each replace the dates they cover. A charge can only have one receipt, and the Upload button disappears once it has one. The one way to get a second copy is in Drive: uploading a receipt that is already filed under a name with no dollar amount.</p></details>
+      <details class="faq"><summary>What if the weekly exports don't get done?</summary><p>Nothing breaks. More charges stay flagged and get cleared by hand: ask the buyer, then Upload. The P files and Pro Xtra just let the page clear them by itself.</p></details>
+      <details class="faq"><summary>A receipt is already attached in QuickBooks. What do I do?</summary><p>Click Not needed on that charge. The page cannot see QuickBooks attachments.</p></details>
+      <details class="faq"><summary>Why does a charge say "Not in QuickBooks yet"?</summary><p>It came from a For review file: the bank sent it, Christine has not posted it. It counts like any charge, and once it posts it counts once.</p></details>
+      <details class="faq"><summary>Why do some Amazon charges never match?</summary><p>Amazon Business orders placed under Juan's account email his inbox, not accounting@. A Gmail filter in his inbox that forwards Amazon emails to receipts@ fixes it going forward.</p></details>
+      <details class="faq"><summary>The crew posts receipts in Google Chat. Does the page see them?</summary><p>No. Use Chat's Forward to inbox on the message and forward it to receipts@, or have the crew email the photo to receipts@ with the amount and property in the subject.</p></details>
+      <details class="faq"><summary>Why does a receipt say "Received 9 days ago" in red?</summary><p>It has waited in To review for more than 2 days. Mark it Good, Follow-up or Not a receipt.</p></details>
+    </div>
+  </section>
+
+  <footer>Receipt Inbox Guide · Twin Home Buyer · screenshots use example data, not real charges.</footer>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const HOT = {"receipts":{"w":1440,"h":900,"boxes":{"views":{"x":69.35,"y":1.51,"w":14.06,"h":4.44},"scan":{"x":76.58,"y":8.37,"w":6.59,"h":3.52},"lookback":{"x":69.91,"y":8.24,"w":6.25,"h":3.78},"saveSheet":{"x":84.62,"y":8.37,"w":7.78,"h":3.52},"openSheet":{"x":92.82,"y":8.37,"w":5.3,"h":3.52},"urgent":{"x":1.11,"y":14.13,"w":97.78,"h":4.48},"tabs":{"x":1.88,"y":20.94,"w":25.47,"h":5.14},"search":{"x":1.88,"y":26.97,"w":25.47,"h":3.81},"source":{"x":1.88,"y":31.45,"w":8.21,"h":3.78},"cmatch":{"x":10.5,"y":31.45,"w":8.21,"h":3.78},"rdate":{"x":19.13,"y":31.45,"w":8.21,"h":3.78},"selAll":{"x":1.88,"y":36.11,"w":5.46,"h":2.11},"item":{"x":1.18,"y":58.48,"w":26.86,"h":9.4},"ctag":{"x":4.1,"y":64.52,"w":14.37,"h":2.13},"good":{"x":30.26,"y":31.79,"w":5.69,"h":3.52},"followup":{"x":36.37,"y":31.79,"w":7.77,"h":3.52},"notreceipt":{"x":44.56,"y":31.79,"w":8.99,"h":3.52},"download":{"x":84.02,"y":31.79,"w":7.79,"h":3.52},"gmail":{"x":92.23,"y":31.79,"w":5.34,"h":3.52},"property":{"x":77.78,"y":42,"w":18.75,"h":3.81},"facts":{"x":77.78,"y":47.37,"w":18.75,"h":40.62},"matchbox":{"x":77.78,"y":89.54,"w":18.75,"h":11.01},"viewer":{"x":30.26,"y":38.09,"w":45.36,"h":31.47}}},"confirm":{"w":1440,"h":900,"boxes":{"item":{"x":1.18,"y":86.58,"w":26.86,"h":11.99},"matchbox":{"x":77.78,"y":73.02,"w":18.75,"h":15.13},"yes":{"x":78.68,"y":84.01,"w":7.68,"h":2.91},"no":{"x":86.78,"y":84.01,"w":7.44,"h":2.91},"facts":{"x":77.78,"y":34.59,"w":18.75,"h":36.87}}},"bulkreceipts":{"w":1440,"h":900,"boxes":{"cmatch":{"x":10.5,"y":31.45,"w":8.21,"h":3.78},"selAll":{"x":1.88,"y":36.11,"w":5.46,"h":2.11},"bulk":{"x":1.18,"y":39.45,"w":26.86,"h":11.96},"bulkGood":{"x":11.07,"y":40.34,"w":3.5,"h":2.91},"bulkNot":{"x":14.98,"y":40.34,"w":5.42,"h":2.91}}},"cards":{"w":1440,"h":900,"boxes":{"title":{"x":2.29,"y":21.39,"w":40.44,"h":2.85},"upload":{"x":2.29,"y":25.35,"w":10.04,"h":3.52},"driveCheck":{"x":13.79,"y":25.35,"w":12.86,"h":3.52},"driveSearch":{"x":27.06,"y":25.35,"w":9.74,"h":3.52},"copyReport":{"x":38.26,"y":25.35,"w":10.76,"h":3.52},"exportX":{"x":49.44,"y":25.35,"w":8.39,"h":3.52},"range":{"x":2.29,"y":30.21,"w":17.06,"h":3.62},"from":{"x":20.19,"y":30.32,"w":11.02,"h":3.39},"card":{"x":45.95,"y":30.4,"w":20.83,"h":3.22},"sort":{"x":69.69,"y":30.4,"w":11.32,"h":3.22},"tiles":{"x":2.29,"y":35.16,"w":95.42,"h":10.06},"missing":{"x":2.29,"y":35.16,"w":15.44,"h":10.06},"check":{"x":18.29,"y":35.16,"w":15.44,"h":10.06},"matched":{"x":34.28,"y":35.16,"w":15.44,"h":10.06},"drive":{"x":50.28,"y":35.16,"w":15.44,"h":10.06},"skipped":{"x":66.27,"y":35.16,"w":15.44,"h":10.06},"nocharge":{"x":82.27,"y":35.16,"w":15.44,"h":10.06},"flags":{"x":9.75,"y":46.55,"w":87.96,"h":3.57},"bills":{"x":47.95,"y":51.46,"w":37.7,"h":2.06},"holders":{"x":86.9,"y":51.46,"w":10.81,"h":2.06},"head":{"x":1.18,"y":64.91,"w":97.64,"h":3.9},"row":{"x":1.18,"y":68.81,"w":97.64,"h":9.05},"due":{"x":65.33,"y":72.41,"w":4.42,"h":1.96},"ask":{"x":65.33,"y":74.7,"w":9.28,"h":1.93},"fillin":{"x":83.02,"y":71.82,"w":3.58,"h":2.91},"uploadRow":{"x":87.02,"y":71.82,"w":4.25,"h":2.91},"notneeded":{"x":91.69,"y":71.82,"w":6.02,"h":2.91},"buyer":{"x":43.77,"y":69.92,"w":12.11,"h":6.72}}},"filed":{"w":1440,"h":900,"boxes":{"tile":{"x":50.28,"y":35.16,"w":15.44,"h":10.06},"rows":{"x":1.18,"y":60.74,"w":97.64,"h":30.39},"pro":{"x":1.18,"y":68.81,"w":97.64,"h":13.26},"drive":{"x":1.18,"y":82.07,"w":97.64,"h":9.05}}},"fillin":{"w":1440,"h":900,"boxes":{"panel":{"x":1.18,"y":77.86,"w":97.64,"h":15.5},"bought":{"x":2.29,"y":82.25,"w":15.21,"h":5.87},"approved":{"x":18.33,"y":82.25,"w":15.21,"h":5.87},"what":{"x":34.38,"y":82.25,"w":15.21,"h":5.87},"prop":{"x":50.42,"y":82.25,"w":15.21,"h":5.87},"flag":{"x":66.46,"y":85.34,"w":15.21,"h":2.78},"save":{"x":2.29,"y":89.01,"w":3.32,"h":2.91}}},"bulkfill":{"w":1440,"h":900,"boxes":{"flag":{"x":31.87,"y":14.33,"w":21.57,"h":3.57},"tick":{"x":2.29,"y":40.23,"w":1.04,"h":1.67},"tickAll":{"x":2.29,"y":33.75,"w":1.04,"h":1.67},"bar":{"x":1.18,"y":82.8,"w":97.64,"h":15.76},"approved":{"x":18.33,"y":87.41,"w":15.21,"h":5.9},"apply":{"x":2.29,"y":94.2,"w":5.45,"h":2.91}}},"upload":{"w":1440,"h":900,"boxes":{"button":{"x":87.02,"y":71.82,"w":4.25,"h":2.91},"panel":{"x":1.18,"y":77.86,"w":97.64,"h":6.56}}},"holders":{"w":1440,"h":900,"boxes":{"dialog":{"x":23.54,"y":29.94,"w":52.92,"h":40.12},"table":{"x":24.86,"y":43.31,"w":50.28,"h":24.86},"input":{"x":59.17,"y":47.4,"w":15.97,"h":3.72},"close":{"x":71.54,"y":31.83,"w":3.6,"h":2.91}}},"feed":{"w":1440,"h":900,"boxes":{"upload":{"x":2.29,"y":25.35,"w":10.04,"h":3.52},"panel":{"x":1.18,"y":60.74,"w":97.64,"h":21.13},"select":{"x":43.76,"y":65.35,"w":17.5,"h":3.33},"load":{"x":2.29,"y":77.51,"w":7.92,"h":2.91}}},"top":{"w":1440,"h":900,"boxes":{"urgent":{"x":1.11,"y":14.13,"w":97.78,"h":4.48},"late":{"x":1.11,"y":14.13,"w":22.27,"h":4.48},"due":{"x":23.94,"y":14.13,"w":16.23,"h":4.48},"confirm":{"x":40.72,"y":14.13,"w":15.09,"h":4.48},"waiting":{"x":56.37,"y":14.13,"w":20.13,"h":4.48},"scan":{"x":76.58,"y":8.37,"w":6.59,"h":3.52},"saveSheet":{"x":84.62,"y":8.37,"w":7.78,"h":3.52}}},"phone":{"w":390,"h":844,"boxes":{"views":{"x":4.1,"y":7.2,"w":51.92,"h":4.73},"tabs":{"x":6.92,"y":59.65,"w":86.15,"h":6.7},"item":{"x":4.36,"y":85.35,"w":91.28,"h":10.26}}}};
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const src = name => "shots/" + name + ".jpg";
+
+  // ---------- the screen tours ----------
+  const TOURS = {
+    receipts: { shot: "receipts", alt: "The Receipts screen with a Home Depot receipt open", items: [
+      ["views", "Receipts / Card charges", "Switch screens. Receipts is what came in; Card charges is what was spent."],
+      ["lookback", "Look back", "How many days of email one scan reads, 1 to 14."],
+      ["scan", "Scan inbox", "Reads accounting@ and the receipts@ copies and lists every receipt with vendor, date, amount and order number."],
+      ["saveSheet", "Save to Sheet", "Writes everything to the Receipt Agent Data sheet, including Darlyn's tracker tab."],
+      ["openSheet", "Sheet ↗", "Opens that Google Sheet."],
+      ["urgent", "Alert bar", "Late receipts, receipts due soon, matches to confirm, receipts waiting. Click one to jump to that list."],
+      ["tabs", "To review · Follow-up · Good · Not a receipt", "The four piles. Every new receipt starts in To review."],
+      ["search", "Search", "Vendor, amount, order number or property."],
+      ["source", "Source", "Home Depot, Amazon, Uber, Juan's forwards, crew, vendor emails, and more."],
+      ["cmatch", "Card match", "On a card charge, Confirm a charge, or No card charge."],
+      ["rdate", "Dates", "Today, last 7 or 30 days, this month, last month, or pick dates."],
+      ["selAll", "Select all", "Ticks every receipt the filters show. A bar appears with Good, Not a receipt and more."],
+      ["item", "A receipt", "Vendor, amount, date and where it came from."],
+      ["ctag", "Card tag", "Green: matched to that charge. Amber: possible, confirm it. Grey: no charge yet, or before the card report."],
+      ["good", "Good (G)", "The receipt is real and correct. It moves to Good."],
+      ["followup", "Follow-up (F)", "Something is missing or wrong. It moves to Follow-up."],
+      ["notreceipt", "Not a receipt (N)", "Newsletters, notices, quotes."],
+      ["download", "Download (D)", "Saves the PDF or photo."],
+      ["gmail", "Gmail ↗", "Opens the original email."],
+      ["property", "Property", "Type the address or Office."],
+      ["facts", "Details", "Amount, tax, card, order number, the card charge it matched, who sent it."],
+      ["matchbox", "Matched to this charge", "Not this charge unlinks it; the charge goes back to No receipt found."],
+      ["viewer", "The receipt itself", "The PDF, photo or email text, right on the page."]
+    ] },
+    cards: { shot: "cards", alt: "The Card charges screen showing tiles, flags and charges with no receipt", items: [
+      ["title", "Total", "Charges and dollars for the dates and card shown. The dashed tag counts charges not in QuickBooks yet."],
+      ["upload", "Upload card report", "Takes the QuickBooks card report, the P files and the Pro Xtra export. It knows which is which."],
+      ["driveCheck", "Check Company Receipts", "Reads the card folders in Drive and matches files by the amount in the name."],
+      ["driveSearch", "Search all of Drive", "Looks for each missing receipt anywhere in Drive."],
+      ["copyReport", "Copy report for Juan", "The 5:00 PM report, ready to paste into the email."],
+      ["exportX", "Export to Excel", "Flags, Every charge and Receipt no charge, for the dates and card shown."],
+      ["range", "Last 7 days · Latest day · All dates", "Which dates the screen shows. From and To pick any range."],
+      ["card", "Card", "Every account and card number with its spend. Pick one to see only its charges."],
+      ["sort", "Sort", "Most urgent first, newest, oldest, largest, vendor, card or property."],
+      ["missing", "No receipt found", "Purchases with no receipt. The red line counts the late ones."],
+      ["check", "Check", "Possible matches waiting for a yes or no."],
+      ["matched", "Matched email", "Matched to a receipt that came by email."],
+      ["drive", "Filed (Drive, Pro Xtra)", "The receipt is in Drive or in Home Depot Pro Xtra."],
+      ["skipped", "No receipt needed", "Payments, transfers, refunds, and charges marked Not needed."],
+      ["nocharge", "Receipt, no charge", "Receipts whose charge has not posted or is on a card not in the report."],
+      ["flags", "Flags to clear", "No property, No approver, Unknown buyer, Personal or unusual. Click one to list them."],
+      ["bills", "Hidden lines", "Mortgage, insurance, taxes, EMD, loans, payroll and bank fees. Show brings them back."],
+      ["holders", "Card holders", "Who holds each card. The holder is the buyer and the person to ask."],
+      ["head", "Tick-all box", "Ticks every charge in the list for a bulk fill-in."],
+      ["row", "A charge", "Date, payee and the bank's own text."],
+      ["buyer", "Card · bought · approved", "Which card, who bought it, who approved it. Amber means missing."],
+      ["due", "Due date", "Due in N days, Due today, or N days late."],
+      ["ask", "Ask … by …", "Who to ask about it, and by when."],
+      ["fillin", "Fill in", "Bought by, approved by, what it's for, property, personal or unusual."],
+      ["uploadRow", "Upload", "Saves the receipt to the card's Drive folder and matches it."],
+      ["notneeded", "Not needed", "No receipt expected. Undo brings it back."]
+    ] },
+    confirm: { shot: "confirm", title: "Confirm a possible match", alt: "A receipt paid through QuickBooks Payments with an Is this the charge box", items: [
+      ["item", "The receipt", "Paid through QuickBooks Payments, so the card shows another business name."],
+      ["matchbox", "Is this the charge?", "Same amount and dates, different name. Read it, then decide."],
+      ["yes", "Yes, this charge", "Links them for good and marks the receipt Good."],
+      ["no", "Not this charge", "Unlinks them; the charge goes back to No receipt found."]
+    ] },
+    bulkreceipts: { shot: "bulkreceipts", title: "Clear matched receipts in one click", alt: "Receipts filtered to On a card charge with all selected", items: [
+      ["cmatch", "Card match: On a card charge", "Shows only receipts already matched to a charge."],
+      ["selAll", "Select all", "Ticks only what the filters show."],
+      ["bulk", "The bar that appears", "Acts on every ticked receipt at once."],
+      ["bulkGood", "Good", "Marks them all Good."]
+    ] },
+    fillin: { shot: "fillin", title: "Fill in one charge", alt: "The Fill in panel open under a charge", items: [
+      ["bought", "Bought by", "Starts as the card holder. Change it when someone else bought it."],
+      ["approved", "Approved by", "Who approved the purchase."],
+      ["what", "What it's for", "Corrects what QuickBooks says."],
+      ["prop", "Property or office", "The address, or Office."],
+      ["flag", "Personal or unusual", "Flags it for Darlyn to ask about the same day."],
+      ["save", "Save", "Everyone using the page sees it right away."]
+    ] },
+    bulkfill: { shot: "bulkfill", title: "Approve many charges at once", alt: "Three charges ticked with the bulk fill bar open", items: [
+      ["tickAll", "Tick-all box", "Ticks the whole list."],
+      ["tick", "Tick boxes", "Tick the charges one person approved."],
+      ["approved", "Approved by", "Type the name once."],
+      ["apply", "Apply", "Saves it on every ticked charge."]
+    ] },
+    upload: { shot: "upload", title: "Upload a receipt on a charge", alt: "The upload panel open under a charge", items: [
+      ["button", "Upload", "Opens the panel under that charge."],
+      ["panel", "Card folder, file, Upload", "Check the folder, choose the PDF or photo, click Upload. It is saved in Company Receipts › card › month and the charge turns green."]
+    ] },
+    holders: { shot: "holders", title: "Card holders", alt: "The Who holds each card window", items: [
+      ["table", "One row per card", "Card number, account and how many charges it has."],
+      ["input", "Holder", "Type a name, press Enter. Empty boxes are outlined in amber."],
+      ["close", "Close", "Or click outside the window."]
+    ] },
+    filed: { shot: "filed", title: "Receipts found in Drive and Pro Xtra", alt: "The Filed tile with a Pro Xtra and a Drive row", items: [
+      ["tile", "Filed (Drive, Pro Xtra)", "Charges whose receipt is in Drive or Pro Xtra."],
+      ["pro", "Pro Xtra", "Shows the store, order number and job name."],
+      ["drive", "In Drive", "Links to the file in Company Receipts."]
+    ] },
+    feed: { shot: "feed", title: "Uploading the For review files", alt: "The QuickBooks Bank transactions panel after choosing three files", items: [
+      ["upload", "Upload card report", "Choose all the P files at once."],
+      ["panel", "Bank transactions panel", "Lists each file. Files already posted are skipped by themselves."],
+      ["select", "Account", "Picked from the card numbers in the file. Check it; amber means pick it."],
+      ["load", "Load", "Saves them. Each new upload for a card replaces its list."]
+    ] }
+  };
+
+  function boxFor(shot, key) {
+    const h = HOT[shot];
+    const b = h && h.boxes[key];
+    if (!b || b.y < 0 || b.y > 98 || b.x > 99) return null;
+    return { x: b.x, y: b.y, w: b.w, h: Math.min(b.h, 100 - b.y) };
+  }
+  const POINTER = '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M60 60 L22 22" stroke="#ffb020" stroke-width="6" stroke-linecap="round"/><path d="M14 14 L38 18 L18 38 Z" fill="#ffb020"/></svg>';
+
+  for (const holder of document.querySelectorAll(".tour")) {
+    const t = TOURS[holder.dataset.tour];
+    if (!t) continue;
+    const items = t.items.map(([key, title, text]) => ({ key, title, text, box: boxFor(t.shot, key) })).filter(i => i.box);
+    holder.innerHTML = "";
+    if (t.title) {
+      const top = document.createElement("div");
+      top.className = "tour-top";
+      top.innerHTML = "<h3></h3>";
+      top.querySelector("h3").textContent = t.title;
+      holder.append(top);
+    }
+    const bar = document.createElement("div");
+    bar.className = "tour-top";
+    const play = document.createElement("button");
+    play.className = "btn";
+    play.type = "button";
+    play.textContent = "Play tour";
+    const hint = document.createElement("span");
+    hint.className = "note";
+    hint.textContent = items.length + " parts. Hover or tap a number.";
+    bar.append(hint, play);
+    holder.append(bar);
+    const frame = document.createElement("div");
+    frame.className = "frame";
+    const inner = document.createElement("div");
+    inner.className = "inner";
+    const img = document.createElement("img");
+    img.src = src(t.shot);
+    img.alt = t.alt;
+    img.loading = "lazy";
+    inner.append(img);
+    const pointer = document.createElement("div");
+    pointer.className = "pointer";
+    pointer.innerHTML = POINTER;
+    inner.append(pointer);
+    const list = document.createElement("ol");
+    list.className = "keys";
+    const marks = [], lis = [];
+    items.forEach((it, i) => {
+      const m = document.createElement("button");
+      m.type = "button";
+      m.className = "mark";
+      m.style.left = it.box.x + "%"; m.style.top = it.box.y + "%"; m.style.width = it.box.w + "%"; m.style.height = it.box.h + "%";
+      m.setAttribute("aria-label", (i + 1) + ". " + it.title);
+      m.innerHTML = '<span class="num">' + (i + 1) + "</span>";
+      inner.append(m);
+      const li = document.createElement("li");
+      li.tabIndex = 0;
+      li.innerHTML = '<span class="n">' + (i + 1) + "</span><div><b></b><span></span></div>";
+      li.querySelector("b").textContent = it.title;
+      li.querySelector("div span").textContent = it.text;
+      list.append(li);
+      marks.push(m); lis.push(li);
+      const on = () => activate(i, true);
+      m.addEventListener("mouseenter", () => activate(i, false));
+      m.addEventListener("click", on);
+      li.addEventListener("mouseenter", () => activate(i, false));
+      li.addEventListener("focus", () => activate(i, false));
+      li.addEventListener("click", () => activate(i, false));
+    });
+    frame.append(inner);
+    holder.append(frame, list);
+    let cur = -1, timer = null;
+    function activate(i, scrollList) {
+      if (cur >= 0) { marks[cur].classList.remove("on"); lis[cur].classList.remove("on"); }
+      cur = i;
+      marks[i].classList.add("on"); lis[i].classList.add("on");
+      const b = items[i].box;
+      // The arrow sits below and to the right of the target, pointing up-left at it; near the edges it stays inside.
+      const left = Math.min(b.x + b.w * 0.5, 88), top = Math.min(b.y + b.h, 82);
+      pointer.style.left = left + "%";
+      pointer.style.top = top + "%";
+      pointer.classList.add("show");
+      if (scrollList) lis[i].scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+    }
+    function stop() { clearInterval(timer); timer = null; play.textContent = "Play tour"; }
+    play.addEventListener("click", () => {
+      if (timer) { stop(); return; }
+      play.textContent = "Pause tour";
+      activate((cur + 1) % items.length, false);
+      timer = setInterval(() => activate((cur + 1) % items.length, false), 2600);
+    });
+    holder.addEventListener("pointerdown", e => { if (timer && e.target !== play) stop(); });
+  }
+
+  // ---------- the daily walkthrough ----------
+  const STEPS = [
+    ["top", "scan", "Top bar", "Scan the inbox", "Leave Look back at 7 days and click Scan inbox. The page reads accounting@ and the receipts@ copies and lists every new receipt."],
+    ["top", "urgent", "Top bar", "Read the alert bar", "Red is late or waiting too long. Amber is due soon or needs a yes or no. Click any of them to jump straight to that list."],
+    ["bulkreceipts", "cmatch", "Receipts", "Show the matched receipts", "On the To review tab, set Card match to On a card charge. These already have their card charge."],
+    ["bulkreceipts", "selAll", "Receipts", "Select all", "Ticks every receipt the filters show, and only those."],
+    ["bulkreceipts", "bulkGood", "Receipts", "Mark them Good", "One click clears every matched receipt from To review."],
+    ["confirm", "yes", "Receipts", "Confirm the possible matches", "Set Card match to Confirm a charge. The box explains why it might match. Click Yes, this charge, or Not this charge."],
+    ["receipts", "notreceipt", "Receipts", "Clear the junk", "Newsletters, notices and quotes: Not a receipt, or press N."],
+    ["cards", "missing", "Card charges", "Open No receipt found", "Switch to Card charges. The list is sorted Most urgent first: late purchases, biggest first."],
+    ["cards", "ask", "Card charges", "Ask the right person", "Each row says who to ask and by when. Message them for the receipt."],
+    ["upload", "panel", "Card charges", "Upload the receipt when it arrives", "Click Upload on the charge, check the card folder, choose the file, Upload. It lands in Company Receipts and the charge turns green."],
+    ["bulkfill", "apply", "Card charges", "Approve in one go", "Click the No approver flag, tick the charges one person approved, type the name in Approved by, Apply."],
+    ["fillin", "save", "Card charges", "Fill in what is missing", "Fill in on a row: bought by, approved by, what it's for, property, personal or unusual. Save."],
+    ["cards", "copyReport", "Card charges", "Send the 5:00 PM report", "Copy report for Juan and paste it into the email. The flags are at the top."],
+    ["top", "saveSheet", "Top bar", "Save to Sheet", "Updates the Receipt Agent Data sheet, including the Daily Expense Tracker tab in Darlyn's column order."]
+  ].map(([shot, key, where, title, text]) => ({ shot, key, where, title, text, box: boxFor(shot, key) })).filter(s => s.box);
+
+  const $ = id => document.getElementById(id);
+  const imgA = $("imgA"), imgB = $("imgB"), ring = $("ring"), cursor = $("cursor"), ripple = $("ripple");
+  let front = imgA, back = imgB, idx = -1, playing = false, tmr = null, clickT = null;
+  for (const s of new Set(STEPS.map(s => s.shot))) { const pre = new Image(); pre.src = src(s); }
+  const dots = $("pDots");
+  STEPS.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = String(i + 1);
+    b.setAttribute("aria-label", "Step " + (i + 1) + ": " + s.title);
+    b.addEventListener("click", () => { pause(); go(i); });
+    dots.append(b);
+  });
+  cursor.style.left = "50%"; cursor.style.top = "60%";
+  function go(i) {
+    const s = STEPS[i];
+    const prev = idx >= 0 ? STEPS[idx] : null;
+    idx = i;
+    if (!prev || prev.shot !== s.shot) {
+      back.src = src(s.shot);
+      back.alt = s.title;
+      back.style.opacity = "1"; front.style.opacity = "0";
+      [front, back] = [back, front];
+    }
+    const b = s.box;
+    ring.style.left = b.x + "%"; ring.style.top = b.y + "%"; ring.style.width = b.w + "%"; ring.style.height = b.h + "%";
+    const cx = Math.min(b.x + b.w * 0.55, 97), cy = Math.min(b.y + b.h * 0.55, 96);
+    cursor.style.left = cx + "%"; cursor.style.top = cy + "%";
+    clearTimeout(clickT);
+    clickT = setTimeout(() => {
+      ripple.style.left = cx + "%"; ripple.style.top = cy + "%";
+      ripple.classList.remove("go"); void ripple.offsetWidth; ripple.classList.add("go");
+    }, reduce ? 0 : 950);
+    $("pCount").textContent = "STEP " + (i + 1) + " OF " + STEPS.length;
+    $("pWhere").textContent = s.where;
+    $("pTitle").textContent = s.title;
+    $("pText").textContent = s.text;
+    $("pBar").style.width = (100 * (i + 1) / STEPS.length) + "%";
+    [...dots.children].forEach((d, j) => d.setAttribute("aria-current", j === i ? "step" : "false"));
+    $("pBack").disabled = i === 0;
+  }
+  function play() {
+    playing = true;
+    $("pPlay").textContent = "Pause";
+    if (idx >= STEPS.length - 1) go(0); else go(idx + 1);
+    tmr = setInterval(() => { if (idx >= STEPS.length - 1) { pause(); return; } go(idx + 1); }, 4800);
+  }
+  function pause() { playing = false; clearInterval(tmr); $("pPlay").textContent = idx >= STEPS.length - 1 ? "Replay" : "Play"; }
+  $("pPlay").addEventListener("click", () => playing ? pause() : play());
+  $("pNext").addEventListener("click", () => { pause(); go(Math.min(idx + 1, STEPS.length - 1)); });
+  $("pBack").addEventListener("click", () => { pause(); go(Math.max(idx - 1, 0)); });
+  go(0);
+  // Start the walkthrough once it scrolls into view (never with reduced motion).
+  if (!reduce && "IntersectionObserver" in window) {
+    let started = false;
+    new IntersectionObserver((ents, ob) => { if (!started && ents.some(e => e.isIntersecting)) { started = true; ob.disconnect(); if (!playing) play(); } }, { threshold: 0.5 }).observe($("stage"));
+  }
+
+  // ---------- section bar highlights where you are ----------
+  const links = [...document.querySelectorAll(".navlinks a")];
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver(ents => {
+      for (const e of ents) if (e.isIntersecting) links.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
+    }, { rootMargin: "-40% 0px -55% 0px" });
+    document.querySelectorAll("header[id], section[id]").forEach(s => io.observe(s));
+  }
+})();
+</script>
