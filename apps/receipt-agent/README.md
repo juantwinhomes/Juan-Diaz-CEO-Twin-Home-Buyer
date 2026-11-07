@@ -62,6 +62,17 @@ clear**, counts purchases with No property, No approver, Unknown buyer and Perso
 opens with FLAG COUNTS and lists each flag with who to ask and by when; Every charge shows the
 filled-in buyer and approver. Excel's Flags tab lists every flag with Ask and By.
 
+**Card report saved by month (v44).** Each card's lines are saved one month per record,
+`cards/<account>--YYYY-MM`, so a busy card (Amex runs about 470 lines a month) never hits the size
+of one record; the old one-record-per-card form (`cards/<account>`, capped at 900 lines) is retired
+on the next upload, and months older than the window are removed. An upload now carries over what
+people did on unchanged lines: Drive matches (`found`) and No receipt needed (`marks`); before
+v44 a re-upload dropped the Drive matches. Nov 7 load (done from Seth's files): Transaction Detail
+by Account Sep 1 to Nov 7 plus the 7 For review files, 30 monthly records and 7 pending lists,
+1,365 card charges Sep 1 to Nov 5 (138 not in QuickBooks yet), the 12 Drive matches kept. Two
+accounts showed up that the October report didn't have: BoA Visa 2406/0475 (Sep 2 to 4 only) and
+Citi 2149 (one charge, Sep 14), both pointing to feeds that stopped.
+
 **Layout fix (v43).** The Card charges panel scrolls as one piece, with the column headings pinned,
 so nothing that opens in the header can get stuck out of reach. Card holders open in their own
 window (Card holders button beside the file line): one row per card with its account, charge count

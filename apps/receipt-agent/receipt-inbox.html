@@ -392,7 +392,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v43</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v44</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -2701,25 +2701,44 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       return;
     }
     let saved = 0;
+    const startMonth = cutoff.slice(0, 7);
     for (const [account, list] of byAcct) {
-      const id = slug(account);
-      const prev = state.cards.get(id) || {};
+      const base = slug(account);
+      // Everything saved so far for this account: the old one-record-per-account form and the monthly records.
+      const oldIds = [...state.cards.keys()].filter(id => id === base || id.startsWith(base + "--"));
+      const oldRows = [], marks = {}, found = {};
+      for (const id of oldIds) {
+        const d = state.cards.get(id) || {};
+        oldRows.push(...(d.rows || []));
+        Object.assign(marks, d.marks || {});
+        Object.assign(found, d.found || {});
+      }
       const days = list.map(r => r.date).sort();
       const from = days[0], to = days[days.length - 1];
-      // The new file replaces its own date range; older rows outside it stay.
-      let merged = (prev.rows || []).filter(r => r.date < from || r.date > to).concat(list)
+      // The new file replaces its own date range; lines outside it stay, back to the start of the window.
+      const merged = oldRows.filter(r => (r.date < from || r.date > to) && r.date >= cutoff).concat(list)
         .sort((a, b) => a.date.localeCompare(b.date));
-      if (merged.length > 900) merged = merged.slice(merged.length - 900);
-      const all = merged.map(r => r.date);
-      const doc = {
-        account, rows: merged, marks: prev.marks || {},
-        from: all[0], to: all[all.length - 1],
-        uploadedAt: new Date().toISOString(), file: String(file.name).slice(0, 120)
-      };
-      // A saved document holds at most 256 KB: drop the oldest lines of a very busy card until it fits.
-      while (doc.rows.length > 50 && JSON.stringify(doc).length > 230000) { doc.rows = doc.rows.slice(50); doc.from = doc.rows[0].date; }
-      try { await db.collection("cards").doc(id).set(doc); state.cards.set(id, doc); saved += list.length; }
-      catch (e) { banner(dbMessage(e), true); break; }
+      const byMonth = new Map();
+      for (const r of merged) { const m = r.date.slice(0, 7); if (!byMonth.has(m)) byMonth.set(m, []); byMonth.get(m).push(r); }
+      const now = new Date().toISOString();
+      let ok = true;
+      for (const [m, rows] of byMonth) {
+        const keys = new Set(rows.map(r => r.k));
+        const pick = obj => Object.fromEntries(Object.entries(obj).filter(([k]) => keys.has(k)));
+        const id = base + "--" + m;
+        const doc = { account, month: m, rows, marks: pick(marks), found: pick(found), from: rows[0].date, to: rows[rows.length - 1].date, uploadedAt: now, file: String(file.name).slice(0, 120) };
+        try { await db.collection("cards").doc(id).set(doc); state.cards.set(id, doc); }
+        catch (e) { banner(dbMessage(e), true); ok = false; break; }
+      }
+      if (!ok) break;
+      // Retire the old one-record form and months that fell out of the window.
+      for (const id of oldIds) {
+        const m = id.startsWith(base + "--") ? id.slice(base.length + 2) : null;
+        if (m && byMonth.has(m)) continue;
+        if (m && m >= startMonth) continue;
+        try { await db.collection("cards").doc(id).delete(); state.cards.delete(id); } catch (e) { /* stays filtered out by the window */ }
+      }
+      saved += list.length;
     }
     // A report that names the card on each charge replaces the all-cards upload for the same dates, so nothing counts twice.
     const allId = slug("QuickBooks charges (all cards)");
@@ -3964,7 +3983,16 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       ? "Showing " + hid.length + " mortgage, insurance, tax, EMD, loan, payroll and bank fee lines · Hide"
       : hid.length + " mortgage, insurance, tax, EMD, loan, payroll and bank fee lines hidden (" + money(sumOf(hid)) + ") · Show";
     hb.title = "A statement covers these. They aren't counted while hidden.";
-    const files = [...state.cards.values()].filter(d => !d.pending).sort((a, b) => String(a.account).localeCompare(String(b.account)));
+    const acctMap = new Map();
+    for (const d of state.cards.values()) {
+      if (d.pending) continue;
+      const a = acctMap.get(d.account) || { account: d.account, from: d.from, to: d.to, uploadedAt: d.uploadedAt };
+      if (d.from < a.from) a.from = d.from;
+      if (d.to > a.to) a.to = d.to;
+      if (String(d.uploadedAt) > String(a.uploadedAt)) a.uploadedAt = d.uploadedAt;
+      acctMap.set(d.account, a);
+    }
+    const files = [...acctMap.values()].sort((a, b) => String(a.account).localeCompare(String(b.account)));
     const pendDocs = [...state.cards.values()].filter(d => d.pending);
     const pendN = model.charges.filter(c => c.pending && !c.payment).length;
     const pendNote = pendDocs.length ? "Not in QuickBooks yet: " + pendN + " charges from " + pendDocs.map(d => d.account).join(", ") + " (For review, uploaded " + shortDate(pendDocs.map(d => d.uploadedAt).sort().pop()) + ")" : "";
