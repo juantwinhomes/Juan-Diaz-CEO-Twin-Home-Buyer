@@ -4383,7 +4383,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const lines = ["Expense report: charges posted in QuickBooks, " + span + (state.cCard ? ", " + cardLabel(state.cCard) + " only" : "") + ". Pacific Time.",
       charges.length + (charges.length === 1 ? " charge, " : " charges, ") + money(sumOf(charges)) + ". Receipt found: " + found + ". No receipt found: " + c.missing.length + ". Amount to check: " + c.check.length + ".",
       "LATE: " + lateList.length + (lateList.length === 1 ? " purchase" : " purchases") + " past the " + RECEIPT_DUE_DAYS + "-day receipt deadline" + (lateList.length ? ", " + money(sumOf(lateList)) + ", oldest " + shortDate(lateList.reduce((a, x) => x.date < a ? x.date : a, lateList[0].date)) : "") + ". Due in the next 2 days: " + soonList.length + ".",
-      "While a card has no holder set, Christine is the one to ask.", "FLAG COUNTS, purchases: No receipt " + c.missing.filter(isPurchase).length + ". " + FLAGS.map(f => f.label + " " + (c[f.key] || []).length).join(". ") + ".", "",
+      charges.some(x => flagsOf(x).length && !boughtByOf(x)) ? "While a card has no holder set, Christine is the one to ask." : null, "FLAG COUNTS, purchases: No receipt " + c.missing.filter(isPurchase).length + ". " + FLAGS.map(f => f.label + " " + (c[f.key] || []).length).join(". ") + ".", "",
       "FLAGS"];
     const buys = c.missing.filter(x => !isStatement(x)).sort((a, b) => b.amount - a.amount);
     const bills = c.missing.filter(isStatement).sort((a, b) => b.amount - a.amount);
@@ -4416,7 +4416,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     const hidN = state.showBills ? 0 : (model.hiddenList || []).filter(shown).length;
     if (hidN) lines.push("Not in this report: " + hidN + " mortgage, insurance, tax, EMD, loan, payroll and bank fee lines. A statement covers them.");
     lines.push("Source: QuickBooks Transaction Detail by Account (posted charges) and Bank transactions For review exports where uploaded. Receipts: the accounting@ inbox, receipts@ and Company Receipts in Google Drive.");
-    return lines.join("\n");
+    return lines.filter(l => l !== null).join("\n");
   }
   async function copyReport() {
     const text = reportText();
