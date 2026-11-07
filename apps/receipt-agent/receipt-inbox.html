@@ -355,7 +355,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v35</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v36</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -2496,12 +2496,15 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     banner("");
     const byAcct = new Map();
     for (const f of picks) { if (!byAcct.has(f.account)) byAcct.set(f.account, []); byAcct.get(f.account).push(f); }
-    let n = 0;
+    let n = 0, old = 0;
     for (const [account, fs] of byAcct) {
       const id = "pending-" + slug(account);
+      const newest = fs.flatMap(f => f.rows.map(r => r.date)).sort().pop();
+      const cutoff = new Date(Date.UTC(+newest.slice(0, 4), +newest.slice(5, 7) - 1, +newest.slice(8, 10)) - 92 * 86400000).toISOString().slice(0, 10);
       const prev = state.cards.get(id) || {};
       const seen = new Map(), rows = [];
       for (const f of fs) for (const r of f.rows) {
+        if (r.date < cutoff) { old++; continue; }
         const base = [account, r.date, r.desc, r.amount.toFixed(2)].join("|");
         const dup = (seen.get(base) || 0) + 1;
         seen.set(base, dup);
@@ -2509,13 +2512,14 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           memo: r.desc, split: "", suggest: r.suggest, account, amount: r.amount, payment: r.amount < 0 && FEED_PAYMENT.test(r.desc) });
       }
       rows.sort((a, b) => a.date.localeCompare(b.date));
+      if (!rows.length) continue;
       const doc = { account, pending: true, rows, marks: prev.marks || {}, found: prev.found || {},
         from: rows[0].date, to: rows[rows.length - 1].date, uploadedAt: new Date().toISOString(), file: fs.map(f => f.name).join(", ").slice(0, 240) };
       try { await db.collection("cards").doc(id).set(doc); state.cards.set(id, doc); n += rows.length; }
       catch (e) { banner(dbMessage(e), true); return; }
     }
     state.feeds = null;
-    setStatus("Loaded " + n + " charges that aren't in QuickBooks yet, from " + [...byAcct.keys()].join(", ") + ". Each new upload for a card replaces its list.");
+    setStatus("Loaded " + n + " charges that aren't in QuickBooks yet, from " + [...byAcct.keys()].join(", ") + "." + (old ? " Skipped " + old + " older than 3 months." : "") + " Each new upload for a card replaces its list.");
     render();
   }
   function feedPanel() {

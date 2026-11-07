@@ -53,11 +53,16 @@ its account picked from the card numbers in the bank text (XXXX5004 is Amex - 20
 Capital One Business - 2680) or the way the bank words its lines ("sale original invoice" is Home
 Depot - 5253); check it and click Load. Files from the Categorized tab (already posted) are listed
 and skipped. Each card's For review list is saved as `cards/pending-<account>` and replaced by the
-next upload for that card. Those charges carry a dashed "Not in QuickBooks yet" chip and
+next upload for that card; lines more than 3 months older than the newest line (a stale card payment
+left in For review) are skipped. Those charges carry a dashed "Not in QuickBooks yet" chip and
 QuickBooks' suggested category, count in every tile, deadline and filter, and match receipts like
 any charge. When a later card report has the same card, amount and bank text within 3 days, the
 charge counts once. First run (Nov 7): Amex 93, Capital One Business 38, Home Depot 5253 5 = 136
-charges ($28,380); 16 receipts matched them, Receipt with no charge went from 113 to 97.
+charges ($28,380); 16 receipts matched them, Receipt with no charge went from 113 to 97. Second
+batch (Capital One CC 4, Discover 4, Wells Fargo 8251 6, WF 8263 1; WF 0002 had none) brought it
+to 150 charges. Of 101 Amazon receipts dated Oct 1 to Nov 5, 50 ($10,083) match no Amazon line on
+any connected card, posted or For review, so they were most likely paid on a card that doesn't
+feed QuickBooks (the Nov 7 Banking page showed feed errors on WF CC 3269 and Citi 2149).
 
 **Deadlines and urgency (v33).** Two rules, set at the top of the script: a purchase needs its
 receipt within **7 days** of the charge (`RECEIPT_DUE_DAYS`), and a receipt in To review gets
