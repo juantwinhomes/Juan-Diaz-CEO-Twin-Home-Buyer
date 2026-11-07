@@ -254,6 +254,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .c-hint { display: flex; gap: 8px; align-items: baseline; padding: 9px 16px; font-size: 0.8rem; color: var(--muted); border-bottom: 1px solid var(--line); background: var(--sunk); }
 .c-hint::before { content: "i"; flex: 0 0 auto; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; font: 600 0.68rem/1 var(--mono); color: var(--accent); border: 1px solid var(--accent); }
 .c-files { font-size: 0.76rem; color: var(--muted); }
+.c-billsbtn { font-size: 0.8rem; }
 .c-holders { font-size: 0.8rem; color: var(--muted); }
 .c-holders summary { cursor: pointer; width: fit-content; color: var(--accent); font-weight: 600; }
 .c-holders-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 14px; padding: 10px 0 2px; }
@@ -355,7 +356,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v39</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v40</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -469,6 +470,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       <div class="kpis" id="cTabs" role="tablist" aria-label="Match status"></div>
       <div class="c-meta">
         <p class="c-files" id="cFiles"></p>
+        <button type="button" class="linkbtn c-billsbtn" id="cBills" hidden></button>
         <details class="c-holders" id="cHolders">
           <summary>Who holds each card <span id="cHoldersNote"></span></summary>
           <div class="c-holders-list" id="cHoldersList"></div>
@@ -604,6 +606,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     cardFolders: null,  // Company Receipts card folders [{id, title}], this visit only
     feeds: null,        // Bank transactions exports picked for upload, waiting for their accounts to be confirmed
     cmatch: "all",      // receipts list: all, on a card charge, confirm a charge, no card charge
+    showBills: memo("ri-cbills", "") === "1", // show mortgage, insurance, taxes, EMD, loans, payroll, bank fees, owner's pay
     uploadFor: "",     // the charge whose upload panel is open        // receipts already filed in Company Receipts (file names only, this visit only)
     filedNote: "",
     cFrom: "",          // date filter for the Card charges view
@@ -1308,6 +1311,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     $("cTo").onchange = e => { state.cTo = e.target.value || ""; state.cRangeSet = true; render(); };
     $("cLast").onclick = () => { state.cFrom = state.cTo = (model && model.to) || ""; state.cRangeSet = true; render(); };
     $("cAll").onclick = () => { state.cFrom = ""; state.cTo = ""; state.cRangeSet = true; render(); };
+    $("cBills").onclick = () => { state.showBills = !state.showBills; remember("ri-cbills", state.showBills ? "1" : ""); render(); };
     $("cWeek").onclick = () => { state.cFrom = weekStart(); state.cTo = ""; state.cRangeSet = true; render(); };
     $("cCard").onchange = e => { state.cCard = e.target.value || ""; remember("ri-ccard", state.cCard); render(); };
     $("cSort").onchange = e => { state.cSort = e.target.value || "urgent"; remember("ri-csort", state.cSort); render(); };
@@ -3037,6 +3041,16 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   // Bills, loans, taxes, payroll and related-company transfers: the paperwork is a statement or payroll record, not a store receipt.
   const STATEMENT = /mortgage|mtg|kiavi|anchor loans|\bloans?\b|interest|taxes|insurance|payroll|salar|wages|labor cost|\bemd\b|due from|owner'?s pay|personal|bank charges|utilities|telephone/i;
+  const HIDE_SPLIT = /mortgage|mtg|interest|insurance|taxes|tax paid|\bemd\b|\bloans?\b|kiavi|anchor loans|lendinghome|payroll|salar|wages|labor cost|bank charges|owner'?s pay/i;
+  const HIDE_NAME = /^(irs|franchise tax board|gusto|lendinghome|kiavi)$/i;
+  const HIDE_MEMO = /\bpmt\b|\bpymt\b|loan pymt|auto finance|eft debit|payroll/i;
+  function isHiddenKind(c) {
+    if (c.payment) return false;
+    const split = String(c.split || c.suggest || "");
+    // Vehicle and equipment loan accounts are named for the asset: "2025 Bobcat - Wells Fargo", "Auto Loans:2025 Suburban".
+    const assetLoan = split.split(":").some(p => /^(19|20)\d{2}\s+[a-z]/i.test(p.trim()));
+    return HIDE_SPLIT.test(split) || HIDE_NAME.test(String(c.name || "").trim()) || HIDE_MEMO.test(String(c.memo || "")) || assetLoan;
+  }
   const isStatement = c => STATEMENT.test(c.split || c.suggest || "") || (!c.split && /payroll|loan pymt|mortgage/i.test(c.memo || "")) || /\bpmt\b/i.test(c.memo || "") || /^(irs|franchise tax board|gusto|wise inc|lendinghome)$/i.test(c.name || "");
   // The card a charge was made on: on a card account, the card member at the end of the bank's memo ("XXXX5004", "- 1175");
   // otherwise the account's own number.
@@ -3206,7 +3220,10 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const f = ((state.cards.get(c.cardId) || {}).found || {})[c.k];
       if (f && !f.rejected) byCharge.set(c.k, { filed: { card: f.uploaded ? "Uploaded to Company Receipts" : f.possible ? "Possible match in Drive" : "Found in Drive", vendor: f.name, amount: c.amount, url: f.url, ym: c.date.slice(0, 7), name: f.name, found: true }, quality: f.possible ? "check" : "filed" });
     }
-    return { charges, byCharge, byReceipt, from: days[0], to: days[days.length - 1] };
+    // Matching ran on every charge; the list, tiles, deadlines, report and exports leave the hidden kinds out unless shown.
+    const hiddenList = charges.filter(isHiddenKind);
+    const kept = state.showBills ? charges : charges.filter(c => !isHiddenKind(c));
+    return { charges: kept, hiddenList, byCharge, byReceipt, from: days[0], to: days[days.length - 1] };
   }
   function chargeState(c) {
     if (c.payment || c.marked) return "skipped";
@@ -3677,6 +3694,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       tabs.append(b);
     }
     renderHolders();
+    const hid = (model.hiddenList || []).filter(shown);
+    const hb = $("cBills");
+    hb.hidden = !hid.length;
+    hb.textContent = state.showBills
+      ? "Showing " + hid.length + " mortgage, insurance, tax, EMD, loan, payroll, bank fee and owner's pay lines · Hide"
+      : hid.length + " mortgage, insurance, tax, EMD, loan, payroll, bank fee and owner's pay lines hidden (" + money(sumOf(hid)) + ") · Show";
+    hb.title = "A statement covers these. They aren't counted while hidden.";
     const files = [...state.cards.values()].filter(d => !d.pending).sort((a, b) => String(a.account).localeCompare(String(b.account)));
     const pendDocs = [...state.cards.values()].filter(d => d.pending);
     const pendN = model.charges.filter(c => c.pending && !c.payment).length;
@@ -3902,6 +3926,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     lines.push("", "Refunds and credits (no receipt needed): " + refunds + ". Not listed: " + pays + " card payments, deposits and transfers between our own accounts. Receipts with no posted charge yet: " + c.nocharge.length + ".");
     const pendIn = charges.filter(x => x.pending).length;
     if (pendIn) lines.push("Includes " + pendIn + " charges still in QuickBooks Bank transactions (For review), not posted yet.");
+    const hidN = state.showBills ? 0 : (model.hiddenList || []).filter(shown).length;
+    if (hidN) lines.push("Not in this report: " + hidN + " mortgage, insurance, tax, EMD, loan, payroll, bank fee and owner's pay lines. A statement covers them.");
     lines.push("Source: QuickBooks Transaction Detail by Account (posted charges) and Bank transactions For review exports where uploaded. Receipts: the accounting@ inbox, receipts@ and Company Receipts in Google Drive.");
     return lines.join("\n");
   }

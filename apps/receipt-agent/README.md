@@ -45,6 +45,18 @@ Good) and **Not this charge** (unlinks it; the charge goes back to No receipt fo
 are saved on the receipt as `chargeOk` / `chargeNo`, matching honors them, and a rescan keeps
 them. The Card charges view has the same Confirm / Not it on possible email matches.
 
+**Hidden for now (v40, Seth's call on Nov 7).** The goal is purchases that need a receipt or
+invoice. Card charges hides mortgage and interest, insurance, taxes, EMD wires, auto and equipment
+loans, payroll and labor cost (including Matrix payroll by bank memo), bank fees and owner's pay: a
+statement covers them. The rule (`isHiddenKind`) reads the QuickBooks category (or QuickBooks'
+suggestion for a charge not posted yet), the payee (IRS, Franchise Tax Board, Gusto, LendingHome,
+Kiavi), the bank memo (PMT, PYMT, auto finance, EFT debit, payroll) and asset-named loan accounts
+("2025 Bobcat - Wells Fargo"). Hidden lines drop out of the list, tiles, deadlines, report, Excel and
+sheet; matching still runs on them. A link beside the file line shows the count and dollars and
+toggles them back (remembered in that browser). Still shown: utilities, telephone, due-from
+related-company charges, and legal & professional fees. Effect on Oct 1 to Nov 5: No receipt found
+went from 524 ($537,910) to 398 ($197,595); 130 lines ($340,435) hidden.
+
 **Last 7 days and card match (v39).** Card charges opens on **Last 7 days** (today and the 6 days
 before), next to Latest day and All dates. The Receipts list has a **Card match** filter beside
 Source: On a card charge, Confirm a charge, No card charge. To clear matched receipts in one go:
