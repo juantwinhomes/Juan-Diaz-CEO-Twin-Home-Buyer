@@ -68,6 +68,45 @@ clear**, counts purchases with No property, No approver, Unknown buyer and Perso
 opens with FLAG COUNTS and lists each flag with who to ask and by when; Every charge shows the
 filled-in buyer and approver. Excel's Flags tab lists every flag with Ask and By.
 
+**Purchase reports, Not recognized, gas and meals, filing by card (v49).**
+- *Team purchase reports.* Juan's Nov 5 rule: whoever buys something emails accounting@ (and
+  Marieflor) the same day with what, amount, property, card and a photo. The scan has a "Team
+  purchase reports" source (company senders other than accounting@, receipts@ and Juan, no
+  Re/Fwd, with bought/purchased/purchase/"approved by"/"bought by"). A report needs a dollar
+  amount; with several amounts and none labelled Amount/Total it is not a report. The sender is
+  the buyer unless a "Bought by:" line names someone else; "Approved by:" (or "Approved: X")
+  names the approver. Juan's format has no approver line, so the approver stays empty until people
+  add one. Property, what it was for, card and vendor are read from labelled lines or the text.
+  A report is matched to a charge by amount to the cent, sent up to 3 days after or 7 days before
+  the charge, same card when it gives one. It fills Bought by, Approved by, What it's for and the
+  property (QuickBooks' property wins; a manual Fill in wins over both). A report with a photo is
+  also the receipt when the card or vendor agrees (a vendor's own receipt wins if both match);
+  without card or vendor agreement it is "Check". The charge row shows a "Purchase report · name"
+  chip that opens it.
+- *Not recognized flag* (Juan Oct 30, Kristine, Darlyn): a new vendor ($100 or more, nothing from
+  it in the 30+ days of charges before, no receipt or purchase report, not cash/ATM, not a payment
+  named for a property, not already personal), an amount over 5 times the vendor's usual and
+  $1,000 more (5+ earlier charges), a card number on the charge that isn't on the card holder
+  list, or the same amount in 2+ months with no QuickBooks category. It's first in the flag tiles
+  and first in the report, with the reason. On the Sep 1 to Nov 5 data: 57 charges (35 new
+  vendor, 18 unusual amount, 2 unlisted cards, 2 monthly with no category). A $150 threshold would
+  have caught small odd charges like Darlyn's Apple $200 example but flagged 88, mostly routine
+  Amazon and Home Depot orders; those stay with the manual Personal or unusual mark.
+- *Gas and meals under $75* (Juan's Oct 30 rule) are No receipt needed, shown as "Gas or meal
+  under $75": QuickBooks category Meals, Restaurant, Dining, Food, Entertainment, Fuel or Gas, or
+  a known gas station, fast food, coffee or delivery name; utilities, propane, groceries and
+  subscriptions excluded. A matched receipt still shows as matched. Sep 1 to Nov 5: 170 charges,
+  mostly crew meals booked to Rehab Costs. The business purpose from Juan's calendar is not built.
+- *Filing by card.* Copy receipts to Drive files a receipt matched to a charge for sure (same
+  amount and vendor, or confirmed) in that card's folder and the charge's month, named with Juan's
+  four parts amount first like the rest of Company Receipts: `$10.01 - Twilio - 2026-10-16 - 5004`.
+  The rest go to Inbox copies. Rerunning files receipts matched since; the Inbox copy it replaces
+  goes in `driveOld`. The receipt records `filed` (charge, folder, month).
+- *Fix:* v47's Inbox copies folder sat under Company Receipts, so Check Company Receipts and the
+  Upload folder list treated it as a card. It's left out now, and files the page made from emailed
+  receipts (`driveCopy`, `driveOld`) never count as Drive-filed receipts for a charge or in Search
+  all of Drive. The email match stays the source of truth.
+
 **Email receipts keep their layout (v48).** v47 saved a receipt with no PDF or photo as a .txt
 of the email's words, which read badly (116 of the first 216 copies, 101 of them Amazon). v48
 takes the email's own HTML part from the full message (quoted-printable or base64, in its

@@ -317,6 +317,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 .chip.office { background: var(--wait-soft); color: var(--wait); }
 .chip.unset { background: var(--warn-soft); color: var(--warn); }
 .chip.personal { background: var(--bad-soft); color: var(--bad); }
+button.chip { border: 0; cursor: pointer; font-family: inherit; }
+.chip.rep { background: var(--ok-soft); color: var(--ok); }
 .chip.stmt { background: var(--wait-soft); color: var(--wait); font-weight: 500; }
 .chip.pend { background: transparent; color: var(--warn); border: 1px dashed var(--warn); font-weight: 600; }
 .feed-panel { display: grid; gap: 10px; justify-items: start; }
@@ -396,7 +398,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v48</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v49</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -426,7 +428,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     </div>
     <div class="tgroup" aria-label="Receipt Agent Data sheet">
       <button id="saveSheet" class="btn" type="button" title="Write every saved receipt and card match to the Receipt Agent Data sheet">Save to Sheet</button>
-      <button id="copyDrive" class="btn" type="button" title="Save each receipt's PDF or photo, or the email itself as a Google Doc, into Company Receipts › Inbox copies, so anyone can open receipts that came into another inbox. Run it from accounting@.">Copy receipts to Drive</button>
+      <button id="copyDrive" class="btn" type="button" title="Save each receipt's PDF or photo, or the email itself as a Google Doc, into Company Receipts: a receipt matched to a charge goes in that card's month folder, the rest in Inbox copies, so anyone can open receipts that came into another inbox. Run it from accounting@.">Copy receipts to Drive</button>
       <a id="openSheet" class="btn ghost" target="_blank" rel="noopener" title="Open the Receipt Agent Data sheet">Sheet ↗</a>
     </div>
   </div>
@@ -557,6 +559,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   const INBOX = "accounting@twinhomebuyer.com";
   const GMAIL = "Gmail";
   const SOURCES = [
+    // A teammate's same-day purchase email to accounting (Juan's rule, Nov 5): what, amount, property, card and a photo.
+    // First in the list, so a report with "receipt" in its subject is read as a report.
+    { key: "reports", label: "Team purchase reports", q: 'from:twinhomebuyer.com -from:(accounting@twinhomebuyer.com OR receipts@twinhomebuyer.com OR juan@twinhomebuyer.com) -subject:(re OR fwd OR fw) -subject:"receipt agent" -subject:"receipt inbox" (bought OR purchased OR purchase OR "approved by" OR "bought by")' },
     // receipts@ copies arrive as "'The Home Depot' via Receipts Forwarding", so match the name as well as the address.
     { key: "homedepot", label: "Home Depot", q: 'from:(homedepot.com OR "home depot") subject:receipt' },
     { key: "amazon", label: "Amazon", q: 'from:(amazon.com OR "amazon.com") subject:(shipped OR ordered OR refund)' },
@@ -1214,7 +1219,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (c.error) { box.append(el("p", "pv-note", c.error)); return; }
     if (c.driveCopy) {
       const w = el("div", "pv-drive");
-      w.append(el("p", "pv-note", "This receipt came into another inbox. Its copy is in Company Receipts › Inbox copies:"));
+      w.append(el("p", "pv-note", "This receipt came into another inbox. Its copy is in Company Receipts › " + (c.filed ? c.filed.folder + " › " + c.filed.month : "Inbox copies") + ":"));
       for (const f of c.driveCopy) {
         const a = el("a", "btn", (f.kind === "pdf" ? "Open the PDF" : f.kind === "image" ? "Open the photo" : f.kind === "email" ? "Open the email" : "Open the email text") + " in Drive ↗");
         a.href = f.url; a.target = "_blank"; a.rel = "noopener"; a.title = f.name;
@@ -1571,7 +1576,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       }
       const rr = allRows().find(x => x.id === id);
       msgCache.set(id, rr && rr.driveCopy && rr.driveCopy.length && e && e.code === "tool_error"
-        ? { driveCopy: rr.driveCopy }
+        ? { driveCopy: rr.driveCopy, filed: rr.filed || null }
         : { error: e && e.code === "tool_error"
           ? "This receipt came into another inbox and isn't in yours, and it has no copy in Drive yet. Ask Christine to click Copy receipts to Drive on accounting@."
           : gmailMessage(e) });
@@ -2059,6 +2064,45 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const internal = m.source === "other" && teammate && !m.viaReceipts && !/^\s*(fwd?|fw)\s*:/i.test(subject) && !crew;
       if (unpaid || replyChain || internal) { x.isReceipt = false; x.kind = "other"; }
     }
+    if (m.source === "reports") readReport(m, raw, subject, x);
+    return x;
+  }
+
+  // A purchase report: the sender bought it unless a "Bought by:" line says otherwise; "Approved by:" names the approver.
+  const REPORT_VENDORS = [[/home\s*depot/i, "Home Depot"], [/lowe'?s/i, "Lowe's"], [/amazon/i, "Amazon"], [/costco/i, "Costco"], [/walmart/i, "Walmart"],
+    [/harbor freight/i, "Harbor Freight"], [/ace hardware/i, "Ace Hardware"], [/sherwin/i, "Sherwin-Williams"], [/staples/i, "Staples"], [/office depot/i, "Office Depot"]];
+  function readReport(m, raw, subject, x) {
+    const body = String(raw || "").split(/\n\s*On .{8,160}wrote:\s*\n|\n-{3,}\s*Forwarded message/i)[0];
+    const text = subject + "\n" + body;
+    const line = re => { const h = text.match(re); return h ? h[1].replace(/\s+/g, " ").replace(/[.\s]+$/, "").trim() : ""; };
+    const amounts = [...text.matchAll(/\$\s?([\d,]+\.\d{2})\b/g)].map(h => num(h[1]));
+    const distinct = [...new Set(amounts)];
+    const labeled = text.match(/\b(?:amount|total|paid|cost|price)\b[^$\n]{0,30}\$\s?([\d,]+\.\d{2})/i);
+    // No amount, or a page of figures with none called the amount: not a purchase report.
+    if (!distinct.length || (!labeled && distinct.length > 3)) { x.isReceipt = false; x.kind = "other"; return x; }
+    x.kind = "report";
+    x.total = labeled ? num(labeled[1]) : distinct.length === 1 ? distinct[0] : null;
+    const snd = String(m.sender || "");
+    const own = cleanName((snd.match(/^\s*"?([^"<]+?)"?\s*</) || [])[1] || "") || (snd.match(/([a-z]+)@/i) || [])[1] || "";
+    const name = t => String(t || "").replace(/\s+(and|on|for|at)\b.*$/i, "").trim().slice(0, 60);
+    x.boughtBy = name(line(/\bbought\s+by\s*:?\s*([A-Za-z][^\n,;]{1,60})/i)) || (own ? own.charAt(0).toUpperCase() + own.slice(1) : null);
+    x.approvedBy = name(line(/\bapproved\s*(?:by)?\s*:\s*([A-Za-z][^\n,;]{1,60})/i) || line(/\bapproved\s+by\s+([A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+){0,2})/)) || null;
+    const prop = line(/\b(?:property|address|job|location|for property)\s*:\s*([^\n]{3,80})/i);
+    const addr = text.match(/\b\d{2,6}\s+(?:[A-Za-z0-9.'-]+\s){0,4}?(?:st|street|ave|avenue|dr|drive|ct|court|ter|terrace|rd|road|blvd|boulevard|way|ln|lane|pl|place|cir|circle|pkwy)\b\.?/i);
+    x.property = str(prop || (addr ? addr[0] : /\b(the\s+)?office\b/i.test(body) ? "Office" : ""), 80) || null;
+    x.whatFor = str(line(/\b(?:what(?:\s+(?:i|we)\s+bought)?|items?|bought|purchased|description|for)\s*:\s*([^\n]{2,100})/i) || subject.replace(/^\s*(purchase(d)?|bought|receipt)\s*[:\-]?\s*/i, ""), 100) || null;
+    x.items = x.whatFor || x.items;
+    if (!x.vendor) {
+      const v = line(/\b(?:vendor|store|merchant|bought at|purchased at)\s*:?\s*([^\n,;]{2,60})/i);
+      const known = REPORT_VENDORS.find(([re]) => re.test(text));
+      x.vendor = str(v, 60) || (known ? known[1] : null);
+    }
+    if (!x.cardLast4) {
+      const card = text.match(/\b(?:card|amex|american express|visa|mastercard|discover|capital one|cap one|chase|citi|wells fargo|relay|ending(?:\s+in)?)\D{0,14}(\d{4})\b/i);
+      if (card) x.cardLast4 = card[1];
+    }
+    x.photo = (m.attachments || []).length > 0;
+    if (!x.location) x.location = x.property;
     return x;
   }
 
@@ -2166,8 +2210,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const details = await extract(msgs);
       for (const [id, x] of await extractImages(imgMsgs)) details.set(id, x);
       let done = 0;
-      for (const [id, x] of details) {
+      for (const [id, got] of details) {
         const cur = allRows().find(r => r.id === id);
+        const was = (cur && cur.extracted) || {};
+        const x = was.kind === "report"
+          ? Object.assign({}, got, { kind: "report", isReceipt: true, boughtBy: was.boughtBy || null, approvedBy: was.approvedBy || null, property: was.property || null, whatFor: was.whatFor || got.items || null, photo: !!was.photo })
+          : got;
         const patch = { extracted: x };
         if (x.isReceipt === false && cur && (cur.status || "new") === "new") patch.status = "not_receipt";
         if (await saveFields(id, patch)) done++;
@@ -2323,6 +2371,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           chargeNo: prev.chargeNo || [],
           driveCopy: prev.driveCopy || [],
           driveOld: prev.driveOld || [],
+          filed: prev.filed || null,
           scannedAt: now,
           scannedBy: state.account || ""
         };
@@ -3091,6 +3140,12 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     return false;
   }
   // First with the vendor word; then, for amounts with cents, the amount alone, which only counts as a possible match.
+  // Drive files this page made from emailed receipts: the email is the receipt, so its copy never matches a charge on its own.
+  function copyIds() {
+    const ids = new Set();
+    for (const d of state.docs.values()) for (const f of [].concat(d.driveCopy || [], d.driveOld || [])) if (f && f.id) ids.add(f.id);
+    return ids;
+  }
   async function driveFind(c, used) {
     const amt = Math.abs(c.amount);
     const forms = amountForms(amt), word = vendorWord(c);
@@ -3098,8 +3153,9 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       " and (mimeType = 'application/pdf' or mimeType contains 'image/') and createdTime > '" + isoDay(c.date, -20) + "'";
     const look = async (q, possible) => {
       const p = (await driveCall({ query: q, pageSize: 5, snippetVerbosity: "DETAILED" })) || {};
+      const copies = copyIds();
       for (const g of p.files || []) {
-        if (used.has(g.id)) continue;
+        if (used.has(g.id) || copies.has(g.id)) continue;
         const t = parseFiled(g.title);
         const text = String(g.title || "") + " " + String(g.contentSnippet || "");
         const titleOk = t && Math.abs(Math.abs(t.amount) - amt) < 0.005;
@@ -3180,8 +3236,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     try {
       setStatus("Checking Company Receipts in Google Drive…");
       const cards = await driveAll("parentId = '" + RECEIPTS_ROOT + "' and mimeType = 'application/vnd.google-apps.folder'", 20);
-      state.cardFolders = cards.map(f => ({ id: f.id, title: String(f.title || "").trim() })).filter(f => f.title);
-      const cardName = new Map(cards.map(f => [f.id, String(f.title || "").trim()]));
+      state.cardFolders = cards.map(f => ({ id: f.id, title: String(f.title || "").trim() })).filter(f => f.title && !/^inbox copies$/i.test(f.title));
+      const cardName = new Map(state.cardFolders.map(f => [f.id, f.title]));
       const months = monthsBetween(model.from, model.to);
       const monthFolders = [];
       for (const ym of months) {
@@ -3198,7 +3254,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
           seenIds.add(g.id);
           const p = parseFiled(g.title);
           const url = String(g.viewUrl || "");
-          if (p) files.push(Object.assign(p, { card: mf.card, ym: mf.ym, name: String(g.title || "").slice(0, 160), url: /^https:\/\/(drive|docs)\.google\.com\//.test(url) ? url : "" }));
+          if (p) files.push(Object.assign(p, { id: g.id, card: mf.card, ym: mf.ym, name: String(g.title || "").slice(0, 160), url: /^https:\/\/(drive|docs)\.google\.com\//.test(url) ? url : "" }));
         }
         done++;
         setStatus("Reading Company Receipts: " + done + " of " + monthFolders.length + " folders, " + files.length + " receipts so far…");
@@ -3407,7 +3463,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       if (hit) { usedPosted.add(hit.k); hit.aliasK = c.k; } else charges.push(c);
     }
     const byCharge = new Map(), byReceipt = new Map();
-    if (!charges.length) return { charges, byCharge, byReceipt, from: null, to: null };
+    if (!charges.length) return { charges, byCharge, byReceipt, byReport: new Map(), reportIds: new Set(), unrec: new Map(), from: null, to: null };
     const days = charges.map(c => c.date).sort();
     const receipts = allRows().filter(r => (r.status || "new") !== "not_receipt" && r.extracted);
     const pairs = [];
@@ -3429,6 +3485,17 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         const diff = dayNum(c.date) - dayNum(rd);
         if (diff < -3 || diff > 10) continue;
         score += Math.abs(diff) * 0.5;
+        if (x.kind === "report") {
+          if (!x.photo || diff > 7) continue;
+          const cardOk = digits.size && x.cardLast4 && digits.has(x.cardLast4);
+          if (digits.size && x.cardLast4 && !cardOk) continue;
+          const vr2 = vendorKey([x.vendor, r.subject].join(" "));
+          if (vc && vr2 && vc !== vr2) continue;
+          const vendOk = (vc && vr2 && vc === vr2) || (x.vendor && nameOverlap(c.name + " " + c.memo, x.vendor));
+          if (!cardOk && !vendOk) { if (quality === "matched") quality = "check"; score += 6; }
+          pairs.push({ c, r, quality, score: score + 3 });
+          continue;
+        }
         const vr = vendorKey([x.vendor, senderName(r), r.subject].join(" "));
         if (vc && vr) { if (vc !== vr) continue; score -= 2; }
         else if (quality === "check") continue;
@@ -3447,9 +3514,36 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       byCharge.set(p.c.k, { r: p.r, quality: p.quality });
       byReceipt.set(p.r.id, { c: p.c, quality: p.quality });
     }
+    // Purchase reports: same amount to the cent, sent up to 3 days after or 7 days before the charge posts, same card when it says one.
+    const byReport = new Map(), reportIds = new Set();
+    const reports = receipts.filter(r => r.extracted.kind === "report");
+    if (reports.length) {
+      const cand = [];
+      for (const r of reports) {
+        const paired = byReceipt.get(r.id);
+        if (paired) { cand.push({ c: paired.c, r, score: -100 }); continue; }
+        const x = r.extracted, t = num(x.total), rd = localDay(x.date || r.emailDate);
+        if (t === null || !rd) continue;
+        for (const c of charges) {
+          if (c.payment || Math.abs(t - c.amount) >= 0.005 || (r.chargeNo && r.chargeNo.includes(c.k))) continue;
+          const diff = dayNum(c.date) - dayNum(rd);
+          if (diff < -3 || diff > 7) continue;
+          const digits = cardDigits(c.account, c.memo);
+          if (digits.size && x.cardLast4 && !digits.has(x.cardLast4)) continue;
+          cand.push({ c, r, score: Math.abs(diff) - (digits.size && x.cardLast4 ? 5 : 0) });
+        }
+      }
+      cand.sort((a, b) => a.score - b.score);
+      for (const p of cand) {
+        if (byReport.has(p.c.k) || reportIds.has(p.r.id)) continue;
+        byReport.set(p.c.k, p.r);
+        reportIds.add(p.r.id);
+      }
+    }
     // Charges still without an emailed receipt: look for a receipt Kristine already filed in Company Receipts.
     if (state.filed && state.filed.length) {
       const used = new Set();
+      const copies = copyIds();
       for (const c of charges) {
         if (c.payment || c.marked || byCharge.has(c.k)) continue;
         const vc = vendorKey(c.name + " " + c.memo);
@@ -3457,7 +3551,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         const cmon = c.date.slice(0, 7), cday = +c.date.slice(8, 10);
         let best = null, bestScore = 1e9;
         state.filed.forEach((f, i) => {
-          if (used.has(i) || Math.abs(f.amount - c.amount) >= 0.005) return;
+          if (used.has(i) || Math.abs(f.amount - c.amount) >= 0.005 || (f.id && copies.has(f.id))) return;
           // Filed by month: the same month, or the neighbouring month for charges in the first or last 3 days.
           const gap = f.ym === cmon ? 0 : (cday >= 28 && f.ym === shiftMonth(cmon, 1)) || (cday <= 3 && f.ym === shiftMonth(cmon, -1)) ? 1 : -1;
           if (gap < 0) return;
@@ -3503,19 +3597,31 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     // Matching ran on every charge; the list, tiles, deadlines, report and exports leave the hidden kinds out unless shown.
     const hiddenList = charges.filter(isHiddenKind);
     const kept = state.showBills ? charges : charges.filter(c => !isHiddenKind(c));
-    return { charges: kept, hiddenList, byCharge, byReceipt, from: days[0], to: days[days.length - 1] };
+    return { charges: kept, hiddenList, byCharge, byReceipt, byReport, reportIds, unrec: unrecognizedMap(charges, k => byCharge.has(k) || byReport.has(k)), from: days[0], to: days[days.length - 1] };
+  }
+  // Juan's rule (Oct 30): restaurants under $75 and gas need no receipt; the card statement is the record. Applied to both under $75.
+  const GAS_MEAL_CAT = /\b(meals?|restaurants?|dining|food|entertainment|fuel|gas(oline)?)\b/i;
+  const NOT_GAS_MEAL = /utilit|electric|pg&e|gas\s*(and|&)\s*electric|gas\s*company|propane|grocer|dues|subscription/i;
+  const GAS_MEAL_NAME = /\b(shell|chevron|arco|valero|exxon|mobil|union 76|76 (gas|station)|costco gas|speedway|circle k|sinclair|texaco|conoco|phillips 66|gas station|fuel|mcdonald'?s?|starbucks|chipotle|taco bell|in-n-out|subway|burger king|wendy'?s|jack in the box|panda express|chick-fil-a|denny'?s|ihop|domino'?s|pizza|doordash|grubhub|uber\s*eats|cafe|coffee|restaurant|grill|taqueria|bakery|sushi|pho|bbq)\b/i;
+  function smallGasMeal(c) {
+    if (c.payment || !(c.amount > 0) || c.amount >= 75) return false;
+    const cat = String((c.pending ? c.suggest : c.split) || "");
+    const name = [c.name, c.memo].join(" ");
+    if (NOT_GAS_MEAL.test(cat + " " + name)) return false;
+    return GAS_MEAL_CAT.test(cat) || GAS_MEAL_NAME.test(name);
   }
   function chargeState(c) {
     if (c.payment || c.marked) return "skipped";
     const m = model.byCharge.get(c.k);
     if (m) return m.quality === "filed" ? "drive" : m.quality;
+    if (smallGasMeal(c)) return "skipped";
     return c.amount < 0 ? "skipped" : "missing";   // a refund is money back: nothing to chase
   }
   function receiptsNoCharge() {
     if (!model || !model.charges.length) return [];
     const digits = pickedDigits();
     return allRows().filter(r => {
-      if ((r.status || "new") === "not_receipt" || model.byReceipt.has(r.id)) return false;
+      if ((r.status || "new") === "not_receipt" || model.byReceipt.has(r.id) || (model.reportIds && model.reportIds.has(r.id))) return false;
       if (digits && !digits.has(String((r.extracted && r.extracted.cardLast4) || ""))) return false;
       if (amountOf(r).value === null) return false;
       const d = localDay((r.extracted && r.extracted.date) || r.emailDate);
@@ -3720,21 +3826,65 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   // ---------- per charge: who bought, who approved, what for, property, personal or unusual ----------
   const infoOf = c => Object.assign({}, (c.aliasK && state.info.get(c.aliasK)) || {}, state.info.get(c.k) || {});
-  const boughtByOf = c => infoOf(c).boughtBy || state.holders[cardOf(c)] || "";
-  const approvedByOf = c => infoOf(c).approvedBy || "";
-  const whatForOf = c => infoOf(c).whatFor || (c.payment ? c.type : c.pending ? (c.suggest ? whatFor({ split: c.suggest }) : "Not categorized yet") : whatFor(c));
+  // The purchase report for a charge, when a teammate sent one.
+  const reportOf = c => (model && model.byReport && (model.byReport.get(c.k) || (c.aliasK && model.byReport.get(c.aliasK)))) || null;
+  const repX = c => { const r = reportOf(c); return (r && r.extracted) || {}; };
+  const boughtByOf = c => infoOf(c).boughtBy || repX(c).boughtBy || state.holders[cardOf(c)] || "";
+  const approvedByOf = c => infoOf(c).approvedBy || repX(c).approvedBy || "";
+  const whatForOf = c => infoOf(c).whatFor || repX(c).whatFor || (c.payment ? c.type : c.pending ? (c.suggest ? whatFor({ split: c.suggest }) : "Not categorized yet") : whatFor(c));
   function propertyOf(c) {
     const own = infoOf(c).property;
     if (own) return own;
     const p = placeOf(c.pending ? c.suggest : c.split) || "";
     if (p && p !== "Property not set") return p;
+    if (repX(c).property) return repX(c).property;
     const hit = model && model.byCharge.get(c.k);
     return hit && hit.filed && hit.filed.proxtra && hit.filed.job ? "Job: " + hit.filed.job : "";
   }
   const flaggedOf = c => !!infoOf(c).flag || isPersonal(c);
+  const unrecOf = c => (model && model.unrec && model.unrec.get(c.k)) || null;
+  // Who was paid, in two plain words ("TST* JOE'S CAFE 1234" and "Joe's Cafe" are the same vendor).
+  const payeeKey = c => String(c.name || c.memo || "").toLowerCase()
+    .replace(/^\s*(aplpay|tst\*|sq ?\*|py ?\*|paypal ?\*|dd ?\*)\s*/, "").replace(/\bx{2,}\d+.*$/, "")
+    .replace(/[^a-z]+/g, " ").trim().split(" ").filter(w => w.length > 1).slice(0, 2).join(" ");
+  function unrecognizedMap(all, identified) {
+    const out = new Map();
+    const buys = all.filter(c => !c.payment && c.amount > 0);
+    if (!buys.length) return out;
+    const first = buys.reduce((a, c) => (c.date < a ? c.date : a), buys[0].date);
+    const byV = new Map();
+    for (const c of buys) { const k = payeeKey(c); if (!k) continue; if (!byV.has(k)) byV.set(k, []); byV.get(k).push(c); }
+    const listed = new Set(Object.keys(state.holders || {}).flatMap(k => k.split(/\s*&\s*/)).filter(Boolean));
+    for (const c of buys) {
+      const why = [];
+      const k = payeeKey(c), list = (k && byV.get(k)) || [];
+      // New vendor: $100 or more, nothing from it in the 30+ days of charges before, and nothing (receipt, purchase report) saying what it is.
+      // Cash and ATM withdrawals, payments named for a property, and charges already flagged personal are left out.
+      const payee = String(c.name || c.memo || "");
+      if (k && c.amount >= 100 && dayNum(c.date) - dayNum(first) >= 30 && !list.some(o => o !== c && o.date < c.date)
+        && !identified(c.k) && !(c.aliasK && identified(c.aliasK)) && !smallGasMeal(c) && !isPersonal(c)
+        && !/\b(cash|atm|withdrawal)\b|^\s*\d{2,6}\s|payment link/i.test(payee)) why.push("new vendor");
+      // Unusual amount: five or more earlier charges from the vendor, and this one over 5 times the usual and $1,000 more.
+      const others = list.filter(o => o !== c).map(o => o.amount).sort((a, b) => a - b);
+      if (others.length >= 5) {
+        const med = others[Math.floor(others.length / 2)];
+        if (med > 0 && c.amount > med * 5 && c.amount - med > 1000) why.push(Math.round(c.amount / med) + "x the usual " + money(med));
+      }
+      // A card number on the charge (not the account number) that isn't on the company card list.
+      const memoCard = ([...String(c.memo || "").matchAll(/(?:x{2,}|\*+|ending\s*(?:in\s*)?)(\d{4})\b/gi)].pop() || [])[1];   // the last one: a store number can come first
+      if (listed.size && CARD_ACCT.test(String(c.account || "")) && memoCard && !listed.has(memoCard)) why.push("card " + memoCard + " is not on the company list");
+      // An unknown subscription: the same amount in two or more months, with no category in QuickBooks.
+      const months = new Set(list.map(o => o.date.slice(0, 7)));
+      const steady = list.length >= 2 && list.every(o => Math.abs(o.amount - c.amount) <= Math.max(1, c.amount * 0.15));
+      if (months.size >= 2 && steady && /^\s*$|uncategori[sz]ed|ask my accountant/i.test(String((c.pending ? c.suggest : c.split) || ""))) why.push("monthly charge with no category");
+      if (why.length) out.set(c.k, why);
+    }
+    return out;
+  }
   // Purchases carry the flags: not payments, refunds, or bills a statement covers.
   const isPurchase = c => !c.payment && c.amount > 0 && !isStatement(c);
   const FLAGS = [
+    { key: "f:unrec", label: "Not recognized", test: c => !!unrecOf(c) },
     { key: "f:noprop", label: "No property", test: c => !propertyOf(c) },
     { key: "f:noapprover", label: "No approver", test: c => !approvedByOf(c) },
     { key: "f:nobuyer", label: "Unknown buyer", test: c => !boughtByOf(c) },
@@ -3744,7 +3894,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     if (!isPurchase(c)) return [];
     const out = [];
     if (chargeState(c) === "missing") out.push("No receipt");
-    for (const f of FLAGS) if (f.test(c)) out.push(f.label);
+    for (const f of FLAGS) if (f.test(c)) out.push(f.key === "f:unrec" ? "Not recognized (" + unrecOf(c).join(", ") + ")" : f.label);
     return out;
   }
   // Who to ask: whoever bought it (the card holder until someone fills it in). By when: the receipt deadline.
@@ -3918,7 +4068,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   async function cardFolderList() {
     if (state.cardFolders) return state.cardFolders;
     const cards = await driveAll("parentId = '" + RECEIPTS_ROOT + "' and mimeType = 'application/vnd.google-apps.folder'", 20);
-    state.cardFolders = cards.map(f => ({ id: f.id, title: String(f.title || "").trim() })).filter(f => f.title);
+    state.cardFolders = cards.map(f => ({ id: f.id, title: String(f.title || "").trim() })).filter(f => f.title && !/^inbox copies$/i.test(f.title));
     return state.cardFolders;
   }
   // The card folder that shares a word or the last 4 with the charge's account ("Amex - 2001" and "AmEx Receipt").
@@ -4022,6 +4172,17 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   }
   // A receipt needs a copy when it has none, or only the plain-text kind v47 made.
   const needsCopy = r => !(r.driveCopy && r.driveCopy.some(f => f && f.kind !== "text"));
+  // The charge a receipt is matched to for sure (same amount and vendor, or confirmed by a person).
+  const sureCharge = r => { const p = model && model.byReceipt.get(r.id); return p && p.quality === "matched" ? p.c : null; };
+  const needsFiling = r => { const c = sureCharge(r); return !!c && !(r.filed && r.filed.k === c.k); };
+  // Juan's four parts (date, vendor, amount, card), amount first like the rest of Company Receipts: "$10.01 - Twilio - 2026-10-16 - 5004".
+  function filedName(c, r) {
+    const vendor = String(c.name || vendorOf(r) || c.memo || "Receipt").replace(/^\s*(aplpay|tst\*|sq ?\*|py ?\*|paypal ?\*|dd ?\*)\s*/i, "").replace(/\bx{2,}\d+.*$/i, "")
+      .replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 50) || "Receipt";
+    const x = r.extracted || {};
+    const card = x.cardLast4 && cardDigits(c.account, c.memo).has(x.cardLast4) ? x.cardLast4 : (cardOf(c).split(/\s*&\s*/)[0] || "");
+    return moneyName(c.amount) + " - " + vendor + " - " + c.date + (card ? " - " + card : "");
+  }
   async function inboxCopiesFolder() {
     if (inboxRoot) return inboxRoot;
     inboxRoot = await findOrMakeInboxCopies();
@@ -4039,16 +4200,18 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
   async function copyReceiptsToDrive() {
     if (copying) { copyStop = true; setStatus("Stopping after this receipt…"); return; }
     if (!mcp || !db) { banner("Open this page in claude.ai to copy receipts to Drive.", true); return; }
-    const todo = allRows().filter(r => !state.temp.has(r.id) && (r.status || "new") !== "not_receipt" && needsCopy(r));
-    if (!todo.length) { setStatus("Every saved receipt already has its copy in Drive."); return; }
+    const todo = allRows().filter(r => !state.temp.has(r.id) && (r.status || "new") !== "not_receipt" && (needsCopy(r) || needsFiling(r)));
+    if (!todo.length) { setStatus("Every saved receipt already has its copy in Drive, and every matched one is filed in its card folder."); return; }
     copying = true; copyStop = false;
     const btn = $("copyDrive");
     btn.textContent = "Stop copying";
     banner("");
-    let done = 0, notHere = 0, failed = 0, redone = 0;
+    let done = 0, notHere = 0, failed = 0, redone = 0, filedN = 0;
     try {
       const root = await inboxCopiesFolder();
       const months = new Map();
+      let cardFolders = [];
+      try { cardFolders = await cardFolderList(); } catch (e) { if (FATAL.has(e && e.code)) throw e; cardFolders = []; }
       for (let i = 0; i < todo.length && !copyStop; i++) {
         const r = todo[i], x = r.extracted || {};
         setStatus("Copying receipts to Drive: " + (i + 1) + " of " + todo.length + " (" + done + " copied)…");
@@ -4064,11 +4227,14 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         if (!m) { notHere++; continue; }
         try {
           const day = localDay(x.date || r.emailDate) || localDay(new Date().toISOString());
-          const label = MONTH_UP[+day.slice(5, 7) - 1] + " " + day.slice(0, 4);
-          if (!months.has(label)) months.set(label, await monthFolder(root, day));
-          const folder = months.get(label);
+          // Matched to a charge: that card's folder, the charge's month. Otherwise Inbox copies, the receipt's month.
+          const ch = sureCharge(r), cf = ch ? guessFolder(ch, cardFolders) : null;
+          const fday = cf ? ch.date : day;
+          const key = (cf ? cf.id : "inbox") + "|" + fday.slice(0, 7);
+          if (!months.has(key)) months.set(key, await monthFolder(cf || root, fday));
+          const folder = months.get(key);
           const a = amountOf(r).value;
-          const base = (a === null ? "No amount" : moneyName(a)) + " - " + (safeName(vendorOf(r)) || "Receipt") + " - " + shortDate(day);
+          const base = cf ? filedName(ch, r) : (a === null ? "No amount" : moneyName(a)) + " - " + (safeName(vendorOf(r)) || "Receipt") + " - " + shortDate(day);
           const files = [];
           let parts = [];
           if (fileAttachments(m).length) { try { parts = (await fileParts(r.id)).filter(p => p.pdf || p.bytes.length >= 15000).slice(0, 3); } catch (e) { parts = []; } }
@@ -4089,18 +4255,20 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
             catch (e) { if (FATAL.has(e && e.code) || !html) throw e; made = await upload(""); } // a layout Drive can't take: keep the words
             if (made.id) files.push({ id: made.id, name: base, kind: "email", url: /^https:\/\/(drive|docs)\.google\.com\//.test(String(made.viewUrl || "")) ? made.viewUrl : "https://docs.google.com/document/d/" + made.id + "/edit" });
           }
-          // v47's plain-text copies are listed in driveOld, so they can be cleared from Drive.
-          const old = (r.driveCopy || []).filter(f => f && f.kind === "text").map(f => ({ id: f.id, name: f.name }));
-          const patch = old.length ? { driveCopy: files, driveOld: (r.driveOld || []).concat(old) } : { driveCopy: files };
-          if (files.length && await saveFields(r.id, patch)) { done++; if (old.length) redone++; } else failed++;
+          // Copies this one replaces (v47's plain text, or the Inbox copy of a receipt now filed in its card folder) go in driveOld for clean-up.
+          const old = (r.driveCopy || []).filter(f => f && (cf || f.kind === "text") && !files.some(n => n.id === f.id)).map(f => ({ id: f.id, name: f.name }));
+          const patch = { driveCopy: files };
+          if (old.length) patch.driveOld = (r.driveOld || []).concat(old);
+          if (cf) patch.filed = { k: ch.k, cardId: ch.cardId, folder: cf.title, month: folder.title, at: new Date().toISOString() };
+          if (files.length && await saveFields(r.id, patch)) { done++; if (old.some(f => /\.txt$/i.test(String(f.name || "")))) redone++; if (cf) filedN++; } else failed++;
         } catch (e) {
           if (FATAL.has(e && e.code)) throw e;
           failed++;
         }
       }
       const left = todo.length - done - notHere - failed;
-      setStatus("Copied " + done + (done === 1 ? " receipt" : " receipts") + " to Company Receipts › Inbox copies" +
-        (redone === 1 ? " (1 was a plain-text copy, now saved as it looks)." : redone ? " (" + redone + " were plain-text copies, now saved as they look)." : ".") +
+      setStatus("Copied " + done + (done === 1 ? " receipt" : " receipts") + " to Company Receipts" + (filedN ? " (" + filedN + " filed in their card's month folder, the rest in Inbox copies)" : " › Inbox copies") +
+        (redone === 1 ? ". 1 was a plain-text copy, now saved as it looks." : redone ? ". " + redone + " were plain-text copies, now saved as they look." : ".") +
         (notHere ? " " + notHere + (notHere === 1 ? " isn't" : " aren't") + " in this inbox: run this from the inbox they came into (accounting@)." : "") +
         (failed ? " " + failed + " didn't copy; click again to retry them." : "") +
         (copyStop && left > 0 ? " Stopped with " + left + " left; click again to carry on." : ""));
@@ -4274,7 +4442,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
     ftabs.textContent = "";
     for (const f of FLAGS) {
       const list = counts[f.key] || [];
-      const b = el("button", "kpi " + (f.key === "f:personal" ? "t-bad" : "t-warn"));
+      const b = el("button", "kpi " + (f.key === "f:personal" || f.key === "f:unrec" ? "t-bad" : "t-warn"));
       b.type = "button";
       b.dataset.key = f.key;
       b.setAttribute("role", "tab");
@@ -4329,7 +4497,8 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       check: "Possible receipts to confirm: same amount, but the vendor couldn't be confirmed. Open the receipt, then Confirm or Not it.",
       missing: "Charges with no receipt yet. Upload one, or mark it No receipt needed. Some may have a receipt attached in QuickBooks, which this page can't see.",
       nocharge: "Receipts with no charge in the card report yet. Usually the charge is still in QuickBooks Bank transactions (upload the For review export for that card), or it was paid on an account the report doesn't cover." + (state.cCard ? " With a card picked, only receipts that show its last four digits are listed." : ""),
-      skipped: "Card payments, transfers, deposits, refunds and credits, plus charges marked No receipt needed.",
+      skipped: "Card payments, transfers, deposits, refunds and credits, gas and meals under $75 (company rule: the card statement is the record), plus charges marked No receipt needed.",
+      "f:unrec": "Charges nobody would expect: a new vendor ($100 or more) with no receipt or purchase report, an amount over 5 times the usual for that vendor, a card that isn't on the company list, or a monthly charge with no category. Ask the buyer what each one is, the same day.",
       "f:noprop": "Purchases with no property or office. Click Fill in to set it, or tick several and fill them in together.",
       "f:noapprover": "Purchases nobody has approved yet. Every purchase needs a named approver: tick the ones one person approved and fill in Approved by once.",
       "f:nobuyer": "Purchases with no buyer. Once Christine sets who holds each card (below), the card holder fills in here; change it when someone else bought it.",
@@ -4411,9 +4580,21 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       const inf = infoOf(c);
       f.append(el("span", null, (c.pending && !inf.whatFor && c.suggest ? "Suggested: " : "") + whatForOf(c)));
       if (c.pending) { const pc = el("span", "chip pend", "Not in QuickBooks yet"); pc.title = "In Bank transactions, For review. QuickBooks' suggestion: " + (c.suggest || "none"); f.append(pc); }
-      const chip = inf.property ? el("span", "chip", inf.property) : placeChip(c.pending ? Object.assign({}, c, { split: c.suggest || "" }) : c);
+      const qbPlace = placeOf(c.pending ? c.suggest : c.split) || "";
+      const rp = !inf.property && (!qbPlace || qbPlace === "Property not set") ? repX(c).property : "";
+      const chip = inf.property ? el("span", "chip", inf.property) : rp ? el("span", "chip", rp) : placeChip(c.pending ? Object.assign({}, c, { split: c.suggest || "" }) : c);
       if (chip) f.append(chip);
       if (inf.flag && !isPersonal(c)) f.append(el("span", "chip personal", "Personal or unusual"));
+      const un = isPurchase(c) && unrecOf(c);
+      if (un) { const uc = el("span", "chip personal", "Not recognized: " + un.join(", ")); uc.title = "Ask the buyer what this is."; f.append(uc); }
+      const rep = reportOf(c);
+      if (rep) {
+        const rb = el("button", "chip rep", "Purchase report · " + (repX(c).boughtBy || senderName(rep)));
+        rb.type = "button";
+        rb.title = "Open the purchase report this charge was matched to";
+        rb.onclick = () => openReceipt(rep.id);
+        f.append(rb);
+      }
       if (!c.payment && s === "missing" && isStatement(c)) f.append(el("span", "chip stmt", "Bill, loan, tax or payroll"));
       f.title = [c.type, c.split].filter(Boolean).join(" · ");
       row.append(f);
@@ -4448,7 +4629,7 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
         link.onclick = () => openReceipt(hit.r.id);
         m.append(link);
       } else if (s === "skipped") {
-        m.append(el("span", "pill", c.payment ? "Payment or transfer" : isRefund(c) ? "Refund" : "No receipt needed"));
+        m.append(el("span", "pill", c.payment ? "Payment or transfer" : isRefund(c) ? "Refund" : !c.marked && smallGasMeal(c) ? "Gas or meal under $75" : "No receipt needed"));
       } else {
         m.append(el("span", "pill m-missing", "No receipt found"));
         const d = dueInfo(c);
@@ -4554,6 +4735,13 @@ kbd { font-family: var(--mono); font-size: 0.7rem; padding: 0 4px; border-radius
       "FLAGS"];
     const buys = c.missing.filter(x => !isStatement(x)).sort((a, b) => b.amount - a.amount);
     const bills = c.missing.filter(isStatement).sort((a, b) => b.amount - a.amount);
+    const unl = (c["f:unrec"] || []).slice().sort((a, b) => b.amount - a.amount);
+    if (unl.length) {
+      lines.push("Not recognized: " + unl.length + " (" + money(sumOf(unl)) + "), largest first");
+      unl.slice(0, 25).forEach((x, i) => lines.push(flagLine(x, i) + " Why: " + unrecOf(x).join(", ") + "."));
+      if (unl.length > 25) lines.push("...and " + (unl.length - 25) + " more in the Receipt Inbox page and the Receipt Agent Data sheet.");
+      lines.push("");
+    }
     const flagList = (title, list, max) => {
       lines.push(title + ": " + list.length + (list.length ? " (" + money(sumOf(list)) + "), largest first" : ""));
       list.slice(0, max).forEach((x, i) => lines.push(flagLine(x, i)));
