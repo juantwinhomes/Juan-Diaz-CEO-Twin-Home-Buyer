@@ -4,6 +4,7 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 
 - Still owed per this list: **$50,083.13** (119 charges $52,083.13, less $2,000.00 paid Oct 28). The Nov 6 statement shows $49,085.30; the $997.83 difference is refunds posted after Oct 26.
 - The $2,000.00 was paid Oct 28, 2026 from WF 8251 (confirmation Z4m4nmu3l) toward 519 Orizaba Ave, so 519 Orizaba now shows $12,271.23 left of $14,271.23.
+- Next payment due: **December 4, 2026** (Nov 6 statement, minimum $1,183.62). The November payment (due Nov 2) is paid, confirmation ZJRJGT9KK.
 - Recommended accounts: WF 8251 $48,066.62, Relay 5776 $2,016.51 (460 5th Ave).
 
 ## By property / group
