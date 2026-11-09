@@ -2,7 +2,7 @@
 
 Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), charges as of Oct 26, 2026, updated to the Nov 6, 2026 statement.
 
-- Still owed per this list: **$50,083.13** (119 charges $52,083.13, less $2,000.00 paid Oct 28). The Nov 6 statement shows $49,085.30; the $997.83 difference is refunds posted after Oct 26.
+- Still owed per this list: **$50,083.13** (119 charges $52,083.13, less $2,000.00 paid Oct 28). Nov 6 statement balance: $49,085.30.
 - The $2,000.00 was paid Oct 28, 2026 from WF 8251 (confirmation Z4m4nmu3l) toward 519 Orizaba Ave, so 519 Orizaba now shows $12,271.23 left of $14,271.23.
 - Next payment due: **December 4, 2026** (Nov 6 statement, minimum $1,183.62). The November payment (due Nov 2) is paid, confirmation ZJRJGT9KK.
 - Receipts: all charges have receipts except 6 (net $565.10): The Waterfront Restaurant, Auto Pride Car Wash, A&A Gas and Food Mart, AAA Rentals (2 lines), Belmont Doubletime.
