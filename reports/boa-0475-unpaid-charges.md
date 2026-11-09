@@ -2,9 +2,9 @@
 
 Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), charges as of Oct 26, 2026, updated to the Nov 6, 2026 statement.
 
-- Total owed: **$49,085.30**, matching the Nov 6 statement (119 charges $52,083.13, less $2,000.00 paid Oct 28, less $997.83 refunds posted after Oct 26)
+- Still owed per this list: **$50,083.13** (119 charges $52,083.13, less $2,000.00 paid Oct 28). The Nov 6 statement shows $49,085.30; the $997.83 difference is refunds posted after Oct 26.
 - The $2,000.00 was paid Oct 28, 2026 from WF 8251 (confirmation Z4m4nmu3l) toward 519 Orizaba Ave, so 519 Orizaba now shows $12,271.23 left of $14,271.23.
-- Recommended accounts: WF 8251 $47,068.79, Relay 5776 $2,016.51 (460 5th Ave).
+- Recommended accounts: WF 8251 $48,066.62, Relay 5776 $2,016.51 (460 5th Ave).
 
 ## By property / group
 
@@ -21,8 +21,7 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | 7426 Mulholland Dr | 3 | $442.04 |
 | 915 52nd St | 1 | $595.00 |
 | Office (company-wide) | 81 | $26,845.98 |
-| Refunds after Oct 26 | 0 | −$997.83 |
-| **Total still owed** | **119** | **$49,085.30** |
+| **Total still owed** | **119** | **$50,083.13** |
 
 ### 1202 Via Lucas (1 charges, $2,462.71)
 
@@ -198,9 +197,3 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | Jun 1, 2026 | Google Ads | Google Ads | Google search ads to reach home sellers | $73.37 |
 | Aug 22, 2026 | Uber | Travel | Vendor: Uber · Paid from: Equity Track 8251 | $25.95 |
 | Aug 22, 2026 | Uber | Travel | Vendor: Uber Fee Charge · Paid from: Equity Track 8251 | $5.00 |
-
-### Refunds after Oct 26 (0 charges, −$997.83)
-
-| Date | Vendor | Category | What it was for | Amount |
-|---|---|---|---|---:|
-| Nov 6, 2026 | Refunds/credits | Refunds (Nov 6 statement) | Refunds posted on the card after Oct 26, shown on the Nov 6 statement | −$997.83 |
