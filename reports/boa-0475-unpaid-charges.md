@@ -2,9 +2,9 @@
 
 Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), charges as of Oct 26, 2026.
 
-- Unpaid charges: **119**, total **$52,083.13**
-- Payment due Nov 2, 2026. Recommended accounts: WF 8251 $50,066.62, Relay 5776 $2,016.51 (460 5th Ave).
-- Paid since: **$2,000.00 on Oct 28, 2026 from WF 8251, confirmation Z4m4nmu3l**. It was a lump payment, not tied to specific charges, so all 119 charges stay listed. Balance after it: about **$50,083.13** (check the BOA site for the live balance).
+- Still owed: **$50,083.13** (119 charges, $52,083.13, less the $2,000.00 already paid)
+- The $2,000.00 was paid Oct 28, 2026 from WF 8251 (confirmation Z4m4nmu3l) toward 519 Orizaba Ave, so 519 Orizaba now shows $12,271.23 left of $14,271.23.
+- Payment due Nov 2, 2026. Recommended accounts: WF 8251 $48,066.62, Relay 5776 $2,016.51 (460 5th Ave).
 
 ## By property / group
 
@@ -17,11 +17,11 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | 2352 Menalto Ave | 5 | −$347.82 |
 | 255 Amber Dr San Francisco | 1 | −$39.82 |
 | 460 5th Avenue | 3 | $2,016.51 |
-| 519 Orizaba Ave | 2 | $14,271.23 |
+| 519 Orizaba Ave | 2 | $12,271.23 |
 | 7426 Mulholland Dr | 3 | $442.04 |
 | 915 52nd St | 1 | $595.00 |
 | Office (company-wide) | 81 | $26,845.98 |
-| **Total** | **119** | **$52,083.13** |
+| **Total still owed** | **119** | **$50,083.13** |
 
 ### 1202 Via Lucas (1 charges, $2,462.71)
 
@@ -90,12 +90,13 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | Sep 4, 2026 | Home Depot | Materials | Building materials for 460 5th Avenue | −$225.97 |
 | Sep 5, 2026 | Home Depot | Materials | Building materials for 460 5th Avenue | −$10.86 |
 
-### 519 Orizaba Ave (2 charges, $14,271.23)
+### 519 Orizaba Ave (2 charges, $12,271.23)
 
 | Date | Vendor | Category | What it was for | Amount |
 |---|---|---|---|---:|
 | Dec 17, 2025 | KH Plumbing Supply | Materials | Vendor: KH PLUMBING SUPPLY INC · Paid from: Equity Track 8251 | $144.53 |
 | Dec 23, 2025 | Factory Direct Floor | Materials | Flooring for 519 Orizaba - Equity Track | $14,126.70 |
+| Oct 28, 2026 | Payment (Bucket 1) | Payment | Already paid Oct 28, 2026 from WF 8251, confirmation Z4m4nmu3l | −$2,000.00 |
 
 ### 7426 Mulholland Dr (3 charges, $442.04)
 
