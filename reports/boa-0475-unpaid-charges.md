@@ -5,6 +5,7 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 - Still owed per this list: **$50,083.13** (119 charges $52,083.13, less $2,000.00 paid Oct 28). The Nov 6 statement shows $49,085.30; the $997.83 difference is refunds posted after Oct 26.
 - The $2,000.00 was paid Oct 28, 2026 from WF 8251 (confirmation Z4m4nmu3l) toward 519 Orizaba Ave, so 519 Orizaba now shows $12,271.23 left of $14,271.23.
 - Next payment due: **December 4, 2026** (Nov 6 statement, minimum $1,183.62). The November payment (due Nov 2) is paid, confirmation ZJRJGT9KK.
+- Receipts: all charges have receipts except 6 (net $565.10): The Waterfront Restaurant, Auto Pride Car Wash, A&A Gas and Food Mart, AAA Rentals (2 lines), Belmont Doubletime.
 - Recommended accounts: WF 8251 $48,066.62, Relay 5776 $2,016.51 (460 5th Ave).
 
 ## By property / group
@@ -53,7 +54,7 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 
 | Date | Vendor | Category | What it was for | Amount |
 |---|---|---|---|---:|
-| Dec 3, 2025 | Belmont Doubletime | Auto Expenses (this includes tolls, fuel and maintenance) | Gas station: fuel for the work truck (Silverado) | $82.00 |
+| Dec 3, 2025 | Belmont Doubletime | Auto Expenses (this includes tolls, fuel and maintenance) | Gas station: fuel for the work truck (Silverado) **(no receipt)** | $82.00 |
 | Dec 3, 2025 | Home Depot | Materials | Home Depot Materials/Supplies - 17221 Via Estrella - Equity Track Inc | −$131.21 |
 | Dec 3, 2025 | Home Depot | Materials | Home Depot Materials/Supplies - 17221 Via Estrella - Equity Track Inc | −$965.60 |
 | Dec 5, 2025 | Home Depot | Materials | Home Depot Refund - 17221 Via Estrella - Equity Track Inc | −$253.75 |
@@ -74,8 +75,8 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | Nov 21, 2025 | Home Depot | Materials | Home Depot Return - 2352 Menalto Ave - Equity Track Inc | −$9.32 |
 | Dec 1, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 2352 Menalto Ave - Equity Track | $95.85 |
 | Dec 6, 2025 | Home Depot | Materials | Home Depot Refund for 2352 Menalto - Equity Track | −$576.35 |
-| Feb 6, 2026 | AAA Rentals | Equipment Rental | Equipment rental for 2352 Menalto Ave | $154.50 |
-| Feb 6, 2026 | AAA Rentals | Equipment Rental | Equipment rental for 2352 Menalto Ave | −$12.50 |
+| Feb 6, 2026 | AAA Rentals | Equipment Rental | Equipment rental for 2352 Menalto Ave **(no receipt)** | $154.50 |
+| Feb 6, 2026 | AAA Rentals | Equipment Rental | Equipment rental for 2352 Menalto Ave **(no receipt)** | −$12.50 |
 
 ### 255 Amber Dr San Francisco (1 charges, −$39.82)
 
@@ -126,7 +127,7 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | Dec 1, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $21.85 |
 | Dec 1, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $23.81 |
 | Dec 1, 2025 | Uber Eats | Owner's Pay (personal) | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $201.17 |
-| Dec 2, 2025 | A&A Gas and Food Mart | Auto Expenses (this includes tolls, fuel and maintenance) | Vendor: A&A GAS AND FOOD MART · Paid from: Equity Track 8251 | $81.11 |
+| Dec 2, 2025 | A&A Gas and Food Mart | Auto Expenses (this includes tolls, fuel and maintenance) | Vendor: A&A GAS AND FOOD MART · Paid from: Equity Track 8251 **(no receipt)** | $81.11 |
 | Dec 2, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $51.00 |
 | Dec 2, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $89.89 |
 | Dec 3, 2025 | GoFundMe | Overhead Expense | GoFundMe - Equity Track | $478.71 |
@@ -180,9 +181,9 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | Feb 9, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $24.87 |
 | Feb 11, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $21.17 |
 | Feb 12, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $20.46 |
-| Feb 12, 2026 | The Waterfront Restaurant | Meals & Entertainment | Vendor: THE WATERFRONT RESTAURANT · Paid from: Equity Track 8251 | $200.00 |
+| Feb 12, 2026 | The Waterfront Restaurant | Meals & Entertainment | Vendor: THE WATERFRONT RESTAURANT · Paid from: Equity Track 8251 **(no receipt)** | $200.00 |
 | Feb 17, 2026 | Tidio | Dues & Subscriptions | Vendor: TIDIO.COM · Paid from: Equity Track 8251 | $39.00 |
-| Feb 21, 2026 | Auto Pride Car Wash | Auto Expenses (this includes tolls, fuel and maintenance) | Vendor: Auto Pride Car Wash · Paid from: Equity Track 8251 | $59.99 |
+| Feb 21, 2026 | Auto Pride Car Wash | Auto Expenses (this includes tolls, fuel and maintenance) | Vendor: Auto Pride Car Wash · Paid from: Equity Track 8251 **(no receipt)** | $59.99 |
 | Feb 27, 2026 | Tidio | Dues & Subscriptions | Vendor: TIDIO.COM · Paid from: Equity Track 8251 | $18.64 |
 | Feb 27, 2026 | Grok (xAI) | Dues & Subscriptions | Vendor: Xai LLC · Paid from: Equity Track 8251 | $30.00 |
 | May 18, 2026 | Google Ads | Google Ads | Google Ads  Sell My House / Oakland / January 28, 2026 | $500.00 |
