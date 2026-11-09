@@ -117,14 +117,14 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | Date | Vendor | Category | What it was for | Amount |
 |---|---|---|---|---:|
 | Oct 30, 2025 | Progressive Commercial | Insurance | Progressive Commercial - This is the insurance for Equity Track Vehicles - Equity Track (Ford F250, Ford F350, 2023 Ram, 2025 Van #1, 2025 Van #2, Mercedes Benz) | $6,894.90 |
-| Nov 7, 2025 | T-Mobile | Telephone Services | Company Phone - Equity Track | $177.43 |
-| Nov 28, 2025 | Uber Eats | Personal Expense | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $16.97 |
-| Nov 28, 2025 | Uber Eats | Personal Expense | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $69.79 |
-| Nov 28, 2025 | Uber Eats | Personal Expense | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $103.94 |
+| Nov 7, 2025 | T-Mobile | Telephone lines (Office) | Company Phone - Equity Track | $177.43 |
+| Nov 28, 2025 | Uber Eats | Owner's Pay (personal) | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $16.97 |
+| Nov 28, 2025 | Uber Eats | Owner's Pay (personal) | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $69.79 |
+| Nov 28, 2025 | Uber Eats | Owner's Pay (personal) | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $103.94 |
 | Dec 1, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $11.44 |
 | Dec 1, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $21.85 |
 | Dec 1, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $23.81 |
-| Dec 1, 2025 | Uber Eats | Personal Expense | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $201.17 |
+| Dec 1, 2025 | Uber Eats | Owner's Pay (personal) | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $201.17 |
 | Dec 2, 2025 | A&A Gas and Food Mart | Auto Expenses (this includes tolls, fuel and maintenance) | Vendor: A&A GAS AND FOOD MART · Paid from: Equity Track 8251 | $81.11 |
 | Dec 2, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $51.00 |
 | Dec 2, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $89.89 |
@@ -132,7 +132,7 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | Dec 3, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $44.46 |
 | Dec 3, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $21.85 |
 | Dec 5, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $33.87 |
-| Dec 6, 2025 | T-Mobile | Personal Expense | Juan's Family Phone - Owner's Pay | $180.66 |
+| Dec 6, 2025 | T-Mobile | Owner's Pay (personal) | Juan's Family Phone - Owner's Pay | $180.66 |
 | Dec 6, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $31.57 |
 | Dec 7, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $32.16 |
 | Dec 8, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $40.99 |
@@ -140,16 +140,16 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | Dec 8, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $47.25 |
 | Dec 10, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $103.36 |
 | Dec 18, 2025 | Uber | Travel | Uber - Equity Track | $12.45 |
-| Dec 18, 2025 | Uber Eats | Personal Expense | UBER EATS - Sent to 748 Tamarack Ave, San Carlos - Owner's Pay | $25.92 |
+| Dec 18, 2025 | Uber Eats | Owner's Pay (personal) | UBER EATS - Sent to 748 Tamarack Ave, San Carlos - Owner's Pay | $25.92 |
 | Dec 22, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $85.31 |
 | Dec 22, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $18.46 |
 | Dec 22, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $21.85 |
-| Dec 22, 2025 | Amazon | Personal Expense | Amazon Order - Owner's Pay | $147.60 |
+| Dec 22, 2025 | Amazon | Owner's Pay (personal) | Amazon Order - Owner's Pay | $147.60 |
 | Dec 23, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $39.76 |
 | Dec 24, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $40.15 |
-| Jan 5, 2026 | Uber Eats | Personal Expense | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $29.85 |
+| Jan 5, 2026 | Uber Eats | Owner's Pay (personal) | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $29.85 |
 | Jan 6, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $34.72 |
-| Jan 6, 2026 | T-Mobile | Personal Expense | Juan's Family Phone - Owner's Pay | $183.88 |
+| Jan 6, 2026 | T-Mobile | Owner's Pay (personal) | Juan's Family Phone - Owner's Pay | $183.88 |
 | Jan 6, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $18.63 |
 | Jan 7, 2026 | Uber | Travel | Uber Trip to 170 Glenn Way - Equity Track | $52.72 |
 | Jan 15, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $16.48 |
@@ -163,16 +163,16 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | Jan 26, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $88.53 |
 | Jan 27, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $88.30 |
 | Jan 27, 2026 | Grok (xAI) | Dues & Subscriptions | Bill to Operations Cherry's Grock - Equity Track | $30.00 |
-| Jan 28, 2026 | Comcast Xfinity | Personal Expense | Comcast internet, 170 Glenn Way office (account ...9835 or ...0056) | $327.91 |
+| Jan 28, 2026 | Comcast Xfinity | Internet (Office) | Comcast internet, 170 Glenn Way office (account ...9835 or ...0056) | $327.91 |
 | Jan 28, 2026 | 4imprint | Other Office Expenses | Shirts for Juan - Peninsla Plumbing | $680.34 |
 | Jan 29, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $39.72 |
 | Jan 31, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $20.11 |
 | Feb 2, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $23.21 |
-| Feb 4, 2026 | Uber Eats | Personal Expense | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $35.46 |
+| Feb 4, 2026 | Uber Eats | Owner's Pay (personal) | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $35.46 |
 | Feb 5, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $55.55 |
 | Feb 5, 2026 | Uber Eats | Meals & Entertainment | UBER EATS - Cancellation Fee | $5.00 |
 | Feb 6, 2026 | Progressive Commercial | Insurance | Commercial policy 2025 Ram Van, 2025 Ram Promaster, 1999 Ford F250, 2020 Ford F350, 2023 Ram Promaster, and Mercedez | $9,787.38 |
-| Feb 9, 2026 | T-Mobile | Telephone Services | Company Phone - Equity Track | $210.36 |
+| Feb 9, 2026 | T-Mobile | Telephone lines (Office) | Company Phone - Equity Track | $210.36 |
 | Feb 9, 2026 | Uber | Travel | UBER TRIP - Trip to Home Depot (Hector) | $9.99 |
 | Feb 9, 2026 | Uber | Travel | UBER TRIP - Drop Off to  170 Glenn Way - Equity Track | $9.98 |
 | Feb 9, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $212.81 |

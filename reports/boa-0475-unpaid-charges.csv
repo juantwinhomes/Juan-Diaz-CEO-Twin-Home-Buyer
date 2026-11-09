@@ -1,15 +1,15 @@
 Date,Vendor,Property / group,Category,What it was for,Amount
 2025-10-30,Progressive Commercial,Office (company-wide),Insurance,"Progressive Commercial - This is the insurance for Equity Track Vehicles - Equity Track (Ford F250, Ford F350, 2023 Ram, 2025 Van #1, 2025 Van #2, Mercedes Benz)",6894.90
-2025-11-07,T-Mobile,Office (company-wide),Telephone Services,Company Phone - Equity Track,177.43
+2025-11-07,T-Mobile,Office (company-wide),Telephone lines (Office),Company Phone - Equity Track,177.43
 2025-11-21,Home Depot,2352 Menalto Ave,Materials,Home Depot Return - 2352 Menalto Ave - Equity Track Inc,-9.32
-2025-11-28,Uber Eats,Office (company-wide),Personal Expense,UBER EATS delivered to 100 Palm Ave - Owner's Pay,16.97
-2025-11-28,Uber Eats,Office (company-wide),Personal Expense,UBER EATS delivered to 100 Palm Ave - Owner's Pay,69.79
-2025-11-28,Uber Eats,Office (company-wide),Personal Expense,UBER EATS delivered to 100 Palm Ave - Owner's Pay,103.94
+2025-11-28,Uber Eats,Office (company-wide),Owner's Pay (personal),UBER EATS delivered to 100 Palm Ave - Owner's Pay,16.97
+2025-11-28,Uber Eats,Office (company-wide),Owner's Pay (personal),UBER EATS delivered to 100 Palm Ave - Owner's Pay,69.79
+2025-11-28,Uber Eats,Office (company-wide),Owner's Pay (personal),UBER EATS delivered to 100 Palm Ave - Owner's Pay,103.94
 2025-12-01,Uber Eats,2352 Menalto Ave,Meals & Entertainment,UBER EATS delivered to 2352 Menalto Ave - Equity Track,95.85
 2025-12-01,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,11.44
 2025-12-01,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,21.85
 2025-12-01,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,23.81
-2025-12-01,Uber Eats,Office (company-wide),Personal Expense,UBER EATS delivered to 100 Palm Ave - Owner's Pay,201.17
+2025-12-01,Uber Eats,Office (company-wide),Owner's Pay (personal),UBER EATS delivered to 100 Palm Ave - Owner's Pay,201.17
 2025-12-02,A&A Gas and Food Mart,Office (company-wide),"Auto Expenses (this includes tolls, fuel and maintenance)",Vendor: A&A GAS AND FOOD MART · Paid from: Equity Track 8251,81.11
 2025-12-02,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,51.00
 2025-12-02,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,89.89
@@ -23,7 +23,7 @@ Date,Vendor,Property / group,Category,What it was for,Amount
 2025-12-05,Home Depot,17221 Via Estrella,Materials,Home Depot Refund - 17221 Via Estrella - Equity Track Inc,-253.75
 2025-12-05,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,33.87
 2025-12-06,Home Depot,2352 Menalto Ave,Materials,Home Depot Refund for 2352 Menalto - Equity Track,-576.35
-2025-12-06,T-Mobile,Office (company-wide),Personal Expense,Juan's Family Phone - Owner's Pay,180.66
+2025-12-06,T-Mobile,Office (company-wide),Owner's Pay (personal),Juan's Family Phone - Owner's Pay,180.66
 2025-12-06,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,31.57
 2025-12-07,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,32.16
 2025-12-08,Home Depot,7426 Mulholland Dr,Materials,Home Depot Refund for 7426 Mulholland Dr - Equity Track,-60.75
@@ -33,15 +33,15 @@ Date,Vendor,Property / group,Category,What it was for,Amount
 2025-12-10,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,103.36
 2025-12-17,KH Plumbing Supply,519 Orizaba Ave,Materials,Vendor: KH PLUMBING SUPPLY INC · Paid from: Equity Track 8251,144.53
 2025-12-18,Uber,Office (company-wide),Travel,Uber - Equity Track,12.45
-2025-12-18,Uber Eats,Office (company-wide),Personal Expense,"UBER EATS - Sent to 748 Tamarack Ave, San Carlos - Owner's Pay",25.92
+2025-12-18,Uber Eats,Office (company-wide),Owner's Pay (personal),"UBER EATS - Sent to 748 Tamarack Ave, San Carlos - Owner's Pay",25.92
 2025-12-22,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,85.31
 2025-12-22,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,18.46
 2025-12-22,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,21.85
-2025-12-22,Amazon,Office (company-wide),Personal Expense,Amazon Order - Owner's Pay,147.60
+2025-12-22,Amazon,Office (company-wide),Owner's Pay (personal),Amazon Order - Owner's Pay,147.60
 2025-12-23,Factory Direct Floor,519 Orizaba Ave,Materials,Flooring for 519 Orizaba - Equity Track,14126.70
 2025-12-23,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,39.76
 2025-12-24,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,40.15
-2026-01-05,Uber Eats,Office (company-wide),Personal Expense,UBER EATS delivered to 100 Palm Ave - Owner's Pay,29.85
+2026-01-05,Uber Eats,Office (company-wide),Owner's Pay (personal),UBER EATS delivered to 100 Palm Ave - Owner's Pay,29.85
 2026-01-06,Home Depot,1574 Jerrold Ave,Materials,Home Depot for 1574 Jerrold Ave - Equity Track,165.64
 2026-01-06,Home Depot,17221 Via Estrella,Materials,Home Depot Materials/Supplies - 17221 Via Estrella - Equity Track Inc,50.09
 2026-01-06,Home Depot,17221 Via Estrella,Materials,Home Depot Refund - 17221 Via Estrella - Equity Track Inc,-50.09
@@ -51,7 +51,7 @@ Date,Vendor,Property / group,Category,What it was for,Amount
 2026-01-06,Home Depot,17221 Via Estrella,Materials,Home Depot Materials/Supplies - 17221 Via Estrella - Equity Track Inc,119.57
 2026-01-06,Home Depot,17221 Via Estrella,Materials,Home Depot Materials/Supplies - 17221 Via Estrella - Equity Track Inc,191.79
 2026-01-06,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,34.72
-2026-01-06,T-Mobile,Office (company-wide),Personal Expense,Juan's Family Phone - Owner's Pay,183.88
+2026-01-06,T-Mobile,Office (company-wide),Owner's Pay (personal),Juan's Family Phone - Owner's Pay,183.88
 2026-01-06,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,18.63
 2026-01-07,Home Depot,1574 Jerrold Ave,Materials,Home Depot for 1574 Jerrold Ave - Equity Track,419.17
 2026-01-07,Home Depot,1574 Jerrold Ave,Materials,Home Depot for 1574 Jerrold Ave - Equity Track,75.38
@@ -76,18 +76,18 @@ Date,Vendor,Property / group,Category,What it was for,Amount
 2026-01-28,Home Depot,1574 Jerrold Ave,Materials,Home Depot for 1574 Jerrold Ave - Equity Track,345.83
 2026-01-28,Comcast Xfinity,170 Glenn Way,Utilities,"Comcast internet, 170 Glenn Way office (account ...9835 or ...0056)",333.78
 2026-01-28,Kinetic Property Inspection,915 52nd St,Inspections,Home and Roof Inspection Report - 915 52nd Street - Equity Track,595.00
-2026-01-28,Comcast Xfinity,Office (company-wide),Personal Expense,"Comcast internet, 170 Glenn Way office (account ...9835 or ...0056)",327.91
+2026-01-28,Comcast Xfinity,Office (company-wide),Internet (Office),"Comcast internet, 170 Glenn Way office (account ...9835 or ...0056)",327.91
 2026-01-28,4imprint,Office (company-wide),Other Office Expenses,Shirts for Juan - Peninsla Plumbing,680.34
 2026-01-29,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,39.72
 2026-01-31,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,20.11
 2026-02-02,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,23.21
-2026-02-04,Uber Eats,Office (company-wide),Personal Expense,UBER EATS delivered to 100 Palm Ave - Owner's Pay,35.46
+2026-02-04,Uber Eats,Office (company-wide),Owner's Pay (personal),UBER EATS delivered to 100 Palm Ave - Owner's Pay,35.46
 2026-02-05,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,55.55
 2026-02-05,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS - Cancellation Fee,5.00
 2026-02-06,AAA Rentals,2352 Menalto Ave,Equipment Rental,Equipment rental for 2352 Menalto Ave,154.50
 2026-02-06,AAA Rentals,2352 Menalto Ave,Equipment Rental,Equipment rental for 2352 Menalto Ave,-12.50
 2026-02-06,Progressive Commercial,Office (company-wide),Insurance,"Commercial policy 2025 Ram Van, 2025 Ram Promaster, 1999 Ford F250, 2020 Ford F350, 2023 Ram Promaster, and Mercedez",9787.38
-2026-02-09,T-Mobile,Office (company-wide),Telephone Services,Company Phone - Equity Track,210.36
+2026-02-09,T-Mobile,Office (company-wide),Telephone lines (Office),Company Phone - Equity Track,210.36
 2026-02-09,Uber,Office (company-wide),Travel,UBER TRIP - Trip to Home Depot (Hector),9.99
 2026-02-09,Uber,Office (company-wide),Travel,UBER TRIP - Drop Off to  170 Glenn Way - Equity Track,9.98
 2026-02-09,Uber Eats,Office (company-wide),Meals & Entertainment,UBER EATS delivered to 170 Glenn Way - Equity Track,212.81
