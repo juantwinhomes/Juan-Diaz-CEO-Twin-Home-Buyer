@@ -132,7 +132,7 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | Dec 3, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $44.46 |
 | Dec 3, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $21.85 |
 | Dec 5, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $33.87 |
-| Dec 6, 2025 | T-Mobile | Owner's Pay (personal) | Juan's Family Phone - Owner's Pay | $180.66 |
+| Dec 6, 2025 | T-Mobile | Telephone lines (Office) | Family phone lines - Equity Track | $180.66 |
 | Dec 6, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $31.57 |
 | Dec 7, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $32.16 |
 | Dec 8, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $40.99 |
@@ -149,7 +149,7 @@ Source: Credit Card Approval page (claude.ai/artifact/U2x6ifSGALqidYUzAsQ4fQ), c
 | Dec 24, 2025 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $40.15 |
 | Jan 5, 2026 | Uber Eats | Owner's Pay (personal) | UBER EATS delivered to 100 Palm Ave - Owner's Pay | $29.85 |
 | Jan 6, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $34.72 |
-| Jan 6, 2026 | T-Mobile | Owner's Pay (personal) | Juan's Family Phone - Owner's Pay | $183.88 |
+| Jan 6, 2026 | T-Mobile | Telephone lines (Office) | Family phone lines - Equity Track | $183.88 |
 | Jan 6, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $18.63 |
 | Jan 7, 2026 | Uber | Travel | Uber Trip to 170 Glenn Way - Equity Track | $52.72 |
 | Jan 15, 2026 | Uber Eats | Meals & Entertainment | UBER EATS delivered to 170 Glenn Way - Equity Track | $16.48 |
