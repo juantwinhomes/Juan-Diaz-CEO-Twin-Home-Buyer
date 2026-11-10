@@ -398,7 +398,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v50</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v51</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -855,7 +855,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
   const GENERIC_SENDER = /^(no[\s._-]?reply|do[\s._-]?not[\s._-]?reply|notifications?|notify|receipts?|billing|info|support|accounts?|service|customer ?service|team|mailer|alerts?|orders?|hello|admin)$/i;
   const subjectLabel = r => str(String((r && r.subject) || "").replace(/^\s*((fwd?|fw|re)\s*:\s*)+/i, ""), 60) || "Unknown sender";
   function senderName(r) {
-    return String((r && r.sender) || "").replace(/<.*>/, "").replace(/"/g, "").trim() || "Unknown sender";
+    return cleanName(String((r && r.sender) || "").replace(/<.*>/, "").replace(/"/g, "")) || "Unknown sender";
   }
   function longDate(iso) {
     if (!iso) return "";
@@ -1220,7 +1220,16 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
     box.style.setProperty("--zoom", String(state.zoom));
     const c = msgCache.get(r.id);
     if (!c) { box.append(el("p", "pv-note", mcp ? "Loading the receipt…" : "Open this page in claude.ai to see the receipt.")); return; }
-    if (c.error) { box.append(el("p", "pv-note", c.error)); return; }
+    if (c.error) {
+      box.append(el("p", "pv-note", c.error));
+      if (c.retry) {
+        const again = el("button", "btn small", "Try again");
+        again.type = "button";
+        again.onclick = () => { msgCache.delete(r.id); refreshPreview(r.id); loadPreview(r.id); };
+        box.append(again);
+      }
+      return;
+    }
     if (c.driveCopy) {
       const w = el("div", "pv-drive");
       w.append(el("p", "pv-note", "This receipt came into another inbox. Its copy is in Company Receipts › " + (c.filed ? c.filed.folder + " › " + c.filed.month : "Inbox copies") + ":"));
@@ -1579,6 +1588,27 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
         if (local && local !== id) { localIds.set(id, local); return loadPreviewOnce(id, true); }
       }
       const rr = allRows().find(x => x.id === id);
+      // Gmail says "not found" when the email isn't in this inbox. Anything else (busy, a hiccup) is worth another try.
+      const notFound = e && e.code === "tool_error" && /not\s*found|notfound|404|invalid id|invalid message/i.test(String(e.message || ""));
+      if (e && e.code === "tool_error" && !notFound && !(rr && rr.driveCopy && rr.driveCopy.length)) {
+        msgCache.set(id, { error: "Gmail didn't send this email just now" + (e.message ? " (" + str(e.message, 120) + ")" : "") + ". It's in your inbox if you scanned it.", retry: true });
+        refreshPreview(id);
+        return;
+      }
+      if (notFound && !state.account) {
+        // Which inbox is this? One quick look, so the message can say whose inbox the receipt is in.
+        try {
+          const p = (await gmail("search_threads", { query: "in:inbox", pageSize: 1 })) || {};
+          const t = (p.threads || [])[0];
+          const u = t && (t.viewUrl || (t.messages && t.messages[0] && t.messages[0].viewUrl));
+          if (u) { detectAccount(u); showAccount(); }
+        } catch (e3) { /* leave it unknown */ }
+      }
+      if (notFound && rr && rr.scannedBy && state.account && rr.scannedBy === state.account && !(rr.driveCopy && rr.driveCopy.length)) {
+        msgCache.set(id, { error: "This email isn't in your Gmail any more (deleted, or moved out of reach). It was saved from your inbox on " + longDate(rr.scannedAt) + ".", retry: true });
+        refreshPreview(id);
+        return;
+      }
       msgCache.set(id, rr && rr.driveCopy && rr.driveCopy.length && e && e.code === "tool_error"
         ? { driveCopy: rr.driveCopy, filed: rr.filed || null }
         : { error: e && e.code === "tool_error"
@@ -2014,8 +2044,10 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
       else if (d3) fwdDate = d3[1] + "-" + d3[2] + "-" + d3[3];
       if (fwdDate && (fwdDate > localDay(new Date().toISOString()) || fwdDate < "2020-01-01")) fwdDate = null;
     }
-    if (!vendor && (m.source === "other" || m.source === "vendors") && !/@twinhomebuyer\.com/i.test(String(m.sender || ""))) {
-      const nm = String(m.sender || "").replace(/<.*>/, "").replace(/"/g, "").trim();
+    const viaGroup = /via receipts forwarding/i.test(String(m.sender || ""));
+    if (!vendor) { const rf = raw.match(/^\s*receipt from\s+([A-Za-z0-9][^\n#\[]{1,50}?)\s*(?:receipt\b|#|\[|\n|$)/i); if (rf) vendor = rf[1].trim(); }
+    if (!vendor && (m.source === "other" || m.source === "vendors") && (viaGroup || !/@twinhomebuyer\.com/i.test(String(m.sender || "")))) {
+      const nm = cleanName(String(m.sender || "").replace(/<.*>/, "").replace(/"/g, ""));
       const dom = (String(m.sender || "").match(/@([a-z0-9-]+)\.[a-z.]+>?\s*$/i) || [])[1];
       vendor = nm && !/@/.test(nm) && !GENERIC_SENDER.test(nm) ? nm.slice(0, 60) : dom && !/^twinhomebuyer$/i.test(dom) ? dom.charAt(0).toUpperCase() + dom.slice(1) : null;
     }
@@ -2037,7 +2069,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
       if (rf) x.total = -Math.abs(num(rf[1]));
     }
     if (x.total === null) {
-      const t = text.match(/\b(?:order total|grand total|total charged|amount charged|total paid|you paid)\s*:?\s*\$?\s?(-?[\d,]+\.\d{2})/i)
+      const t = text.match(/\b(?:order total|grand total|total charged|amount charged|total paid|you paid|amount paid)\s*:?\s*\$?\s?(-?[\d,]+\.\d{2})/i)
         || text.match(/\btotal\s*:?\s*\$?\s?(-?[\d,]+\.\d{2})/i);
       if (t) x.total = num(t[1]);
     }
@@ -2053,6 +2085,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
     const order = amz ? amz[0] : ((text.match(/\border\s*(?:number|no\.?|#)\s*:?\s*#?\s*([A-Z0-9][A-Z0-9-]{5,19})/i) || [])[1] || null);
     if (order && /\d/.test(order)) x.orderNumber = order;
     const card = text.match(/(?:ending in|ending|x{3,}|\*{2,}|•{2,})\s*(\d{4})\b/i)
+      || text.match(/\bpayment method\s*:?\s*(?:[A-Za-z ]{0,20})?[-–•*\s]{0,4}(\d{4})\b/i)
       || text.match(/\b(?:american express|amex|visa|mastercard|discover)\D{0,12}(\d{4})\b/i);
     if (card) x.cardLast4 = card[1];
     if (!x.items) x.items = str(subject.replace(/^\s*(?:fwd?|fw)\s*:\s*/i, ""), 120);
@@ -2139,7 +2172,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
     let filled = 0;
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
-      setStatus("Reading receipt PDFs for amounts, " + (i + 1) + " of " + rows.length + "…");
+      setStatus("Reading receipts for amounts, " + (i + 1) + " of " + rows.length + "…");
       try {
         let m;
         try { m = await gmail("get_message", { messageId: gid(r.id), messageFormat: "PLAIN_TEXT" }); }
@@ -2150,6 +2183,18 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
           if (!local || local === gid(r.id)) continue;
           localIds.set(r.id, local);
           m = await gmail("get_message", { messageId: local, messageFormat: "PLAIN_TEXT" });
+        }
+        const again = freeRead({ source: r.source, subject: r.subject || "", sender: r.sender || "", body: String((m && (m.plaintextBody || m.snippet)) || ""), attachments: fileAttachments(m) });
+        if (again && again.isReceipt !== false && (again.total !== null || again.itemsSubtotal !== null)) {
+          const cur = r.extracted || {};
+          const merged = Object.assign({}, cur, {
+            total: again.total, itemsSubtotal: again.itemsSubtotal,
+            tax: again.tax !== null ? again.tax : (cur.tax !== undefined ? cur.tax : null),
+            orderNumber: cur.orderNumber || again.orderNumber, cardLast4: cur.cardLast4 || again.cardLast4,
+            vendor: cur.vendor || again.vendor, readBy: "rules"
+          });
+          if (await saveFields(r.id, { extracted: merged })) { r.extracted = merged; filled++; }
+          continue;
         }
         if (!fileAttachments(m).some(a => isPdf(a.mimeType, a.filename))) continue;
         const t = await pdfTextOf(r.id);
@@ -2293,9 +2338,19 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
       if (skipped.length) banner("Gmail held back the " + skipped.join(", ") + " search, usually because of an automated email it won't share. Everything else was scanned.");
 
       let dups = 0;
+      // The same email forwarded twice lands in one thread with one subject: keep the first copy, in this scan or a saved one.
+      const twinKey = (thread, subject) => thread ? thread + "|" + normSubject(subject) : "";
+      const firstOf = new Map();
+      for (const [id, meta] of found) {
+        const k = twinKey(meta.threadId, meta.subject), t = Date.parse(meta.date || "") || 0;
+        if (k && (!firstOf.has(k) || t < firstOf.get(k).t)) firstOf.set(k, { id, t });
+      }
+      const savedTwins = new Set([...state.docs.values()].map(d => twinKey(d.threadId, d.subject)).filter(Boolean));
       const todo = [...found].filter(([id, meta]) => {
         const d = state.docs.get(id) || state.temp.get(id);
         if (d && d.extracted) return false;
+        const k = twinKey(meta.threadId, meta.subject);
+        if (k && (firstOf.get(k).id !== id || savedTwins.has(k))) { dups++; return false; }
         if (dupDoc(id, meta.subject, meta.date)) { dups++; return false; }
         return true;
       });
@@ -2305,7 +2360,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
       }
       if (!todo.length) {
         const f = await fillFromPdfs();
-        setStatus(found.size + " receipt emails found. All of them are already in the list" + (dups ? " (" + dups + " saved from another inbox)." : ".") + (f ? " Filled " + f + " missing amounts from the receipt PDFs." : ""));
+        setStatus(found.size + " receipt emails found. All of them are already in the list" + (dups ? " (" + dups + " saved from another inbox)." : ".") + (f ? " Filled " + f + " missing amounts for free (receipt PDFs and email text)." : ""));
         return;
       }
 
@@ -2400,7 +2455,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
         (left ? " " + left + " need Claude. Click Fill with Claude when you want them done." : ""));
       const scanMsg = $("status").textContent;
       const pdfFilled = await fillFromPdfs();
-      let doneMsg = scanMsg + (pdfFilled ? " Filled " + pdfFilled + " more amounts from the receipt PDFs." : "");
+      let doneMsg = scanMsg + (pdfFilled ? " Filled " + pdfFilled + " more amounts for free (receipt PDFs and email text)." : "");
       setStatus(doneMsg);
       // Only this inbox can read these emails: copy them to Drive now, so everyone else can open them.
       if (live && mcp) {

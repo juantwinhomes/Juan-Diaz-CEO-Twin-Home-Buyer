@@ -68,6 +68,21 @@ clear**, counts purchases with No property, No approver, Unknown buyer and Perso
 opens with FLAG COUNTS and lists each flag with who to ask and by when; Every charge shows the
 filled-in buyer and approver. Excel's Flags tab lists every flag with Ask and By.
 
+**Stripe receipts, Gmail retries, forwards sent twice (v51).**
+- Stripe receipts (Grok xAI, Twilio, Retell, Vercel, Sweet Sustainable...) put "Amount paid" on one
+  line and the amount on the next, and the card as "Payment method - 5004"; the free reader now
+  reads both, and "Receipt from Grok xAI" names the vendor. Before, these showed no amount and
+  Needs Claude (Grok $50.00, Nov 10, was one).
+- The free read after each scan (and before Fill with Claude) tries the email's text with today's
+  rules first, so receipts saved before a format was known get their amount without Claude.
+- Sender names drop the receipts@ rewrite ("'Grok xAI' via Receipts Forwarding" shows as Grok xAI).
+- The viewer said "isn't in your inbox" for any Gmail error. Now only Gmail's "not found" says
+  so; a busy or failed load shows "Gmail didn't send this email just now" with Try again, and an
+  email gone from the inbox that saved it says so.
+- The same email forwarded twice (John, Nov 10: 12 forwards each sent twice, minutes apart, in one
+  thread) was saved twice because the duplicate check only looked at receipts saved before the scan.
+  Same thread and same subject now count once, in one scan or across scans.
+
 **Copy to Drive on every scan (v50).** Only the inbox a receipt came into can read it, and new
 receipts had no Drive copy until someone clicked Copy receipts to Drive (Nov 10: 45 receipts saved
 since Nov 8 by Seth's and Darlyn's scans, none copied, so a receipt from Darlyn's receipts@ copies
