@@ -68,6 +68,16 @@ clear**, counts purchases with No property, No approver, Unknown buyer and Perso
 opens with FLAG COUNTS and lists each flag with who to ask and by when; Every charge shows the
 filled-in buyer and approver. Excel's Flags tab lists every flag with Ask and By.
 
+**Copy to Drive on every scan (v50).** Only the inbox a receipt came into can read it, and new
+receipts had no Drive copy until someone clicked Copy receipts to Drive (Nov 10: 45 receipts saved
+since Nov 8 by Seth's and Darlyn's scans, none copied, so a receipt from Darlyn's receipts@ copies
+showed "isn't in yours" to Seth). Now every saved scan ends by copying that inbox's receipts:
+the ones it just saved first, then older ones it saved that still have no copy or aren't filed,
+at most 50 per scan (the status says how many are left). A receipt matched to a charge goes
+straight to its card's month folder. The viewer names the inbox a receipt came into when it has
+no copy yet. Generic sender names (noreply, billing, notifications, receipts...) are never the
+vendor; the subject stands in until Claude or the PDF gives one.
+
 **Purchase reports, Not recognized, gas and meals, filing by card (v49).**
 - *Team purchase reports.* Juan's Nov 5 rule: whoever buys something emails accounting@ (and
   Marieflor) the same day with what, amount, property, card and a photo. The scan has a "Team

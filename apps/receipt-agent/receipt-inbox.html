@@ -398,7 +398,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v49</span>
+      <span class="eyebrow">Twin Home Buyer &middot; Receipt agent &middot; v50</span>
       <h1>Receipt Inbox</h1>
     </div>
     <div class="views" role="group" aria-label="View">
@@ -835,8 +835,9 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
   // The business that was paid, never the payment service.
   function vendorOf(r) {
     const x = (r && r.extracted) || {};
-    const v = x.vendor || senderName(r);
-    if (PROCESSOR.test(v + " " + senderName(r))) { const p = payVendor(r); if (p) return p; }
+    const sn = senderName(r);
+    const v = x.vendor || (GENERIC_SENDER.test(sn) ? subjectLabel(r) : sn);
+    if (PROCESSOR.test(v + " " + sn)) { const p = payVendor(r); if (p) return p; }
     return v;
   }
   // "QuickBooks Payments" when the receipt came through a payment service.
@@ -850,6 +851,9 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
     const n = cardOf(c);
     return n && !a.includes(n) ? a + ", card " + n : a;
   }
+  // "noreply", "billing", "notifications": a mailbox, not a business.
+  const GENERIC_SENDER = /^(no[\s._-]?reply|do[\s._-]?not[\s._-]?reply|notifications?|notify|receipts?|billing|info|support|accounts?|service|customer ?service|team|mailer|alerts?|orders?|hello|admin)$/i;
+  const subjectLabel = r => str(String((r && r.subject) || "").replace(/^\s*((fwd?|fw|re)\s*:\s*)+/i, ""), 60) || "Unknown sender";
   function senderName(r) {
     return String((r && r.sender) || "").replace(/<.*>/, "").replace(/"/g, "").trim() || "Unknown sender";
   }
@@ -1578,7 +1582,9 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
       msgCache.set(id, rr && rr.driveCopy && rr.driveCopy.length && e && e.code === "tool_error"
         ? { driveCopy: rr.driveCopy, filed: rr.filed || null }
         : { error: e && e.code === "tool_error"
-          ? "This receipt came into another inbox and isn't in yours, and it has no copy in Drive yet. Ask Christine to click Copy receipts to Drive on accounting@."
+          ? (rr && rr.scannedBy && rr.scannedBy !== state.account
+            ? "This receipt came into " + rr.scannedBy + " and isn't in your inbox. It has no copy in Drive yet: it's copied the next time " + rr.scannedBy + " scans, or when they click Copy receipts to Drive."
+            : "This receipt came into another inbox and isn't in yours, and it has no copy in Drive yet. It's copied the next time that inbox scans, or when someone there clicks Copy receipts to Drive.")
           : gmailMessage(e) });
       refreshPreview(id);
     }
@@ -2011,7 +2017,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
     if (!vendor && (m.source === "other" || m.source === "vendors") && !/@twinhomebuyer\.com/i.test(String(m.sender || ""))) {
       const nm = String(m.sender || "").replace(/<.*>/, "").replace(/"/g, "").trim();
       const dom = (String(m.sender || "").match(/@([a-z0-9-]+)\.[a-z.]+>?\s*$/i) || [])[1];
-      vendor = nm && !/@/.test(nm) ? nm.slice(0, 60) : dom ? dom.charAt(0).toUpperCase() + dom.slice(1) : null;
+      vendor = nm && !/@/.test(nm) && !GENERIC_SENDER.test(nm) ? nm.slice(0, 60) : dom && !/^twinhomebuyer$/i.test(dom) ? dom.charAt(0).toUpperCase() + dom.slice(1) : null;
     }
     // QuickBooks Payments: "Payment confirmation: Invoice #6740-(Accent Window Systems, Inc.)"; PayPal and Melio: "payment to Yuri Hernandez".
     const viaPay = subject.match(/invoice\s*#[^(]*\(([^)]{3,80})\)/i) || subject.match(/payment to\s+([A-Z][^,.\n]{2,60})/);
@@ -2332,6 +2338,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
       const live = !!db && scanMode().live;
       const now = new Date().toISOString();
       let saved = 0, freeCount = 0;
+      const savedDocs = [];
       for (const m of msgs) {
         const prev = state.docs.get(m.id) || state.temp.get(m.id) || {};
         let x = (prev.extracted && prev.extracted.readBy === "claude") ? prev.extracted : freeRead(m);
@@ -2378,6 +2385,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
         if (live) {
           try {
             await db.collection("receipts").doc(m.id).set(doc); saved++;
+            if (doc.status !== "not_receipt") savedDocs.push(doc);
             for (const rid of retire) await saveFields(rid, { status: "not_receipt", reviewedAt: now });
           }
           catch (e) { banner(dbMessage(e), true); break; }
@@ -2392,7 +2400,15 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
         (left ? " " + left + " need Claude. Click Fill with Claude when you want them done." : ""));
       const scanMsg = $("status").textContent;
       const pdfFilled = await fillFromPdfs();
-      setStatus(scanMsg + (pdfFilled ? " Filled " + pdfFilled + " more amounts from the receipt PDFs." : ""));
+      let doneMsg = scanMsg + (pdfFilled ? " Filled " + pdfFilled + " more amounts from the receipt PDFs." : "");
+      setStatus(doneMsg);
+      // Only this inbox can read these emails: copy them to Drive now, so everyone else can open them.
+      if (live && mcp) {
+        const cp = await copyReceiptsToDrive({ auto: true, saved: savedDocs });
+        if (cp && (cp.done || cp.later)) doneMsg += " Copied " + cp.done + " to Company Receipts for the team" + (cp.filed ? " (" + cp.filed + " filed in their card folder)" : "") + "." +
+          (cp.later ? " " + cp.later + " more go on the next scan, or click Copy receipts to Drive." : "");
+        setStatus(doneMsg);
+      }
       if (unread) banner(unread + (unread === 1 ? " email was" : " emails were") + " held back by Gmail and skipped. Everything else was scanned.");
       if (!live && db && state.account) {
         banner("This scan read " + state.account + ". Only accounting@ and company inboxes on receipts@ are saved, so these rows disappear when you reload.");
@@ -4197,11 +4213,25 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
     return { id: made.id, title: "Inbox copies" };
   }
   const safeName = t => String(t || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
-  async function copyReceiptsToDrive() {
-    if (copying) { copyStop = true; setStatus("Stopping after this receipt…"); return; }
-    if (!mcp || !db) { banner("Open this page in claude.ai to copy receipts to Drive.", true); return; }
-    const todo = allRows().filter(r => !state.temp.has(r.id) && (r.status || "new") !== "not_receipt" && (needsCopy(r) || needsFiling(r)));
-    if (!todo.length) { setStatus("Every saved receipt already has its copy in Drive, and every matched one is filed in its card folder."); return; }
+  // After a saved scan (auto): this inbox's receipts only, the new ones first, at most AUTO_COPY_MAX at a time.
+  const AUTO_COPY_MAX = 50;
+  async function copyReceiptsToDrive(opts) {
+    const auto = !!(opts && opts.auto);
+    if (copying) { if (!auto) { copyStop = true; setStatus("Stopping after this receipt…"); } return null; }
+    if (!mcp || !db) { if (!auto) banner("Open this page in claude.ai to copy receipts to Drive.", true); return null; }
+    if (auto) { await sleep(400); model = cardModel(); }   // the receipts just saved, matched to their charges
+    const pool = new Map(allRows().map(r => [r.id, r]));
+    if (auto) for (const d of opts.saved || []) if (!pool.has(d.id)) pool.set(d.id, d);
+    const fresh = new Set(auto ? (opts.saved || []).map(d => d.id) : []);
+    let todo = [...pool.values()].filter(r => !state.temp.has(r.id) && (r.status || "new") !== "not_receipt" && (needsCopy(r) || needsFiling(r))
+      && (!auto || fresh.has(r.id) || (state.account && r.scannedBy === state.account)));
+    let later = 0;
+    if (auto) {
+      todo.sort((a, b) => (fresh.has(b.id) ? 1 : 0) - (fresh.has(a.id) ? 1 : 0));
+      later = Math.max(0, todo.length - AUTO_COPY_MAX);
+      todo = todo.slice(0, AUTO_COPY_MAX);
+    }
+    if (!todo.length) { if (!auto) setStatus("Every saved receipt already has its copy in Drive, and every matched one is filed in its card folder."); return { done: 0, filed: 0, later: 0 }; }
     copying = true; copyStop = false;
     const btn = $("copyDrive");
     btn.textContent = "Stop copying";
@@ -4267,6 +4297,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
         }
       }
       const left = todo.length - done - notHere - failed;
+      if (auto) return { done, filed: filedN, later: later + left + failed };
       setStatus("Copied " + done + (done === 1 ? " receipt" : " receipts") + " to Company Receipts" + (filedN ? " (" + filedN + " filed in their card's month folder, the rest in Inbox copies)" : " › Inbox copies") +
         (redone === 1 ? ". 1 was a plain-text copy, now saved as it looks." : redone ? ". " + redone + " were plain-text copies, now saved as they look." : ".") +
         (notHere ? " " + notHere + (notHere === 1 ? " isn't" : " aren't") + " in this inbox: run this from the inbox they came into (accounting@)." : "") +
@@ -4275,9 +4306,10 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
     } catch (e) {
       const code = e && e.code;
       banner(code === "not_in_manifest" || code === "approval_required" || code === "consent_required"
-        ? "Google Drive or Gmail needs your OK for this page. Click Copy receipts to Drive again and choose Allow."
+        ? "Google Drive or Gmail needs your OK for this page" + (auto ? " to save the team's copy of these receipts." : ".") + " Click Copy receipts to Drive and choose Allow."
         : code === "tool_error" ? "Drive didn't save the copies. You need edit access to Company Receipts. (" + ((e && e.message) || "") + ")"
         : gmailMessage(e), true);
+      return null;
     } finally {
       copying = false; copyStop = false;
       btn.textContent = "Copy receipts to Drive";
